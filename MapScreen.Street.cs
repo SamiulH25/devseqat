@@ -289,8 +289,8 @@ partial class MapScreen
         int bw = ui.U(100), mw = ui.U(96), tw = ui.U(160), edge = ui.U(10);
         int room = Math.Max(0, ui.W - edge - bw - mw - tw);
         int bx = edge, mx = bx + bw + room / 5, tx = mx + mw + room / 4;
-        bool azure = l.Culture == "azure" && l.Build == "timber", league = l.Culture == "league" && l.Build == "timber";
-        int bh = l.Build == "tent" ? 58 : azure ? 82 : league ? 86 : 70; // the war camp's lookout stands lower than a tower: its sign comes down with it
+        bool azure = l.Culture == "azure" && l.Build == "timber", league = l.Culture == "league" && l.Build == "timber", order = l.Culture == "order" && l.Build == "timber";
+        int bh = l.Build == "tent" ? 58 : azure ? 82 : league ? 86 : order ? 80 : 70; // the war camp's lookout stands lower than a tower: its sign comes down with it
         var rB = new Rectangle(bx, ground - ui.U(bh), bw, ui.U(bh));
         var rM = new Rectangle(mx, ground - ui.U(48), mw, ui.U(48)); // three stalls of 32
         var rT = new Rectangle(tx, ground - ui.U(64), tw, ui.U(64));
@@ -300,7 +300,7 @@ partial class MapScreen
         if (l.Build != "tent") UpperTown(upper, s, ground - ui.U(30), c.Far, l.Night, c.Lit, rng, l.Build == "white", keepAt, drawKeep: false);
         int crest = (int)(ui.W * keepAt), hill = l.Build == "tent" ? ground - ui.U(58) : upper.Y + (int)(upper.Height * 0.3f) + ui.U(14); // tents have no upper town: the hold stands on a rise behind the camp
         int k = ui.U(2);
-        int kh = l.Build switch { "white" => 36, "tent" => 25, _ => l.Culture is "azure" or "league" ? 38 : 30 }; // the kasbah's gate tower and its flag stand taller: its sign goes over them
+        int kh = l.Build switch { "white" => 36, "tent" => 25, _ => l.Culture is "azure" or "league" or "order" ? 38 : 30 }; // the kasbah's gate tower and its flag stand taller: its sign goes over them
         var rK = new Rectangle(crest - 15 * k, hill - kh * k, 30 * k, kh * k);
         Glow(rK, "KEEP", hover, open);
         if (l.Build == "tent") // the rise: a low mound sloping away both sides
@@ -333,7 +333,7 @@ partial class MapScreen
         if (l.Water != "") Water(full, l, c, ground, lights, t);
         foreach (var (p, r) in new[] { ("BARRACKS", rB), ("MARKET", rM), ("TAVERN", rT) }) Footing(r, ground, p, hover, open);
         Spot("BARRACKS", rB); Spot("MARKET", rM); Spot("KEEP", rK);
-        int over = azure ? 34 : league ? 42 : 0; // the auberge's slate roof, the brewer's gable: the sign goes over them
+        int over = azure ? 34 : league ? 42 : order ? 24 : 0; // the auberge's slate roof, the brewer's gable: the sign goes over them
         Spot("TAVERN", new Rectangle(rT.X, rT.Y - ui.U(over), rT.Width, rT.Height + ui.U(over)));
     }
 
@@ -341,9 +341,9 @@ partial class MapScreen
     {
         var full = new Rectangle(0, 0, ui.W, ui.H);
         int ks = l.Build is "log" or "tent" ? 4 : 3, keepX = ui.W * 13 / 20, k = ui.U(ks); // the north's hall-fort is low: drawn bigger to hold the screen
-        int kh = l.Build switch { "white" => 36, "tent" => 20, _ => l.Culture is "azure" or "league" ? 38 : 31 }; // the sign sits just over what stands highest
+        int kh = l.Build switch { "white" => 36, "tent" => 20, _ => l.Culture is "azure" or "league" or "order" ? 38 : 31 }; // the sign sits just over what stands highest
         var rK = new Rectangle(keepX - 15 * k, ground - ui.U(14) - kh * k, 30 * k, kh * k + ui.U(14));
-        int yh = l.Build == "tent" ? 58 : l.Build != "timber" ? 70 : l.Culture switch { "azure" => 82, "league" => 86, _ => 70 }; // over the cones, over the armoury's flag // the war camp's lookout stands lower
+        int yh = l.Build == "tent" ? 58 : l.Build != "timber" ? 70 : l.Culture switch { "azure" => 82, "league" => 86, "order" => 80, _ => 70 }; // over the cones, over the armoury's flag // the war camp's lookout stands lower
         var rY = new Rectangle(ui.U(16), ground - ui.U(yh), ui.U(100), ui.U(yh));
         if (C.IsPort(s)) HarbourMasts(full, ground - ui.U(24), l, c, cloth, s.Id);
         var back = c with { Wall = Color.Lerp(c.Wall, c.Mid, 0.6f), Roof = Color.Lerp(c.Roof, c.Mid, 0.6f) };
@@ -402,7 +402,7 @@ partial class MapScreen
         Glow(rG, "GREEN", hover, open); Green(rG, l, c, cloth, t);
         rimLight = Color.Transparent;
         Footing(rG, ground, "GREEN", hover, open); Footing(new Rectangle(ex, 0, ew, 0), ground, "ELDERS", hover, open);
-        Spot("GREEN", rG); Spot("ELDERS", l.Culture is "azure" or "league" && l.Build == "timber" ? new Rectangle(rE.X, rE.Y - ui.U(16), rE.Width, rE.Height + ui.U(16)) : rE); // over the belfry or the show front's turrets
+        Spot("GREEN", rG); Spot("ELDERS", l.Build != "timber" ? rE : l.Culture switch { "azure" or "league" => new Rectangle(rE.X, rE.Y - ui.U(16), rE.Width, rE.Height + ui.U(16)), "order" => new Rectangle(rE.X, rE.Y - ui.U(26), rE.Width, rE.Height + ui.U(26)), _ => rE }); // over the belfry or the show front's turrets
     }
 
     void Spot(string place, Rectangle r) => spots.Add((place, r));
@@ -418,6 +418,7 @@ partial class MapScreen
         if (l.Build == "tent") { WarCamp(r, l, c, cloth, t); return; }
         if (l.Culture == "azure") { Chatelet(r, l, c, cloth, t); return; }
         if (l.Culture == "league") { Armoury(r, l, c, cloth, t); return; }
+        if (l.Culture == "order") { KnightsHall(r, l, c, cloth, t); return; }
         int ground = r.Bottom, s1 = Math.Max(1, ui.U(1));
         var day = l.Build switch { "white" => new Color(214, 204, 184), "log" => new Color(132, 96, 62), "tent" => new Color(156, 132, 100), _ => new Color(152, 144, 130) };
         var stone = HeroWall(l, c, day);
@@ -505,12 +506,14 @@ partial class MapScreen
         bool steppe = l.Build == "tent"; // the steppe hangs felt with the hooked band, and sells rolled felts, hides and milk
         bool azure = l.Culture == "azure" && l.Build == "timber"; // the Azure hang blue and cream with a scalloped edge, and sell cheese, bread and wine
         bool league = l.Culture == "league" && l.Build == "timber"; // the League hang red and white, and sell bolts of cloth and kegs of herring
+        bool order = l.Culture == "order" && l.Build == "timber"; // the order's fair hangs white and grey edged in gold, and sells candles and pilgrims' bread
         bool south = l.Build == "white"; // the south's souk: plain cloth in terracotta, saffron and indigo with tassels; heaps of spice
         Color[] stripes = north ? new Color[] { new(150, 110, 60), new(78, 92, 112), new(84, 104, 70) }
             : south ? new Color[] { new(178, 88, 56), new(214, 158, 62), new(60, 64, 124) }
             : steppe ? new Color[] { new(214, 200, 170), new(170, 70, 50), new(70, 84, 130) }
             : azure ? new Color[] { new(66, 106, 162), new(128, 40, 56), new(66, 106, 162) }
-            : league ? new Color[] { new(178, 44, 44), new(178, 44, 44), new(178, 44, 44) } : new Color[] { new(176, 58, 48), new(56, 92, 156), new(72, 126, 70) };
+            : league ? new Color[] { new(178, 44, 44), new(178, 44, 44), new(178, 44, 44) }
+            : order ? new Color[] { new(120, 118, 128), new(196, 150, 70), new(120, 118, 128) } : new Color[] { new(176, 58, 48), new(56, 92, 156), new(72, 126, 70) };
         var cream = D(new Color(230, 218, 190));
         var wood = D(new Color(124, 86, 52));
         Color[] goods = south ? new Color[] { new(196, 72, 40), new(222, 172, 52), new(130, 92, 58), new(96, 124, 62), new(224, 184, 92), new(170, 60, 50) }
@@ -581,6 +584,22 @@ partial class MapScreen
                     var gc = D(goods[(i * 2 + g / Math.Max(1, ui.U(6))) % goods.Length]);
                     for (int hgt = 0; hgt < ui.U(4); hgt += s1) ui.Rect(new Rectangle(g + hgt / 2, ground - ui.U(14) - hgt - s1, ui.U(5) - hgt, s1), gc);
                 }
+                continue;
+            }
+            if (order) // tall candles in bundles and round pilgrims' loaves
+            {
+                for (int g = x + ui.U(3), j = i; g < x + sw - ui.U(9); g += ui.U(6), j++)
+                    if (j % 2 == 0)
+                        for (int cdl = 0; cdl < 3; cdl++)
+                        {
+                            ui.Rect(new Rectangle(g + cdl * ui.U(2), ground - ui.U(22) + cdl % 2 * ui.U(2), s1 + s1 / 2 + 1, ui.U(8) - cdl % 2 * ui.U(2)), D(new Color(238, 228, 200)));
+                            if (!l.Day) ui.Rect(new Rectangle(g + cdl * ui.U(2), ground - ui.U(23) + cdl % 2 * ui.U(2), s1, s1), c.Lit);
+                        }
+                    else
+                    {
+                        ui.Rect(new Rectangle(g, ground - ui.U(17), ui.U(5), ui.U(3)), D(new Color(184, 128, 70)));
+                        ui.Rect(new Rectangle(g + ui.U(1), ground - ui.U(18), ui.U(3), s1), D(new Color(210, 160, 96)));
+                    }
                 continue;
             }
             if (league) // bolts of cloth stood on end and kegs of herring, a silver fish on each

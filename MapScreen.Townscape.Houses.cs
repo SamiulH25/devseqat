@@ -206,6 +206,7 @@ partial class MapScreen
             "log" => MeadHall(r, l, c, cloth, t),
             "tent" => FeastTent(r, l, c, cloth, t),
             _ when l.Culture == "league" => Brewhouse(r, l, c, cloth, t),
+            _ when l.Culture == "order" => Hospice(r, l, c, cloth, t),
             _ when l.Culture == "azure" => Auberge(r, l, c, cloth, t),
             _ => TimberTavern(r, l, c, t),
         };
@@ -298,16 +299,6 @@ partial class MapScreen
         ui.Rect(new Rectangle(r.X, r.Bottom - ui.U(7), r.Width, Math.Max(1, ui.U(1))), Kit.Mul(plinth, 0.72f));
         for (int sx = r.X + ui.U(10); sx < r.Right - ui.U(6); sx += ui.U(14))
             ui.Rect(new Rectangle(sx, r.Bottom - ui.U(6), Math.Max(1, ui.U(1)), ui.U(6)), Kit.Mul(plinth, 0.78f));
-        if (l.Culture == "order") // the order builds its ground floors in grey stone
-        {
-            var stone = l.Night ? new Color(66, 62, 76) : new Color(150, 148, 156);
-            ui.Rect(new Rectangle(r.X, r.Y + upper, r.Width, r.Height - upper), stone);
-            for (int row = 0, sy = r.Y + upper + ui.U(2); sy < r.Bottom; row++, sy += ui.U(6))
-            {
-                ui.Rect(new Rectangle(r.X, sy, r.Width, ui.U(1)), Kit.Mul(stone, 0.75f));
-                for (int sx = r.X + (row % 2) * ui.U(7); sx < r.Right; sx += ui.U(14)) ui.Rect(new Rectangle(sx, sy, ui.U(1), ui.U(6)), Kit.Mul(stone, 0.75f));
-            }
-        }
         foreach (int by in new[] { r.Y, r.Y + upper, r.Bottom - ui.U(2) }) ui.Rect(new Rectangle(r.X, by, r.Width, ui.U(2)), timber);
         int[] posts = { r.X, r.X + ui.U(52), r.X + ui.U(106), r.Right - ui.U(3) };
         foreach (int px in posts) ui.Rect(new Rectangle(px, r.Y, ui.U(3), r.Height), timber);
@@ -325,31 +316,6 @@ partial class MapScreen
             TavernWindow(w, l, c, timber, true);
             if (!l.Day) lights.Add((w.X, w.Width));
         }
-        if (l.Culture == "azure") // a jettied upper storey: it juts over the street on brackets, its shadow under it
-        {
-            foreach (int ex in new[] { r.X - ui.U(6), r.Right })
-            {
-                ui.Rect(new Rectangle(ex, r.Y, ui.U(6), upper), plaster);
-                ui.Rect(new Rectangle(ex == r.Right ? ex + ui.U(4) : ex, r.Y, ui.U(2), upper), timber);
-            }
-            ui.Rect(new Rectangle(r.X - ui.U(6), r.Y + upper, r.Width + ui.U(12), ui.U(3)), timber);
-            ui.Rect(new Rectangle(r.X, r.Y + upper + ui.U(3), r.Width, ui.U(2)), Kit.Mul(plaster, 0.55f));
-            foreach (int bx in new[] { r.X - ui.U(6), r.Right + ui.U(4) }) ui.Line(new Vector2(bx + ui.U(1), r.Y + upper + ui.U(3)), new Vector2(bx < r.X ? r.X + ui.U(1) : r.Right - ui.U(1), r.Y + upper + ui.U(11)), Kit.Mul(timber, 0.7f), 2);
-        }
-        if (l.Culture == "order") // stepped stone buttresses at the corners and between the bays, standing proud of the wall
-            foreach (int ex in new[] { r.X - ui.U(5), r.X + ui.U(50), r.X + ui.U(104), r.Right - ui.U(3) })
-            {
-                var st = l.Night ? new Color(78, 72, 88) : new Color(176, 172, 180);
-                var shade = Kit.Mul(st, 0.6f);
-                int top = r.Y + upper - ui.U(6), mid = r.Y + upper + ui.U(10);
-                ui.Rect(new Rectangle(ex + ui.U(1), top, ui.U(6), mid - top), st);      // the narrow upper step
-                ui.Rect(new Rectangle(ex, mid, ui.U(8), r.Bottom - mid), st);              // the broad foot
-                ui.Rect(new Rectangle(ex + ui.U(1), top, ui.U(6), ui.U(1)), Color.Lerp(st, c.Rim, 0.7f)); // lit tops
-                ui.Rect(new Rectangle(ex, mid, ui.U(8), ui.U(1)), Color.Lerp(st, c.Rim, 0.7f));
-                ui.Rect(new Rectangle(ex + ui.U(6), top, ui.U(1), mid - top), shade);     // shaded sides
-                ui.Rect(new Rectangle(ex + ui.U(7), mid, ui.U(1), r.Bottom - mid), shade);
-                ui.Rect(new Rectangle(ex, mid, ui.U(1), r.Bottom - mid), shade);
-            }
         var door = new Rectangle(r.X + ui.U(67), r.Bottom - ui.U(32), ui.U(24), ui.U(30));
         TavernDoor(door, r.Bottom, l, c, timber, lights);
         if (l.Culture == "crimson") // a pitched tiled porch over the door, banners on the posts, barrels by the wall

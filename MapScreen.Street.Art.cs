@@ -14,6 +14,7 @@ partial class MapScreen
         if (l.Build == "tent") { KhanOrdu(cx, baseY, scale, l, c, cloth, t, hero); return; } // the steppe's khan keeps a great tent
         if (l.Culture == "azure") { Chateau(cx, baseY, scale, l, c, cloth, t, hero); return; } // the Azure build a château under blue slate
         if (l.Culture == "league") { Burg(cx, baseY, scale, l, c, cloth, t, hero); return; } // the League a brick burg with a copper spire
+        if (l.Culture == "order") { Commandery(cx, baseY, scale, l, c, cloth, t, hero); return; } // the order a grey commandery
         int k = ui.U(scale), s1 = Math.Max(1, ui.U(1));
         int wave = (int)MathF.Round(MathF.Sin(t * 3.2f) * s1);
         Color dayStone = l.Build switch { "white" => new(220, 210, 192), "log" => new(138, 126, 114), _ => new(168, 160, 148) };
@@ -221,6 +222,7 @@ partial class MapScreen
         if (l.Build == "white") { Majlis(r, l, c, cloth, t, lights); return; }
         if (l.Culture == "azure" && l.Build == "timber") { HotelDeVille(r, l, c, cloth, t, lights); return; }
         if (l.Culture == "league" && l.Build == "timber") { Rathaus(r, l, c, cloth, t, lights); return; }
+        if (l.Culture == "order" && l.Build == "timber") { Priory(r, l, c, cloth, t, lights); return; }
         int ground = r.Bottom, s1 = Math.Max(1, ui.U(1));
         int wallH = ui.U(34), roofH = ui.U(22), wallTop = ground - wallH;
         Color wall = HeroWall(l, c, l.Build == "log" ? new Color(138, 98, 66) : l.Build == "white" ? new Color(234, 226, 206) : new Color(212, 194, 164));
