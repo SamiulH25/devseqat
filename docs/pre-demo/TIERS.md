@@ -227,5 +227,7 @@ Size: large in total. TI0, TI1 and TI3 are medium on their own.
 - **Not built:** "orders land a beat sooner" at III (orders already land at once since OF0), IV pursuing and coming back, V
   fighting from the ranks with the rear rank's spears or bows. **Open:** the II -> III step at equal upkeep (40 %) is still
   short of the owner's "ahead from III": a TI6 tuning item (tier III stats or its wage).
+- `--pacing 4` after TI1 (wages and drill together): 4/4 seeds Marshal (day 162 each), 507 of 527 fights won; Vassal days 46-85,
+  Lord days 111-134 (target 93-147, all four inside it; before TI1 three of four were early).
 - Tests: `TierLadder` (gates, rallies, grades), `RelieveAndSplit` and `ElitePincer` set up for the new drill (tier III companies
   relieve; the pinned foe in the pincer is rabble).
