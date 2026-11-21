@@ -982,7 +982,7 @@ sealed partial class Puppet3D
 
     /// 3D company banner on the unified pixel grid: wooden pole + brass finial + 3-strip rippling 3D cloth + heraldic emblem!
     /// The gold of a company's battle honours: streamers and the fringe (C6).
-    static readonly Vector3 HonourGold = new(1f, 0.8f, 0.3f);
+    static readonly Vector3 HonourGold = new(1f, 0.8f, 0.3f), FringeSeam = new(0.3f, 0.2f, 0.08f);
 
     public void Banner(Vector2 pos, float ground, int palette, float wave, int charge = -1, float stream = 0, float lean = 0, Vector2 fallDir = default, int streamers = 0, bool fringe = false)
     {
@@ -1069,9 +1069,14 @@ sealed partial class Puppet3D
 
             if (fringe) // ten battles: a gold fringe under the trim (docs/pre-demo/COMPANY.md C6)
             {
-                var fA = bA - up * 0.07f; var fB = bB - up * 0.07f;
-                AddQuad(bA + segNorm * 0.014f, bB + segNorm * 0.014f, fA + segNorm * 0.014f, fB + segNorm * 0.014f, segNorm, HonourGold, shade, trimAlpha, u0, u1, h - trimH, h);
-                AddQuad(bB - segNorm * 0.014f, bA - segNorm * 0.014f, fB - segNorm * 0.014f, fA - segNorm * 0.014f, -segNorm, HonourGold, shade * 0.94f, trimAlpha, u1, u0, h - trimH, h);
+                // A dark seam, then the fringe in tassels of two lengths, so it reads apart from the trim.
+                var sA = bA - up * 0.02f; var sB = bB - up * 0.02f;
+                AddQuad(bA + segNorm * 0.014f, bB + segNorm * 0.014f, sA + segNorm * 0.014f, sB + segNorm * 0.014f, segNorm, FringeSeam, shade, trimAlpha, u0, u1, h - trimH, h);
+                AddQuad(bB - segNorm * 0.014f, bA - segNorm * 0.014f, sB - segNorm * 0.014f, sA - segNorm * 0.014f, -segNorm, FringeSeam, shade * 0.94f, trimAlpha, u1, u0, h - trimH, h);
+                float tassel = i % 2 == 0 ? 0.13f : 0.09f;
+                var fA = sA - up * tassel; var fB = sB - up * tassel;
+                AddQuad(sA + segNorm * 0.014f, sB + segNorm * 0.014f, fA + segNorm * 0.014f, fB + segNorm * 0.014f, segNorm, HonourGold, shade, trimAlpha, u0, u1, h - trimH, h);
+                AddQuad(sB - segNorm * 0.014f, sA - segNorm * 0.014f, fB - segNorm * 0.014f, fA - segNorm * 0.014f, -segNorm, HonourGold, shade * 0.94f, trimAlpha, u1, u0, h - trimH, h);
             }
             if (i == 2)
             {

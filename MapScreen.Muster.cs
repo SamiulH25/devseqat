@@ -160,7 +160,7 @@ partial class MapScreen
         y += ui.U(10);
         ui.Text("THE FALLEN", x, y, Kit.Gilt, 2);
         var fallen = C.FallenOf(c).Reverse().ToList();
-        ui.TextR($"{fallen.Count}", x + w, y + ui.U(4), Style.Dim, 1);
+        if (ui.Button(new Rectangle(x + w - ui.U(150), y, ui.U(150), ui.U(18)), $"THE BOOK ({fallen.Count})")) OpenBook(PanelKind.Roll);
         y += ui.U(20);
         if (fallen.Count == 0) ui.Text("NONE YET.", x, y, Style.Dim, 1);
         foreach (var m in fallen)

@@ -28,6 +28,10 @@ public sealed class PendingEvent
     public int Settlement = -1, Lord = -1, Party = -1, Company = -1, Grave = -1, Site = -1, Soldier = -1;
     /// A camp event's second man (C5: {other}), a soldier id.
     public int Other = -1;
+    /// C7: the cairn a visit is to, and for the year's day the battle and the men who fell in it ({field}, {dead}).
+    public int Cairn = -1;
+    public string Field = "";
+    public List<int>? Dead;
 }
 
 /// Events, lord quests and named threats (step F8).
@@ -45,13 +49,14 @@ public sealed partial class Campaign
         "start", "crown", "fallen", "spring", "summer", "autumn", "winter", "forest", "hills", "river", "near_site", "after_battle", "companion", "culture", "night", "dark_omens",
         "aura_vigil", "aura_grief", // raised by Campaign/Aura.cs only, never drawn at random (K5)
         "flame_bargain", "flame_end", // raised by Campaign/BlackFlame.cs only (K7)
+        "cairn", // raised by Campaign/Remembered.cs only, riding by a cairn of yours (C7)
     };
     /// Days after a "flag:name" effect before the "flag:name" event follows.
     public const int FlagDays = 7;
     /// Flags the code sets itself (not an event's choice): swearing to an order starts the rival's chain (K6).
     static readonly string[] CodeFlags = { "rival_meet", "rival_fallen" };
     /// Triggers that only fire when the world forces them (a brigand king rises, a pretender appears).
-    internal static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" or "peace_offer" or "start" or "crown" or "fallen" || trigger.StartsWith("site_");
+    internal static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" or "peace_offer" or "start" or "crown" or "fallen" or "cairn" || trigger.StartsWith("site_");
     static readonly string[] Verbs =
     {
         "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
@@ -61,7 +66,7 @@ public sealed partial class Campaign
         "man_deed", "man_hurt", "man_leaves", "tie", "mention", // the camp's (C5, Campaign/CampEvents.cs)
     };
     static readonly string[] NoNumber = { "man_deed", "man_hurt", "man_leaves", "tie", "mention", "vigil", "breakthrough", "rival_bout", "rival_fate", "pact", "hollow_crown", "burn_out", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown" };
-    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion", "man", "rival", "other", "home" };
+    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion", "man", "rival", "other", "home", "field", "dead" };
 
     static List<EventDef>? events;
     public static IReadOnlyList<EventDef> Events
@@ -235,8 +240,13 @@ public sealed partial class Campaign
             .Replace("{rival}", CharacterById(Captain.Rival)?.Name ?? "your rival")
             .Replace("{man}", (LivingMan(pe.Soldier) ?? S.Fallen.FirstOrDefault(m => m.Id == pe.Soldier))?.Name ?? "one of your men")
             .Replace("{other}", LivingMan(pe.Other)?.Name ?? "his friend")
+            .Replace("{field}", pe.Cairn >= 0 && S.Cairns.FirstOrDefault(c => c.Id == pe.Cairn) is Cairn fc ? fc.Field : pe.Field != "" ? pe.Field : "the field")
+            .Replace("{dead}", ListNames(pe.Cairn >= 0 && S.Cairns.FirstOrDefault(c => c.Id == pe.Cairn) is Cairn dc ? CairnNames(dc).ToList() : (pe.Dead ?? new()).Select(id => S.Fallen.FirstOrDefault(m => m.Id == id)?.Name).OfType<string>().ToList()))
             .Replace("{home}", EventMan(pe) is (Soldier hm, CompanyRecord hk) ? (hm.Home != "" ? hm.Home : hk.Home != "" ? hk.Home : "his village") : "his village");
     }
+
+    /// "A", "A and B", "A, B and C".
+    static string ListNames(List<string> names) => names.Count == 0 ? "your men" : names.Count == 1 ? names[0] : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
 
     /// Why a choice cannot be taken now ("" = it can).
     public string ChoiceBlocked(ChoiceDef c) =>

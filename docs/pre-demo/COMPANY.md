@@ -1,6 +1,6 @@
 # The men of the company, and their captain: plan
 
-Status: **partly built**: C0-C6 and C9-C14 shipped (see "As built" at the end); C7 and C8 are still open. It follows `docs/archive/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
+Status: **partly built**: C0-C7 and C9-C14 shipped (see "As built" at the end); C8 is still open. It follows `docs/archive/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
 When a phase ships, add its "As built" note at the end. Numbers marked *(tune)* are starting values.
 Read `docs/archive/LEGACY.md` first: this plan is its second half.
 
@@ -596,3 +596,29 @@ and its range; plunging and flat shots drawn differently; fire pots; the flight'
   take `streamers`, `fringe`; `HonourGold`). Drawn for the company's banner in battle, not for a last-seen one.
 - Nothing in the fight changes (the avenging blow was already C3); the test runs the same battle with and without named men.
   Test `NamedInTheFight`; shots `named-fight.png`, `named-banner.png` (`IRONFIELD_SHOTS_FROM=named`, `NamedScene`).
+
+### C7 (what is remembered), as built
+- `Campaign/Remembered.cs`. *The book of the fallen* (`BookOfTheFallen`, screen `MapScreen.Fallen.cs`: `OpenBook`, `BookPanel`,
+  `FallenCard`; `PanelKind.Fallen`): every named man who fell or went missing, grouped under the battle (`Soldier.Field`, set by
+  `Lose` from `rollField` while `Apply` runs) or, with BY COMPANY, under his company; pages of rows of four cards with his greyed
+  face, troop and record, his last deed and who he LEFT BEHIND (his ties). Dead captains go first. Opened from THE BOOK (n) on the
+  roll and THE BOOK OF THE FALLEN in THE LEGEND; Esc goes back where it was opened.
+- *Cairns* (deviation: not a `Site` of kind `grave`, but their own save list `CampaignState.Cairns` of `Cairn`, so the map's
+  generation and sites stay untouched): after your battle that cost named men, `RaiseCairn` lays one on open ground beside you
+  (`CairnSpot`: a ring of spots clear of settlements and the sea). At most twelve (`MaxCairns`), the oldest dropped; the book keeps
+  the men. Riding within `CairnReach` of one not honoured this season (`SeasonCount`, counted from the campaign's start) raises
+  `cairn_visit` (`CairnsHourly`; {company}, the names under it as {dead}, the field as {field}; cohesion +3). Drawn in the map's
+  life mesh (`MapLife.Cairns.cs`: stones, a spear, a pennon in your colours); the event picture is `SiteScene` "cairn".
+- *The day he fell* (`DayFellDaily`): on the year's day of a battle that cost three or more named men (`DayFellMen`), a line in the
+  feed and the camp event `men_day_fell` for the longest-serving man of the company that fought it.
+- *The end summary* (`Record.StoryFaces`, `GameOverPanel`, `StoryFaceRow`): faces under OF THE BANNER, REMEMBERED and ROSE FROM
+  THE RANKS. `Campaign.N` now says "MEN" for a word ending in MAN.
+- *The captain can die* (`MaybeCaptainDies`, from `Apply`): a settings option, THE CAPTAIN CAN DIE (NEW CAMPAIGNS), off by default,
+  copied into the save as `CampaignState.CaptainDeath` at `Campaign.New`. On a lost field where the captain was wounded or taken,
+  1 in 6 (`CaptainDeathChance`) he dies: a `DeadCaptain` goes in the book, a deed is written, and the senior companion from the ranks
+  takes command (`TakeCommand`, the body `HandOver` now shares); with no one to take it, the campaign ends.
+- The cairn and day-fell events hold `S.Event`, so other events fire a little later: `--selftest CampaignRun`'s pressure line moved
+  (for seed 1: bandits 327 -> 312, AI battles 4392 -> 4232, lord men 69 -> 79). Expected, not a balance change.
+- Tests `BookOfTheFallen`, `GravesOnTheMap` (placed, capped, honoured once a season, the seed's map unchanged), `CaptainCanDie`.
+  Shots (with `IRONFIELD_CAMP_ONLY=1`, staged by `StageFallen`): `campaign-book.png`, `campaign-cairn.png`, `campaign-cairn-event.png`,
+  `campaign-end.png`.

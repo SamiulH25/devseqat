@@ -373,4 +373,114 @@ public static partial class SelfTest
             Check(s.Pixels.Count(c => c.A > 0) > 40 && s.Pixels.Any(c => c.A > 0 && c.R < 30), $"{k} cursor has body and outline");
         }
     }
+
+    /// Fight lost battles until named men fall (C7 tests): their reports, with `before` named men topped up each round.
+    static List<BattleReport> LoseUntilFallen(Campaign c, int rounds, Func<bool> done)
+    {
+        var rng = new Rng(new CampaignState { Seed = 5 });
+        var reps = new List<BattleReport>();
+        for (int i = 0; i < rounds && !done(); i++)
+        {
+            foreach (var k in c.Player.Companies) while (k.Roll.Count < 4 && c.NameMan(k, "test") is Soldier m) m.Battles = 12;
+            var lord = c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && c.Hostile(c.Player, p)).OrderByDescending(p => p.Men).FirstOrDefault();
+            if (lord == null) break;
+            lord.Pos = c.Player.Pos;
+            c.Encounter = lord;
+            var setup = c.PrepareBattle(lord);
+            reps.Add(c.FinishBattle(Rules.AutoResolve(setup.Side0, setup.Side1, rng) with { Winner = 1, Captain = LeaderFate.Wounded }, setup));
+            c.Captain.WoundedUntil = 0; c.Encounter = null; c.S.Event = null;
+            if (c.Player.Companies.Sum(k => k.Men) < 40) foreach (var k in c.Player.Companies) Rules.AddMen(k, k.Stacks[0].Troop, 30);
+        }
+        return reps;
+    }
+
+    /// C7: the book of the fallen groups every lost named man under the battle he fell in (its name) or his company, newest first.
+    static void BookOfTheFallen()
+    {
+        var c = Campaign.New(41);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        var reps = LoseUntilFallen(c, 12, () => c.S.Fallen.Any(m => m.Fate == "fell"));
+        var gone = c.S.Fallen.Last(m => m.Fate == "fell");
+        var rep = reps.Last(r => r.Roll.Any(x => x.Text.Contains(gone.Name)));
+        Check(gone.Field != "" && gone.Field == rep.Field, "a fallen man keeps the name of the battle he fell in");
+        var book = c.BookOfTheFallen();
+        Check(book.Count > 0 && book[0].Title.StartsWith(gone.Field) && book[0].Men.Contains(gone), "the book opens on the newest battle, with him under it");
+        Check(book.Sum(g => g.Men.Count) == c.S.Fallen.Count(m => m.Fate is "fell" or "missing"), "every man lost is in it, once");
+        var byCo = c.BookOfTheFallen(true);
+        Check(byCo.Any(g => g.Title == gone.CompanyName && g.Men.Contains(gone)), "and under his company when sorted so");
+        c.Player.Companies.RemoveAll(k => k.Id == gone.Company);
+        Check(c.BookOfTheFallen().Any(g => g.Men.Contains(gone)), "the book keeps him when his company is gone");
+        Check(CampaignState.Deserialize(c.S.Serialize()).Fallen.First(m => m.Id == gone.Id).Field == gone.Field, "the field is saved");
+    }
+
+    /// C7: a cairn where named men fell; riding by raises its event once a season (cohesion); the map keeps twelve; cairns are
+    /// save state (a new campaign of the same seed has none, and its map is the same); the year's day of a costly battle.
+    static void GravesOnTheMap()
+    {
+        var c = Campaign.New(41);
+        int sites = c.Map.Sites.Count;
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        LoseUntilFallen(c, 12, () => c.S.Cairns.Count > 0);
+        Check(c.S.Cairns.Count > 0, "a battle that cost named men leaves a cairn");
+        var cairn = c.S.Cairns[^1];
+        Check(cairn.Men.Count > 0 && cairn.Men.All(id => c.S.Fallen.Any(m => m.Id == id && m.Fate == "fell")) && c.CairnNames(cairn).Any(), "with the fallen under it");
+        // Ride by it next season: its event, with the names and the field.
+        c.S.Event = null; cairn.Honoured = -1;
+        c.Player.Pos = cairn.Pos;
+        c.CairnsHourly();
+        Check(c.S.Event is PendingEvent ev && ev.Id == "cairn_visit" && ev.Cairn == cairn.Id, "riding by raises the cairn's event");
+        var e = Campaign.EventOf("cairn_visit")!;
+        Check(c.Fill(e.Title, c.S.Event!).Contains(cairn.Field) && c.Fill(e.Text, c.S.Event!).Contains(c.CairnNames(cairn).First()), "naming the field and the men");
+        var co = c.Player.Companies.FirstOrDefault(k => k.Id == cairn.Company);
+        float coh = co?.Cohesion ?? 0;
+        c.Choose(0);
+        if (co != null) Check(co.Cohesion > coh, "standing with them steadies the company that fought there");
+        c.S.Event = null;
+        c.CairnsHourly();
+        Check(c.S.Event == null, "and only once a season");
+        // The cap.
+        for (int i = 0; i < Campaign.MaxCairns + 3; i++) c.PlaceCairn(new Cairn { Id = 9000 + i, Pos = c.Player.Pos + new Vector2(50 + i, 0), Field = $"Test {i}", Men = new() { cairn.Men[0] } });
+        Check(c.S.Cairns.Count == Campaign.MaxCairns && c.S.Cairns[0].Id != cairn.Id, "the map keeps twelve, the oldest going back to grass");
+        Check(c.BookOfTheFallen().Any(g => g.Men.Any(m => m.Id == cairn.Men[0])), "though the book never forgets");
+        var fresh = Campaign.New(41);
+        Check(fresh.S.Cairns.Count == 0 && fresh.Map.Sites.Count == sites, "cairns are save state: the seed's map is unchanged");
+        Check(CampaignState.Deserialize(c.S.Serialize()).Cairns.Count == Campaign.MaxCairns, "cairns are saved");
+        // The year's day: three named men of one battle.
+        c.S.Event = null;
+        var k0 = c.Player.Companies.First(k => k.Men > 0);
+        while (k0.Roll.Count < 2) c.NameMan(k0, "test");
+        for (int i = 0; i < 3; i++) c.S.Fallen.Add(new Soldier { Id = 8000 + i, Name = $"Test Man {i}", Fate = "fell", DiedDay = 2, Field = "the Ford of Test", Company = k0.Id, CompanyName = k0.Name, Troop = k0.Stacks[0].Troop });
+        c.S.Hours = (2 + Campaign.DaysPerYear - 1) * 24 + 1;
+        c.DayFellDaily();
+        Check(c.S.Log.Any(l => l.Text.Contains("the Ford of Test")), "a year on, the day is remembered in the log");
+        Check(c.S.Event is PendingEvent day && day.Id == "men_day_fell" && c.Fill(Campaign.EventOf("men_day_fell")!.Text, day).Contains("Test Man 0"), "and at the fire, by name");
+    }
+
+    /// C7: the captain can die when the new-campaign rule is on: never when it is off; on, a lost field may kill him, a companion
+    /// takes command, and the dead captain goes first in the book; with no companion the campaign ends.
+    static void CaptainCanDie()
+    {
+        var off = Campaign.New(43);
+        off.Player.Cooldown = 1e6f;
+        off.Tick(24); off.Encounter = null; off.Arrived = null;
+        LoseUntilFallen(off, 30, () => false);
+        Check(off.S.DeadCaptains.Count == 0 && !off.S.GameOver, "with the rule off the captain never dies");
+        var c = Campaign.New(43);
+        c.S.CaptainDeath = true;
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        string first = c.Me.Name;
+        c.S.Characters.Add(new Character { Id = c.S.NextId++, Kind = "companion", Name = "Test Heir", Culture = "common", PartyId = c.Player.Id, CompanyId = c.Player.Companies[0].Id, Age = 33 });
+        LoseUntilFallen(c, 60, () => c.S.DeadCaptains.Count > 0);
+        Check(c.S.DeadCaptains.Count == 1 && c.S.DeadCaptains[0].Name == first, "with it on, a captain falling on a lost field may die");
+        Check(c.Me.Name == "Test Heir" && !c.S.GameOver && c.Companions.All(k => k.Name != "Test Heir"), "and the companion takes command at once");
+        Check(c.S.Deeds.Any(d => d.Text.Contains(first) && d.Text.Contains("did not rise")), "the chronicle keeps it");
+        // No one left to take command.
+        c.S.Characters.RemoveAll(k => k.Kind == "companion");
+        LoseUntilFallen(c, 60, () => c.S.DeadCaptains.Count > 1);
+        Check(c.S.DeadCaptains.Count == 2 && c.S.GameOver, "with no companion, his death ends the campaign");
+        Check(CampaignState.Deserialize(c.S.Serialize()).DeadCaptains.Count == 2, "the dead captains are saved");
+    }
 }

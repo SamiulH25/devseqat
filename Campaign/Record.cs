@@ -39,6 +39,16 @@ public sealed partial class Campaign
         return lines;
     }
 
+    /// The faces the end shows (docs/pre-demo/COMPANY.md C7): the men of the banner, the longest-serving dead, and those who rose
+    /// from the ranks (their soldier's record, for the face), a few of each.
+    public List<(string Title, List<Soldier> Men)> StoryFaces()
+    {
+        var banner = Player.Companies.SelectMany(k => k.Roll).Concat(S.Fallen).Where(OfBanner).OrderByDescending(m => m.Battles).Take(5).ToList();
+        var dead = S.Fallen.Where(m => m.Fate is "fell" or "missing" && !OfBanner(m)).OrderByDescending(m => m.Battles).Take(5).ToList();
+        var risen = S.Characters.Where(k => k.Ranks != null).Select(k => k.Ranks!).Take(4).ToList();
+        return new List<(string, List<Soldier>)> { ("OF THE BANNER", banner), ("REMEMBERED", dead), ("ROSE FROM THE RANKS", risen) }.Where(g => g.Item2.Count > 0).ToList();
+    }
+
     /// The war in a few lines, for the end of the campaign.
     public List<string> Summary()
     {
@@ -54,9 +64,9 @@ public sealed partial class Campaign
             lines.Add($"THE {own.Name.ToUpperInvariant()}: FOUNDED DAY {own.Day}, {N(KnightsAlive, "KNIGHT")}, {N(own.Masters, "GRAND MASTER")}.");
         var banner = Player.Companies.SelectMany(k => k.Roll).Concat(S.Fallen).Where(OfBanner).Select(m => m.Name.ToUpperInvariant()).Take(4).ToList();
         if (banner.Count > 0) lines.Add("OF THE BANNER: " + string.Join(", ", banner) + "."); // C4
-        if (BestCompany is CompanyRecord best) lines.Add($"YOUR BEST: {best.Name.ToUpperInvariant()}, {N(best.Battles, "BATTLE")}" + (best.Honours.Count > 0 ? $", {N(best.Honours.Count, "HONOUR")}." : "."));
+        if (BestCompany is CompanyRecord best && best.Battles > 0) lines.Add($"YOUR BEST: {best.Name.ToUpperInvariant()}, {N(best.Battles, "BATTLE")}" + (best.Honours.Count > 0 ? $", {N(best.Honours.Count, "HONOUR")}." : "."));
         return lines;
     }
 
-    public static string N(int n, string word) => $"{n} {word}{(n == 1 ? "" : "S")}";
+    public static string N(int n, string word) => $"{n} {(n == 1 ? word : word.EndsWith("MAN") ? word[..^3] + "MEN" : word + "S")}";
 }

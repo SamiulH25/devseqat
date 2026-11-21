@@ -9,6 +9,8 @@ public sealed class Settings
 {
     public int Width = 1280, Height = 720, UiScale; // UiScale 0 = automatic (by window height)
     public bool Fullscreen, Fxaa = true, VSync = true, Ironman, ColorBlind;
+    /// New campaigns: a captain who falls on a lost field may die, and a companion takes command (docs/pre-demo/COMPANY.md C7).
+    public bool CaptainDeath;
     public string Quality = "High";
     /// Real-time 3D pixel-art renderer (false = classic 2D sprite puppets; Low quality always falls back to 2D).
     public bool PixelArt = true;

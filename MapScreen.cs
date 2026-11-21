@@ -8,7 +8,7 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed partial class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help, Talk, Inventory, Quests, Saves, Camp }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help, Talk, Inventory, Quests, Saves, Camp, Fallen }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
@@ -265,6 +265,7 @@ sealed partial class MapScreen
         else if (panel == PanelKind.Saves) { if (Pressed(Keys.Escape) || !saves.Open) { saves.Close(); panel = PanelKind.Menu; } }
         else if (renaming == null && panel == PanelKind.Settlement && tab != "" && ctl.Pressed(Act.Menu)) { tab = ""; note = ""; } // out of the building, onto the street
         else if (panel == PanelKind.Camp && campMan != null && ctl.Pressed(Act.Menu)) campMan = null; // from a man's page back to the fires
+        else if (panel == PanelKind.Fallen && ctl.Pressed(Act.Menu)) panel = bookFrom; // the book closes where it was opened
         else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Quests or PanelKind.Camp)
             panel = panel is PanelKind.Upgrade or PanelKind.Roll ? PanelKind.Party : panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Siege ? PanelKind.None : CameFrom(panel);
         if (renaming != null) Rename();
@@ -779,6 +780,8 @@ sealed partial class MapScreen
         var caravans = C.S.Parties.Where(p => p.Kind == PartyKind.Caravan && !p.Down).Select(p => (p.Id, p.Pos, p.Facing, p.Breed == "pilgrims")).ToList();
         (Vector2, float, Color)? ship = C.Sailing ? (C.Player.Pos, C.Player.Facing, Style.Sides[Style.PaletteOf(C.SideOf(C.Player))].Cloth) : null;
         var holdouts = C.S.Parties.Where(p => p.Lair && !p.Down && p.Breed == "goblin").Select(p => (p.Id, p.Pos, p.Men, p.Tier)).ToList();
+        var cloth = Style.Sides[Style.PaletteOf(C.SideOf(C.Player))].Cloth;
+        var cairns = C.S.Cairns.Select(c => (c.Id, c.Pos, cloth)).ToList();
         var (step, at, zm, hour, quality, shaded) = (lifeDt, focus, zoom, (float)(C.S.Hours % 24), lifeQuality, shading != null && lifeQuality != Quality.Low);
         var mapLife = life;
         lifeDt = 0;
@@ -786,6 +789,7 @@ sealed partial class MapScreen
         {
             mapLife.SetCaravans(caravans);
             mapLife.SetHoldouts(holdouts);
+            mapLife.SetCairns(cairns);
             mapLife.Ship = ship;
             mapLife.Update(step, at, zm, spots, carrion, hour, quality);
             if (shaded) { var built = mapLife.Build(); lock (lifeLock) { lifeMesh = built; lifeFresh = true; } }
@@ -1040,6 +1044,8 @@ sealed partial class MapScreen
                 tab = "ESQUIRES"; panel = PanelKind.Settlement; note = ""; break;
             case "beat": panel = PanelKind.Beat; break;
             case "gameover": panel = PanelKind.GameOver; break;
+            case "book": OpenBook(PanelKind.None); break;
+            case "cairn": panel = PanelKind.None; zoom = 26; pitch = 0.6f; follow = false; if (C.S.Cairns.Count > 0) focus = C.S.Cairns[^1].Pos; break;
             case "event": panel = PanelKind.Event; note = ""; break;
             case var w when w.StartsWith("tab:"): // any tab of a given place (the town screen's shots)
                 at = s!; C.Player.Pos = at.Pos; C.Player.Moving = false; tab = w[4..]; panel = PanelKind.Settlement; note = ""; break;

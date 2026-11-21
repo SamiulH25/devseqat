@@ -76,6 +76,7 @@ public sealed partial class Campaign
     {
         c.Roll.Remove(m);
         m.Fate = fate; m.DiedDay = Day; m.DiedAt = where; m.Hurt = false;
+        if (fate is "fell" or "missing") m.Field = rollField;
         m.Company = c.Id; m.CompanyName = c.Name;
         S.Fallen.Add(m);
         bool tied = TiesOnFall(m, fate, where);

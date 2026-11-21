@@ -94,7 +94,9 @@ partial class MapScreen
         ui.Divider(x, y, w, Kit.Gilt * 0.5f);
         y += ui.U(10);
         var dead = C.S.Fallen.Where(m => m.Fate is "fell" or "missing").ToList();
-        ui.Text(Cut(dead.Count == 0 ? "NO NAMED MAN LOST YET." : $"{dead.Count} NAMED MEN LOST. " + string.Join(", ", dead.OrderByDescending(m => m.Battles).Take(6).Select(m => m.Name.ToUpperInvariant())) + "."), x, y, Style.Text, 1);
+        int bkw = ui.U(200);
+        if (ui.Button(new Rectangle(x + w - bkw, y - ui.U(4), bkw, ui.U(20)), "THE BOOK OF THE FALLEN")) OpenBook(PanelKind.Realm);
+        ui.TextFit(dead.Count == 0 ? "NO NAMED MAN LOST YET." : $"{dead.Count} NAMED MEN LOST. " + string.Join(", ", dead.OrderByDescending(m => m.Battles).Take(6).Select(m => m.Name.ToUpperInvariant())) + ".", x, y, w - bkw - ui.U(10), Style.Text, 1);
         y += ui.U(16);
         string? why = C.CannotRetire();
         ui.Text(Cut(why == null ? $"{C.LegendCompany!.Name.ToUpperInvariant()} IS A LEGEND. YOU MAY END YOUR STORY." : $"TO END YOUR STORY: {why}."), x, y, why == null ? Kit.Gilt : Style.Dim, 1);

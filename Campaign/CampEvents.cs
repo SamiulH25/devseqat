@@ -11,6 +11,7 @@ public sealed partial class Campaign
     {
         "men_rivals", "men_brothers", "men_lad", "men_veteran", "men_old", "men_home", "men_in_town", "men_hurt", "men_avenging", "men_named",
         "men_steady", "men_bold", "men_grim", "men_merry", "men_pious", "men_sly", "men_proud", "men_gentle",
+        "men_day_fell", // raised only on the year's day of a costly battle (Remembered.cs), never found by `FindMen`
     };
     internal static bool MenTrigger(string trigger) => trigger.StartsWith("men_");
     /// Days between two camp events (on the roll's dice), and before the first.

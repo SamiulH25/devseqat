@@ -179,6 +179,12 @@ sealed class SettingsScreen
                 Row();
                 ui.Text("IRONMAN: ONE AUTOSAVE, NO QUICK LOAD, AND A CAPTURED CAPTAIN IS EXECUTED: THE CAMPAIGN ENDS.", body.X, y, Style.Dim, 1);
                 y += ui.U(26);
+                Label("THE CAPTAIN CAN DIE (NEW CAMPAIGNS)");
+                if (Choice(0, "OFF", !s.CaptainDeath)) s.CaptainDeath = false;
+                if (Choice(1, "ON", s.CaptainDeath)) s.CaptainDeath = true;
+                Row();
+                ui.Text("A CAPTAIN WHO FALLS ON A LOST FIELD MAY DIE (1 IN 6). A COMPANION TAKES COMMAND; WITH NONE, THE CAMPAIGN ENDS.", body.X, y, Style.Dim, 1);
+                y += ui.U(26);
                 Label("COLOUR-BLIND SIDES");
                 if (Choice(0, "OFF", !s.ColorBlind)) s.ColorBlind = false;
                 if (Choice(1, "ON", s.ColorBlind)) s.ColorBlind = true;

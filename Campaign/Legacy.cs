@@ -114,6 +114,14 @@ public sealed partial class Campaign
         var c = LegendCompany!;
         string old = Me.Name;
         Deed($"{old} hangs up the sword, and gives {c.Name} to {heir.Name}.");
+        TakeCommand(heir);
+        S.Won = true; // the legend counts as won; play on
+        return null;
+    }
+
+    /// A companion becomes the captain (handing over, or the captain dead, C7): his name, age and traits; half the renown.
+    void TakeCommand(Character heir)
+    {
         Me.Name = heir.Name;
         Me.Age = heir.Age;
         Me.Traits = heir.Traits.ToList();
@@ -124,8 +132,6 @@ public sealed partial class Campaign
         Captain.Renown *= 0.5f;
         Captain.WoundedUntil = 0;
         S.Generation++;
-        S.Won = true; // the legend counts as won; play on
         RefreshHeroes();
-        return null;
     }
 }

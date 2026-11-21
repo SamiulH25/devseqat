@@ -248,15 +248,45 @@ partial class MapScreen
     /// Ironman: the captain was taken and executed. The campaign (and its save) ends here.
     void GameOverPanel()
     {
-        var r = Modal(760, 420, C.S.Retired ? "THE COMPANY'S LEGEND" : "YOUR WAR IS OVER", C.S.Retired ? Kit.Gilt : Style.Bad);
+        var faces = C.StoryFaces();
+        var r = Modal(760, faces.Count > 0 ? 440 : 400, C.S.Retired ? "THE COMPANY'S LEGEND" : "YOUR WAR IS OVER", C.S.Retired ? Kit.Gilt : Style.Bad);
         ui.TextC(C.S.EndReason != "" ? C.S.EndReason : "THE ENEMY DID NOT RANSOM YOU.", r.X + r.Width / 2f, r.Y + ui.U(66), Style.Warn, 1);
         int y = r.Y + ui.U(96);
         foreach (var line in C.Summary()) { ui.TextC(line, r.X + r.Width / 2f, y, Style.Text, 1); y += ui.U(18); }
         if (C.S.Deeds.Count > 0) ui.TextC("LAST DEED: " + C.S.Deeds[^1].Text.ToUpperInvariant(), r.X + r.Width / 2f, y + ui.U(8), Kit.Parchment, 1);
+        if (faces.Count > 0) StoryFaceRow(faces, r, y + ui.U(32));
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(50), ui.U(220), ui.U(32)), "TO THE TITLE"))
         {
             Saves.EndCampaign(C.S);
             OnTitle?.Invoke();
+        }
+    }
+
+    /// The company's men at the end (C7): a group a column, their faces in a row under its title, the dead greyed; the name under
+    /// the mouse.
+    void StoryFaceRow(List<(string Title, List<Soldier> Men)> faces, Rectangle r, int y)
+    {
+        int fw = ui.U(40), fh = ui.U(48), gap = ui.U(10), cols = faces.Count;
+        int colW = (r.Width - ui.U(48)) / cols;
+        for (int g = 0; g < cols; g++)
+        {
+            var (title, men) = faces[g];
+            int cx = r.X + ui.U(24) + g * colW + colW / 2;
+            ui.TextC(title, cx, y, Kit.Gilt, 1);
+            int rowW = men.Count * fw + (men.Count - 1) * gap, x0 = cx - rowW / 2;
+            for (int i = 0; i < men.Count; i++)
+            {
+                var m = men[i];
+                bool dead = m.Fate is "fell" or "missing";
+                var fb = new Rectangle(x0 + i * (fw + gap), y + ui.U(14), fw, fh);
+                ui.Rect(new Rectangle(fb.X - 1, fb.Y - 1, fb.Width + 2, fb.Height + 2), Campaign.OfBanner(m) ? Kit.Gilt : Kit.IronDark);
+                var k = C.Player.Companies.FirstOrDefault(c => c.Roll.Contains(m) || c.Id == m.Company);
+                if (dead) ui.FaceHead(PortraitPainter.Of(m, k) with { Mood = 1 }, fb, new Color(150, 150, 156));
+                else ui.FaceHead(PortraitPainter.Of(m, k), fb);
+                var first = m.Name.Split(' ')[0].ToUpperInvariant(); // his first name under his face; the tooltip has the rest
+                ui.TextC(ui.TW(first, 1) > fw + gap ? first[..Math.Min(first.Length, 6)] : first, fb.Center.X, fb.Bottom + ui.U(5), dead ? Style.Dim : Style.Text, 1);
+                if (ui.Hover(fb)) ui.Tooltip(fb.Center.X, fb.Y - ui.U(4), m.Name.ToUpperInvariant(), $"{Campaign.N(m.Battles, "BATTLE")}, {Campaign.N(m.Kills, "KILL")}" + (dead ? $". FELL DAY {m.DiedDay}" : ""));
+            }
         }
     }
 

@@ -69,6 +69,7 @@ partial class MapScreen
             case PanelKind.Atlas: AtlasPanel(); break;
             case PanelKind.Inventory: InventoryPanel(); break;
             case PanelKind.Camp: CampPanel(); break;
+            case PanelKind.Fallen: BookPanel(); break;
             case PanelKind.Help: HelpPanel(); break;
         }
         if (panel != PanelKind.None && modalIn < 1) ui.Rect(modalRect, Kit.IronDark * (1 - modalIn)); // the panel's entrance: it comes up out of the dark

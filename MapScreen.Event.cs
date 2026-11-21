@@ -277,6 +277,23 @@ partial class MapScreen
                 for (int i = 0; i < 9; i++) Block(-110 + i * 26, 12, 30 + (i * 37 % 5) * 6);
                 ui.Disc(new Vector2(cx, p.Y + p.Height * 0.3f), ui.U(26), new Color(236, 226, 200) * 0.15f);
                 break;
+            case "cairn": // a mound of stones over your men, a spear stood in it with the company's pennon (C7)
+                {
+                    // Stones heaped in courses, each its own size with a lit top edge, so the mound reads as stones, not steps.
+                    var lit = Color.Lerp(c, new Color(150, 156, 164), 0.6f);
+                    for (int row = 0; row < 5; row++)
+                        for (int i = 0; i < 6 - row; i++)
+                        {
+                            int sw = 12 + (i * 5 + row * 3) % 4 * 2, sh = 7 + (i + row) % 3 * 2, sx = -48 + row * 8 + i * 16 + (row * 3 + i) % 3 - 1, top = 6 + row * 8 + sh;
+                            ui.Rect(new Rectangle(cx + sx * u, ground - top * u, sw * u, sh * u), c);
+                            ui.Rect(new Rectangle(cx + (sx + 1) * u, ground - top * u, (sw - 2) * u, u), lit);
+                        }
+                    Block(-52, 104, 6);
+                }
+                ui.Rect(new Rectangle(cx - u, ground - 86 * u, 2 * u, 46 * u), c);
+                ui.Rect(new Rectangle(cx - u, ground - 92 * u, 2 * u, 6 * u), new Color(170, 170, 176)); // the spearhead
+                ui.Banner(cx + 10 * u, ground - 84 * u, 18 * u, 14 * u, Style.Sides[Style.PaletteOf(Math.Max(0, C.Captain.Contract))], t * 0.8f);
+                break;
             case "battlefield":
                 for (int i = 0; i < 5; i++) ui.Disc(new Vector2(cx - 100 * u + i * 50 * u, ground), 16 * u, c);
                 for (int i = 0; i < 9; i++) Block(-120 + i * 29, 3, 18 + i % 3 * 8);

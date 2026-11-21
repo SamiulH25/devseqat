@@ -164,6 +164,8 @@ public sealed class Soldier
     /// His age (docs/pre-demo/COMPANY.md C1): 17-30 when named, a year older each year; 0 on an old save (`AgeOf` makes one up).
     public int Age;
     public string Name = "", Troop = "", Fate = "", DiedAt = "", CompanyName = "";
+    /// The battle he fell in, by its name (docs/pre-demo/COMPANY.md C7: the book groups under it); "" before C7 or off the field.
+    public string Field = "";
     /// His nature, one word (docs/pre-demo/COMPANY.md C2: Campaign.Natures), and the place he comes from.
     public string Nature = "", Home = "";
     /// Ties to other named men, at most two (docs/pre-demo/COMPANY.md C3), and whether he fights his next battle to avenge one.
@@ -580,6 +582,11 @@ public sealed class CampaignState
     public int NextSoldier = 1;
     /// Every named man your companies have lost (L3), never trimmed.
     public List<Soldier> Fallen = new();
+    /// Cairns over your named men where they fell (docs/pre-demo/COMPANY.md C7), at most `Campaign.MaxCairns`; captains who died
+    /// in the field (the opt-in rule `CaptainDeath`, set from the settings for new campaigns).
+    public List<Cairn> Cairns = new();
+    public List<DeadCaptain> DeadCaptains = new();
+    public bool CaptainDeath;
     /// The named men you may mention after the last won battle (C4); emptied by a mention or the next battle.
     public List<int> MentionPool = new();
     /// Villages a pensioned man went home to (C4): their recruits come a little readier.

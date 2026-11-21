@@ -256,19 +256,21 @@ sealed partial class Hud
             Rect(new Rectangle(x - s, y - 3 * s, 2 * s, 2 * s), Color.Black * 0.6f);
             // Gold; red-orange while he is out for vengeance; green for a lad under his master (C6).
             var named = Battle.NamedOf(u);
-            var markCol = u.Avenging ? Warn : named?.Lad == true ? Ok : Gold;
+            var markCol = u.Avenging ? Orange : named?.Lad == true ? Ok : Gold;
             Rect(new Rectangle(x - s, y - 4 * s, 2 * s, 2 * s), markCol);
             bool hover = Command && Math.Abs(Mouse.X - x) < U(8) && Math.Abs(Mouse.Y - y) < U(12);
             if ((!Command && d < 10 || hover) && named is NamedSpec m)
             {
                 string tag = m.Name.ToUpperInvariant() + (u.Avenging ? ": AVENGING" : m.Lad ? ": A LAD" : "");
-                var tr = new Rectangle(x - TW(tag, 1) / 2 - U(20), y - 4 * s - U(16), TW(tag, 1) + U(24), U(18));
+                int ty = y - 4 * s - U(30); // high enough to clear his company's fight mark and the target chevron
+                var tr = new Rectangle(x - TW(tag, 1) / 2 - U(20), ty, TW(tag, 1) + U(24), U(18));
                 if (!hover && tags.Any(t => t.Intersects(tr))) continue;
                 tags.Add(tr);
-                TextC(m.Name.ToUpperInvariant() + (u.Avenging ? ": AVENGING" : m.Lad ? ": A LAD" : ""), x, y - 4 * s - U(10), u.Routing ? Dim : markCol, 1);
+                Rect(new Rectangle(tr.X, ty, tr.Width, U(18)), Color.Black * 0.6f); // a dark strip, so the tag reads over banners and sky
+                TextC(tag, x, ty + U(6), u.Routing ? Dim : markCol, 1);
                 // His small face beside his name (C1), the same face the roll shows.
                 var face = PortraitPainter.OfMan(m.Id, u.Type, m.Wounds, m.Age > 0 ? m.Age : 25, false, 0, u.Routing ? 2 : 1);
-                int fw = U(12), fh = U(15), fx = x - TW(m.Name.ToUpperInvariant(), 1) / 2 - fw - U(4), fy = y - 4 * s - U(14);
+                int fw = U(12), fh = U(15), fx = x - TW(tag, 1) / 2 - fw - U(4), fy = ty + U(2);
                 Rect(new Rectangle(fx - 1, fy - 1, fw + 2, fh + 2), Color.Black * 0.7f);
                 sb.Draw(Portraits.Sized(sb.GraphicsDevice, face, fw, fh), new Rectangle(fx, fy, fw, fh), u.Routing ? new Color(130, 128, 120) : Color.White);
             }
@@ -285,7 +287,9 @@ sealed partial class Hud
             Rect(new Rectangle(x - s, y - 4 * s, 2 * s, 2 * s), Foe);
             if (d < 8 && !Command)
             {
-                TextC($"{Battle.NameOf(u).ToUpperInvariant()} IS DOWN: STAND OVER HIM", x, y - 4 * s - U(10), Foe, 1);
+                string down = $"{Battle.NameOf(u).ToUpperInvariant()} IS DOWN: STAND OVER HIM";
+                Rect(new Rectangle(x - TW(down, 1) / 2 - U(4), y - 4 * s - U(16), TW(down, 1) + U(8), U(18)), Color.Black * 0.6f);
+                TextC(down, x, y - 4 * s - U(10), Foe, 1);
                 if (u.Rescue > 0) Bar(new Rectangle(x - U(20), y - 4 * s - U(18), U(40), U(3)), u.Rescue / Battle.RescueTime, Gold);
             }
         }

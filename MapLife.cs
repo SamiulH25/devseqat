@@ -295,6 +295,7 @@ sealed partial class MapLife
         if (hawk != null) DrawFlock(hawk);
         BuildPeople();
         BuildHoldouts();
+        BuildCairns();
         flip ^= 1;
         var buf = bufs[flip];
         if (buf.Length < mesh.V.Count) buf = bufs[flip] = new VertexPNCT[Math.Max(mesh.V.Count, buf.Length * 2)];

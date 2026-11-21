@@ -27,6 +27,7 @@ public partial class Campaign
         // L5: the battle's name, and whether a win here is worth a battle honour (outnumbered, their captain slain, a wall taken).
         string field = playerIn ? BattleName(Player.Pos, siegeBattle) : "";
         if (playerIn && won) field = WorkingRemembered(r, field); // a great working of yours names the day (docs/archive/ARCANA.md AR8)
+        rollField = field; // the fallen are kept under it (C7)
         float mine = playerTeam == 0 ? startStrength0 : startStrength1, theirs = playerTeam == 0 ? startStrength1 : startStrength0;
         bool notable = playerIn && won && (theirs >= 1.5f * MathF.Max(1, mine) || r.EnemyLeader == LeaderFate.Slain || siegeBattle);
         int foeFaction = (playerTeam == 0 ? side1 : side0).Select(SideOf).FirstOrDefault(f => f >= 0, -1);
@@ -197,7 +198,9 @@ public partial class Campaign
             Captain.WoundedUntil = (float)S.Hours + 24 * rng.Range(3, 5) * (Has("Bonesetter") ? 0.5f : 1);
             lasting = MaybeLastingWound();
         }
-        if (r.Captain == LeaderFate.Captured && S.Ironman)
+        string? died = MaybeCaptainDies(won, r.Captain, field); // the opt-in rule (C7)
+        if (died != null) Log(died);
+        if (died == null && r.Captain == LeaderFate.Captured && S.Ironman)
         {
             S.GameOver = true;
             Log("You are taken, and your captors will not ransom you. Your war is over.");
@@ -217,6 +220,8 @@ public partial class Campaign
             Goals = r.Goals.Select((id, i) => (i < r.GoalTexts.Count ? r.GoalTexts[i] : Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList(),
             Roll = RollNewsOrdered().Where(n => n.Item1 is not ("HONOUR" or "LOST")).ToList(),
             Honours = RollNewsOrdered().Where(n => n.Item1 is "HONOUR" or "LOST").ToList(), Field = field, Wonders = r.Wonders };
+        RaiseCairn(field); // C7: stones over the named men it cost
+        rollField = "";
         if (won) RaiseBurial();
         Log(won ? $"Victory over {enemyName}." : $"Defeat against {enemyName}.");
         return Report;

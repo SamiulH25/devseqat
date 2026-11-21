@@ -80,7 +80,7 @@ public sealed partial class Campaign
     public static Campaign New(int seed, int realm = 0, CaptainMaking? making = null, int layout = -1)
     {
         if (layout < 0) layout = int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_MAP_LAYOUT"), out int l) ? l : WorldMap.CurrentLayout;
-        var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, MapExtent = WorldMap.Extent,
+        var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, CaptainDeath = Settings.Current.CaptainDeath, MapExtent = WorldMap.Extent,
             Layout = layout, DataRealms = Factions.All.Count };
         s.Captain.Renown = B.StartRenown;
         StartingSkills(s.Captain);
@@ -413,6 +413,7 @@ public sealed partial class Campaign
 
     void Hourly()
     {
+        CairnsHourly(); // riding by a cairn of yours (C7)
         foreach (var p in S.Parties.ToList())
         {
             if (p.Kind == PartyKind.Player) continue;
@@ -494,6 +495,7 @@ public sealed partial class Campaign
         CareerDaily();
         EventsDaily();
         MenEventsDaily(); // the camp's (C5), on the roll's dice
+        DayFellDaily(); // the year's day of a costly battle (C7)
         // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous;
         // a share of them come up near the player, and his country is kept to BanditNearMin bands even past the cap,
         // so he is never short of a fight.

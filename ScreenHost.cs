@@ -588,7 +588,7 @@ sealed class ScreenHost : Game
     /// The camp's shots (IRONFIELD_CAMP_ONLY): named men in four companies, then each hour and mood, then a man's page.
     void CampShots(Campaign c)
     {
-        var steps = new (string Name, int Hour, bool? Won, bool Man)[] { ("camp-day", 11, true, false), ("camp-night", 22, null, false), ("camp-lost", 18, false, false), ("man", 11, null, true), ("camp-event", 11, null, false) };
+        var steps = new (string Name, int Hour, bool? Won, bool Man)[] { ("camp-day", 11, true, false), ("camp-night", 22, null, false), ("camp-lost", 18, false, false), ("man", 11, null, true), ("camp-event", 11, null, false), ("book", 11, null, false), ("cairn", 11, null, false), ("cairn-event", 11, null, false), ("end", 11, null, false) };
         if (campShot >= steps.Length) { Exit(); return; }
         if (campShot == 0) map.Stage("campmen");
         var (name, hour, won, man) = steps[campShot++];
@@ -596,7 +596,11 @@ sealed class ScreenHost : Game
         foreach (var k in c.Player.Companies) k.Ledger.Clear();
         if (won is bool w) c.Player.Companies[0].Ledger.Add(new LedgerEntry { Day = c.Day, Won = w, Foe = "the Red Lances" });
         c.Encounter = null; c.S.Event = null; c.Beat = null;
+        if (name == "book") c.StageFallen(); // C7: men lost at two fields, a cairn by you, a captain before you
         if (name == "camp-event" && c.RaiseMenEvent("men_side_by_side") != null) map.Stage("event"); // a camp event with its two men's faces
+        else if (name is "book" or "cairn") map.Stage(name);
+        else if (name == "cairn-event") { c.S.Event = new PendingEvent { Id = "cairn_visit", Company = c.S.Cairns[^1].Company, Cairn = c.S.Cairns[^1].Id }; map.Stage("event"); }
+        else if (name == "end") { c.S.Retired = true; c.S.EndReason = "YOU HANDED THE BANNER ON."; map.Stage("gameover"); }
         else map.Stage(man ? "campman" : "camp");
         pendingShot = "campaign-" + name; shotFrames = 0;
     }

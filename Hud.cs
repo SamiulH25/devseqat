@@ -246,9 +246,9 @@ sealed partial class Hud
         SampleFights();
         sb.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.AlphaBlend);
         SergeantPennants();
-        NamedMarks();
         BannerMark();
         if (!Deploying) FightMarks();
+        NamedMarks(); // over the fight marks: a named man's tag, on its dark strip, reads over the crossed swords
         VolleyRings(); // a volley marked on you (C13): on the ground, under the panels
         DuelBars();
         if (Command) DrawCommand(); else DrawFight();
