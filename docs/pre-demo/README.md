@@ -7,3 +7,4 @@ ships, its "As built" note goes at its end and it moves to `docs/archive/`. Idea
 |---|---|
 | [`COMPANY.md`](COMPANY.md) | The company as people (C1-C8): faces, natures, ties, gear as things; the camp, named men in the fight, what is remembered |
 | [`NOBILITY.md`](NOBILITY.md) | Common and noble troop trees, esquires, knighting a named man (N1-N5) |
+| [`SIEGES.md`](SIEGES.md) | The siege overhaul: the real place as the field, capture points, layered defence, sallies, relief and terms (SE1-SE10) |
