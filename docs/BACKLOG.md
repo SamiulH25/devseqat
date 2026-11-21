@@ -18,6 +18,7 @@ them yourself (CLAUDE.md step 4); the scores in old notes are history only.
 | [`COMPANY.md`](COMPANY.md) | C5 the camp; C6 named men in the fight; C7 what is remembered; C8 polish | large | C5 is the big one (a screen, camp events with a `men` trigger, rites move there). C7 has the opt-in captain death (LEGACY L7) |
 | [`NOBILITY.md`](NOBILITY.md) | N3 knighting a named man; N4 AI lords' noble retinues and UI badge; N5 balance | medium | Gap: northern, southern, steppe and league have no non-order noble T4 |
 | [`SETTLEMENTS.md`](SETTLEMENTS.md) | SM1-SM7: towns, castles, villages and the siege field remodelled by subculture, showing owner, prosperity, buildings and siege | large | Owner's brief 2026-11-20. SM1-SM6 built (kit and castles, towns, villages, the state: banners, prosperity, works; siege camps, battering, raids; the assault field and village fields in the people's style); SM7 check and polish next |
+| [`THE_WILD.md`](THE_WILD.md) | WI1-WI9: wildness, lairs that grow, spoils, contracts, new monsters, legendary monsters, the world crisis | large; design | Owner's brief 2026-11-21. Nothing built. No dragons, no Wild Hunt, no taming; the monster hunter career is drafted for after the demo |
 | [`PLAYTEST.md`](PLAYTEST.md) | PT5 weapons that read as weapons; PT6d CK systems | medium; design | PT5: re-look at `pose-grips`, `pose-stances` and the clash gallery after the sprite overhaul (it redrew most weapons) and close it or list what is still wrong. PT6d waits on the playtester |
 
 ## Left out of finished plans (pick up or drop)
