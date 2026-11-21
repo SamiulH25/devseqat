@@ -181,7 +181,7 @@ public sealed class Pilot
     void Think()
     {
         TakePerks();
-        Promote(); // men up to tier III rise in camp (docs/HOLDS.md HD1); the rest wait for a town
+        Promote(); // men up to tier III rise in camp (docs/pre-demo/HOLDS.md HD1); the rest wait for a town
         if (c.S.Hours >= nextTalk && c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && !c.Hostile(Me, p) && Vector2.Distance(p.Pos, Me.Pos) <= Campaign.TalkReach)
                 .Select(c.CharacterOf).FirstOrDefault(l => l != null && c.CannotTalk(l) == null) is Character talkTo)
         { Talk(talkTo); nextTalk = (float)c.S.Hours + 5 * 24; }

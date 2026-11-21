@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// The captain's gear as things (docs/COMPANY.md C9-C11).
+/// The captain's gear as things (docs/pre-demo/COMPANY.md C9-C11).
 public static partial class SelfTest
 {
     /// C9: an old save's owned ids become plain pieces; quality scales a piece's numbers and price; a smith's mark reaches the

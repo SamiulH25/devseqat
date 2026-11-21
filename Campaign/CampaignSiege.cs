@@ -149,7 +149,7 @@ public sealed partial class Campaign
         setup.Options.Breaches = BreachesOf(s);
         setup.Options.Engines = EnginesFor(setup, assault: true);
         setup.Options.Palette[1] = Style.PaletteOf(s.Faction);
-        // The wall, the towers and the houses behind them as its people build them (docs/SETTLEMENTS.md SM6).
+        // The wall, the towers and the houses behind them as its people build them (docs/pre-demo/SETTLEMENTS.md SM6).
         setup.Options.Ground = Map.BattleGround(s.Pos) with { Road = false, Style = s.Culture is "" ? null : s.Culture, Castle = s.Kind != SettlementKind.Town, Banner = setup.Options.Palette[1] };
         return setup;
     }

@@ -147,7 +147,7 @@ void main()
         gl_FragColor = vec4(Fog(vColor.rgb * fl * 1.25, vWorld), 1.0);
         return;
     }
-    if (vUV.y < -0.5 && vUV.y > -1.5) // masonry; the map's places (tag -1.25, docs/SETTLEMENTS.md) lay finer courses
+    if (vUV.y < -0.5 && vUV.y > -1.5) // masonry; the map's places (tag -1.25, docs/pre-demo/SETTLEMENTS.md) lay finer courses
     {
         float fine = step(vUV.y, -1.1);
         albedo *= Masonry(vWorld * mix(1.0, 2.2, fine), n, length(vWorld - CameraPos) * mix(1.0, 1.5, fine));

@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// Hud: the enemy sees you (docs/COMPANY.md C12). In the field view each foe who holds you as his mark gets a red chevron
+/// Hud: the enemy sees you (docs/pre-demo/COMPANY.md C12). In the field view each foe who holds you as his mark gets a red chevron
 /// over his head, or a red arrow at the screen's edge when he is out of sight; the man a veteran company sends to meet you
 /// gets a gold one marked MEETS YOU. Above your panel, how many are on you. Drawing only.
 sealed partial class Hud
@@ -57,7 +57,7 @@ sealed partial class Hud
         Text(meet, mb.X + U(6), mb.Y + U(4), Gold, 1);
     }
 
-    /// Where a volley marked on you will fall (docs/COMPANY.md C13): a red ring on the ground that tightens as the loose
+    /// Where a volley marked on you will fall (docs/pre-demo/COMPANY.md C13): a red ring on the ground that tightens as the loose
     /// comes, and a warning at the top while you stand in it. Both views.
     void VolleyRings()
     {

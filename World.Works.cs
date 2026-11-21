@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// What a place's state adds to its model (docs/SETTLEMENTS.md SM4): the works its holder has built, each on the site its
+/// What a place's state adds to its model (docs/pre-demo/SETTLEMENTS.md SM4): the works its holder has built, each on the site its
 /// plan keeps for it (`WorldMap.LayWorks`), a rich town's suburbs, a poor place's roofless houses. Drawing only.
 sealed partial class World
 {

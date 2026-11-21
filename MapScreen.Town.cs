@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// MapScreen: the frame of the settlement screen (docs/PLAYTEST.md PT2): the place painted across the top at the hour it
+/// MapScreen: the frame of the settlement screen (docs/pre-demo/PLAYTEST.md PT2): the place painted across the top at the hour it
 /// is, its tabs as a rail of pictured tiles with counts, and the small pieces the tabs are built from (cards, stats,
 /// outcomes, job cards). Drawing only.
 partial class MapScreen

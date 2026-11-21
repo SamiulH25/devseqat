@@ -10,7 +10,7 @@ public sealed record CompanyReport(int Id, string Name, string Troop, int Team, 
 public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyReport> Companies, float Loot, float Ransom, float Bounty,
     float Renown, int Horses, LeaderFate Captain, string Spoil = "")
 {
-    /// The spoil's make and smith's mark (docs/COMPANY.md C11).
+    /// The spoil's make and smith's mark (docs/pre-demo/COMPANY.md C11).
     public ItemQuality SpoilMake { get; init; } = ItemQuality.Plain;
     public string SpoilMark { get; init; } = "";
     /// The captain's skills that rose in this battle, one line each (P3).

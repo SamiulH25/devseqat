@@ -1,7 +1,8 @@
 # Backlog: everything left to build
 
 The one list of open work, gathered 2026-11-19 after the `sprite-improvements` merge (`02576fc`). Every plan that still
-has open phases is linked; finished plans are in `docs/archive/` (index in `docs/archive/README.md`). When an item ships,
+has open phases is linked; open plans are in `docs/pre-demo/`, finished plans in `docs/archive/` (index in `docs/archive/README.md`), and what waits for
+after the demo in `docs/post-demo/` (not listed here). When an item ships,
 delete it here and write its "As built" note in its plan. When a plan's last phase ships, move the plan to `docs/archive/`.
 
 State at the time of writing: `tools/check.sh --quick` passes and the full `--selftest` ends `selftest ok` (every test green).
@@ -13,13 +14,13 @@ them yourself (CLAUDE.md step 4); the scores in old notes are history only.
 
 | Plan | Open | Size | Notes |
 |---|---|---|---|
-| [`HOLDS.md`](HOLDS.md) | HD6 world size; HD7 docs and polish | decision + small | HD6 is the owner's call: (a) keep, (b) slow travel, (c) scale `DesignScale`. Run `--pacing` first. HD7: README, CAMPAIGN.md, tips, landing page numbers for castles, muster and holders |
-| [`WORLD_DRESS.md`](WORLD_DRESS.md) | WD5 life in every land; WD6 air and weather; WD7 check and tune | medium | WD5: wild herds by land, gulls, waterfowl, storks, campfires. WD6: cloud shadows, wind on grass, dawn mist, dust, blown snow. WD7: every land per season, frame time at widest zoom |
-| [`COMPANY.md`](COMPANY.md) | C5 the camp; C6 named men in the fight; C7 what is remembered; C8 polish | large | C5 is the big one (a screen, camp events with a `men` trigger, rites move there). C7 has the opt-in captain death (LEGACY L7) |
-| [`NOBILITY.md`](NOBILITY.md) | N3 knighting a named man; N4 AI lords' noble retinues and UI badge; N5 balance | medium | Gap: northern, southern, steppe and league have no non-order noble T4 |
-| [`SETTLEMENTS.md`](SETTLEMENTS.md) | SM1-SM7: towns, castles, villages and the siege field remodelled by subculture, showing owner, prosperity, buildings and siege | large | Owner's brief 2026-11-20. SM1-SM6 built (kit and castles, towns, villages, the state: banners, prosperity, works; siege camps, battering, raids; the assault field and village fields in the people's style); SM7 check and polish next |
-| [`THE_WILD.md`](THE_WILD.md) | WI1-WI9: wildness, lairs that grow, spoils, contracts, new monsters, legendary monsters, the world crisis | large; design | Owner's brief 2026-11-21. Nothing built. No dragons, no Wild Hunt, no taming; the monster hunter career is drafted for after the demo |
-| [`PLAYTEST.md`](PLAYTEST.md) | PT5 weapons that read as weapons; PT6d CK systems | medium; design | PT5: re-look at `pose-grips`, `pose-stances` and the clash gallery after the sprite overhaul (it redrew most weapons) and close it or list what is still wrong. PT6d waits on the playtester |
+| [`pre-demo/HOLDS.md`](pre-demo/HOLDS.md) | HD6 world size; HD7 docs and polish | decision + small | HD6 is the owner's call: (a) keep, (b) slow travel, (c) scale `DesignScale`. Run `--pacing` first. HD7: README, CAMPAIGN.md, tips, landing page numbers for castles, muster and holders |
+| [`pre-demo/WORLD_DRESS.md`](pre-demo/WORLD_DRESS.md) | WD5 life in every land; WD6 air and weather; WD7 check and tune | medium | WD5: wild herds by land, gulls, waterfowl, storks, campfires. WD6: cloud shadows, wind on grass, dawn mist, dust, blown snow. WD7: every land per season, frame time at widest zoom |
+| [`pre-demo/COMPANY.md`](pre-demo/COMPANY.md) | C5 the camp; C6 named men in the fight; C7 what is remembered; C8 polish | large | C5 is the big one (a screen, camp events with a `men` trigger, rites move there). C7 has the opt-in captain death (LEGACY L7) |
+| [`pre-demo/NOBILITY.md`](pre-demo/NOBILITY.md) | N3 knighting a named man; N4 AI lords' noble retinues and UI badge; N5 balance | medium | Gap: northern, southern, steppe and league have no non-order noble T4 |
+| [`pre-demo/SETTLEMENTS.md`](pre-demo/SETTLEMENTS.md) | SM1-SM7: towns, castles, villages and the siege field remodelled by subculture, showing owner, prosperity, buildings and siege | large | Owner's brief 2026-11-20. SM1-SM6 built (kit and castles, towns, villages, the state: banners, prosperity, works; siege camps, battering, raids; the assault field and village fields in the people's style); SM7 check and polish next |
+| [`pre-demo/THE_WILD.md`](pre-demo/THE_WILD.md) | WI1-WI9: wildness, lairs that grow, spoils, contracts, new monsters, legendary monsters, the world crisis | large; design | Owner's brief 2026-11-21. Nothing built. No dragons, no Wild Hunt, no taming; the monster hunter career is drafted for after the demo |
+| [`pre-demo/PLAYTEST.md`](pre-demo/PLAYTEST.md) | PT5 weapons that read as weapons; PT6d CK systems | medium; design | PT5: re-look at `pose-grips`, `pose-stances` and the clash gallery after the sprite overhaul (it redrew most weapons) and close it or list what is still wrong. PT6d waits on the playtester |
 
 ## Left out of finished plans (pick up or drop)
 

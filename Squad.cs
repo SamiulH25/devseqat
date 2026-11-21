@@ -34,12 +34,12 @@ public sealed class Squad
     public int Kills;                             // enemies this company has killed (campaign XP)
     public readonly int[] KillsByTier = new int[8]; // kills by the victim's tier (0 = leaders, 1-7 = troop tiers)
     public int HorseKills;                        // mounted enemies killed (the Horse-breakers honour)
-    /// The enemy sees you (docs/COMPANY.md C12): the man it sends to meet the captain, men the captain has cut out of it,
+    /// The enemy sees you (docs/pre-demo/COMPANY.md C12): the man it sends to meet the captain, men the captain has cut out of it,
     /// and whether it brought the captain down (it takes heart for the rest of the battle).
     public Unit? Meets;
     public int CutByCaptain;
     public bool Heartened;
-    /// The enemy hunts you (docs/COMPANY.md C13): sent for the captain now, ever sent this battle; covering your captain
+    /// The enemy hunts you (docs/pre-demo/COMPANY.md C13): sent for the captain now, ever sent this battle; covering your captain
     /// until a time; a volley marked on the captain (when it looses, where, when the company may mark again).
     public bool HuntCaptain, HuntedFor;
     public float VolleyAt = -1, VolleyAgain;

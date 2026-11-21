@@ -321,7 +321,7 @@ sealed partial class Puppet
         if (!p.Empty)
         {
             SpanRect(hand, dir, curLook.Weapon, curLook.WeaponLen, SpriteSheet.Grip[look.Weapon]);
-            if (Detail < 2) BillRect(hand, curLook.Hand, false, 0.02f); // the fist closed over the grip (docs/PLAYTEST.md PT5)
+            if (Detail < 2) BillRect(hand, curLook.Hand, false, 0.02f); // the fist closed over the grip (docs/pre-demo/PLAYTEST.md PT5)
             if (Detail == 0 && Soft != null && grip is Grip.One or Grip.Two or Grip.Pole)
             {
                 float strikeK = -1;
@@ -1006,7 +1006,7 @@ sealed partial class Puppet
         Quad(c - hw - hh, c + hw - hh, c - hw + hh, c + hw + hh, src, viewed && viewIdx == 1 && flip);
     }
 
-    /// A missile in the world (docs/COMPANY.md C14): the sprite `part` from its point `head` to its `tail`, turned about the
+    /// A missile in the world (docs/pre-demo/COMPANY.md C14): the sprite `part` from its point `head` to its `tail`, turned about the
     /// shaft to face the camera, `thick` times as wide; a short band of the side's `cloth` over the fletching.
     public void Missile(Vector3 head, Vector3 tail, string part, float thick, Color cloth)
     {

@@ -202,7 +202,7 @@ partial class MapScreen
         var rl = ui.Wrap(rn, c.Width);
         for (int i = 0; i < Math.Min(2, rl.Count); i++) ui.TextFitC(i == 1 ? string.Join(" ", rl.Skip(1)) : rl[i], c.Center.X, y + (rl.Count >= 2 ? i * ui.U(10) : ui.U(5)), c.Width, Style.Dim, 1);
         y += ui.U(26);
-        // The rest on hover (docs/PLAYTEST.md PT2e): its style of war, its strength and its weariness.
+        // The rest on hover (docs/pre-demo/PLAYTEST.md PT2e): its style of war, its strength and its weariness.
         if (ui.Hover(box))
         {
             var cult = Factions.Culture(Factions.CultureOf(f));

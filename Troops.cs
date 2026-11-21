@@ -169,7 +169,7 @@ public static class Troops
 /// Troop is the company's face (its largest stack) and Count its total; Mix lists every stack (troop, men) when the company
 /// holds more than one troop type (CAMPAIGN_OVERHAUL.md 2.3). RoutBonus and VsMounted come from its honours.
 /// A named man of a company (docs/archive/LEGACY.md L2): placed as a real unit of his troop, his fate handed back by id.
-/// A named man in a battle; Wounds and Age only paint his face on the HUD (docs/COMPANY.md C1).
+/// A named man in a battle; Wounds and Age only paint his face on the HUD (docs/pre-demo/COMPANY.md C1).
 public sealed record NamedSpec(int Id, string Troop, string Name, int Wounds = 0, int Age = 0, bool Avenging = false);
 
 public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false,

@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// The enemy hunts you (docs/COMPANY.md C13): a lord with a grudge comes for you himself in battle.
+/// The enemy hunts you (docs/pre-demo/COMPANY.md C13): a lord with a grudge comes for you himself in battle.
 public sealed partial class Campaign
 {
     /// Below this opinion of you a lord swears to have your head.

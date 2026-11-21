@@ -438,7 +438,7 @@ static partial class Kit
 
     // ---------- controls ----------
 
-    /// Tabs as plain words in a line, the open one gold and underlined: a level under boxed tabs (docs/PLAYTEST.md PT2c).
+    /// Tabs as plain words in a line, the open one gold and underlined: a level under boxed tabs (docs/pre-demo/PLAYTEST.md PT2c).
     /// Returns the label clicked, or -1.
     public static int WordTabs(this Ui ui, int x, int y, string[] labels, int active)
     {

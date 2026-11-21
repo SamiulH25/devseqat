@@ -5,7 +5,7 @@ using Microsoft.Xna.Framework.Input;
 namespace Ironfield;
 
 /// The battle screen: rendering, camera and input around a headless Battle. Two views with an eased camera blend between them,
-/// each with its own HUD and its own way to give orders (docs/PLAYTEST.md PT4, "As rebuilt"): fight (third person, you are the
+/// each with its own HUD and its own way to give orders (docs/pre-demo/PLAYTEST.md PT4, "As rebuilt"): fight (third person, you are the
 /// captain; arms listen on number keys, orders go where you look) and command (free orbit camera and a cursor; you pick
 /// companies and order them from the deck, at the battle's own speed while the captain keeps his guard).
 /// The world (terrain, foliage, sky) is 3D geometry from World; units are 2D sprite puppets. Hosted by ScreenHost.

@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The campaign map's small cover (docs/WORLD_DRESS.md; placed by `WorldMap.Dress`): cheap pieces, a few dozen triangles
+/// The campaign map's small cover (docs/pre-demo/WORLD_DRESS.md; placed by `WorldMap.Dress`): cheap pieces, a few dozen triangles
 /// each, since thousands of them stand between the woods.
 sealed partial class World
 {

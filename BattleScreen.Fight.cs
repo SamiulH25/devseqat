@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// BattleScreen, the fight view's own way to command (docs/PLAYTEST.md PT4, "As rebuilt"). You have no cursor there, so:
+/// BattleScreen, the fight view's own way to command (docs/pre-demo/PLAYTEST.md PT4, "As rebuilt"). You have no cursor there, so:
 /// number keys pick the arm that listens (1 foot, 2 bows, 3 horse, 4 mages, 0 all), and orders go where you look: charge
 /// sends them at the company under the reticle, the hold key held down plants their line on the ground under it.
 partial class BattleScreen

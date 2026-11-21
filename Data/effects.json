@@ -164,7 +164,7 @@
       "speed": 0.25, "tire": -0.3 },
     { "id": "black_dread", "name": "Black dread", "icon": "skull", "line": "A cold black fire eats their nerve.",
       "moralePerSec": -3, "shock": 0.4 },
-    // Smith's marks (docs/COMPANY.md C9): one small effect a fine piece may carry, tagged with the slots it fits.
+    // Smith's marks (docs/pre-demo/COMPANY.md C9): one small effect a fine piece may carry, tagged with the slots it fits.
     { "id": "keen", "name": "Keen", "icon": "sword", "line": "A keen edge: blows bite a little deeper.", "tags": ["mark", "weapon"],
       "damage": 0.05 },
     { "id": "balanced", "name": "Balanced", "icon": "sword", "line": "Well balanced: easier to bring round to block.", "tags": ["mark", "weapon", "shield"],
@@ -175,7 +175,7 @@
       "tire": -0.1 },
     { "id": "sure_seated", "name": "Sure-seated", "icon": "horse", "line": "A deep saddle: the couched lance strikes harder.", "tags": ["mark", "horse"],
       "charge": 0.1 },
-    // Natures of named men (docs/COMPANY.md C2): the senior man's nature, felt by his company (Campaign/Natures.cs).
+    // Natures of named men (docs/pre-demo/COMPANY.md C2): the senior man's nature, felt by his company (Campaign/Natures.cs).
     { "id": "nature_steady", "name": "Steady", "icon": "shield", "line": "A steady man in the ranks: the company keeps its nerve.", "tags": ["nature"],
       "moralePerSec": 0.3 },
     { "id": "nature_bold", "name": "Bold", "icon": "horse", "line": "A bold man leads them in: the company charges harder.", "tags": ["nature"],

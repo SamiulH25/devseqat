@@ -19,7 +19,7 @@ partial class MapScreen
     TownLook LookOf(Settlement s, float hour)
     {
         // On the drawn map a place's culture is its people (a subculture): the picture is painted by the realm culture it belongs
-        // to, and built the way that people builds (docs/SETTLEMENTS.md).
+        // to, and built the way that people builds (docs/pre-demo/SETTLEMENTS.md).
         string people = Factions.PeopleOf(s.Culture), build = Architecture.Of(s.Culture).Build;
         string country = build == "tent" ? "Steppe" : C.S.Provinces[s.Province].Kind; // tents stand on open ground
         string water = people == "league" ? "canal" : country == "Marsh" || C.Map.RiverDist(s.Pos) < 10 * C.Map.Spread ? "river" : "";

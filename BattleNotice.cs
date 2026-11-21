@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The enemy sees you (docs/COMPANY.md C12). A foe weighs the captain as nearer than he is by how much he is worth
+/// The enemy sees you (docs/pre-demo/COMPANY.md C12). A foe weighs the captain as nearer than he is by how much he is worth
 /// noticing (renown, aura, kills this battle, a horse, the banner beside you), but only a few may hold you as their mark at
 /// once (`MarkCap`); the rest fight your men. By grade: rabble rush you when you stand alone and give ground for a moment
 /// after you kill; veterans and elites send their best man out to meet you while the men beside him keep to theirs. Each

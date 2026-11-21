@@ -32,7 +32,7 @@ partial class BattleScreen
             case 4 when b.Time > 20f:
                 camFocus = b.Centroid(0); camYaw = 1.9f; camPitch = 0.9f; zoom = 60;
                 pendingShot = "command-overview"; shotIndex++; break;
-            case 5 when b.Time > 20.5f && !shotOrders: // orders as pictures (docs/PLAYTEST.md PT4): two companies sent at a foe, bows holding, the deck lit
+            case 5 when b.Time > 20.5f && !shotOrders: // orders as pictures (docs/pre-demo/PLAYTEST.md PT4): two companies sent at a foe, bows holding, the deck lit
             {
                 shotOrders = true;
                 var mine = b.Commanded.Where(q => q.Alive > 0).ToList();
@@ -245,7 +245,7 @@ partial class BattleScreen
             case 123 when shotFrames > 20:
                 pendingShot = "sergeants-field"; shotIndex++; break;
             case 124 when pendingShot == null: Exit(); break;
-            // The two views (docs/PLAYTEST.md PT4, "As rebuilt"; IRONFIELD_SHOTS_FROM=hud): the fight view bare, an arm told to
+            // The two views (docs/pre-demo/PLAYTEST.md PT4, "As rebuilt"; IRONFIELD_SHOTS_FROM=hud): the fight view bare, an arm told to
             // attack, the order ring, the hold-there marker; then the command view, companies sent at a foe, one company's deck.
             case 125 when b.Time > 2f:
                 b.Player.Pos = new(0, -34 - Battle.Stand); yaw = MathHelper.PiOver2; pitch = 0.2f; aimDir = AttackDir.Right;
@@ -540,7 +540,7 @@ partial class BattleScreen
         zoom = 19;
     }
 
-    /// The enemy sees you (docs/COMPANY.md C12), staged for a shot: a famed captain on foot with his men either side, a rabble
+    /// The enemy sees you (docs/pre-demo/COMPANY.md C12), staged for a shot: a famed captain on foot with his men either side, a rabble
     /// coming at him from the front, a veteran company sending its best man, and one foe behind (an edge mark). Field view.
     void MarkedScene()
     {
@@ -566,7 +566,7 @@ partial class BattleScreen
         pitch = 0.18f;
     }
 
-    /// The enemy hunts you (docs/COMPANY.md C13), staged for a shot: elite bows have marked the captain standing in the open
+    /// The enemy hunts you (docs/pre-demo/COMPANY.md C13), staged for a shot: elite bows have marked the captain standing in the open
     /// (the warning ring on the ground) and the enemy horse is sent for him (the alert). Field view, looking at the bows.
     void HuntedScene()
     {
@@ -592,7 +592,7 @@ partial class BattleScreen
         pitch = 0.62f;
     }
 
-    /// Arrows you can see (docs/COMPANY.md C14), staged for a shot: two bow companies a side shooting across 45 m at men
+    /// Arrows you can see (docs/pre-demo/COMPANY.md C14), staged for a shot: two bow companies a side shooting across 45 m at men
     /// holding their ground. 0: a volley in the air from command view; 1: the field view under it; 2: the beaten zone two
     /// minutes on, from above.
     void ArrowScene(int which)

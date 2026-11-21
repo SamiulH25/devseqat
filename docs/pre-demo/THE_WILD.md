@@ -18,8 +18,8 @@ bears and wyverns, each with its own battle rules. What is missing is everything
 - **In:** the wildness pressure, lairs that grow, war feeding the wild, seasons, every reward listed below, legendary monsters,
   and a **world crisis as the endgame**.
 - **Out:** dragons, the Wild Hunt, and taming beasts.
-- **Later, after a finished demo:** the monster hunter as a career of its own (drafted at the end, not to be built yet), and
-  maybe playing as a goblin warlord or the lich.
+- **Later, after a finished demo:** the monster hunter as a career of its own (`docs/post-demo/MONSTER_HUNTER.md`), and maybe
+  playing as a goblin warlord or the lich.
 - New monsters must make the player fight differently. A monster that is just a bigger man with more hp does not belong.
 
 ## WI1. Wildness
@@ -152,19 +152,7 @@ Which crisis comes is the owner's call: one picked per campaign, or both.
 - A wildness trace per day, like `HoldoutTrace`.
 - Shots of every new monster and every lair stage. The map's wildness wash at the widest zoom.
 
-## Later, not for the demo: the monster hunter as a career
+## After the demo
 
-Drafted only. Build it after the demo is finished.
-
-- A road in the character creator (a hunter's past) and a career on the map beside the mercenary's, not one bolted onto it.
-- A hunters' lodge, or guild, in towns: its board of monster contracts, standing with it, ranks (journeyman, master hunter,
-  warden of a region).
-- Lore: what you have hunted and studied gives an edge against that family (damage, fear ignored, its weak hour known).
-  A bestiary screen fills in as you learn.
-- Hunter troops: `beast_hunters` exists; add a line of them with nets, silver, fire and bows for the sky.
-- Gear made from spoils as the hunter's own kit, and wardens paid by realms to keep a region's wildness down.
-- How it ends: the career's ending is the world crisis, with the hunters as the ones who saw it coming.
-
-## Later still (owner's idea)
-
-Playing as the other side: a goblin warlord, or the lich.
+The monster hunter as a career of its own is drafted in `docs/post-demo/MONSTER_HUNTER.md`. Playing as a goblin warlord or the
+lich is listed in `docs/post-demo/README.md`.

@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Noble recruits (docs/NOBILITY.md N2): the only way a man of noble stock joins you besides knighting (N3). A castle's house
+/// Noble recruits (docs/pre-demo/NOBILITY.md N2): the only way a man of noble stock joins you besides knighting (N3). A castle's house
 /// sends esquires with a captain it trusts: sworn to its realm (or its holder), and renowned enough. They are noble by
 /// birth, so they train up the noble lines; commoners never do (CanEnterLine).
 public partial class Campaign

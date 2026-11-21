@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// The smith (docs/COMPANY.md C11): in a town or castle, mend a battered piece, raise its make one step for crowns and goods
+/// The smith (docs/pre-demo/COMPANY.md C11): in a town or castle, mend a battered piece, raise its make one step for crowns and goods
 /// lots, or have a mark struck anew. A worn piece becomes plain, plain fine and fine masterwork; masterwork needs a town of
 /// prosperity 60 or more (or one with a market built). Named pieces are beyond any smith's improving. And falling in
 /// battle may batter one worn piece, so better kit is a thing to keep, not only to buy.

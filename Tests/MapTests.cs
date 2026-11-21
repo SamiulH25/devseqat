@@ -363,7 +363,7 @@ public static partial class SelfTest
         Check(wet == 0, $"no plot runs onto the shore ({wet})");
     }
 
-    /// The drawn map's ground is dressed (docs/WORLD_DRESS.md): small cover on every kind of land, none where it must not
+    /// The drawn map's ground is dressed (docs/pre-demo/WORLD_DRESS.md): small cover on every kind of land, none where it must not
     /// stand, each land its own plants, and the same every time it is built.
     static void MapDressed()
     {
@@ -469,7 +469,7 @@ public static partial class SelfTest
         Check(m.Provinces.Select(p => p.Name).Distinct().Count() == m.Provinces.Count && m.Provinces.All(p => d.Provinces.All(q => q.Name != p.Name)), "province names are invented and unique");
         Check(m.Settlements.All(s => !m.InSea(s.Pos) && m.ProvinceAt(s.Pos).Id == s.Province && m.Provinces[s.Province].Faction == s.Faction), "every settlement on land, in its own realm's province");
         Check(m.Provinces.All(p => p.Neighbors.Count > 0 && p.Neighbors.All(n => m.Provinces[n].Neighbors.Contains(p.Id))), "every province has neighbours, and they have it");
-        // Holds (docs/HOLDS.md HD4): towns rare, castles common, every province a seat, every village bound, every realm a town.
+        // Holds (docs/pre-demo/HOLDS.md HD4): towns rare, castles common, every province a seat, every village bound, every realm a town.
         int nTowns = a.S.Settlements.Count(s => s.Kind == SettlementKind.Town), castles = a.S.Settlements.Count(s => s.Kind == SettlementKind.Castle);
         Check(nTowns <= 25 && castles >= 90, $"towns are rare and castles common ({nTowns} towns, {castles} castles)");
         Check(m.Provinces.All(p => a.S.Settlements.Any(s => s.Province == p.Id && s.Kind != SettlementKind.Village)), "every province has a seat");
@@ -514,7 +514,7 @@ public static partial class SelfTest
         Check(wet.Count == 0, "nobody on the sea: " + string.Join(", ", wet.Select(q => $"{q.Name} at {q.Pos}")));
     }
 
-    /// Settlements as laid out for their models (docs/SETTLEMENTS.md SM1): every people has a style, every place a plan whose gate
+    /// Settlements as laid out for their models (docs/pre-demo/SETTLEMENTS.md SM1): every people has a style, every place a plan whose gate
     /// faces a road and whose doorstep is dry ground outside it, nothing grows inside a footprint, and a place that changes
     /// hands is rebuilt with its flags.
     static void PlacesPlanned()
@@ -545,7 +545,7 @@ public static partial class SelfTest
         Check(flown > bare && w.PlaceVerts == bare, "flags go up when a place has a holder and come down with him, the place rebuilt each time");
     }
 
-    /// Towns laid out by their plans (docs/SETTLEMENTS.md SM2): every town walled, a gate on each road into it, a landmark on
+    /// Towns laid out by their plans (docs/pre-demo/SETTLEMENTS.md SM2): every town walled, a gate on each road into it, a landmark on
     /// its square, its houses in rows, none in water or on a road, ports with a crane and warehouses by the quay.
     static void TownsLaidOut()
     {
@@ -614,10 +614,10 @@ public static partial class SelfTest
         Check(bad.Count == 0, $"no village house in water or on a road ({bad.Count}): " + string.Join(", ", bad.Take(6)));
     }
 
-    /// The place's state on its model (docs/SETTLEMENTS.md SM4): a site for each work round every town and castle, suburbs
+    /// The place's state on its model (docs/pre-demo/SETTLEMENTS.md SM4): a site for each work round every town and castle, suburbs
     /// by the towns' roads, none of it in water, on a road or on a neighbour's ground; each state builds its own mesh, and
     /// the same state the same mesh.
-    /// The battlefield is built as its people build (docs/SETTLEMENTS.md SM6): an assault's field carries the place's people,
+    /// The battlefield is built as its people build (docs/pre-demo/SETTLEMENTS.md SM6): an assault's field carries the place's people,
     /// a castle's a keep and a close-towered curtain, a town's its landmark and houses; an unstyled field is untouched;
     /// every people's field builds.
     static void FieldsStyled()

@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// How a commander's nature changes his battle (docs/PLAYTEST.md PT6b): numbers the general reads in place of his
+/// How a commander's nature changes his battle (docs/pre-demo/PLAYTEST.md PT6b): numbers the general reads in place of his
 /// fixed ones. 1 and 0 are the plain general.
 public readonly record struct Nature(float Closes, float ReserveWait, float CaptainJoins, float Retreat, float Patience, float HuntWait, bool Honourable)
 {

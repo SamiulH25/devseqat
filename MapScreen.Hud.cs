@@ -31,7 +31,7 @@ partial class MapScreen
         bool click = pendingClick;
         pendingClick = false;
         ui.Begin(gd.Viewport, ms.Position, click);
-        // A panel has the screen to itself (docs/PLAYTEST.md PT2a): the map's labels, clock, feed, minimap, captain's card,
+        // A panel has the screen to itself (docs/pre-demo/PLAYTEST.md PT2a): the map's labels, clock, feed, minimap, captain's card,
         // company cards and contracts are drawn only while no panel is open (the panels show the crowns and men they need).
         if (panel == PanelKind.None)
         {
@@ -104,7 +104,7 @@ partial class MapScreen
         foreach (var s in C.S.Settlements)
         {
             if (Screen(G(s.Pos, s.Kind == SettlementKind.Village ? 6 : s.Size == 3 ? 15 : 11)) is not Vector2 sp) continue;
-            // A hierarchy (docs/HOLDS.md HD5): towns large, castles small, villages only close in. Pulled back, villages drop out
+            // A hierarchy (docs/pre-demo/HOLDS.md HD5): towns large, castles small, villages only close in. Pulled back, villages drop out
             // first, then tower houses, and towns shrink last.
             if (s.Kind == SettlementKind.Village && zoom > 150 && s.Id != goalTown) continue;
             if (s.Size == 1 && zoom > 300 && s.Id != goalTown) continue;
@@ -297,7 +297,7 @@ partial class MapScreen
         }
     }
 
-    /// The captain's card at the bottom left (docs/PLAYTEST.md PT2b): rank and renown with its bar, the purse, and one row of
+    /// The captain's card at the bottom left (docs/pre-demo/PLAYTEST.md PT2b): rank and renown with its bar, the purse, and one row of
     /// men, food and horses. What renown buys next and whom you serve are on hover; the party screen (P) has the rest, and
     /// the next step is the chip under the clock (`NextChip`).
     void CaptainPanel()

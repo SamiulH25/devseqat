@@ -225,7 +225,7 @@ sealed class Ui
     }
 
     /// The head and shoulders of a painted face (`PortraitPainter.HeadCrop`), square: bigger in a short row than the
-    /// whole bust would be (docs/COMPANY.md C1).
+    /// whole bust would be (docs/pre-demo/COMPANY.md C1).
     public void FaceHead(Face f, Rectangle box, Color? tint = null)
     {
         int m = Math.Min(box.Width, box.Height), full = PortraitPainter.HeadCrop.Width;

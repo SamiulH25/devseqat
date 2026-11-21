@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The quests screen (J, docs/PLAYTEST.md PT3): what you hold, what is offered on the boards you have seen, and what you
+/// The quests screen (J, docs/pre-demo/PLAYTEST.md PT3): what you hold, what is offered on the boards you have seen, and what you
 /// finished or failed. SHOW ME looks at the place on the map; PIN puts one quest on the HUD.
 sealed partial class MapScreen
 {

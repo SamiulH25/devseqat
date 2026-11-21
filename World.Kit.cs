@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The settlement kit (docs/SETTLEMENTS.md): the pieces every place is built of, in its people's style (`PlaceStyle`).
+/// The settlement kit (docs/pre-demo/SETTLEMENTS.md): the pieces every place is built of, in its people's style (`PlaceStyle`).
 /// Detail is laid on as flat quads (a window or a beam is 2 triangles), so a town can hold a hundred houses. Drawing only.
 sealed partial class World
 {

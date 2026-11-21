@@ -123,7 +123,7 @@ sealed partial class MapScreen
         return new Prepared(terrain, new World(terrain, treeScale: MapTreeScale, placeState: id => PlaceStateOf(c, id)));
     }
 
-    /// What a settlement's model shows of it (docs/SETTLEMENTS.md): its holder's colours on its flags (gold for your own fiefs;
+    /// What a settlement's model shows of it (docs/pre-demo/SETTLEMENTS.md): its holder's colours on its flags (gold for your own fiefs;
     /// villages fly none), its prosperity's band, the works built and its walls' level.
     static PlaceState PlaceStateOf(Campaign c, int id)
     {
@@ -186,7 +186,7 @@ sealed partial class MapScreen
         pkb = kb; pms = ms;
         kb = Keyboard.GetState(); ms = Mouse.GetState();
         hover = default;
-        float run = speed == 0 ? 0 : dt; // paused: wind, water, sky, birds, boats and smoke all hold still (PT1, docs/PLAYTEST.md)
+        float run = speed == 0 ? 0 : dt; // paused: wind, water, sky, birds, boats and smoke all hold still (PT1, docs/pre-demo/PLAYTEST.md)
         time += run;
         FrameProf.Begin("mapLife");
         UpdateLife(run);
@@ -451,7 +451,7 @@ sealed partial class MapScreen
         foreach (int id in trails.Keys.Where(id => C.PartyById(id) == null).ToList()) trails.Remove(id);
     }
 
-    /// What is under the mouse on the map: a party, a town, a ruin or the bare ground (PT1, docs/PLAYTEST.md).
+    /// What is under the mouse on the map: a party, a town, a ruin or the bare ground (PT1, docs/pre-demo/PLAYTEST.md).
     readonly record struct MapPick(Party? Party, Settlement? Town, Site? Site, Vector2 Ground);
 
     MapPick hover;
@@ -941,7 +941,7 @@ sealed partial class MapScreen
             case "saveas": saves.Show(SaveScreen.Use.Save, C.S); panel = PanelKind.Saves; break;
             case "load": saves.Show(SaveScreen.Use.Load, C.S); panel = PanelKind.Saves; break;
             case "close": panel = PanelKind.None; zoom = 60; pitch = 0.7f; break;
-            case "place" when s != null: // a settlement close up, from before its gate a little aside (docs/SETTLEMENTS.md)
+            case "place" when s != null: // a settlement close up, from before its gate a little aside (docs/pre-demo/SETTLEMENTS.md)
             {
                 panel = PanelKind.None; follow = false; bare = true; focus = s.Pos; pitch = 0.6f;
                 zoom = s.Kind == SettlementKind.Town ? 42 : s.Kind == SettlementKind.Village ? 28 : s.Size switch { 1 => 24, 3 => 40, _ => 31 };
@@ -957,7 +957,7 @@ sealed partial class MapScreen
                 panel = PanelKind.None; follow = false; zoom = 95; pitch = 0.85f;
                 focus = C.S.Settlements.Where(s => s.Kind == SettlementKind.Village).OrderBy(s => Vector2.Distance(s.Pos, C.Player.Pos)).First().Pos;
                 break;
-            case "holds": // the nearest tower house to the player (docs/HOLDS.md HD5)
+            case "holds": // the nearest tower house to the player (docs/pre-demo/HOLDS.md HD5)
                 panel = PanelKind.None; follow = false; zoom = 70; pitch = 0.72f;
                 focus = C.S.Settlements.Where(s => s.Size == 1).OrderBy(s => Vector2.Distance(s.Pos, C.Player.Pos)).Select(s => s.Pos).DefaultIfEmpty(C.Player.Pos).First();
                 break;

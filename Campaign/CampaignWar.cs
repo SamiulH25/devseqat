@@ -23,7 +23,7 @@ public sealed partial class Campaign
         int room = Rules.MenLimit(Captain) - Player.Men - Player.Wounded;
         if (room <= 0) return "PARTY IS FULL";
         string role = Rules.TroopRole(g.Troop);
-        if (Troops.Get(g.Troop) is { Noble: true, Order: "" }) return "NOBLES WILL NOT SERVE YOU: HOLD THEM FOR RANSOM"; // docs/NOBILITY.md N2
+        if (Troops.Get(g.Troop) is { Noble: true, Order: "" }) return "NOBLES WILL NOT SERVE YOU: HOLD THEM FOR RANSOM"; // docs/pre-demo/NOBILITY.md N2
         if (role == "casters" && HasCircle) return OneCircle;
         int n = Math.Min(g.Count, Math.Min(room, Rules.CapOf(g.Troop, role)));
         if (Player.Companies.Count >= Rules.CompanySlots(Captain)) return "NO FREE COMPANY";

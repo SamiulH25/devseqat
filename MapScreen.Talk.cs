@@ -50,7 +50,7 @@ sealed partial class MapScreen
         ui.Text(ui.Fit((house != "" ? house + ", " : "") + realm, lw), lx, y, Style.Dim, 1); y += ui.U(13);
         ui.Text(ui.Fit(string.Join(", ", ch.Traits).ToUpperInvariant() + $"  AGE {ch.Age}", lw), lx, y, Style.Dim, 1); y += ui.U(15);
         float op = C.OpinionOfYou(ch);
-        // What he thinks of you as one chip; why, his family and his bonds on hover (docs/PLAYTEST.md PT2f).
+        // What he thinks of you as one chip; why, his family and his bonds on hover (docs/pre-demo/PLAYTEST.md PT2f).
         y += ui.U(2);
         var oc = new Rectangle(lx, y, ui.Chip(lx, y, $"{Regard(op)} ({op:+0;-0;0})", OpinionColor(op), "heart"), ui.U(13));
         if (ui.Hover(oc))

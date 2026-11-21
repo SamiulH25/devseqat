@@ -548,7 +548,7 @@ sealed partial class World : IDisposable
                 case FoliageKind.Rowboat: Rowboat(m, f.Pos, f.Scale, rng); break;
                 case FoliageKind.Village: Village(m, b, f.Scale, rng); break;
                 case FoliageKind.Town: Town(m, b, f.Scale, rng); break;
-                case FoliageKind.Castle when f.Dry == 1: TowerHouse(m, b, f.Scale, rng); break; // hold sizes (docs/HOLDS.md HD5)
+                case FoliageKind.Castle when f.Dry == 1: TowerHouse(m, b, f.Scale, rng); break; // hold sizes (docs/pre-demo/HOLDS.md HD5)
                 case FoliageKind.Castle when f.Dry == 3: GreatCastle(m, b, f.Scale, rng); break;
                 case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;
                 case FoliageKind.Wall when t.Wall?.AtBreach(f.Pos.X) == true && FieldStyle is PlaceStyle fs: FieldBreach(m, fs, f.Pos, rng); break; // a people's field (World.SiegeField.cs, SM6)
@@ -686,7 +686,7 @@ sealed partial class World : IDisposable
             m.Blob(b + new Vector3(0.6f * s, 0.2f * s, 0.2f * s), new Vector3(0.6f, 0.5f, 0.6f) * s, Jitter(leaf, r, 0.1f), r, 0.2f);
     }
 
-    /// `dry`: the map's dry lands have warm sandstone, not grey rock (docs/WORLD_DRESS.md).
+    /// `dry`: the map's dry lands have warm sandstone, not grey rock (docs/pre-demo/WORLD_DRESS.md).
     static void Rock(Mesh m, Vector3 b, float s, Random r, float dry = 0)
     {
         var stone = Jitter(Color.Lerp(new Color(128, 126, 122), new Color(182, 152, 110), dry), r, 0.12f);

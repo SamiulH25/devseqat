@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// The campaign map's settlements (docs/SETTLEMENTS.md): built from their plans (`Terrain.Places`) in their own buffers, a
+/// The campaign map's settlements (docs/pre-demo/SETTLEMENTS.md): built from their plans (`Terrain.Places`) in their own buffers, a
 /// tile of the map each, so a place whose state changes (`PlaceState`: its owner's colours, ...) is rebuilt with its tile
 /// alone, on a worker thread, and swapped in on the main thread. Drawing only.
 sealed partial class World

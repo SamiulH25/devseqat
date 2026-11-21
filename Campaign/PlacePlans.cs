@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// How a settlement lies on the map (docs/SETTLEMENTS.md): its people's style, its footprint, the roads that leave it, the water
+/// How a settlement lies on the map (docs/pre-demo/SETTLEMENTS.md): its people's style, its footprint, the roads that leave it, the water
 /// by it, the way its gate faces and where a party stands outside that gate. Derived at each map build, never saved. Headless.
 public sealed record PlacePlan(int Id, SettlementKind Kind, int Size, string Style, Vector2 Pos, int Seed, float Radius)
 {
@@ -41,7 +41,7 @@ public sealed record PlacePlan(int Id, SettlementKind Kind, int Size, string Sty
     public static Vector2 Dir(float bearing) => new(MathF.Cos(bearing), MathF.Sin(bearing));
 }
 
-/// What a place's model shows of its state (docs/SETTLEMENTS.md): the colours its flags fly (a `Style.Sides` palette; -1 none),
+/// What a place's model shows of its state (docs/pre-demo/SETTLEMENTS.md): the colours its flags fly (a `Style.Sides` palette; -1 none),
 /// how well it does (`Wealth`: 0 poor, 1 middling, 2 rich), the works it has built (a bit per `WorkIds`) and its walls' level;
 /// (SM5) how battered its walls are (`Battered`: 0 whole, 1-2 knocked about, 3 breached), the colours of a camp besieging it
 /// (`Besieger`, -1 none) and the engines it has ready (a bit per `EngineIds`), and whether it burns (a village just raided).

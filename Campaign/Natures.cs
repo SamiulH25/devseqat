@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// A man of his own (docs/COMPANY.md C2): each named man has a nature, drawn when he is named and weighted by the deed that
+/// A man of his own (docs/pre-demo/COMPANY.md C2): each named man has a nature, drawn when he is named and weighted by the deed that
 /// named him. His company feels one nature, its senior man's (most battles, not hurt): six through a small battle effect
 /// (`nature_*` in Data/effects.json, carried as the company's standing), Merry in camp (cohesion heals faster) and Gentle on
 /// a lost field (more of the fallen live). Natures are drawn on the roll's own dice, so the main stream never moves.

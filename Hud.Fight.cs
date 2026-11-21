@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// Hud, the fight view (docs/PLAYTEST.md PT4, "As rebuilt"): you are the captain, with a reticle and no cursor. Bottom left
+/// Hud, the fight view (docs/pre-demo/PLAYTEST.md PT4, "As rebuilt"): you are the captain, with a reticle and no cursor. Bottom left
 /// your vitals as bare bars; bottom right the arms that listen to you (1 foot, 2 bows, 3 horse, 4 mages, 0 all); a thin
 /// balance bar and the battle's speed at the top (the command view has them at the bottom); the order ring while its key is
 /// held. No cards, no map, no buttons: those are the command view's.

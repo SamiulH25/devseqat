@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The men of the company (docs/COMPANY.md C1-C7).
+/// The men of the company (docs/pre-demo/COMPANY.md C1-C7).
 public static partial class SelfTest
 {
     /// C1: two named men look different; one man's face is the same after a save and load; wounds scar him; and the face on

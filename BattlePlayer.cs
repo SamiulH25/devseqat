@@ -5,7 +5,7 @@ namespace Ironfield;
 /// Battle: the player's own unit (input to movement and actions, mounting, rallying).
 public partial class Battle
 {
-    /// While you command, the captain keeps his own guard (docs/PLAYTEST.md PT4): he turns to the nearest foe winding up a
+    /// While you command, the captain keeps his own guard (docs/pre-demo/PLAYTEST.md PT4): he turns to the nearest foe winding up a
     /// blow at him and blocks on the right side. He never parries and never strikes back, so a captain left in a melee
     /// still goes down; it only buys the time to look at the field. Read from the sim alone, so replays agree.
     public bool SelfGuard { get; private set; }

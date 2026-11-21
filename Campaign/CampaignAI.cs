@@ -103,7 +103,7 @@ public partial class Campaign
             // Sellswords come from every realm: a foreign company is the other way to field a culture's elite lines (4.2).
             int from = rng.Chance(0.5f) ? t.Faction : rng.Next(S.Factions.Count);
             string troop = Armies.LineTroop(role, tier, from);
-            for (int lower = tier; Troops.Get(troop).Noble && lower > 1;) troop = Armies.LineTroop(role, --lower, from); // sellswords are commoners: nobles serve their own lords (docs/NOBILITY.md N2)
+            for (int lower = tier; Troops.Get(troop).Noble && lower > 1;) troop = Armies.LineTroop(role, --lower, from); // sellswords are commoners: nobles serve their own lords (docs/pre-demo/NOBILITY.md N2)
             var m = NewCompany(troop, role, (int)(Rules.CapOf(troop, role) * rng.Range(0.6f, 0.9f)), 0);
             m.Culture = Factions.CultureOf(from);
             m.Stacks[0].AddXp(rng.Range(0, Math.Max(1, m.Type.UpgradeXp) * 0.5f) * m.Men);

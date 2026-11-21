@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Villages hold castles together (docs/HOLDS.md HD3). Each village has one holder (`Settlement.Holder`): the castle or town
+/// Villages hold castles together (docs/pre-demo/HOLDS.md HD3). Each village has one holder (`Settlement.Holder`): the castle or town
 /// whose demesne it is, chosen once. Its men fill the holder's muster, its harvest the granary, its foals the stables, and
 /// stripped or burnt villages starve all three, so a siege can begin by raiding round a castle. The castle gives back: its
 /// garrison rides out at brigands near its villages, and villages held in peace keep the seat's unrest down.

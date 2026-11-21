@@ -161,12 +161,12 @@ public sealed class FoundedOrder
 public sealed class Soldier
 {
     public int Id, Battles, Kills, Wounds, Joined, DiedDay, Company = -1;
-    /// His age (docs/COMPANY.md C1): 17-30 when named, a year older each year; 0 on an old save (`AgeOf` makes one up).
+    /// His age (docs/pre-demo/COMPANY.md C1): 17-30 when named, a year older each year; 0 on an old save (`AgeOf` makes one up).
     public int Age;
     public string Name = "", Troop = "", Fate = "", DiedAt = "", CompanyName = "";
-    /// His nature, one word (docs/COMPANY.md C2: Campaign.Natures), and the place he comes from.
+    /// His nature, one word (docs/pre-demo/COMPANY.md C2: Campaign.Natures), and the place he comes from.
     public string Nature = "", Home = "";
-    /// Ties to other named men, at most two (docs/COMPANY.md C3), and whether he fights his next battle to avenge one.
+    /// Ties to other named men, at most two (docs/pre-demo/COMPANY.md C3), and whether he fights his next battle to avenge one.
     public List<SoldierTie> Ties = new();
     public bool Avenging;
     /// Your hand on the roll (C4): times you mentioned him after a win (three make him "of the banner"), and what you armed
@@ -304,7 +304,7 @@ public sealed class Party
 public sealed class Settlement
 {
     public int Id, Province, Faction, Recruits, Horses;
-    /// Esquires a castle's house will send with you (docs/NOBILITY.md N2); only castles raise them.
+    /// Esquires a castle's house will send with you (docs/pre-demo/NOBILITY.md N2); only castles raise them.
     public int Nobles;
     /// War hounds ready at this place's kennel (docs/archive/CREATURES.md phase 4).
     public int Hounds;
@@ -324,7 +324,7 @@ public sealed class Settlement
     public float SiegeSince;                       // when the siege began (ladders take 12 hours)
     /// How far engines have battered its walls (0-1, docs/archive/SIEGECRAFT.md A3); mended a little each day it is not besieged.
     public float Battered;
-    /// When it was last raided (game hours; villages): its model shows burnt houses and smoke for some days (docs/SETTLEMENTS.md SM5).
+    /// When it was last raided (game hours; villages): its model shows burnt houses and smoke for some days (docs/pre-demo/SETTLEMENTS.md SM5).
     public float RaidedAt = -1e6f;
     /// Fiefs (F6): prosperity scales income and recruits; unrest above 70 raises rebels and at 100 the place defects.
     public float Prosperity = 50, Unrest;
@@ -334,9 +334,9 @@ public sealed class Settlement
     public float BuildUntil;
     /// Tax level: 0 low, 1 normal, 2 high (set by the holder; a seat's villages pay at its rate).
     public int Tax = 1;
-    /// A village's holder (docs/HOLDS.md HD3): the id of the castle or town whose demesne it is (-1 until bound; not villages).
+    /// A village's holder (docs/pre-demo/HOLDS.md HD3): the id of the castle or town whose demesne it is (-1 until bound; not villages).
     public int Holder = -1;
-    /// A castle's size (docs/HOLDS.md HD5): 1 tower house, 2 castle, 3 great castle; 0 for towns, villages and castles of old
+    /// A castle's size (docs/pre-demo/HOLDS.md HD5): 1 tower house, 2 castle, 3 great castle; 0 for towns, villages and castles of old
     /// saves and generated maps (read as a castle: `Size`).
     public int Rank;
     public int Size => Kind == SettlementKind.Castle ? (Rank == 0 ? 2 : Rank) : 0;
@@ -475,7 +475,7 @@ public sealed class CaptainState
     public int ArmorTier, HelmTier, HorseTier, Contract = 0; // Contract: faction you serve, -1 = none
     /// What the captain wears and carries (docs/archive/PROGRESSION.md P1).
     public CaptainKit Kit = new();
-    /// Every piece the captain owns as a thing (docs/COMPANY.md C9): make, marks, name, story. Free plain pieces need none.
+    /// Every piece the captain owns as a thing (docs/pre-demo/COMPANY.md C9): make, marks, name, story. Free plain pieces need none.
     public List<GearItem> Baggage = new();
     /// Career (F5): you swore fealty to the realm you serve (a vassal, not a hired sword); when this contract began;
     /// and the highest rank reached so far (an int of Rank), so each career beat is shown once.
@@ -636,7 +636,7 @@ public sealed class CampaignState
     public List<FactionState> Factions = new();
     public List<LogEntry> Log = new();
     public List<Contract> Contracts = new();   // the contracts you have accepted
-    /// The quests screen (docs/PLAYTEST.md PT3): finished and failed quests, oldest first; and the one pinned to the HUD (-1: none).
+    /// The quests screen (docs/pre-demo/PLAYTEST.md PT3): finished and failed quests, oldest first; and the one pinned to the HUD (-1: none).
     public List<QuestRecord> QuestHistory = new();
     public int PinnedQuest = -1;
     /// Diplomacy (F7): alliances, gold owed under terms, the record of treaties (newest last), and the marshal's summons to you.
@@ -822,11 +822,11 @@ public sealed class Balance
     public float WoundBase = 0.3f, WoundArmor = 40, WoundMin = 0.25f, WoundMax = 0.7f, CaptureChance = 0.5f, FledReturnOnDefeat = 0.7f;
     public float XpParticipation = 10, XpVictory = 1.5f, XpPerKillTier = 6;
     public float RenownPerVictory = 5, RenownStrengthDivisor = 50;
-    /// What the captain's baggage carries (docs/COMPANY.md C9): a base, and more for each spare horse (to six).
+    /// What the captain's baggage carries (docs/pre-demo/COMPANY.md C9): a base, and more for each spare horse (to six).
     public float BaggageBase = 20, BaggagePerHorse = 5;
     /// Your hand on the roll (C4): the purse for a man you mention, and a pension for a man you send home.
     public int MentionPurse = 20, PensionCost = 40;
-    /// What a company's senior named man's nature adds to its might in auto-resolve (docs/COMPANY.md C2).
+    /// What a company's senior named man's nature adds to its might in auto-resolve (docs/pre-demo/COMPANY.md C2).
     public float NatureWeight = 0.01f;
     public float CompanySlotsBase = 10, MenBase = 40, MenRenownDivisor = 5;
     /// Men per company, party, band and garrison are this many times the base numbers below; per-man prices are divided by it.
@@ -850,7 +850,7 @@ public sealed class Balance
     /// Cohesion a company loses with each named man killed or lost (L3).
     public float FallenCohesion = 1.5f;
     public int VillageRecruitsMax = 8, LordsPerFaction = 8, BanditsMax = 80;
-    /// Noble recruits (docs/NOBILITY.md N2): a castle's pool of esquires (times ArmyScale), the days between each new batch, the price against a levy's, the renown a house wants of you.
+    /// Noble recruits (docs/pre-demo/NOBILITY.md N2): a castle's pool of esquires (times ArmyScale), the days between each new batch, the price against a levy's, the renown a house wants of you.
     public int NobleRecruitsMax = 4, NobleRefillDays = 3;
     public float NobleMarkup = 1.6f, NobleRenown = 60;
     /// A bandit band appears this many times a day while below BanditsMax (0-1) — the roll for each attempt.
@@ -873,9 +873,9 @@ public sealed class Balance
     /// how often the AI picks a fight on its own.
     public float LordAggression = 0.35f;
     public float HealField = 0.08f, HealTown = 0.25f, DrillCamp = 0.6f, DrillTown = 1.2f;
-    /// The highest tier men may be promoted into away from a town or yard (docs/HOLDS.md HD1).
+    /// The highest tier men may be promoted into away from a town or yard (docs/pre-demo/HOLDS.md HD1).
     public int CampTier = 3;
-    /// The castle's MUSTER (docs/HOLDS.md HD2): the highest tier its yard trains, the castellan's cut on pooled recruits, the
+    /// The castle's MUSTER (docs/pre-demo/HOLDS.md HD2): the highest tier its yard trains, the castellan's cut on pooled recruits, the
     /// granary's reserve (garrison days kept back) and how many mouths a day of its stores feeds, the stables' stock and breeding.
     public int CastleYardTier = 5;
     public float MusterMarkup = 1.15f, GranaryReserve = 10, GranaryMouths = 60, CastleHorsesMax = 15, CastleHorsesWeek = 4;

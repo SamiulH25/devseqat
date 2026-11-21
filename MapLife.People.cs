@@ -38,7 +38,7 @@ sealed partial class MapLife
     readonly Dictionary<int, List<Person>> crowds = new();
     readonly List<Traveller> travellers = new();
     readonly List<Boat> boats = new();
-    /// Fishing boats off the coast (docs/WORLD_DRESS.md WD4): they drift over the shallows, turning back from the
+    /// Fishing boats off the coast (docs/pre-demo/WORLD_DRESS.md WD4): they drift over the shallows, turning back from the
     /// beach and from deep water.
     sealed class SeaBoat
     {

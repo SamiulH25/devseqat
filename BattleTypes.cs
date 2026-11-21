@@ -24,9 +24,9 @@ public sealed class BattleOptions
     public HashSet<string> Perks = new();
     /// The captain's aura tier (docs/archive/KNIGHT_ORDERS.md 5.1): 0 unawakened, 1 kindled, 2 aura blade, 3 aura armour, 4 master, 5 transcendent.
     public int AuraTier;
-    /// Your renown: how worth noticing you are to the enemy (docs/COMPANY.md C12; full at 500).
+    /// Your renown: how worth noticing you are to the enemy (docs/pre-demo/COMPANY.md C12; full at 500).
     public float Renown;
-    /// A lord with a grudge leads the enemy (docs/COMPANY.md C13): the line he swore, empty for none. He comes for you himself.
+    /// A lord with a grudge leads the enemy (docs/pre-demo/COMPANY.md C13): the line he swore, empty for none. He comes for you himself.
     public string Grudge = "";
     /// The captain's forms in slot order (docs/archive/KNIGHT_ORDERS.md 5.6): the first three that are not great go on U, I, O; the first
     /// great one on L. Their ranks (1-3) by id.
@@ -66,7 +66,7 @@ public sealed class BattleOptions
     public TerrainParams? Ground;
     /// The enemy realm's temper (Factions.Aggression, 0.3-3): how soon an AI holding good ground loses patience and attacks.
     public float EnemyAggression = 1;
-    /// The enemy lord's traits (docs/PLAYTEST.md PT6b): Reckless, Cautious, Ambitious, Honourable... read by the general
+    /// The enemy lord's traits (docs/pre-demo/PLAYTEST.md PT6b): Reckless, Cautious, Ambitious, Honourable... read by the general
     /// (`Battle.Nature`, BattleNature.cs). Empty for brigands, monsters and quick battles.
     public string[] LeaderTraits = Array.Empty<string>();
     /// Heraldry palette per team (Style.Sides index): your colours and theirs (3 = bandits).

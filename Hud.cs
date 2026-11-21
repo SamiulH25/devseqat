@@ -13,7 +13,7 @@ public enum Cmd
 
 public enum MenuItem { Resume, Controls, NewBattle, Quit, Withdraw, Continue, Title, Settings }
 
-/// All 2D interface of a battle. It is two HUDs that never show together (docs/PLAYTEST.md PT4, "As rebuilt"):
+/// All 2D interface of a battle. It is two HUDs that never show together (docs/pre-demo/PLAYTEST.md PT4, "As rebuilt"):
 /// the command view (Hud.Deck.cs: top bar with the clock and speeds, minimap, company cards, the captain's plate, the order
 /// deck) and the fight view (Hud.Fight.cs: vitals, the arms that listen, the order ring). This file holds what both share:
 /// layout and hit-testing, primitives, flags on the field, hover cards. Layout is in 720p units times `Ui`.
@@ -490,7 +490,7 @@ sealed partial class Hud
     }
 
     /// What each of your companies was last told (its order, target, formation, place), and when that changed: a new order
-    /// flashes its card and flag for half a second (docs/PLAYTEST.md PT4 6).
+    /// flashes its card and flag for half a second (docs/pre-demo/PLAYTEST.md PT4 6).
     readonly Dictionary<Squad, (int Key, float At)> orderSeen = new();
 
     float? OrderFlash(Squad s)

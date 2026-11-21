@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// What stands on a lot of a place (docs/SETTLEMENTS.md SM2).
+/// What stands on a lot of a place (docs/pre-demo/SETTLEMENTS.md SM2).
 public enum LotUse : byte { House, Landmark, Warehouse, Crane, Stall, Yurt, Mill, Well, Suburb, Works, Camp, Fire, Engine }
 
 /// One building's ground in a place: its middle, its turn (the door faces -`Across`, as `World.Dwelling` builds), its

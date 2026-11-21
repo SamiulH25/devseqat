@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The enemy hunts you (docs/COMPANY.md C13). When you do real harm or stand far forward, the enemy general sends his horse
+/// The enemy hunts you (docs/pre-demo/COMPANY.md C13). When you do real harm or stand far forward, the enemy general sends his horse
 /// (or his reserve) for you, once and then after a cooldown; good bows mark a captain in the open with a warning first; a
 /// lord with a grudge (`BattleOptions.Grudge`) comes for you himself; his nearest men close round him when you come near.
 /// All on the battle's own

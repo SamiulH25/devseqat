@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Arrows you can see (docs/COMPANY.md C14). Drawing only: `Battle.Arrows` and every hit stay as they are. Near the camera
+/// Arrows you can see (docs/pre-demo/COMPANY.md C14). Drawing only: `Battle.Arrows` and every hit stay as they are. Near the camera
 /// each missile is a real sprite turned along its flight (the bowmen's own "arrow" part, a short thick bolt, the javelin),
 /// with its fletching in the shooting side's cloth; far off it thins to a light streak so a volley of hundreds reads as one
 /// flight. Arrows that come down stand in the ground at the angle they fell, for the whole battle (capped, the oldest
