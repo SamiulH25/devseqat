@@ -5,7 +5,8 @@ namespace Ironfield;
 
 /// Hud, the fight view (docs/PLAYTEST.md PT4, "As rebuilt"): you are the captain, with a reticle and no cursor. Bottom left
 /// your vitals as bare bars; bottom right the arms that listen to you (1 foot, 2 bows, 3 horse, 4 mages, 0 all); a thin
-/// balance bar at the top; the order ring while its key is held. No cards, no map, no buttons: those are the command view's.
+/// balance bar and the battle's speed at the top (the command view has them at the bottom); the order ring while its key is
+/// held. No cards, no map, no buttons: those are the command view's.
 sealed partial class Hud
 {
     public static readonly string[] ArmNames = { "FOOT", "BOWS", "HORSE", "MAGES" };
@@ -54,7 +55,8 @@ sealed partial class Hud
         return arms.Count > 0 && inArms == live ? string.Join(" + ", arms) : live == 1 ? Selected.First(s => s.Alive > 0).Name.ToUpperInvariant() : $"{live} COMPANIES";
     }
 
-    /// Top centre: the two sides on one thin bar, with the men standing. The clock and the speeds are the command view's.
+    /// Top centre: the two sides on one thin bar, with the men standing, and under it the battle's speed: the five steps
+    /// as rising bars (keys [ and ]), a pause mark when paused.
     void FightTop()
     {
         if (B.Options.Duel) return;
@@ -64,7 +66,17 @@ sealed partial class Hud
         kit.TugBar(new Rectangle(x, y, bw, U(5)), f, SideArms(0).Ui, Foe);
         ShadowR($"{mine}", x - U(6), y - U(1), SideArms(0).Ui, 1);
         ShadowL($"{foes}", x + bw + U(6), y - U(1), Foe, 1);
-        if (Speed != 1 && !Paused) Shadowed($"SPEED X{Speed:0.##}", W / 2f, y + U(10), Warn, 1, 1);
+        if (Deploying) return;
+        string word = Paused ? "PAUSED" : Speed != 1 ? $"X{Speed:0.##}" : "SPEED";
+        int sx = W / 2 - (5 * U(6) + U(6) + TW(word, 1)) / 2, sy = y + U(10);
+        var shade = new Rectangle(sx - U(4), sy - U(2), 5 * U(6) + U(14) + TW(word, 1), U(20));
+        Rect(shade, Color.Black * 0.5f);
+        for (int i = 0; i < 5; i++)
+        {
+            int h = U(4 + 3 * i);
+            Rect(new Rectangle(sx + i * U(6), sy + U(16) - h, U(4), h), i <= SpeedIdx ? (Paused ? Dim : Gold) : Color.White * 0.18f);
+        }
+        ShadowL(word, sx + 5 * U(6) + U(6), sy + U(6), Paused ? Gold : Speed != 1 ? Warn : Dim, 1);
     }
 
     /// Bottom left: health, breath, aura and horse as bare bars, what is in your hands, the rally and your kills.
@@ -128,8 +140,9 @@ sealed partial class Hud
                 if (Selected.Contains(s)) picked++;
             }
             bool whole = !all && picked == n, some = picked > 0, on = all || some;
-            Rect(r, Color.Black * (on ? 0.6f : 0.4f));
-            Frame(r, whole ? Gold : some ? Kit.Mul(Gold, 0.6f) : Color.White * (all ? 0.3f : 0.1f), U(whole ? 2 : 1));
+            Rect(r, whole ? Kit.Mul(Gold, 0.3f) * 0.85f : Color.Black * (on ? 0.6f : 0.4f)); // the chosen arm glows gold
+            Frame(r, whole ? Gold : some ? Kit.Mul(Gold, 0.6f) : Color.White * (all ? 0.3f : 0.1f), U(whole ? 3 : 1));
+            if (whole) Rect(new Rectangle(r.X + U(6), r.Y - U(5), r.Width - U(12), U(3)), Gold);
             Rect(new Rectangle(r.X + U(3), r.Y + U(3), U(11), U(12)), whole ? Gold : Color.Black * 0.6f);
             Text($"{arm + 1}", r.X + U(5), r.Y + U(6), whole ? Kit.IronDark : on ? Color.White : Dim, 1);
             kit.Icon(ArmIcons[arm], r.X + U(18), r.Y + U(3), on ? cloth : Kit.Mul(cloth, 0.6f), 2);

@@ -213,8 +213,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.cs (605 lines)
 - **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:126, Load:138, QuickGround:169, BeginCampaign:179, StartDeployment:214, StageCommandView:229, FinishCampaignBattle:238, NewBattle:253, WithMages:298, SetWorld:306, SetCommand:320, Pressed:332, Update:340, PlaySounds:428, Soundscape:467, SyncHud:560, MenuChoice:591
 
-## BattleScreen.Draw.cs (975 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:56, Total3DVerts:156, DrawBlobs:158, EaseFacings:200, Spray:216, Effects:229, GroundSteps:294, BuildSprites:350, DrawUnits3D:525, LensFill:540, SpriteStates:543, DrawSpritesBasic:551, DrawSpritesShaded:561, DrawSoft:572, Line:586, G:587, OrderArrows:596, OrderArrowLines:598, Ring:614, DashedRing:625, Band:638, BeamQuad:660, TorchRow:682, Precipitation:691, Fall:702, Stakes:721, SpellColor:744, Spells:750, AuraGlow:766, ChampionGlow:776, PlayerGlow:789, PendingFormsDrawn:803, RouteDots:828, PlanHook:841, DrawLines:871
+## BattleScreen.Draw.cs (1011 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:56, Total3DVerts:156, DrawBlobs:158, EaseFacings:200, Spray:216, Effects:229, GroundSteps:294, BuildSprites:350, DrawUnits3D:525, LensFill:540, SpriteStates:543, DrawSpritesBasic:551, DrawSpritesShaded:561, DrawSoft:572, Line:586, G:587, OrderArrows:596, OrderArrowLines:598, Ring:614, DashedRing:625, SelectionBox:640, Band:673, BeamQuad:695, TorchRow:717, Precipitation:726, Fall:737, Stakes:756, SpellColor:779, Spells:785, AuraGlow:801, ChampionGlow:811, PlayerGlow:824, PendingFormsDrawn:838, RouteDots:863, PlanHook:876, DrawLines:906
 
 ## BattleScreen.Effects.cs (210 lines)
 - **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:73, Stamp:98, Trample:107, MenMap:125, TrampleTexture:148, RearOf:165, BannerFalls:187, DrawFallingBanners:198
@@ -686,19 +686,19 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Hud.Command.cs (150 lines)
 - **Hud** (class, L8): ReserveAt:17, ToMeAt:18, AutoFillAt:19, HornAt:20, HornToggleAt:21, AddAt:22, OverCommand:23, DivisionColour:30, Movable:38, LayoutCommand:40, Tray:61, SmallButton:103, DivisionRings:113
 
-## Hud.cs (766 lines)
+## Hud.cs (771 lines)
 - **Cmd** (enum, L7)
 - **MenuItem** (enum, L14)
-- **Hud** (class, L20): StartAt:59, DeployToggleAt:63, Hud:88, U:90, Layout:104, CardAt:130, ButtonAt:131, MenuAt:132, PauseAt:133, SpeedAt:134, ModeAt:136, CaptainAt:137, MinimapAt:138, Over:141, Rect:147, Panel:150, Frame:152, Line:160, Bar:166, Text:169, TW:174, TextC:175, TextR:176, MoraleColor:178, GradeColor:204, RanksOf:205, PlanOf:206, AvgMorale:213, AvgMorale:220, Draw:229, DrawCommand:286, DrawFight:308, Strength:326, SideArms:337, GoalLines:340, MinimapPanel:352, FormBar:399, RelicSlot:426, SpellFan:438, OrderFlash:467, EffectMarks:478, Icon:496, Portrait:500, Crosshair:537, WheelPos:586, Banners:593, Banner:632, StateOf:707, FormationName:710, SquadTooltip:713, EnemyGlass:743
+- **Hud** (class, L20): StartAt:59, DeployToggleAt:63, Hud:88, U:90, Layout:104, CardAt:130, ButtonAt:131, MenuAt:132, PauseAt:133, SpeedAt:134, ModeAt:136, CaptainAt:137, MinimapAt:138, Over:141, Rect:147, Panel:150, Frame:152, Line:160, Bar:166, Text:169, TW:174, TextC:175, TextR:176, MoraleColor:178, GradeColor:204, RanksOf:205, PlanOf:206, AvgMorale:213, AvgMorale:220, Draw:229, DrawCommand:286, DrawFight:308, Strength:326, SideArms:337, GoalLines:340, MinimapPanel:352, FormBar:399, RelicSlot:426, SpellFan:438, OrderFlash:467, EffectMarks:478, Icon:496, Portrait:500, Crosshair:537, WheelPos:586, Banners:593, Banner:632, StateOf:712, FormationName:715, SquadTooltip:718, EnemyGlass:748
 
-## Hud.Deck.cs (397 lines)
-- **Hud** (class, L10): OrderInfo:13, ShapeOf:44, Shoots:50, Listening:62, ButtonCentre:74, LayoutDeck:78, LayoutOrders:112, TopBar:156, CaptainPlate:223, Lit:264, OrderDeck:278, Cards:322
+## Hud.Deck.cs (410 lines)
+- **Hud** (class, L11): OrderInfo:14, ShapeOf:45, Shoots:51, Listening:63, ButtonCentre:75, LayoutDeck:83, LayoutOrders:121, TopBar:167, CaptainPlate:234, Lit:275, OrderDeck:289, Cards:333
 
 ## Hud.Divisions.cs (379 lines)
 - **Hud** (class, L8): WheelGoals:17, LayoutDivisions:20, LayoutGoals:34, DivisionAt:51, GoalAt:52, GoalCloseAt:53, DivisionTag:57, GoalTag:65, DivisionCards:67, StanceExplain:106, PostExplain:121, GoalPanel:130, DivisionTooltip:173, SergeantFieldBadge:193, GoalWheel:203, SergeantPennants:226, NamedMarks:244, BannerMark:287, DivisionMarkers:310
 
-## Hud.Fight.cs (199 lines)
-- **Hud** (class, L9): ArmOf:15, LayoutFight:20, ShadowL:33, ShadowR:39, ListenWord:42, FightTop:58, Vitals:71, SwingWords:104, ArmChips:115, OrderToast:147, FightHints:160, Wheel:169
+## Hud.Fight.cs (212 lines)
+- **Hud** (class, L10): ArmOf:16, LayoutFight:21, ShadowL:34, ShadowR:40, ListenWord:43, FightTop:60, Vitals:83, SwingWords:116, ArmChips:127, OrderToast:160, FightHints:173, Wheel:182
 
 ## Hud.Fights.cs (134 lines)
 - **Hud** (class, L11): SampleFights:22, Lost:45, FightLine:61, FightMarks:69, Swords:106, Dashed:127

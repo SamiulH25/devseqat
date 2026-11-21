@@ -14,7 +14,7 @@ partial class Hud
     {
         alertRows.Clear();
         if (ShowResult || Deploying) return;
-        int y = U(10), room = (W - U(604)) / 2 - U(24);
+        int y = U(10) + (Command ? U(118) : 0), room = (W - U(604)) / 2 - U(24); // in the command view the cards hold the top
         foreach (var a in B.RecentAlerts(10, most))
         {
             float alpha = Math.Clamp((10 - (B.Time - a.Time)) / 2f, 0, 1);

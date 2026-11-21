@@ -635,6 +635,41 @@ partial class BattleScreen
 
     /// A mark painted on the ground (rings, order lines): a ribbon a few pixels wide at any distance, its edges a little
     /// see-through, instead of a one-pixel line that reads as an editor gizmo. Drawn blended after the lines.
+    /// A chosen company's ground outline: a box round its men, squared to its front, with bright corners, so which companies
+    /// are chosen reads from any height. It swells with the rings when the company is first chosen.
+    void SelectionBox(Squad s, float swell)
+    {
+        var fr = s.Front.LengthSquared() > 1e-4f ? Vector2.Normalize(s.Front) : Vector2.UnitY;
+        var rt = new Vector2(-fr.Y, fr.X);
+        float minR = float.MaxValue, maxR = float.MinValue, minF = float.MaxValue, maxF = float.MinValue;
+        Vector2 c = Vector2.Zero;
+        int n = 0;
+        foreach (var u in s.Units) if (u.Active) { c += u.Pos; n++; }
+        if (n == 0) return;
+        c /= n;
+        foreach (var u in s.Units)
+        {
+            if (!u.Active) continue;
+            var d = u.Pos - c;
+            float r = Vector2.Dot(d, rt), f = Vector2.Dot(d, fr);
+            minR = MathF.Min(minR, r); maxR = MathF.Max(maxR, r); minF = MathF.Min(minF, f); maxF = MathF.Max(maxF, f);
+        }
+        float pad = (s.Cavalry ? 1.6f : 1.0f) * swell;
+        minR -= pad; maxR += pad; minF -= pad; maxF += pad;
+        Vector2 P(float r, float f) => c + rt * r + fr * f;
+        var k = Sel * 0.55f;
+        Span<Vector2> corners = stackalloc Vector2[] { P(minR, minF), P(maxR, minF), P(maxR, maxF), P(minR, maxF) };
+        for (int i = 0; i < 4; i++)
+        {
+            var a = corners[i]; var b = corners[(i + 1) % 4];
+            Band(G(a, 0.12f), G(b, 0.12f), k, 0.35f);
+            float len = MathF.Min(2.5f, Vector2.Distance(a, b) * 0.3f);
+            var dir = Vector2.Normalize(b - a);
+            Band(G(a, 0.14f), G(a + dir * len, 0.14f), Sel, 0.7f); // the corners drawn bold
+            Band(G(b, 0.14f), G(b - dir * len, 0.14f), Sel, 0.7f);
+        }
+    }
+
     void Band(Vector3 a, Vector3 b, Color c, float width = 1)
     {
         var d = new Vector2(b.X - a.X, b.Z - a.Z);
@@ -888,6 +923,7 @@ partial class BattleScreen
                 float swell = 1 + 0.7f * Ease.Kick((Ui.Now - at) / 0.45f);
                 foreach (var u in s.Units)
                     if (u.Active) Ring(u.Pos, (u.Mounted ? 1.05f : 0.45f) * swell, Sel * 0.85f, 8);
+                SelectionBox(s, swell);
             }
             if (selectedAt.Count > 0)
             {

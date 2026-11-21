@@ -118,8 +118,8 @@ sealed partial class Hud
         var items = ShowResult ? (InCampaign ? new[] { MenuItem.Continue } : new[] { MenuItem.NewBattle, MenuItem.Title })
             : MenuOpen ? (InCampaign ? new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Settings, MenuItem.Withdraw } : new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Settings, MenuItem.NewBattle, MenuItem.Title })
             : Array.Empty<MenuItem>();
-        start = Deploying ? new Rectangle(W / 2 - U(130), U(96), U(260), U(30)) : Rectangle.Empty;
-        deployToggle = Deploying && DeployLast != null ? new Rectangle(W / 2 - U(130), U(138), U(260), U(20)) : Rectangle.Empty;
+        start = Deploying ? new Rectangle(W / 2 - U(130), U(96) + Drop, U(260), U(30)) : Rectangle.Empty;
+        deployToggle = Deploying && DeployLast != null ? new Rectangle(W / 2 - U(130), U(138) + Drop, U(260), U(20)) : Rectangle.Empty;
         LayoutCommand(); // the tray, ADD on the cards, a sergeant's question (Hud.Command.cs)
         int mw = U(220), mh = U(30), top = H / 2 - items.Length * (mh + U(8)) / 2 + U(10);
         if (ShowResult) // side by side along the bottom of the result
@@ -249,7 +249,7 @@ sealed partial class Hud
         if (Box is Rectangle box) { Rect(box, Gold * 0.12f); Frame(box, Gold, 1); }
         if (Deploying)
         {
-            var banner = new Rectangle(W / 2 - U(230), U(60), U(460), U(72));
+            var banner = new Rectangle(W / 2 - U(230), U(60) + Drop, U(460), U(72));
             Panel(banner, Gold);
             TextC("DEPLOYMENT: PLACE YOUR COMPANIES IN YOUR THIRD OF THE FIELD", W / 2f, banner.Y + U(10), Gold, 1);
             bool hover = start.Contains(Mouse);
@@ -279,7 +279,7 @@ sealed partial class Hud
         sb.End();
     }
 
-    Rectangle PauseBox => new(W / 2 - U(150), U(64), U(300), U(B.PendingDirects.Any() ? 54 : 42));
+    Rectangle PauseBox => new(W / 2 - U(150), U(64) + Drop, U(300), U(B.PendingDirects.Any() ? 54 : 42));
 
     /// The command view: the field's flags and marks, then the top bar, the minimap and sergeants, and the bottom row
     /// (captain, companies, orders). Nothing of the fight view shows here.
@@ -339,7 +339,7 @@ sealed partial class Hud
     /// Your personal goals for this battle (P6), under the balance bar: open in white, met in gold, lost struck grey.
     void GoalLines()
     {
-        int y = Deploying ? (DeployLast != null ? U(186) : U(158)) : Paused ? PauseBox.Bottom + U(6) : B.Wall != null ? U(80) : U(60);
+        int y = Deploying ? (DeployLast != null ? U(186) : U(158)) + Drop : Paused ? PauseBox.Bottom + U(6) : (B.Wall != null && !Command ? U(80) : U(60)) + Drop;
         foreach (var g in B.Goals)
         {
             int st = B.GoalState(g);
@@ -652,6 +652,11 @@ sealed partial class Hud
         {
             Rect(new Rectangle(flag.X, flag.Y, U(9), U(18)), col * 0.8f);
             return;
+        }
+        if (sel) // chosen: a gold glow round the flag and a pointer over it
+        {
+            Rect(new Rectangle(flag.X - U(3), flag.Y - U(3), flag.Width + U(6), flag.Height + U(6)), Gold * 0.45f);
+            for (int i = 0; i < 4; i++) Rect(new Rectangle(flag.Center.X - U(4 - i), flag.Y - U(12) + U(i), U(8 - 2 * i), U(1)), Gold);
         }
         Rect(flag, col * 0.9f);
         Frame(flag, sel ? Gold : Color.Black * 0.6f, U(sel ? 2 : 1));

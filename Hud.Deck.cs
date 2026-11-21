@@ -3,10 +3,11 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// Hud, the command view (docs/PLAYTEST.md PT4, "As rebuilt"): you are the general, with a cursor. One plate along the top
-/// (time on the left, the balance in the middle, the clock on the right) and one row along the bottom: the captain's plate
-/// (how he fares, FIGHT to step into him), the company cards, and the order deck, a grid of picture buttons that shows only
-/// what the chosen companies can do and lights what they are doing.
+/// Hud, the command view (docs/PLAYTEST.md PT4, "As rebuilt"): you are the general, with a cursor. The company cards along
+/// the top (left of the minimap), and one row along the bottom: the captain's plate (how he fares, FIGHT to step into him),
+/// the plate with time, the balance and the clock, and the order deck, a grid of picture buttons that shows only what the
+/// chosen companies can do and lights what they are doing. (The fight view has it the other way: balance and speed at the
+/// top, its arms along the bottom.)
 sealed partial class Hud
 {
     /// An order as the deck and the ring show it: name, the short word under its picture, picture, key, and a line for the hover card.
@@ -75,17 +76,12 @@ sealed partial class Hud
 
     // ---------- layout ----------
 
+    /// How far the command view's top-of-screen panels (deployment, the pause box, goals) sit below where they would with no
+    /// cards over them: the cards take the top.
+    int Drop => Command ? U(82) : 0;
+
     void LayoutDeck()
     {
-        // Top: one plate. Time in its left wing, the clock in its right.
-        int bw = U(300), wing = U(96);
-        topBar = new Rectangle((W - bw) / 2 - U(56) - wing, U(6), bw + U(112) + 2 * wing, U(46));
-        if (!Deploying && !ShowResult)
-        {
-            pauseBtn = new Rectangle(topBar.X + U(8), topBar.Y + U(12), U(22), U(22));
-            for (int i = 0; i < 5; i++) speedBtns.Add((new Rectangle(pauseBtn.Right + U(6) + i * U(11), topBar.Y + U(14), U(11), U(26)), i));
-        }
-
         // Bottom left: the captain's plate (the tray of reserves sits on it, Hud.Command.cs).
         int ph = U(100);
         player = new Rectangle(U(10), H - ph - U(10), U(214), ph);
@@ -96,14 +92,27 @@ sealed partial class Hud
         int rightEdge = W - U(240);
         if (Div == null) { LayoutOrders(); rightEdge = deck.X - U(8); }
 
-        // Between them: the cards. They shrink to fit a big retinue; past what fits, the rest are summed on the last card.
+        // Bottom, between them: one plate. Time in its left wing, the balance in the middle, the clock in its right; the
+        // balance bar narrows when the room is short.
+        int wing = U(96), fixedW = U(112) + 2 * wing, room0 = rightEdge - player.Right - U(20);
+        barW = Math.Clamp(room0 - fixedW, U(140), U(300));
+        int tw = barW + fixedW, tx = Math.Clamp((W - tw) / 2, player.Right + U(10), Math.Max(player.Right + U(10), rightEdge - tw));
+        topBar = new Rectangle(tx, H - U(46) - U(10), tw, U(46));
+        if (!Deploying && !ShowResult)
+        {
+            pauseBtn = new Rectangle(topBar.X + U(8), topBar.Y + U(12), U(22), U(22));
+            for (int i = 0; i < 5; i++) speedBtns.Add((new Rectangle(pauseBtn.Right + U(6) + i * U(11), topBar.Y + U(14), U(11), U(26)), i));
+        }
+
+        // Top, left of the minimap: the cards. They shrink to fit a big retinue; past what fits, the rest are summed on the
+        // last card. A chosen company's card steps down out of the row.
         var mine = Mine;
-        int left = player.Right + U(10), room = rightEdge - left, gap = mine.Count > 8 ? U(4) : U(6), ch = U(94);
+        int left = U(10), room = minimap.X - U(10) - left, gap = mine.Count > 8 ? U(4) : U(6), ch = U(94);
         int cw = Math.Clamp((room - gap * Math.Max(0, mine.Count - 1)) / Math.Max(1, mine.Count), U(60), U(78));
         int fit = Math.Max(1, (room + gap) / (cw + gap));
         int shown = Math.Min(mine.Count, fit), total = shown * cw + Math.Max(0, shown - 1) * gap;
         int cx0 = left + Math.Max(0, (room - total) / 2);
-        for (int i = 0; i < shown; i++) cards.Add((new Rectangle(cx0 + i * (cw + gap), H - ch - U(10), cw, ch), mine[i]));
+        for (int i = 0; i < shown; i++) cards.Add((new Rectangle(cx0 + i * (cw + gap), U(14) + (Selected.Contains(mine[i]) ? U(8) : 0), cw, ch), mine[i]));
         hiddenCards = mine.Count - shown;
     }
 
@@ -153,10 +162,12 @@ sealed partial class Hud
     static readonly string[] SpeedNames = { "QUARTER SPEED", "HALF SPEED", "NORMAL SPEED", "DOUBLE SPEED", "TRIPLE SPEED" };
 
     /// Top centre: pause and the five speeds, the two sides' strength pulling on one bar between their shields, the clock.
+    int barW;
+
     void TopBar()
     {
         var (f, mine, foes) = Tally();
-        int bw = U(300), x = (W - bw) / 2, y = U(14);
+        int bw = barW, x = topBar.X + U(56) + U(96), y = topBar.Y + U(8);
         Panel(topBar);
         string? hint = null;
         if (!pauseBtn.IsEmpty)
@@ -180,7 +191,7 @@ sealed partial class Hud
         kit.TugBar(new Rectangle(x, y + U(20), bw, U(8)), f, SideArms(0).Ui, Foe);
         Text($"{mine}", x, y, SideArms(0).Ui);
         TextR($"{foes}", x + bw, y, Foe);
-        TextC(f > 0.6f ? "WINNING" : f < 0.4f ? "LOSING" : "EVEN", W / 2f, y + U(4), f > 0.6f ? Ok : f < 0.4f ? Bad : Dim, 1);
+        TextC(f > 0.6f ? "WINNING" : f < 0.4f ? "LOSING" : "EVEN", x + bw / 2f, y + U(4), f > 0.6f ? Ok : f < 0.4f ? Bad : Dim, 1);
         int t = (int)B.Time, rx = x + bw + U(60);
         kit.Icon("clock", rx, y + U(3), Dim, 1);
         Text($"{t / 60}:{t % 60:00}", rx + U(12), y, Color.White);
@@ -197,9 +208,9 @@ sealed partial class Hud
         if (B.Wall is SiegeWall w && !Deploying)
         {
             // The gate's strength under the bar, while it stands.
-            var g = new Rectangle(x + bw / 4, topBar.Bottom + U(4), bw / 2, U(16));
+            var g = new Rectangle(x + bw / 4, topBar.Y - U(20), bw / 2, U(16));
             Panel(g);
-            if (w.GateOpen || w.Breaches.Any()) TextC(w.GateOpen ? "THE GATE IS BROKEN" : "THE WALL IS BREACHED", W / 2f, g.Y + U(5), Gold, 1);
+            if (w.GateOpen || w.Breaches.Any()) TextC(w.GateOpen ? "THE GATE IS BROKEN" : "THE WALL IS BREACHED", g.Center.X, g.Y + U(5), Gold, 1);
             else
             {
                 kit.Icon("tower", g.X + U(6), g.Y + U(5), Color.White, 1);
@@ -210,7 +221,7 @@ sealed partial class Hud
         if (hint != null)
         {
             int hw = TW(hint, 1) + U(14);
-            var hr = new Rectangle(Math.Clamp(Mouse.X - hw / 2, U(4), W - hw - U(4)), topBar.Bottom + U(3), hw, U(16));
+            var hr = new Rectangle(Math.Clamp(Mouse.X - hw / 2, U(4), W - hw - U(4)), topBar.Y - U(19) - (B.Wall != null && !Deploying ? U(20) : 0), hw, U(16));
             Panel(hr);
             TextC(hint, hr.Center.X, hr.Y + U(5), Color.White, 1);
         }
@@ -323,7 +334,7 @@ sealed partial class Hud
     {
         if (cards.Count > 0)
         {
-            var dock = new Rectangle(cards[0].R.X - U(8), cards[0].R.Y - U(6), cards[^1].R.Right - cards[0].R.X + U(16), cards[0].R.Height + U(12));
+            var dock = new Rectangle(cards[0].R.X - U(8), U(8), cards[^1].R.Right - cards[0].R.X + U(16), U(94) + U(12));
             kit.PlateBody(dock, Kit.Rivet, 1, 0.8f);
         }
         var cloth = SideArms(0);
@@ -343,7 +354,8 @@ sealed partial class Hud
             kit.VGrad(port, Kit.Mul(cloth.Cloth, 0.5f), Kit.IronDark, 2);
             var type = s.Units.Count > 0 ? s.Units[0].Type : UnitType.Shieldman;
             Icon(type, new Rectangle(port.X + U(12), port.Y + U(1), port.Width - U(24), port.Height - U(1)));
-            Frame(r, sel ? Gold : state is "STEADY" ? Color.Black * 0.7f : sc, U(sel ? 2 : 1));
+            Frame(r, sel ? Gold : state is "STEADY" ? Color.Black * 0.7f : sc, U(sel ? 3 : 1));
+            if (sel) Rect(new Rectangle(r.X + U(6), r.Bottom + U(2), r.Width - U(12), U(3)), Gold); // a gold tab under the chosen
             if (active == 0) Rect(r, Color.Black * 0.45f);
 
             int idx = ci + 1;
@@ -385,13 +397,14 @@ sealed partial class Hud
             kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(76), r.Width - U(8), U(6)), active / (float)Math.Max(1, s.StartCount), cloth.Ui);
             kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(84), r.Width - U(8), U(6)), morale / 100f, MoraleColor(morale));
             if (state == "STEADY" && fights.TryGetValue(s, out var fight)) (state, sc) = Standing(s, fight); // how its fight goes
-            if (state != "STEADY") kit.Chip(r.X + r.Width / 2 - (TW(state, 1) + U(10)) / 2, r.Y - U(20), state, sc);
+            if (state != "STEADY") kit.Chip(r.X + r.Width / 2 - (TW(state, 1) + U(10)) / 2, r.Bottom + U(7), state, sc);
             EffectMarks(s, r);
+            if (!sel && Selected.Count > 0 && OrderFlash(s) is not > 0) Rect(r, Color.Black * 0.4f); // with some chosen, the rest step back
         }
         if (hiddenCards > 0 && cards.Count > 0)
         {
             var last = cards[^1].R;
-            TextC($"+{hiddenCards} MORE", last.X + last.Width / 2f, last.Y - U(12), Gold, 1);
+            TextC($"+{hiddenCards} MORE", last.X + last.Width / 2f, last.Bottom + U(26), Gold, 1);
         }
     }
 }

@@ -262,13 +262,15 @@ Keys are MonoGame `Keys` names (`W`, `LeftShift`, `F1`...) or `LMB`/`RMB`/`MMB`/
 - RMB block (front only). A shield stops any direction at a stamina cost; blocking **in the direction the blow comes from**
   (red chevron) is a **parry**: free, and it staggers the attacker. RMB while winding up cancels the swing (feint).
 - R rally. **Hold MMB (or Z) for the order ring**: eight pictures round the reticle; lean the mouse toward one, release to give it (time slows while it is open).
-- **Who listens:** 1 foot, 2 bows, 3 horse, 4 mages, 0 everyone (Shift adds an arm). The chips at the bottom right show them.
+- **Who listens:** 1 foot, 2 bows, 3 horse, 4 mages, 0 everyone (Shift adds an arm). The chips at the bottom right show them; a chosen arm's chip glows gold.
 - **Orders go where you look:** C sends them at the enemy company under the reticle (else at the nearest); tap H to hold in
   place, or hold H and let go to draw them up on the ground you look at (a gold marker and each man's place show first).
 
-**Command view** (Tab; the battle runs at its own speed: Space pauses, `[` `]` or the bars at the top left pick x0.25 to x3).
+**Command view** (Tab; the battle runs at its own speed: Space pauses, `[` `]` or the bars on the plate at the bottom pick x0.25 to x3).
 Your captain keeps his guard while you are away (he blocks, he never strikes), and his plate at the bottom left turns red
 when blows come at him; FIGHT on it (or Tab) steps back into him, a click on his picture looks at him.
+- The **company cards** run along the top; a chosen company's card steps down with a gold frame and tab while the
+  others dim, its flag glows with a gold pointer over it, and its men stand in a gold box on the ground (in both views).
 - The **order deck** (bottom right) is a grid of picture buttons for the companies chosen: orders, the formations they can
   take (picked outright), and what else fits (FIRE for bows, STAKES for longbows, CAST for mages, SPLIT, FOLD IN, RELIEVE).
   What they are doing is lit gold; hover a button for its name, key and what it does. ATTACK MOVE, then a click: march
@@ -574,9 +576,11 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 
 ## Design: interface
 
-- Bottom centre: **unit cards** (portrait made from the unit's own sprites, count, strength and morale bars, order tag, state above:
-  WAVERING / ROUTING / FLANKED). Bottom left: you (horse and speed, health, stamina, horse health, rally, kills).
-- Top: **balance of power** (strength-weighted), battle clock, event feed (top left), **minimap** (top right; enemy at the top, camera wedge).
+- Command view: **unit cards** along the top (portrait made from the unit's own sprites, count, strength and morale bars, order tag,
+  state under it: WAVERING / ROUTING / FLANKED), the **minimap** top right (enemy at the top, camera wedge), the event feed under
+  the cards; along the bottom the captain's plate, the plate with pause, speeds, **balance of power** and clock, and the order deck.
+- Field view, the other way round: the balance bar and the battle's speed at the top, your vitals bottom left and the arms that
+  listen bottom right.
 - Field view: directional crosshair chevrons, damage text (speed bonus, flank, rear, high ground, parry), context prompts.
 - Command view: squad **banners** with morale bars, the order deck, the captain's plate, box select, formation preview, attack lines.
 - Overlays: order ring (fight view), F1 controls, Esc menu, and a result screen with both armies' losses.
