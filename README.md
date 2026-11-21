@@ -111,6 +111,10 @@ with mountain ridges you cross by road at the passes; the minimap and the realm 
   where his men go. In a fought battle he is a real man in the front rank (a gold mark over him near you) and earns his own deeds.
   Those lost are kept for ever under THE FALLEN, named first in the battle report, and each costs his company cohesion. When a
   company needs a sergeant, its senior named man rises to the post, and a sergeant of 15 battles joins your household.
+- **The camp (C):** where the company is between battles. Each company keeps a fire with its banner, and its named men stand
+  round it as they look in battle (the face over each is his); the hurt lie by the surgeon's tent. After a won field they cheer;
+  after a lost one the fires are low and they stand apart. Click a man for his page: his face, nature, home, record, deeds, the
+  men he is tied to (click one to go to him), and the four things you can do for him (mention, arm, send home, move).
 - **The legend:** great battles are named and sewn on the company's banner as honours; a rout can lose one to the enemy until
   you win it back. Fame from your companies raises pay, recruits and the regard of lords. In battle, stand over a fallen named
   man to pull him out alive. THE LEGEND (R) lets you retire in glory or hand the company to a companion and play on.

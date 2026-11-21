@@ -1,6 +1,6 @@
 # The men of the company, and their captain: plan
 
-Status: **partly built**: C0-C4 and C9-C14 shipped (see "As built" at the end); C5 (the camp), C6, C7 and C8 are still open. It follows `docs/archive/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
+Status: **partly built**: C0-C4 and C9-C14 shipped, C5 in part (the scene and a man's page; see "As built" at the end); the rest of C5 (talk, camp events, rites), C6, C7 and C8 are still open. It follows `docs/archive/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
 When a phase ships, add its "As built" note at the end. Numbers marked *(tune)* are starting values.
 Read `docs/archive/LEGACY.md` first: this plan is its second half.
 
@@ -544,3 +544,24 @@ and its range; plunging and flat shots drawn differently; fire pots; the flight'
   - **Move:** `MoveMan` takes one fit named man, his place and his share of drill to a company he fits with room.
 - Roll UI (`RollPanel`): click a man to pick him; the action bar under a divider names him; reasons on hover. The sergeant
   choice heads the roll (`SergeantPick`, faces as buttons). Test `RollChoices`.
+
+### C5 (the camp), as built so far
+- **C5a, the scene and a man's page (2026-11-21).** Key C (`Act.CampScreen`, `PanelKind.Camp`; CAMP on the screens rail, in the
+  F1 help). The country is painted like the street (`CampLook` reads the province as `LookOf` reads a town: its people, kind of
+  country, hour, snow; `ColoursOf`, `Country`, `Clouds`, `Orb`, `Smoke`, `Snowfall` reused) at the street's pixel (`CampPixel`, a
+  240th of the screen's height). The named men are their battle puppets (same troop, same `SoldierId`, so the same face and kit as
+  on the field), drawn in one texture by `CampStage` before the frame's sprites (`PrepareCamp`, from `MapScreen.Draw`), with a fixed
+  camera; the painted tents, banners, fires and gear are placed by projecting their spot (`CampStage.Project`, `PerMetre`), so they
+  stand where the men do. Up to four fires a screen (arrows page the rest): two near and wide, the others farther back between them
+  (`FireSpot`); six fit men at most in an arc behind each fire, half turned to it and half to you; the hurt on pallets by the
+  surgeon's tent. Mood (`MoodOfCamp`: the newest ledger entry within two days): won, the men cheer (the puppet's victory pose); lost,
+  embers and the men stand farther apart. Fires are drawn over the men (those behind stand in their light), gear behind the men
+  (a spear rack) before them. A small face over each man; under the mouse his name and nature; a click opens his page (`ManPage`):
+  the painted face large, troop, company, age, home, record, nature and what it does, deeds in full, ties with faces (click one to
+  go to that man), and the four C4 actions (`ManActions`, now shared with the roll). REST A DAY on the bar.
+  Changed from the plan: the camp is painted in the street's art and the men are puppets standing (the puppet has no sitting pose);
+  the REST tab does not open the camp yet. Test `CampKnowsMood`; shots `IRONFIELD_CAMP_ONLY=1`.
+- **Still open in C5:** the talk with a man (topics and lines by nature in `Data/talk.json`), the `men` event trigger family with
+  its holes and verbs and about twenty events, the rites and feast buttons moving into the camp, and the plan's tests `CampEvents`
+  and `CampTalk`.
+

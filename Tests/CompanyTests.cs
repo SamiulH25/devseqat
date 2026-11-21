@@ -171,6 +171,28 @@ public static partial class SelfTest
 
     /// C4: your hand on the roll. Each action's refusals and effects; the unanswered sergeant choice falls back to the risen
     /// man; what you did survives a save.
+    /// The camp (C5): its mood from the last battle and how long ago, a fire for every company with men, the hurt apart.
+    static void CampKnowsMood()
+    {
+        var c = Campaign.New(33);
+        foreach (var k in c.Player.Companies) k.Ledger.Clear();
+        Check(c.MoodOfCamp() == Campaign.CampMood.Quiet, "a fresh company's camp is quiet");
+        var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+        co.Ledger.Add(new LedgerEntry { Day = c.Day, Won = true });
+        Check(c.MoodOfCamp() == Campaign.CampMood.Won, "the men cheer a field won today");
+        co.Ledger.Add(new LedgerEntry { Day = c.Day, Won = false });
+        Check(c.MoodOfCamp() == Campaign.CampMood.Lost, "the last battle sets the mood");
+        c.S.Hours += 24 * 5;
+        Check(c.MoodOfCamp() == Campaign.CampMood.Quiet, "five days on the camp is quiet again");
+        Check(c.CampFires().Count == c.Player.Companies.Count(k => k.Men > 0), "a fire for every company with men");
+        co.Roll.Clear();
+        var a = c.NameMan(co, "Stood firm.")!; var b = c.NameMan(co, "Held the ford.")!;
+        b.Hurt = true;
+        var (fit, hurt) = Campaign.AtFire(co);
+        Check(fit.Contains(a) && !fit.Contains(b) && hurt.Contains(b), "the hurt lie at the surgeon's, the fit stand at the fire");
+        Check(c.CampFires()[0] == co, "the company with named men keeps the first fire");
+    }
+
     static void RollChoices()
     {
         var c = Campaign.New(31);

@@ -68,6 +68,7 @@ partial class MapScreen
             case PanelKind.Quests: QuestsPanel(); break;
             case PanelKind.Atlas: AtlasPanel(); break;
             case PanelKind.Inventory: InventoryPanel(); break;
+            case PanelKind.Camp: CampPanel(); break;
             case PanelKind.Help: HelpPanel(); break;
         }
         if (panel != PanelKind.None && modalIn < 1) ui.Rect(modalRect, Kit.IronDark * (1 - modalIn)); // the panel's entrance: it comes up out of the dark
@@ -460,7 +461,7 @@ partial class MapScreen
     {
         var row = new (string Label, Act Key, PanelKind Panel)[]
         {
-            ("COMPANY", Act.PartyScreen, PanelKind.Party), ("SERGEANTS", Act.DivisionsScreen, PanelKind.Divisions), ("CAPTAIN", Act.SkillsScreen, PanelKind.Skills), ("KIT", Act.InventoryScreen, PanelKind.Inventory),
+            ("COMPANY", Act.PartyScreen, PanelKind.Party), ("SERGEANTS", Act.DivisionsScreen, PanelKind.Divisions), ("CAPTAIN", Act.SkillsScreen, PanelKind.Skills), ("KIT", Act.InventoryScreen, PanelKind.Inventory), ("CAMP", Act.CampScreen, PanelKind.Camp),
             ("QUESTS", Act.QuestsScreen, PanelKind.Quests), ("LORDS", Act.LordsScreen, PanelKind.Characters), ("REALMS", Act.RealmScreen, PanelKind.Realm), ("MAP", Act.AtlasScreen, PanelKind.Atlas), ("FIND ME", Act.FollowParty, PanelKind.None), ("KEYS", Act.Help, PanelKind.Help),
         };
         int h = ui.U(20), w = row.Max(r => ui.TW(r.Label, 1) + ui.TW(ctl.First(r.Key), 1)) + ui.U(26);
@@ -491,7 +492,7 @@ partial class MapScreen
                 ("ZOOM", "WHEEL"), (Controls.Labels[Act.FollowParty], ctl.Name(Act.FollowParty)), ("PAUSE", ctl.Name(Act.Pause)),
                 ("SPEED X1 / X3 / X8", $"{ctl.First(Act.Speed1)} {ctl.First(Act.Speed2)} {ctl.First(Act.Speed3)}"), ("LOOK THERE", "CLICK THE MINIMAP"),
             }),
-            ("SCREENS", new[] { Act.PartyScreen, Act.SkillsScreen, Act.LordsScreen, Act.RealmScreen, Act.DivisionsScreen, Act.AtlasScreen, Act.InventoryScreen, Act.QuestsScreen, Act.SiegeScreen }
+            ("SCREENS", new[] { Act.PartyScreen, Act.SkillsScreen, Act.LordsScreen, Act.RealmScreen, Act.DivisionsScreen, Act.AtlasScreen, Act.InventoryScreen, Act.QuestsScreen, Act.CampScreen, Act.SiegeScreen }
                 .Select(a => (Controls.Labels[a].Replace(" (MAP)", ""), ctl.Name(a))).ToArray()),
             ("THE GAME", new[] { Act.QuickSave, Act.QuickLoad, Act.Menu, Act.Help, Act.Graphics }
                 .Select(a => (Controls.Labels[a], ctl.Name(a))).Append(("DISMISS A TIP", "ENTER")).ToArray()),

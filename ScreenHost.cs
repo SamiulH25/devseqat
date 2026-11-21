@@ -66,6 +66,10 @@ sealed class ScreenHost : Game
     /// Debug: with IRONFIELD_SAVES_ONLY=1 a campaign shots run writes a few saves (with their map pictures) into IRONFIELD_SAVES,
     /// and a second campaign's, then saves the save screens: `campaign-save-as.png`, `campaign-load.png`.
     static readonly bool savesOnly = Environment.GetEnvironmentVariable("IRONFIELD_SAVES_ONLY") == "1";
+    /// Debug: with IRONFIELD_CAMP_ONLY=1 a campaign shots run saves only the camp (docs/pre-demo/COMPANY.md C5): by day after a
+    /// won field, at night, at dusk after a lost one, and a man's page (`campaign-camp-*.png`, `campaign-man.png`).
+    static readonly bool campOnly = Environment.GetEnvironmentVariable("IRONFIELD_CAMP_ONLY") == "1";
+    int campShot;
     int saveShot;
     /// Debug: IRONFIELD_PLACES=1 (or a filter: a style id's part, e.g. "steppe") with IRONFIELD_CAMPAIGN_SHOTS saves only the
     /// settlements close up, one of each style and kind, labels and parties hidden (docs/archive/SETTLEMENTS.md).
@@ -581,6 +585,21 @@ sealed class ScreenHost : Game
         shotFrames = 0;
     }
 
+    /// The camp's shots (IRONFIELD_CAMP_ONLY): named men in four companies, then each hour and mood, then a man's page.
+    void CampShots(Campaign c)
+    {
+        var steps = new (string Name, int Hour, bool? Won, bool Man)[] { ("camp-day", 11, true, false), ("camp-night", 22, null, false), ("camp-lost", 18, false, false), ("man", 11, null, true) };
+        if (campShot >= steps.Length) { Exit(); return; }
+        if (campShot == 0) map.Stage("campmen");
+        var (name, hour, won, man) = steps[campShot++];
+        c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + hour;
+        foreach (var k in c.Player.Companies) k.Ledger.Clear();
+        if (won is bool w) c.Player.Companies[0].Ledger.Add(new LedgerEntry { Day = c.Day, Won = w, Foe = "the Red Lances" });
+        c.Encounter = null; c.S.Event = null; c.Beat = null;
+        map.Stage(man ? "campman" : "camp");
+        pendingShot = "campaign-" + name; shotFrames = 0;
+    }
+
     void CampaignShots()
     {
         var c = campaign!;
@@ -600,6 +619,7 @@ sealed class ScreenHost : Game
         }
         if (mapOnly && cStage == 2) { Exit(); return; }
         if (savesOnly) { SaveShots(c); return; }
+        if (campOnly) { CampShots(c); return; }
         if ((townOnly || streetOnly) && cStage < 56) cStage = 56;
         switch (cStage)
         {

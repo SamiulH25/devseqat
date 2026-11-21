@@ -211,8 +211,15 @@ partial class MapScreen
     {
         int y = r.Bottom - ui.U(80);
         if (rollPick is not Soldier m) { ui.TextC("CLICK A MAN TO MENTION, ARM, PENSION OR MOVE HIM.", r.X + r.Width / 2f, y + ui.U(10), Style.Dim, 1); return; }
+        ManActions(c, m, x, y, w, () => rollPick = null);
+    }
+
+    /// The four things you can do for a named man (C4), as a row of buttons at `y` with his name over them; `gone` runs when
+    /// he leaves the roll (sent home, moved). The roll and the camp's man's page share it.
+    void ManActions(CompanyRecord c, Soldier m, int x, int y, int w, Action gone)
+    {
         ui.Divider(x, y - ui.U(22), w, Kit.Gilt * 0.4f);
-        ui.TextFitC($"FOR {m.Name.ToUpperInvariant()}, {Troops.Get(m.Troop).Name.ToUpperInvariant()}" + (m.Carries != "" ? $". CARRIES {m.Carries.ToUpperInvariant()}" : ""), r.X + r.Width / 2f, y - ui.U(14), w, Kit.Gilt, 1);
+        ui.TextFitC($"FOR {m.Name.ToUpperInvariant()}, {Troops.Get(m.Troop).Name.ToUpperInvariant()}" + (m.Carries != "" ? $". CARRIES {m.Carries.ToUpperInvariant()}" : ""), x + w / 2f, y - ui.U(14), w, Kit.Gilt, 1);
         int bw = (w - ui.U(24)) / 4, bh = ui.U(28);
         Rectangle B(int i) => new(x + i * (bw + ui.U(8)), y, bw, bh);
         var gift = C.Givable().OrderByDescending(g => g.Quality).FirstOrDefault();
@@ -229,7 +236,7 @@ partial class MapScreen
         for (int i = 0; i < acts.Length; i++)
         {
             var (label, why, says, act) = acts[i];
-            if (ui.Button(B(i), label, why == null)) { note = act() ?? ""; if (i >= 2 && note == "") rollPick = null; }
+            if (ui.Button(B(i), label, why == null)) { note = act() ?? ""; if (i >= 2 && note == "") gone(); }
             if (ui.Hover(B(i))) ui.Tooltip(B(i).X, B(i).Y - ui.U(4), label, ui.Wrap(why ?? says, ui.U(240)).ToArray());
         }
     }

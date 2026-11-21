@@ -13,7 +13,7 @@ public sealed partial class Campaign
     public const int LadMasterBattles = 10, RivalKills = 1;
 
     /// The named men of yours who are alive, by id.
-    Soldier? LivingMan(int id) => Player.Companies.SelectMany(k => k.Roll).FirstOrDefault(m => m.Id == id);
+    public Soldier? LivingMan(int id) => Player.Companies.SelectMany(k => k.Roll).FirstOrDefault(m => m.Id == id);
 
     static bool Free(Soldier m) => m.Ties.Count < MostTies;
     static bool TiedTo(Soldier a, Soldier b) => a.Ties.Any(t => t.Other == b.Id);

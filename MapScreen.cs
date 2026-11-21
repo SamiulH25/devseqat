@@ -8,7 +8,7 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed partial class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help, Talk, Inventory, Quests, Saves }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help, Talk, Inventory, Quests, Saves, Camp }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
@@ -98,7 +98,7 @@ sealed partial class MapScreen
 
     public MapScreen(GraphicsDevice gd, SpriteBatch sb, Art art, PixelFont font, Shading? shading, MeshKit3D? meshKit, Controls ctl)
     {
-        this.gd = gd; this.art = art; this.shading = shading; this.ctl = ctl;
+        this.gd = gd; this.art = art; this.shading = shading; this.ctl = ctl; campKit = meshKit;
         ui = new Ui(sb, art, font);
         puppet = new Puppet(art, sprites) { Scale = 2.5f }; // a little smaller than the towns they ride between (WL3)
         if (meshKit != null) puppet3D = new Puppet3D(meshKit, units3D) { Scale = 2.5f };
@@ -264,7 +264,8 @@ sealed partial class MapScreen
         else if (panel == PanelKind.Help && (ctl.Pressed(Act.Help) || ctl.Pressed(Act.Menu))) panel = PanelKind.None;
         else if (panel == PanelKind.Saves) { if (Pressed(Keys.Escape) || !saves.Open) { saves.Close(); panel = PanelKind.Menu; } }
         else if (renaming == null && panel == PanelKind.Settlement && tab != "" && ctl.Pressed(Act.Menu)) { tab = ""; note = ""; } // out of the building, onto the street
-        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Quests)
+        else if (panel == PanelKind.Camp && campMan != null && ctl.Pressed(Act.Menu)) campMan = null; // from a man's page back to the fires
+        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Quests or PanelKind.Camp)
             panel = panel is PanelKind.Upgrade or PanelKind.Roll ? PanelKind.Party : panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Siege ? PanelKind.None : CameFrom(panel);
         if (renaming != null) Rename();
         else if (!saves.Typing) Ui.Typed.Clear();
@@ -286,14 +287,14 @@ sealed partial class MapScreen
     {
         (Act.PartyScreen, PanelKind.Party), (Act.LordsScreen, PanelKind.Characters), (Act.SkillsScreen, PanelKind.Skills),
         (Act.RealmScreen, PanelKind.Realm), (Act.DivisionsScreen, PanelKind.Divisions), (Act.AtlasScreen, PanelKind.Atlas), (Act.InventoryScreen, PanelKind.Inventory),
-        (Act.QuestsScreen, PanelKind.Quests),
+        (Act.QuestsScreen, PanelKind.Quests), (Act.CampScreen, PanelKind.Camp),
     };
     /// The screen the current one was opened from (the map or the party screen), where BACK and its key return.
     PanelKind from;
 
     /// Panels you can leave for another screen without losing a choice (no encounter, town, event or report open).
     bool Browsing => panel is PanelKind.None or PanelKind.Party or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm
-        or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Inventory or PanelKind.Quests;
+        or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Inventory or PanelKind.Quests or PanelKind.Camp;
 
     /// One-time tips for the systems a campaign reaches later: named men, divisions, sites, duels, gear, fiefs, fame, retiring.
     void LaterTips()
@@ -689,6 +690,7 @@ sealed partial class MapScreen
             DrawLines();
         }
         if (thumbFor != null) GrabThumb(); // the map is drawn and the interface not yet
+        PrepareCamp(); // the camp's men, into their texture before the interface's sprites begin
         FrameProf.Begin("drawUi");
         long calls0 = FrameProf.On ? gd.Metrics.DrawCount : 0, sprites0 = FrameProf.On ? gd.Metrics.SpriteCount : 0;
         DrawUi();
@@ -986,6 +988,13 @@ sealed partial class MapScreen
                 C.StageTies(rollOf); // show the ties (C3) on a fresh campaign's roll
                 rollPick = rollOf.Roll.OrderByDescending(m => m.Battles).Skip(1).FirstOrDefault(); // and the action bar (C4)
                 if (rollPick != null) { C.S.MentionPool.Add(rollPick.Id); rollPick.Mentions = 1; }
+                break;
+            case "campmen": C.StageCamp(); break;
+            case "camp": panel = PanelKind.Camp; campMan = null; note = ""; break;
+            case "campman":
+                panel = PanelKind.Camp; note = "";
+                campManOf = C.CampFires().First(k => k.Roll.Count > 0);
+                campMan = campManOf.Roll.OrderByDescending(m => m.Ties.Count).ThenByDescending(m => m.Battles).First();
                 break;
             case "divisions": panel = PanelKind.Divisions; note = ""; break;
             case "quests": C.StageQuests(); panel = PanelKind.Quests; note = ""; break;
