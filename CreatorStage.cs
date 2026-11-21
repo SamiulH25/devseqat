@@ -179,7 +179,7 @@ sealed class CreatorStage
         if (react > 0 && !mounted) speed = 0; // stops to cheer
         u.Speed = speed;
         u.Vel = u.Dir * speed;
-        u.Anim += dt * speed * (mounted ? 0.45f : 0.9f);
+        u.Anim += dt * Battle.StrideRate(speed, mounted);
         switch (act)
         {
             case Act.Drill when react <= 0: Drill(dt); break;

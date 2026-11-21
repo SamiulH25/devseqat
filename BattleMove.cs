@@ -5,6 +5,11 @@ namespace Ironfield;
 /// Battle: unit movement (steering, separation, ground, slope) and collisions.
 public partial class Battle
 {
+    /// Stride cycles a second at `speed` (m/s), what `Unit.Anim` runs at. A man's stride is about 1.1 m; a horse's
+    /// lengthens as it goes faster (about 2.2 m at a walk, 3 m at a trot, 4.8 m at a gallop), so its legs speed up far
+    /// less than its pace does: a galloping horse takes about two strides a second, not four.
+    public static float StrideRate(float speed, bool mounted) => mounted ? speed / (1.6f + 0.35f * speed) : speed * 0.9f;
+
     void Move(float dt)
     {
         var before = Wall != null ? Units.Select(u => u.Pos).ToArray() : Array.Empty<Vector2>();
@@ -24,7 +29,7 @@ public partial class Battle
             if (u.Mounted) Stumble(u, dt);
             u.Vel *= u.GroundPace;
             u.Pos += u.Vel * dt;
-            u.Anim += dt * u.Vel.Length() * (u.Mounted ? 0.45f : 0.9f); // stride-locked walk / gallop cycle
+            u.Anim += dt * StrideRate(u.Vel.Length(), u.Mounted); // stride-locked walk / gallop cycle
         }
         Separate(dt); // near pairs only, through the spatial grid (BattleGrid.cs)
         KeepRing(); // the men give two clashing champions room (MA7)

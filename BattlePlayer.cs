@@ -82,6 +82,13 @@ public partial class Battle
             var h = p.Horse!;
             float rate = TurnRate(p) * 1.2f * (1 + 0.25f * RidingEdge); // Riding (P3): a surer hand on the reins
             p.Heading += inp.Steer * rate * dt;
+            Reined += inp.Steer * rate * dt; // the camera turns with the reins (BattleScreen.Controls)
+            // The horse goes where its rider looks: he can turn in the saddle to MountTwist either side, and past that the
+            // horse is brought round; he cannot face further back than MountReach (he is not spun round on its back).
+            float look = MathHelper.WrapAngle(p.Facing - p.Heading), over = MathF.Abs(look) - MountTwist;
+            if (over > 0) p.Heading += MathF.Sign(look) * MathF.Min(over, rate * 1.5f * dt);
+            look = MathHelper.WrapAngle(p.Facing - p.Heading);
+            if (MathF.Abs(look) > MountReach) p.Facing = p.Heading + MathF.Sign(look) * MountReach;
             float target = inp.Throttle > 0 ? (inp.Sprint ? h.Gallop : h.Trot) : inp.Throttle < 0 ? -1.8f : 0;
             if (p.Action == UnitAction.Stagger) target = 0;
             bool speedingUp = MathF.Abs(target) > MathF.Abs(p.Speed) && target * p.Speed >= 0;
@@ -108,6 +115,12 @@ public partial class Battle
         }
         if (inp.Rally && RallyCooldown <= 0 && p.Stamina >= 30) Rally(p);
     }
+
+    /// How far a rider turns in the saddle before his horse turns with him, and the furthest he can face from its head (radians).
+    public const float MountTwist = 1.3f, MountReach = 1.9f;
+
+    /// Heading the player's reins turned the horse since the screen last read it: the battle camera turns with it.
+    public float Reined;
 
     /// Dismount (when the horse is nearly still), or mount the nearest loose horse within reach.
     void ToggleMount(Unit p)

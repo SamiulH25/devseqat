@@ -53,8 +53,10 @@ partial class BattleScreen
         }
         fieldDist = Math.Clamp(fieldDist - (ms.ScrollWheelValue - pms.ScrollWheelValue) * 0.004f, 2.5f, 12);
 
-        var f = Forward(yaw);
         bool mounted = battle.Player.Mounted;
+        if (mounted) yaw += battle.Reined; // turning the horse on the reins turns the view with it (the horse follows the view: BattlePlayer.cs)
+        battle.Reined = 0;
+        var f = Forward(yaw);
         var move = mounted ? Vector2.Zero : f * ctl.Axis(Act.Forward, Act.Back) + RightOf(f) * ctl.Axis(Act.Right, Act.Left);
         if (move != Vector2.Zero) move.Normalize();
         battle.Input = new PlayerInput

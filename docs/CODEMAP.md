@@ -8,8 +8,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **AbilityDef** (class, L8)
 - **Abilities** (class, L41): Get:47, Has:48, readonly:52, Load:66, Validate:83
 
-## AnimSheet.cs (426 lines)
-- **AnimSheet** (class, L10): AnimSheet:23, Clip:35, Swing:37, ShowcaseItem:77, WriteArmorShowcase:157, WriteFaceShowcase:178, RenderGrid:209, Write:272, Render:283, MakeUnit:330, Cell3D:356, Cell2D:387, Ground:408
+## AnimSheet.cs (427 lines)
+- **AnimSheet** (class, L10): AnimSheet:23, Clip:35, Swing:37, ShowcaseItem:78, WriteArmorShowcase:158, WriteFaceShowcase:179, RenderGrid:210, Write:273, Render:284, MakeUnit:331, Cell3D:357, Cell2D:388, Ground:409
 
 ## Architecture.cs (128 lines)
 - **HouseKind** (enum, L6): windows:9, roof:10, roof:12, roof:13, eaves:14, street:15, posts:16, tent:17, tent:18
@@ -163,8 +163,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleMorale.cs (89 lines)
 - **Battle** (class, L6): UpdateMorale:11
 
-## BattleMove.cs (104 lines)
-- **Battle** (class, L6): Move:8, GroundSpeed:50, Stumble:60, Slope:70, SlopeFactor:73, SlopeFactor:74, Impact:77
+## BattleMove.cs (109 lines)
+- **Battle** (class, L6): StrideRate:11, Move:13, GroundSpeed:55, Stumble:65, Slope:75, SlopeFactor:78, SlopeFactor:79, Impact:82
 
 ## BattleNature.cs (48 lines)
 - **Nature** (struct, L5): Of:12, Line:29
@@ -183,8 +183,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattlePaths.cs (52 lines)
 - **Battle** (class, L10): FormCost:15, Hearthside:21, Anchored:25, HearthForm:28
 
-## BattlePlayer.cs (177 lines)
-- **Battle** (class, L6): Guard:17, UpdatePlayer:34, ToggleMount:113, Rally:148, KingsCharge:166
+## BattlePlayer.cs (190 lines)
+- **Battle** (class, L6): Guard:17, UpdatePlayer:34, ToggleMount:126, Rally:161, KingsCharge:179
 
 ## BattlePosts.cs (325 lines)
 - **Line** (struct, L7)
@@ -207,8 +207,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Arrows.cs (129 lines)
 - **BattleScreen** (class, L10): Landed:13, ResetArrows:25, TrackArrows:29, Steep:51, Puff:61, DrawMissiles:78, MissileLines:103
 
-## BattleScreen.Controls.cs (383 lines)
-- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:81, CommandControls:89, CommandCursor:277, BoxOf:295, OnScreen:297, PickSquad:304, GroundUnderMouse:318, GroundUnder:320, UpdateCamera:346
+## BattleScreen.Controls.cs (385 lines)
+- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:83, CommandControls:91, CommandCursor:279, BoxOf:297, OnScreen:299, PickSquad:306, GroundUnderMouse:320, GroundUnder:322, UpdateCamera:348
 
 ## BattleScreen.cs (605 lines)
 - **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:126, Load:138, QuickGround:169, BeginCampaign:179, StartDeployment:214, StageCommandView:229, FinishCampaignBattle:238, NewBattle:253, WithMages:298, SetWorld:306, SetCommand:320, Pressed:332, Update:340, PlaySounds:428, Soundscape:467, SyncHud:560, MenuChoice:591
@@ -861,8 +861,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Puppet3D.Beasts.cs (237 lines)
 - **Puppet3D** (class, L7): BeastRearing:9, DrawBeast3D:13, DrawWolfUnit3D:24, DrawWolfRig:42, DrawWarg3D:86, DrawBear3D:94, DrawSpider3D:139, DrawWyvern3D:175
 
-## Puppet3D.cs (1282 lines)
-- **Puppet3D** (class, L12): Puppet3D:40, BeginCamera:46, Rad:53, Frame:55, WorldFrame:64, Lean:73, W:80, WDir:92, EmitLocal:105, EmitBone:171, EmitDir:187, EmitWeapon:199, RotX:224, RotZ:230, RotY:236, Elbow:242, Sink:264, TryDraw:273, EmblemOf:748, EmitSlashArc:758, EmitShield:831, DrawFallen3D:876, Banner:978, DrawMissile:1081, HorseScale:1099, DrawHorse3D:1107, DrawLooseHorse:1205, Bench:1220
+## Puppet3D.cs (1294 lines)
+- **Puppet3D** (class, L12): Puppet3D:40, BeginCamera:46, Rad:53, Frame:55, WorldFrame:64, Lean:73, W:80, WDir:92, EmitLocal:105, EmitBone:171, EmitDir:187, EmitWeapon:199, RotX:224, RotZ:230, RotY:236, Elbow:242, Sink:264, TryDraw:273, EmblemOf:754, EmitSlashArc:764, EmitShield:837, DrawFallen3D:882, Banner:984, DrawMissile:1087, HorseScale:1105, DrawHorse3D:1113, DrawLooseHorse:1217, Bench:1232
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, SheetRect:133, OtherBeastCorpse:136
@@ -965,8 +965,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/AudioTests.cs (207 lines)
 - **SelfTest** (class, L5): MapMusicSteady:17, SoundsMade:79, CombatCuesEmitted:164, CreatureAndMagicCues:188
 
-## Tests/BattleTests.cs (1908 lines)
-- **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, CavalryBalance:123, Flanks:164, Parry:180, BlowsShown:208, FightsRead:230, Formations:246, CaptainCombat:276, CaptainKit:302, SkillBouts:360, Bout:410, Fight:424, BattleGoals:458, BannerAndLastStand:480, DuelFight:517, RangedRoles:538, FatigueAndSupply:558, GroundLayer:576, GroundMoves:601, GroundFights:632, Layouts:669, HedgesAndBridges:700, EveryLayoutResolves:748, SightAndCover:769, Rivers:811, HoldsTheCrest:839, HorseAvoidsBadGround:865, TakesTheFord:882, GroundForThePlayer:904, Stakes:923, Pathfinder:961, GoesToFord:981, FilesThroughGap:1010, RoundTheNearFence:1035, OutOfTheYard:1049, ChargeFindsCaptain:1067, FlowCacheBound:1082, Generals:1097, HorseDown:1114, Ground:1123, HoldFire:1147, TroopTree:1161, SpritesBaked:1188, Sprites:1209, TroopVariety:1246, BigBattle:1282, StackBattle:1312, NamedMenFight:1347, AutoResolveNamedMen:1389, PullBack:1415, ReplayExact:1446, FoldCompanies:1480, AdvanceSteps:1524, RelieveAndSplit:1539, QueuedAndStanding:1575, AlertsRaise:1634, DeploymentMemory:1659, SpearsStopHorse:1690, CommandCap:1701, ScaleBattle:1720, DivisionGoals:1757
+## Tests/BattleTests.cs (1932 lines)
+- **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, CavalryBalance:123, Flanks:164, Parry:180, BlowsShown:208, FightsRead:230, Formations:246, HorseFollowsRider:278, CaptainCombat:300, CaptainKit:326, SkillBouts:384, Bout:434, Fight:448, BattleGoals:482, BannerAndLastStand:504, DuelFight:541, RangedRoles:562, FatigueAndSupply:582, GroundLayer:600, GroundMoves:625, GroundFights:656, Layouts:693, HedgesAndBridges:724, EveryLayoutResolves:772, SightAndCover:793, Rivers:835, HoldsTheCrest:863, HorseAvoidsBadGround:889, TakesTheFord:906, GroundForThePlayer:928, Stakes:947, Pathfinder:985, GoesToFord:1005, FilesThroughGap:1034, RoundTheNearFence:1059, OutOfTheYard:1073, ChargeFindsCaptain:1091, FlowCacheBound:1106, Generals:1121, HorseDown:1138, Ground:1147, HoldFire:1171, TroopTree:1185, SpritesBaked:1212, Sprites:1233, TroopVariety:1270, BigBattle:1306, StackBattle:1336, NamedMenFight:1371, AutoResolveNamedMen:1413, PullBack:1439, ReplayExact:1470, FoldCompanies:1504, AdvanceSteps:1548, RelieveAndSplit:1563, QueuedAndStanding:1599, AlertsRaise:1658, DeploymentMemory:1683, SpearsStopHorse:1714, CommandCap:1725, ScaleBattle:1744, DivisionGoals:1781
 
 ## Tests/CampaignTests.cs (2054 lines)
 - **SelfTest** (class, L6): CampaignMap:8, BanditsNearPlayer:42, CampaignPersistence:51, CampaignRun:62, Progression:104, CampPromotion:131, CastleMuster:152, VillagesFeedCastle:186, CaravansTownToTown:220, Economy:237, Bridge:251, Calibration:273, LordsFightAsTheyAre:298, RiverRoadGivesBridge:327, RainMakesMud:353, DefenderChoosesGround:380, AutoResolveGroundEdge:396, SiegeBattle:407, CampaignWar:445, RefuseOldSave:509, SaveFolders:535, RollEarnsNames:604, FallenRemembered:674, RisesFromRanks:719, BannerHonours:758, FameDraws:797, RetireAndSucceed:823, BuryNamed:853, Stacks:881, UpgradeTreeVisibility:926, Cultures:940, Characters:1021, CampaignDivisions:1126, Armoury:1181, Duels:1252, RidingAndBowcraft:1285, PerkTiers:1334, SkillRises:1361, LastingWounds:1414, CaptainTraits:1437, HouseholdGuard:1476, RankRewards:1504, StartingRoad:1532, SkillTree:1552, BalanceMatchesData:1635, HousesAndKin:1649, PortraitsVary:1684, TalkBondsWants:1705, LordArmies:1764, HorsesCostGold:1810, GoodsSell:1820, SaveMidRun:1838, Drive:1861, CheckSound:1874, ReportMatchesRecord:1889, StableMix:1932, LogLevels:1940, NobleBirth:1957, NobleRecruits:1982, PlaytestHarness:2026

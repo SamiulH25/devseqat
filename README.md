@@ -252,7 +252,9 @@ Press **F1** in game for the full list. Every key below is a default: rebind in 
 Keys are MonoGame `Keys` names (`W`, `LeftShift`, `F1`...) or `LMB`/`RMB`/`MMB`/`MB4`/`MB5`, `SHIFT`, `CTRL`, `ALT`, `ESC`, digits.
 
 **Field view** (you fight; third-person camera, mouse wheel zooms it). You start **on horseback**.
-- Mounted: W/S rein (speed up / slow, back up), A/D turn the horse, Shift gallop, Q couch the lance (needs speed), E dismount (when nearly still).
+- Mounted: W/S rein (speed up / slow, back up), A/D turn the horse (the view turns with it), Shift gallop, Q couch the lance (needs speed), E dismount (when nearly still).
+  You turn in the saddle to look and strike about 75° either side; look further round and the horse is brought round with you
+  (you never face more than about 110° from its head: `Battle.MountTwist`, `MountReach`).
   The mouse looks around freely: you strike where you look, not where the horse points.
 - On foot: WASD move, Shift sprint, E mount a loose horse within reach (yours, a fallen rider's, or the enemy's). Prompts appear on screen.
 - **Attack direction** comes from the way the mouse last moved: up = overhead, down = thrust, left/right = side cuts.

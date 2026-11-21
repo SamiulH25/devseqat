@@ -370,7 +370,11 @@ sealed partial class Puppet3D
 
         float extraLeanZ = gallopCrouch - hitRecoil * 4f - stagger * 4f + (p.ShieldUp ? 5f : 0f);
         float extraLeanX = bankX + stagger * (phase > 0.5f ? 5f : -5f);
-        Frame(at, u.ViewFacing, lift + (p.Bob + stirrupBounce - (u.Mounted ? 0 : Sink(p))) * size, size);
+        // A rider sits on his horse: hips and legs go where the horse goes, and he turns from the waist toward where he
+        // looks (the sim keeps that within MountTwist of the horse's heading; a couched lance points along the horse).
+        float frameYaw = u.Mounted ? u.ViewHeading : u.ViewFacing;
+        float seatTwist = u.Mounted && !u.Couched ? Math.Clamp(MathHelper.ToDegrees(MathHelper.WrapAngle(u.ViewFacing - u.ViewHeading)), -110f, 110f) : 0f;
+        Frame(at, frameYaw, lift + (p.Bob + stirrupBounce - (u.Mounted ? 0 : Sink(p))) * size, size);
         Lean(p.LeanX + extraLeanX, p.LeanZ - leanBack + extraLeanZ);
 
         // Spider web snare wrapping a caught unit.
@@ -409,14 +413,16 @@ sealed partial class Puppet3D
         }
         else if (Detail == 0)
         {
-            float spread = 0.27f * HorseScale(u.Horse!.Barding);
+            // Astride the barrel: the hips close together in the saddle, the thighs run out and forward over the horse's
+            // sides, the knee grips just outside the barrel, and the shin hangs back along the flank to the stirrup.
+            float barrel = 0.33f * HorseScale(u.Horse!.Barding) * Scale / size; // the barrel's half width in the rider's units
             float legTuck = gallop * 0.06f;
             float legBob = -stirrupBounce * 0.65f;
             for (int side = -1; side <= 1; side += 2)
             {
-                var hip = new Vector3(side * spread * 0.85f, 0.68f, -0.02f - legTuck * 0.4f);
-                var knee = new Vector3(side * (spread + 0.08f), 0.37f + legBob + legTuck * 0.5f, 0.15f + legTuck);
-                var foot = new Vector3(side * (spread + 0.10f), 0.06f + legBob * 1.2f + legTuck * 0.7f, 0.05f - legTuck * 0.8f);
+                var hip = new Vector3(side * 0.12f, 0.68f, -0.02f - legTuck * 0.4f);
+                var knee = new Vector3(side * (barrel + 0.07f), 0.30f + legBob + legTuck * 0.5f, 0.22f + legTuck);
+                var foot = new Vector3(side * (barrel + 0.01f), -0.10f + legBob * 1.2f + legTuck * 0.7f, 0.04f - legTuck * 0.8f);
                 EmitBone(lm.Thigh, hip, knee, Vector3.UnitZ, 1f, lm.LegPat);
                 EmitBone(lm.Shin, knee, foot, Vector3.UnitZ, 1f, lm.LegPat);
             }
@@ -430,7 +436,7 @@ sealed partial class Puppet3D
         float combatTwist = isCrossbow ? 0f : (ranged && p.Aim) ? 28f : (ranged || !p.Armed) ? 0f : Puppet.TwistOf(p);
         if (p.TwoHand && u.Action != UnitAction.None) combatTwist = Math.Clamp(combatTwist * 1.28f, -44f, 44f);
         if (p.ShieldUp && u.Action == UnitAction.Block) combatTwist -= 14f;
-        twist = combatTwist + ((u.Action == UnitAction.None && !(ranged && p.Aim)) ? gaitTwist : gaitTwist * 0.2f);
+        twist = combatTwist + ((u.Action == UnitAction.None && !(ranged && p.Aim)) ? gaitTwist : gaitTwist * 0.2f) + seatTwist;
 
         Vector3 torsoPos = new(hipShiftX * 0.75f, breath * 0.008f, 0);
         Vector3 tR = RotY(Vector3.UnitX, twist);
@@ -495,7 +501,7 @@ sealed partial class Puppet3D
         }
 
         // 3. Head + Helm + Plume (with turn look-ahead, hit recoil snap, and secondary plume whip lag)
-        float headYaw = p.Look + Math.Clamp(MathHelper.ToDegrees(turnDelta) * 0.45f, -22f, 22f) + (ranged && p.Aim ? 0f : twist * 0.4f);
+        float headYaw = p.Look + Math.Clamp(MathHelper.ToDegrees(turnDelta) * 0.45f, -22f, 22f) + (ranged && p.Aim ? seatTwist : (twist - seatTwist) * 0.4f + seatTwist);
         float headPitch = -hitRecoil * 18f - stagger * 10f + (p.ShieldUp ? 6f : 0f) - gallopCrouch * 0.45f;
         Vector3 hR = RotY(Vector3.UnitX, headYaw);
         Vector3 hU = RotY(RotX(Vector3.UnitY, headPitch), headYaw);
@@ -645,7 +651,7 @@ sealed partial class Puppet3D
         // Couched lance (heavy cavalry at gallop)
         if (u.Couched)
         {
-            float rel = MathHelper.WrapAngle(u.ViewHeading - u.ViewFacing);
+            float rel = MathHelper.WrapAngle(u.ViewHeading - frameYaw);
             var lanceDir = RotY(Vector3.Normalize(new Vector3(0, -0.06f, 1f)), MathHelper.ToDegrees(rel));
             var lanceMesh = lm.Weapon.Length > 0 ? lm.Weapon : kit.Get("weapon_lance");
             EmitDir(lanceMesh, wHand, lanceDir);
@@ -1152,18 +1158,24 @@ sealed partial class Puppet3D
             float sd = i % 2 == 0 ? -1f : 1f;
             float ph = anim * MathF.Tau + phase[i] * MathF.Tau;
             float a = Rad(amp) * MathF.Sin(ph);
-            float bend = MathF.Max(0, -MathF.Cos(ph)) * (front ? 0.68f : 0.48f) * (trot + gait) * 0.5f;
+            // The joint folds as the leg swings forward (the knee in front, the hock behind), more the faster he goes.
+            float bend = MathF.Max(0, MathF.Cos(ph)) * (front ? 1.05f : 0.70f) * (0.35f + 0.65f * MathF.Max(trot, gait)) * MathF.Min(1, amp / 20f);
+            // At rest a hind leg is never straight: the gaskin slopes back from the stifle to the hock and the cannon stands under it.
+            float upRest = front ? 0 : Rad(-13), lowRest = front ? 0 : Rad(11);
             if (front && Rear > 0) { a = Rad(58 * Rear); bend = 0.9f * Rear; }
             if (i == 0 && paw > 0) { a = Rad(20 * paw); bend = 0.4f * paw; }
 
-            var hip = new Vector3(sd * 0.21f + shift, y - 0.14f + (front ? rock : -rock), front ? 0.58f : -0.60f);
-            var knee = hip + new Vector3(0, -Upper * MathF.Cos(a), Upper * MathF.Sin(a));
-            float lowA = a + (front ? -bend : bend);
+            // The top of the leg sits up inside the barrel and is drawn thick (forearm, gaskin), so it grows out of the body.
+            var hip = new Vector3(sd * 0.19f + shift, y - 0.06f + (front ? rock : -rock), front ? 0.56f : -0.58f);
+            float upA = a + upRest;
+            var knee = hip + new Vector3(0, -(Upper + 0.08f) * MathF.Cos(upA), (Upper + 0.08f) * MathF.Sin(upA));
+            float lowA = a + lowRest + (front ? -bend : bend);
             var hoof = knee + new Vector3(0, -Lower * MathF.Cos(lowA), Lower * MathF.Sin(lowA));
             if (Detail == 0)
             {
-                EmitBone(kit.HorseLegUp, hip, knee, Vector3.UnitZ);
-                EmitBone(kit.HorseLegLow, knee, hoof, Vector3.UnitZ);
+                var into = Vector3.Normalize(knee - hoof) * 0.05f; // the cannon starts inside the forearm: no gap at the joint
+                EmitBone(kit.HorseLegLow, knee + into, hoof, Vector3.UnitZ);
+                EmitBone(kit.HorseLegUp, hip, knee, Vector3.UnitZ, front ? 1.35f : 1.6f);
             }
             else
             {
