@@ -235,7 +235,9 @@ partial class MapScreen
             note = $"RESTED. WOUNDED: {C.Player.Wounded}";
         }
         // Each company: its fit and wounded as a bar, its cohesion beside it.
-        int y = Heading(body.X, by + ui.U(56), body.Width, "YOUR COMPANIES"), n = 0, colW = (body.Width - ui.U(12)) / 2;
+        int y = Heading(body.X, by + ui.U(56), body.Width - ui.U(170), "YOUR COMPANIES"), n = 0, colW = (body.Width - ui.U(12)) / 2;
+        var campB = new Rectangle(body.Right - ui.U(160), by + ui.U(50), ui.U(160), ui.U(18));
+        if (ui.Button(campB, "SEE THE CAMP", note: ctl.Name(Act.CampScreen))) { OpenScreen(PanelKind.Camp); campMan = null; return; } // C5: the men at rest
         foreach (var k in C.Player.Companies)
         {
             var row = new Rectangle(body.X + n % 2 * (colW + ui.U(12)), y + n / 2 * ui.U(34), colW, ui.U(30));

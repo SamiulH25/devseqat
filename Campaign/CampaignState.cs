@@ -585,6 +585,8 @@ public sealed class CampaignState
     /// Cairns over your named men where they fell (docs/pre-demo/COMPANY.md C7), at most `Campaign.MaxCairns`; captains who died
     /// in the field (the opt-in rule `CaptainDeath`, set from the settings for new campaigns).
     public List<Cairn> Cairns = new();
+    /// Your last battle and the named men in it, for the party screen (docs/pre-demo/COMPANY.md C8); null before your first.
+    public LastFight? LastFight;
     public List<DeadCaptain> DeadCaptains = new();
     public bool CaptainDeath;
     /// The named men you may mention after the last won battle (C4); emptied by a mention or the next battle.

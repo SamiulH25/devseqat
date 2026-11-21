@@ -60,7 +60,8 @@ partial class MapScreen
             DrawLane(lane, d, comps, headW, tileW, tileH, perRow, moving, released);
             y = lane.Bottom + gap;
         }
-        if (newLane && y + ui.U(40) <= board.Bottom) NewLane(new Rectangle(board.X, y, board.Width, ui.U(42)), headW, moving, released);
+        if (newLane && y + ui.U(40) <= board.Bottom) { NewLane(new Rectangle(board.X, y, board.Width, ui.U(42)), headW, moving, released); y += ui.U(42) + gap; }
+        if (C.S.LastFight is LastFight lf && board.Bottom - y >= ui.U(110)) LastFightBlock(new Rectangle(board.X, y + ui.U(8), board.Width, board.Bottom - y - ui.U(8)), lf);
 
         // The side: the company picked, or the captain.
         ui.Rect(side, Color.Black * 0.22f);
@@ -85,6 +86,44 @@ partial class MapScreen
         if (note != "") ui.TextFitC(note, board.Center.X, r.Bottom - ui.U(46), board.Width, Style.Warn, 1);
         else ui.TextC("DRAG A COMPANY TO ANOTHER LANE TO CHANGE WHO LEADS IT. CLICK ONE TO SEE IT AND MOVE ITS MEN.", board.Center.X, r.Bottom - ui.U(46), Style.Dim, 1);
         if (ui.Gilded(new Rectangle(r.Right - ui.U(200), r.Bottom - ui.U(40), ui.U(180), ui.U(28)), "CLOSE", ctl.Name(Act.Menu))) { panel = PanelKind.None; renaming = null; }
+    }
+
+    /// The board's lower half (docs/pre-demo/COMPANY.md C8): your last battle, and a card for each named man it touched.
+    void LastFightBlock(Rectangle b, LastFight lf)
+    {
+        string head = "THE LAST BATTLE" + (lf.Field != "" ? ": " + lf.Field.ToUpperInvariant() : "");
+        ui.Text(head, b.X, b.Y, Kit.Gilt, 1);
+        int hx = b.X + ui.TW(head, 1) + ui.U(10);
+        hx += ui.Chip(hx, b.Y - ui.U(3), lf.Won ? "WON" : "LOST", lf.Won ? Style.Ok : Style.Bad) + ui.U(8);
+        ui.TextFit($"DAY {lf.Day}, AGAINST {lf.Foe.ToUpperInvariant()}. {lf.Kills} KILLED, {lf.Lost} LOST.", hx, b.Y, b.Right - hx, Style.Dim, 1);
+        ui.Divider(b.X, b.Y + ui.U(14), b.Width, Kit.Gilt * 0.35f);
+        var men = lf.Men.Select(x => (Man: C.ManOfLastFight(x.Id), x.What)).Where(x => x.Man != null).ToList();
+        int y = b.Y + ui.U(22);
+        if (men.Count == 0) { ui.Text("NO NAMED MAN OF YOURS DID ANYTHING TO TELL OF.", b.X, y, Style.Dim, 1); return; }
+        int cols = 3, gap = ui.U(8), cw = (b.Width - gap * (cols - 1)) / cols, ch = ui.U(58);
+        for (int i = 0; i < men.Count; i++)
+        {
+            var card = new Rectangle(b.X + i % cols * (cw + gap), y + i / cols * (ch + gap), cw, ch);
+            if (card.Bottom > b.Bottom)
+            {
+                ui.TextR($"+{men.Count - i} MORE", b.Right, b.Bottom - ui.U(10), Style.Dim, 1);
+                break;
+            }
+            var (m, what) = men[i];
+            bool gone = m!.Fate is "fell" or "missing";
+            var k = C.Player.Companies.FirstOrDefault(c => c.Roll.Contains(m) || c.Id == m.Company);
+            ui.Rect(card, Color.White * 0.035f);
+            var fb = new Rectangle(card.X + ui.U(4), card.Y + ui.U(4), ui.U(40), card.Height - ui.U(8));
+            ui.Rect(new Rectangle(fb.X - 1, fb.Y - 1, fb.Width + 2, fb.Height + 2), gone ? Kit.IronDark : Campaign.OfBanner(m) ? Kit.Mul(Kit.Gilt, 0.7f) : Kit.IronDark);
+            if (gone) ui.FaceHead(PortraitPainter.Of(m, k) with { Mood = 1 }, fb, new Color(120, 122, 128));
+            else ui.FaceHead(PortraitPainter.Of(m, k), fb);
+            int tx = fb.Right + ui.U(8), tw = card.Right - tx - ui.U(4);
+            ui.TextFit(m.Name.ToUpperInvariant(), tx, card.Y + ui.U(6), tw, gone ? Style.Dim : Style.Text, 1);
+            var lines = ui.Wrap(what.ToUpperInvariant(), tw);
+            Color wc = gone ? Style.Bad : what.StartsWith("Wounded") ? Style.Warn : Kit.Mul(Kit.Parchment, 0.85f);
+            for (int l = 0; l < Math.Min(2, lines.Count); l++) ui.TextFit(lines[l], tx, card.Y + ui.U(20 + l * 12), tw, wc, 1);
+            if (k != null && !gone && ui.Clicked(card)) { musterPick = k; note = ""; }
+        }
     }
 
     /// The whole company in one strip: men against the cap, companies against the slots, wounded, horses, and the men by kind.
@@ -184,7 +223,8 @@ partial class MapScreen
         // The picked company's own sergeant, then any companion free to lead.
         if (musterPick is CompanyRecord pick && leaders.Any(l => l.Company == pick.Id))
         {
-            string label = ui.Fit($"UNDER SGT {pick.Officer.ToUpperInvariant()}", ui.U(190));
+            string sgt = pick.Officer.ToUpperInvariant(); // the officer's name may carry his rank already
+            string label = ui.Fit("UNDER " + (sgt.StartsWith("SGT ") ? sgt : "SGT " + sgt), ui.U(190));
             var b = new Rectangle(x, by, ui.TW(label, 1) + ui.U(20), bh);
             if (ui.Button(b, label, true, "", true)) note = C.MakeDivision(-1, pick.Id) ?? "";
             if (ui.Hover(b)) note = $"{pick.Name.ToUpperInvariant()} BECOMES A DIVISION UNDER ITS OWN SERGEANT. HIS COMMAND GROWS WITH HIS BATTLES (AT MOST 6).";

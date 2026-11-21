@@ -334,7 +334,7 @@ sealed partial class MapScreen
     /// Open a screen, remembering where from (the party screen is remembered; other screens go back to the map).
     void OpenScreen(PanelKind kind)
     {
-        from = panel == PanelKind.Party ? PanelKind.Party : PanelKind.None;
+        from = panel is PanelKind.Party or PanelKind.Settlement ? panel : PanelKind.None; // the way back: the party screen, or the place (its REST tab opens the camp)
         panel = kind; note = "";
     }
 
@@ -402,7 +402,7 @@ sealed partial class MapScreen
     PanelKind heardPanel;
 
     /// Where closing `kind` goes: back to the party screen if it was opened from there.
-    PanelKind CameFrom(PanelKind kind) => kind != PanelKind.Party && from == PanelKind.Party ? PanelKind.Party : PanelKind.None;
+    PanelKind CameFrom(PanelKind kind) => from != PanelKind.None && kind != from ? from : PanelKind.None;
 
     void Camera(float dt, bool active)
     {

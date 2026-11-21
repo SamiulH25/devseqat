@@ -28,6 +28,13 @@ partial class MapScreen
             y += ui.U(26);
         }
         if (vassals.Count == 0) { ui.Text("NONE YET. AS A LORD WITH TWO FIEFS YOU MAY GIVE ONE TO A COMPANION.", x, y, Style.Dim, 1); y += ui.U(16); }
+        // While none may be raised, one line says why, not a dead button a companion.
+        if (raisable.Count > 0 && !raisable.Any(k => C.CanRaiseVassal(k, out _)))
+        {
+            C.CanRaiseVassal(raisable[0], out string not);
+            ui.TextFit(not, x, y, r.Width - ui.U(48), Style.Dim, 1);
+            return;
+        }
         foreach (var k in raisable.Take(3))
         {
             bool can = C.CanRaiseVassal(k, out string why);
@@ -77,17 +84,29 @@ partial class MapScreen
         y += ui.U(18);
         ui.Text(Cut($"CONTRACTS PAY +{(C.FamePay - 1) * 100:0}%. LORDS THINK +{C.FameRegard:0} BETTER OF YOU. MORE MEN FOLLOW YOU, AND YOUR OWN PEOPLE COME KNOWING THE WORK."), x, y, Style.Dim, 1);
         y += ui.U(18);
+        // A company a row under its banner, its honours as gold pennants and the ones taken from it dimmed (C8).
+        var hd = Style.Sides[Style.PaletteOf(C.SideOf(C.Player))];
         foreach (var c in C.Player.Companies.OrderByDescending(Campaign.CompanyFame))
         {
-            if (y > a.Bottom - ui.U(176)) break;
-            var row = new Rectangle(x - ui.U(4), y - ui.U(3), w + ui.U(8), ui.U(30));
+            if (y > a.Bottom - ui.U(186)) break;
+            var row = new Rectangle(x - ui.U(4), y - ui.U(3), w + ui.U(8), ui.U(38));
             ui.Rect(row, Color.White * 0.04f);
-            ui.Text(c.Name.ToUpperInvariant(), x, y, Style.Text, 1);
-            ui.TextR($"{Campaign.N(c.Battles, "BATTLE")}, FAME {Campaign.CompanyFame(c)} ({Campaign.FameWord(Campaign.CompanyFame(c))})", x + w, y, Style.Dim, 1);
-            string hon = c.BattleHonours.Count > 0 ? "HONOURS: " + string.Join(", ", c.BattleHonours).ToUpperInvariant() : "NO BATTLE HONOURS YET. WIN OUTNUMBERED, SLAY THEIR CAPTAIN OR TAKE A WALL.";
-            if (c.LostHonours.Count > 0) hon += ". TAKEN: " + string.Join(", ", c.LostHonours.Select(l => $"{l.Name} BY THE {C.FactionNames[l.Faction]}")).ToUpperInvariant();
-            ui.Text(Cut(hon), x, y + ui.U(11), c.BattleHonours.Count > 0 ? Kit.Gilt : Style.Dim, 1);
-            y += ui.U(34);
+            ui.Banner(x + ui.U(12), y, ui.U(18), ui.U(26), hd);
+            for (int j = 0; j < Math.Min(3, c.BattleHonours.Count); j++) ui.Rect(new Rectangle(x + ui.U(23 + j * 3), y + ui.U(3), ui.U(2), ui.U(16 - j * 4)), Kit.Gilt); // a streamer an honour
+            int tx = x + ui.U(36), tw = w - ui.U(36);
+            ui.Text(c.Name.ToUpperInvariant(), tx, y + ui.U(1), Style.Text, 1);
+            ui.TextR($"{Campaign.N(c.Battles, "BATTLE")}, FAME {Campaign.CompanyFame(c)} ({Campaign.FameWord(Campaign.CompanyFame(c))})", x + w, y + ui.U(1), Style.Dim, 1);
+            int hx = tx, hy = y + ui.U(15);
+            if (c.BattleHonours.Count == 0 && c.LostHonours.Count == 0) ui.TextFit("NO BATTLE HONOURS YET. WIN OUTNUMBERED, SLAY THEIR CAPTAIN OR TAKE A WALL.", hx, hy + ui.U(3), tw, Style.Dim, 1);
+            var chips = c.BattleHonours.Select(h => (h.ToUpperInvariant(), Kit.Gilt, "flag"))
+                .Concat(c.LostHonours.Select(l => ($"{l.Name.ToUpperInvariant()}: TAKEN BY THE {C.FactionNames[l.Faction].ToUpperInvariant()}", Style.Dim, "flag"))).ToList();
+            for (int j = 0; j < chips.Count; j++)
+            {
+                var (text, col, icon) = chips[j];
+                if (hx + ui.TW(text, 1) + ui.U(30) > x + w) { ui.Text($"+{chips.Count - j}", hx, hy + ui.U(3), Style.Dim, 1); break; }
+                hx += ui.Chip(hx, hy, text, col, icon) + ui.U(4);
+            }
+            y += ui.U(42);
         }
         OwnOrderBlock(x, Math.Max(y, a.Bottom - ui.U(168)), w, Cut);
         y = Math.Max(y, a.Bottom - ui.U(122));

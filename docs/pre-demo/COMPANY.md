@@ -1,6 +1,6 @@
 # The men of the company, and their captain: plan
 
-Status: **partly built**: C0-C7 and C9-C14 shipped (see "As built" at the end); C8 is still open. It follows `docs/archive/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
+Status: **partly built**: C0-C7 and C9-C14 shipped (see "As built" at the end); C8 is in progress (see its note at the end). It follows `docs/archive/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
 When a phase ships, add its "As built" note at the end. Numbers marked *(tune)* are starting values.
 Read `docs/archive/LEGACY.md` first: this plan is its second half.
 
@@ -622,3 +622,20 @@ and its range; plunging and flat shots drawn differently; fire pots; the flight'
 - Tests `BookOfTheFallen`, `GravesOnTheMap` (placed, capped, honoured once a season, the seed's map unchanged), `CaptainCanDie`.
   Shots (with `IRONFIELD_CAMP_ONLY=1`, staged by `StageFallen`): `campaign-book.png`, `campaign-cairn.png`, `campaign-cairn-event.png`,
   `campaign-end.png`.
+
+### C8 (polish, pilot, docs), in progress (saved 2026-11-21)
+Done so far:
+- *Overflow:* no overflow in the town or battle HUD shot runs; key names print as glyphs (`Bind.ToString`/`Parse` now also know `;` `'` `-` `\`).
+- *Party screen's lower half:* THE LAST BATTLE (`MapScreen.Board.cs` `LastFightBlock`): the field, won or lost, the day, the foe, kills
+  and losses, and a card a named man it touched (his deed, a name won, wounded, fell), from `CampaignState.LastFight` (`LastFight`,
+  `LastFightMan`; `SnapshotRoll` at the start of `Apply`, `NoteLastFight` at its end, `ManOfLastFight`; Remembered.cs).
+- *Household tab:* a full card a companion (`MapScreen.Party.cs` `CompanionCard`: face, calling, level, role, XP, company led, where he
+  rose from, regard, talents, abilities). Vassals show one line saying why none may be raised, not a dead button each.
+- *THE LEGEND:* a row a company under its banner, a gold streamer an honour, honours as pennant chips, taken ones dimmed.
+- *Companion line bug* fixed (no ". AGE 30" or ". ." with no traits or role). "UNDER SGT SGT" fixed in the new-division lane.
+- *REST tab:* SEE THE CAMP opens the camp; Esc goes back to the place (`OpenScreen`/`CameFrom` now remember the settlement too).
+- Shots (`IRONFIELD_CAMP_ONLY=1`): `campaign-household.png`, `campaign-party.png`, `campaign-legend.png`.
+Still to do: the pilot (choose sergeants from `SergeantChoice`, mention the best of `S.MentionPool`, pension men `CannotPension`
+allows; telemetry counters; compare the auto-resolve win rate before and after with `--pacing`), Hydrogen rating of the three new shots,
+docs (README, DEVELOPING.md 5.6 and 8.x, CLAUDE.md file guide rows for LastFight and CompanionCard), UI lab pages for the man's page and
+the book, the C9b-C11b leftovers to docs/BACKLOG.md, then move this file to docs/archive/.

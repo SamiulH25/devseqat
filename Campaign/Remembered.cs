@@ -23,6 +23,22 @@ public sealed class DeadCaptain
 
 /// Campaign: what is remembered (C7). Cairns where named men fell, the day each year that a battle cost three or more of them,
 /// and the captain who can die. The book of the fallen reads `BookOfTheFallen`.
+/// Your last battle as the party screen tells it (docs/pre-demo/COMPANY.md C8): where, against whom, and the named men in it.
+public sealed class LastFight
+{
+    public int Day, Kills, Lost;
+    public string Field = "", Foe = "";
+    public bool Won;
+    /// Each named man the battle touched, and what it was: his deed, a name won, a wound, his fall.
+    public List<LastFightMan> Men = new();
+}
+
+public sealed class LastFightMan
+{
+    public int Id;
+    public string What = "";
+}
+
 public sealed partial class Campaign
 {
     /// The most cairns the map keeps (the oldest goes back to grass; the book keeps the men), how near you must ride, the
@@ -143,6 +159,41 @@ public sealed partial class Campaign
         }
         rollField = "";
         PlaceCairn(new Cairn { Id = S.NextId++, Day = Day - 40, Company = cos.FirstOrDefault()?.Id ?? -1, Pos = CairnSpot(), Field = fields[0], Men = first, Honoured = SeasonCount - 1 });
+        // The last fight as the party screen tells it: the men who fell at Greywater, and the living with what they did.
+        var lf = new LastFight { Day = Day - 20, Field = fields[1], Foe = "the Red Lances", Won = true, Kills = 61, Lost = 23 };
+        lf.Men.AddRange(Player.Companies.SelectMany(k => k.Roll).Take(3).Select((m, i) => new LastFightMan { Id = m.Id, What = i == 0 ? "Cut down a captain against the Red Lances." : i == 1 ? "Won his name. Killed 5 against the Red Lances." : "Wounded." }));
+        lf.Men.AddRange(S.Fallen.Where(m => m.Field == fields[1]).Select(m => new LastFightMan { Id = m.Id, What = "Fell." }));
+        S.LastFight = lf;
         S.DeadCaptains.Add(new DeadCaptain { Name = "Aldric Vey", Field = "the Siege of Corwen", Day = Math.Max(1, Day - 90), Age = 41 });
     }
+    /// Your named men as a battle found them (deeds told, hurt), so `NoteLastFight` can say what it did to each.
+    readonly Dictionary<int, (int Deeds, bool Hurt)> rollBefore = new();
+
+    void SnapshotRoll()
+    {
+        rollBefore.Clear();
+        foreach (var m in Player.Companies.SelectMany(k => k.Roll)) rollBefore[m.Id] = (m.Deeds.Count, m.Hurt);
+    }
+
+    /// After your battle: keep it, and the named men in it, for the party screen. Men who won a name or a deed first, then the
+    /// fallen, then the hurt.
+    void NoteLastFight(string field, string foe, bool won)
+    {
+        var f = new LastFight { Day = Day, Field = field, Foe = foe, Won = won };
+        foreach (var k in Player.Companies)
+            if (k.Ledger.Count > 0 && k.Ledger[^1].Day == Day) { f.Kills += k.Ledger[^1].Kills; f.Lost += k.Ledger[^1].Lost; }
+        foreach (var m in Player.Companies.SelectMany(k => k.Roll))
+        {
+            if (!rollBefore.TryGetValue(m.Id, out var was)) f.Men.Add(new LastFightMan { Id = m.Id, What = "Won his name. " + (m.Deeds.Count > 0 ? m.Deeds[^1] : "") });
+            else if (m.Deeds.Count != was.Deeds && m.Deeds.Count > 0) f.Men.Add(new LastFightMan { Id = m.Id, What = m.Deeds[^1] });
+            else if (m.Hurt && !was.Hurt) f.Men.Add(new LastFightMan { Id = m.Id, What = "Wounded." });
+        }
+        foreach (var m in S.Fallen.Where(m => m.DiedDay == Day && rollBefore.ContainsKey(m.Id)))
+            f.Men.Add(new LastFightMan { Id = m.Id, What = m.Fate == "missing" ? "Missing." : "Fell." });
+        S.LastFight = f;
+        rollBefore.Clear();
+    }
+
+    /// A man of the last fight, living or fallen.
+    public Soldier? ManOfLastFight(int id) => LivingMan(id) ?? S.Fallen.FirstOrDefault(m => m.Id == id);
 }

@@ -42,6 +42,21 @@ partial class MapScreen
             ? (lordSort == 0 ? lords.OrderByDescending(C.OpinionOfYou) : lords.OrderByDescending(ch => ch.PartyId >= 0 && C.PartyById(ch.PartyId) is Party pp ? pp.Men : 0)).ToList()
             : C.Companions.ToList();
         if (list.Count == 0) ui.Text(charTab < realms ? "NO LORDS." : $"NOBODY YET. OFFICERS WHO LIVE THROUGH {Campaign.CompanionBattles} BATTLES JOIN YOU, AND WANDERERS WAIT IN SOME TOWNS' TAVERNS.", x, y, Style.Dim, 1);
+        if (charTab == realms) // the household: a full card a companion (C8)
+        {
+            int cardH = ui.U(112), shown = 0;
+            foreach (var ch in list)
+            {
+                var card = new Rectangle(x + shown % 2 * (colW + ui.U(12)), y + shown / 2 * (cardH + ui.U(8)), colW, cardH);
+                if (card.Bottom > r.Bottom - ui.U(60)) break;
+                CompanionCard(ch, card);
+                shown++;
+            }
+            Vassals(r, y + (shown + 1) / 2 * (cardH + ui.U(8)) + ui.U(4));
+            Note(r);
+            if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: ctl.Name(Act.LordsScreen))) panel = CameFrom(PanelKind.Characters);
+            return;
+        }
         int i2 = 0;
         foreach (var ch in list)
         {
@@ -81,7 +96,7 @@ partial class MapScreen
             {
                 var why = C.MemoriesOf(ch, C.Me).Take(3).Select(m => $"{m.What.ToUpperInvariant()} ({m.Weight:+0;-0}, DAY {m.Day})").ToList();
                 string house = C.HouseOf(ch) is House hs ? hs.Name.ToUpperInvariant() + ", " : "";
-                note = house + string.Join(", ", ch.Traits).ToUpperInvariant() + $", AGE {ch.Age}. THINKS {OpinionWord(op)} OF YOU ({op:+0;-0;0})" + (why.Count > 0 ? ": " + string.Join("; ", why) : "");
+                note = house + (ch.Traits.Count > 0 ? string.Join(", ", ch.Traits).ToUpperInvariant() + ", " : "") + $"AGE {ch.Age}. THINKS {OpinionWord(op)} OF YOU ({op:+0;-0;0})" + (why.Count > 0 ? ": " + string.Join("; ", why) : "");
                 if (ch.Kind == "companion")
                 {
                     string leads = C.Player.Companies.FirstOrDefault(co => co.Id == ch.CompanyId) is CompanyRecord led ? $"LEADS {led.Name.ToUpperInvariant()}" : "LEADS NO COMPANY";
@@ -97,11 +112,54 @@ partial class MapScreen
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: ctl.Name(Act.LordsScreen))) panel = CameFrom(PanelKind.Characters);
     }
 
+    /// A companion of your household as a card (docs/pre-demo/COMPANY.md C8): his face, calling and level, the company he leads,
+    /// where he rose from, what he thinks of you, and what he brings. A click moves him to the next company; hover for the rest.
+    void CompanionCard(Character ch, Rectangle b)
+    {
+        bool hurt = C.S.Hours < ch.WoundedUntil;
+        ui.Rect(b, Color.White * 0.04f);
+        ui.Frame(b, ui.Hover(b) ? Kit.Gilt : Kit.IronDark, ui.U(1));
+        var fb = new Rectangle(b.X + ui.U(6), b.Y + ui.U(6), ui.U(80), b.Height - ui.U(12));
+        ui.Rect(new Rectangle(fb.X - 1, fb.Y - 1, fb.Width + 2, fb.Height + 2), Kit.GiltDark);
+        ui.Face(PortraitPainter.Of(C, ch), fb);
+        int tx = fb.Right + ui.U(10), tw = b.Right - tx - ui.U(8), y = b.Y + ui.U(8);
+        ui.TextFit(ch.Name.ToUpperInvariant(), tx, y, tw - ui.U(80), Kit.Gilt, 1);
+        ui.TextR(hurt ? "WOUNDED" : $"AGE {ch.Age}", b.Right - ui.U(8), y, hurt ? Style.Warn : Style.Dim, 1);
+        y += ui.U(15);
+        string xp = ch.Level >= Campaign.MaxCompanionLevel ? "TOP LEVEL" : $"{Campaign.XpToNext(ch)} XP TO LEVEL {ch.Level + 1}";
+        ui.TextFit($"{ch.Calling.ToUpperInvariant()}, LEVEL {ch.Level}. " + (ch.Role != "" ? $"{ch.Role.ToUpperInvariant()}. " : "") + xp, tx, y, tw, Style.Text, 1);
+        y += ui.U(14);
+        string leads = C.Player.Companies.FirstOrDefault(co => co.Id == ch.CompanyId) is CompanyRecord led ? $"LEADS {led.Name.ToUpperInvariant()}" : "LEADS NO COMPANY";
+        ui.TextFit(leads, tx, y, tw, Style.Text, 1);
+        y += ui.U(14);
+        if (C.RoseFrom(ch) is var rose and not "") { ui.TextFit(rose, tx, y, tw, Kit.Gilt, 1); y += ui.U(14); }
+        float op = C.OpinionOfYou(ch);
+        int cx = tx + ui.Chip(tx, y, Regard(op), OpinionColor(op), "heart") + ui.U(6);
+        var talents = Campaign.TalentsOf(ch).Select(t => Effects.Get(t).Name.ToUpperInvariant()).Distinct().ToList();
+        if (talents.Count > 0) ui.TextFit("BRINGS " + string.Join(", ", talents), cx, y + ui.U(3), b.Right - ui.U(8) - cx, Style.Dim, 1);
+        y += ui.U(18);
+        var gifts = Campaign.GiftsOf(ch).Select(a => Abilities.Get(a).Name.ToUpperInvariant()).ToList();
+        if (gifts.Count > 0 && y + ui.U(10) < b.Bottom) ui.TextFit("ABILITIES: " + string.Join(", ", gifts), tx, y, tw, Kit.Mul(Kit.Parchment, 0.85f), 1);
+        if (ch.Warned) ui.TextR("MAY LEAVE YOU", b.Right - ui.U(8), b.Bottom - ui.U(14), Style.Bad, 1);
+        if (ui.Clicked(b) && C.Player.Companies.Count > 1)
+        {
+            var cos = C.Player.Companies;
+            int k = cos.FindIndex(co => co.Id == ch.CompanyId);
+            C.AssignCompanion(ch, cos[(k + 1) % cos.Count]);
+        }
+        if (ui.Hover(b))
+        {
+            var why = C.MemoriesOf(ch, C.Me).Take(3).Select(m => $"{m.What.ToUpperInvariant()} ({m.Weight:+0;-0}, DAY {m.Day})").ToList();
+            note = (C.Player.Companies.Count > 1 ? "CLICK: THE NEXT COMPANY. " : "") + CompanionNote(ch) + (ch.Traits.Count > 0 ? ". " + string.Join(", ", ch.Traits).ToUpperInvariant() : "")
+                + $". THINKS {OpinionWord(op)} OF YOU ({op:+0;-0;0})" + (why.Count > 0 ? ": " + string.Join("; ", why) : "");
+        }
+    }
+
     /// A companion's sheet in one line (docs/archive/COMPANIONS_MAGIC.md B1-B5): calling and what it does, abilities, talents,
     /// XP to the next level, his story, his sworn brother and his student.
     string CompanionNote(Character ch)
     {
-        var parts = new List<string> { $"{ch.Role.ToUpperInvariant()}: {RoleTextOf(ch.Role)}" };
+        var parts = ch.Role != "" ? new List<string> { $"{ch.Role.ToUpperInvariant()}: {RoleTextOf(ch.Role)}" } : new List<string>();
         if (Callings.Get(ch.Calling) is CallingDef cd) parts.Add($"{cd.Id.ToUpperInvariant()}: {cd.Line.ToUpperInvariant()}");
         parts.Add("ABILITIES: " + string.Join(", ", Campaign.GiftsOf(ch).Select(a => Abilities.Get(a).Name.ToUpperInvariant())));
         var talents = Campaign.TalentsOf(ch).Select(t => Effects.Get(t).Name.ToUpperInvariant()).Distinct().ToList();

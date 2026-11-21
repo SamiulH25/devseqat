@@ -55,6 +55,10 @@ public readonly record struct Bind(Keys? Key, MouseButton? Mouse)
             Keys.OemPlus => "=",
             Keys.OemOpenBrackets => "[",
             Keys.OemCloseBrackets => "]",
+            Keys.OemSemicolon => ";",
+            Keys.OemQuotes => "'",
+            Keys.OemMinus => "-",
+            Keys.OemPipe or Keys.OemBackslash => "\\",
             >= Keys.D0 and <= Keys.D9 => ((int)Key - (int)Keys.D0).ToString(),
             _ => Key?.ToString().ToUpperInvariant() ?? "",
         },
@@ -81,6 +85,10 @@ public readonly record struct Bind(Keys? Key, MouseButton? Mouse)
             case "EQUALS" or "=": return new(Keys.OemPlus, null);
             case "[": return new(Keys.OemOpenBrackets, null);
             case "]": return new(Keys.OemCloseBrackets, null);
+            case "SEMICOLON" or ";": return new(Keys.OemSemicolon, null);
+            case "QUOTE" or "'": return new(Keys.OemQuotes, null);
+            case "MINUS" or "-": return new(Keys.OemMinus, null);
+            case "BACKSLASH" or "\\": return new(Keys.OemPipe, null);
         }
         if (s.Length == 1 && char.IsDigit(s[0])) return new(Keys.D0 + (s[0] - '0'), null);
         return Enum.TryParse<Keys>(s.Trim(), true, out var k) ? new(k, null) : null;

@@ -28,6 +28,7 @@ public partial class Campaign
         string field = playerIn ? BattleName(Player.Pos, siegeBattle) : "";
         if (playerIn && won) field = WorkingRemembered(r, field); // a great working of yours names the day (docs/archive/ARCANA.md AR8)
         rollField = field; // the fallen are kept under it (C7)
+        if (playerIn) SnapshotRoll(); // what the battle does to each named man, for the party screen (C8)
         float mine = playerTeam == 0 ? startStrength0 : startStrength1, theirs = playerTeam == 0 ? startStrength1 : startStrength0;
         bool notable = playerIn && won && (theirs >= 1.5f * MathF.Max(1, mine) || r.EnemyLeader == LeaderFate.Slain || siegeBattle);
         int foeFaction = (playerTeam == 0 ? side1 : side0).Select(SideOf).FirstOrDefault(f => f >= 0, -1);
@@ -221,6 +222,7 @@ public partial class Campaign
             Roll = RollNewsOrdered().Where(n => n.Item1 is not ("HONOUR" or "LOST")).ToList(),
             Honours = RollNewsOrdered().Where(n => n.Item1 is "HONOUR" or "LOST").ToList(), Field = field, Wonders = r.Wonders };
         RaiseCairn(field); // C7: stones over the named men it cost
+        NoteLastFight(field, enemyName, won);
         rollField = "";
         if (won) RaiseBurial();
         Log(won ? $"Victory over {enemyName}." : $"Defeat against {enemyName}.");
