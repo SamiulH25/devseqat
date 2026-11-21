@@ -157,7 +157,7 @@ partial class MapScreen
         bool day = kind is "town" or "court" or "site" && id != "plot" && id != "site_stones";
         ui.VGrad(p, day ? new Color(70, 96, 130) : Kit.Night, day ? new Color(214, 160, 110) : kind == "burning" ? new Color(120, 54, 40) : Kit.Dusk, 2);
         if (!day) ui.Stars(new Rectangle(p.X, p.Y, p.Width, p.Height / 2), t, 30);
-        var orb = new Vector2(p.X + p.Width * 0.82f, p.Y + p.Height * 0.28f);
+        var orb = new Vector2(p.X + p.Width * 0.68f, p.Y + p.Height * 0.28f); // clear of a camp event's right-hand face
         if (day) { ui.Disc(orb, ui.U(20), new Color(255, 230, 170) * 0.25f); ui.Disc(orb, ui.U(12), new Color(255, 236, 190)); }
         else
         {

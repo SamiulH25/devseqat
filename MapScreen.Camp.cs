@@ -241,7 +241,9 @@ partial class MapScreen
             ui.Rect(pallet, Kit.Mul(hd.Cloth, CampLight(l) * 0.9f));
             ui.Rect(new Rectangle(pallet.X, pallet.Y, pallet.Width, ui.U(1)), Kit.Mul(hd.Cloth, CampLight(l) * 1.15f));
             ui.Rect(new Rectangle(pallet.X - ui.U(1), pallet.Y - ui.U(1), pallet.Width / 4, ph / 2 + ui.U(1)), Kit.Mul(canvas, 0.95f)); // the pillow
-            hurtSpots.Add((m, k, new Rectangle(pallet.X - ui.U(2), pallet.Y - ph * 2, pw / 3, ph * 2)));
+            // His mark in a row over the surgeon's tent, clear of the men standing in front of the pallets.
+            int mx = (int)p.X + (int)((i - (hurt.Count - 1) / 2f) * ui.U(20)), my = (int)(p.Y - pm * 2.3f);
+            hurtSpots.Add((m, k, new Rectangle(mx - ui.U(8), my, ui.U(16), ui.U(16))));
         }
     }
 
@@ -289,7 +291,7 @@ partial class MapScreen
     void CampGear(TownLook l, TownColours c, bool back)
     {
         var st = campStage!;
-        float lit = CampLight(l);
+        float lit = l.Night ? 0.4f : CampLight(l); // as dark as the men at night
         Color wood = Color.Lerp(c.Near, new Color(124, 86, 54), lit), iron = Color.Lerp(c.Near, new Color(84, 84, 92), lit),
             sack = Color.Lerp(c.Near, new Color(186, 164, 120), lit), leather = Color.Lerp(c.Near, new Color(110, 64, 40), lit);
         int s = Math.Max(1, ui.U(1));
