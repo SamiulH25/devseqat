@@ -354,17 +354,8 @@ partial class MapScreen
             case "southern": // the great mosque, its dome and minaret, palms before it
                 GreatMosque(x + ui.U(12), ground, c, night, lit);
                 break;
-            case "steppe": // the khan's great tent under its standards, the herd tethered by it
-                Dome(x + ui.U(30), ground - ui.U(20), ui.U(34), ui.U(24), Color.Lerp(c, rimLight, 0.12f));
-                ui.Rect(new Rectangle(x - ui.U(4), ground - ui.U(20), ui.U(68), ui.U(20)), Color.Lerp(c, rimLight, 0.1f));
-                ui.Rect(new Rectangle(x - ui.U(4), ground - ui.U(15), ui.U(68), ui.U(3)), cloth); // its felt band
-                ui.Rect(new Rectangle(x + ui.U(46), ground - ui.U(20), ui.U(18), ui.U(20)), Color.Lerp(c, rimLight, 0.3f)); // the sunlit side
-                ui.Rect(new Rectangle(x + ui.U(24), ground - ui.U(13), ui.U(12), ui.U(13)), night ? lit : Kit.Mul(c, 0.6f)); // its door
-                foreach (int k in new[] { -14, 74 })
-                {
-                    ui.Rect(new Rectangle(x + ui.U(k), ground - ui.U(70), ui.U(2), ui.U(70)), c);
-                    for (int j = 0; j < 4; j++) ui.Line(new Vector2(x + ui.U(k + 1), ground - ui.U(68)), new Vector2(x + ui.U(k - 3 + j * 3), ground - ui.U(54) + j % 2 * ui.U(2)), cloth, 1);
-                }
+            case "steppe": // the ovoo on the rise, its cloth strips and standards
+                Ovoo(x + ui.U(12), ground, c, night, lit, cloth, t);
                 break;
             case "northern": // a stave church, roof on roof, dragons on its ridges
                 StaveChurch(x + ui.U(7), ground, c, night, lit, t); // left in the gap, clear of the mead hall's dragons

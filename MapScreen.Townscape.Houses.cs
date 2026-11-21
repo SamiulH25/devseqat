@@ -143,7 +143,10 @@ partial class MapScreen
         int drum = ui.U(7 + rng.Next(6));
         Color[] felts = { new(200, 170, 130), new(176, 150, 120), new(214, 204, 180), new(150, 112, 86) };
         var felt = Color.Lerp(c.Roof, felts[rng.Next(felts.Length)], l.Night ? 0.15f : 0.5f);
+        var rim0 = rimLight;
+        if (l.Night && rimLight.A > 0) rimLight = Color.Lerp(felt, rimLight, 0.3f); // moonlight only grazes the felt
         Dome(x + w / 2, ground - drum, w / 2, w / (3 + rng.Next(2)), felt);
+        rimLight = rim0;
         ui.Rect(new Rectangle(x, ground - drum, w, drum), c.Wall);
         Color[] bands = { new(150, 50, 44), new(54, 84, 130), new(176, 130, 50) };
         var band = rng.Next(3) == 0 ? Color.Lerp(c.Wall, bands[rng.Next(bands.Length)], l.Night ? 0.3f : 0.75f) : Kit.Mul(c.Wall, 0.7f);
@@ -202,7 +205,7 @@ partial class MapScreen
         {
             "white" => Caravanserai(r, l, c, cloth, t),
             "log" => MeadHall(r, l, c, cloth, t),
-            "tent" => TentTavern(r, l, c, cloth, t),
+            "tent" => FeastTent(r, l, c, cloth, t),
             _ => TimberTavern(r, l, c, t),
         };
         rimLight = saved;
@@ -388,37 +391,6 @@ partial class MapScreen
             }
         }
         TavernSign(r.Right, r.Y + ui.U(4), l, c, timber);
-        return lights;
-    }
-
-    /// The steppe tavern: a great felt tent on its round wall, its door flap tied open, a smoke ring at the crown,
-    /// horse-tail standards in the holder's colour and lanterns on poles.
-    List<(int X, int W)> TentTavern(Rectangle r, TownLook l, TownColours c, Color cloth, float t)
-    {
-        Color felt = HeroWall(l, c, new Color(214, 202, 174)), roof = l.Night ? new Color(84, 70, 70) : Color.Lerp(c.Roof, c.Rim, 0.1f),
-            frame = l.Night ? new Color(40, 28, 30) : new Color(110, 70, 40);
-        var lights = new List<(int X, int W)>();
-        int drum = ui.U(26), cx = r.X + ui.U(76), half = ui.U(68);
-        Dome(cx, r.Bottom - drum, half, ui.U(36), roof);
-        for (int k = 1; k < 4; k++) // the roof ribs
-            ui.Line(new Vector2(cx, r.Bottom - drum - ui.U(36)), new Vector2(cx - half + k * half / 2, r.Bottom - drum), Kit.Mul(roof, 0.8f), 1);
-        ui.Rect(new Rectangle(cx - ui.U(8), r.Bottom - drum - ui.U(38), ui.U(16), ui.U(3)), frame); // the crown
-        Smoke(cx, r.Bottom - drum - ui.U(40), t, l.Night);
-        ui.Rect(new Rectangle(cx - half, r.Bottom - drum, half * 2, drum), felt);
-        foreach (int by in new[] { ui.U(5), ui.U(18) }) ui.Rect(new Rectangle(cx - half, r.Bottom - drum + by, half * 2, ui.U(2)), Kit.Mul(cloth, l.Night ? 0.7f : 1f)); // bands
-        ui.Rect(new Rectangle(cx + half - ui.U(1), r.Bottom - drum, ui.U(1), drum), c.Rim);
-        // The door, its flap tied back.
-        var door = new Rectangle(cx - ui.U(12), r.Bottom - ui.U(22), ui.U(24), ui.U(22));
-        TavernDoor(door, r.Bottom, l, c, frame, lights, lamp: false);
-        for (int k = 0; k < ui.U(10); k += Math.Max(1, ui.U(1))) ui.Rect(new Rectangle(door.Right, door.Y + k, ui.U(10) - k, Math.Max(1, ui.U(1))), Kit.Mul(felt, 0.8f));
-        // Standards and lanterns on poles either side.
-        foreach (int px in new[] { r.X + ui.U(2), r.Right - ui.U(2) })
-        {
-            ui.Rect(new Rectangle(px, r.Bottom - ui.U(70), ui.U(2), ui.U(70)), frame);
-            for (int k = 0; k < 4; k++) ui.Line(new Vector2(px + ui.U(1), r.Bottom - ui.U(66)), new Vector2(px - ui.U(3) + k * ui.U(3), r.Bottom - ui.U(50) + (k % 2) * ui.U(3)), cloth, 1);
-            if (!l.Day) Lantern(new Vector2(px + ui.U(1), r.Bottom - ui.U(40)), c, frame);
-        }
-        TavernSign(cx + half - ui.U(6), r.Bottom - drum - ui.U(4), l, c, frame);
         return lights;
     }
 }

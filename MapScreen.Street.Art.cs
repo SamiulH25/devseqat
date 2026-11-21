@@ -11,6 +11,7 @@ partial class MapScreen
     {
         if (l.Build == "log") { HallFort(cx, baseY, scale, l, c, cloth, t, hero); return; } // the north builds in timber
         if (l.Build == "white") { Kasbah(cx, baseY, scale, l, c, cloth, t, hero); return; } // the south in rammed earth
+        if (l.Build == "tent") { KhanOrdu(cx, baseY, scale, l, c, cloth, t, hero); return; } // the steppe's khan keeps a great tent
         int k = ui.U(scale), s1 = Math.Max(1, ui.U(1));
         int wave = (int)MathF.Round(MathF.Sin(t * 3.2f) * s1);
         Color dayStone = l.Build switch { "white" => new(220, 210, 192), "log" => new(138, 126, 114), _ => new(168, 160, 148) };
