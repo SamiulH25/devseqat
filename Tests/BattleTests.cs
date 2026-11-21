@@ -1267,6 +1267,10 @@ public static partial class SelfTest
         Check(b.Arrows.Count > 0, "fire at will looses arrows");
     }
 
+    /// A soldier's worth for TroopTree: how long he stands (`Troops.Toughness`) times how hard he hits (`Troops.Offence`), a man who
+    /// shoots counted twice (he strikes from afar before the lines meet) and one who rides twice again (his horse takes blows and charges).
+    static float Power(UnitType t) => Troops.Toughness(t) * Troops.Offence(t) * (t.Ammo > 0 ? 2 : 1) * (t.Mount != null ? 2 : 1);
+
     /// The upgrade trees are sound: every line climbs in tier, and higher tiers are better soldiers.
     static void TroopTree()
     {
@@ -1275,12 +1279,9 @@ public static partial class SelfTest
         var clansmen = Troops.Get("clansmen");
         Check(levies.Tier == 1 && levies.UpgradesTo.Length >= 4, "levies branch into several lines");
         Check(clansmen.Tier == 1 && clansmen.UpgradesTo.Length >= 4, "clansmen branch into several lines");
-        foreach (var t in Troops.All)
-        {
-            Check(t.UpgradesTo.Length == 0 || t.UpgradeXp > 0, $"{t.Name} has upgradeXp when it upgrades");
-            foreach (var next in t.UpgradesTo.Select(Troops.Get))
-                Check(next.MaxHp + next.Armor * 5 + next.Damage > t.MaxHp + t.Armor * 5 + t.Damage, $"{t.Name} -> {next.Name} is an upgrade");
-        }
+        foreach (var t in Troops.All) Check(t.UpgradesTo.Length == 0 || t.UpgradeXp > 0, $"{t.Name} has upgradeXp when it upgrades");
+        var weaker = Troops.All.SelectMany(t => t.UpgradesTo.Select(Troops.Get).Where(n => Power(n) <= Power(t)).Select(n => $"{t.Id} -> {n.Id} ({Power(t):0.0} -> {Power(n):0.0})")).ToList();
+        Check(weaker.Count == 0, "every upgrade is a better soldier: " + string.Join("; ", weaker));
         for (int tier = 1; tier <= Troops.MaxTier; tier++)
         {
             Check(Troops.Tree("levies").Any(t => t.Tier == tier), $"levies tree reaches tier {Style.Numerals[tier]}");

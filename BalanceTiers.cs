@@ -99,5 +99,37 @@ public static partial class BalanceReport
         Console.WriteLine("wrote balance/tiers.csv");
     }
 
+    /// `--kit` (docs/pre-demo/KIT.md KT4): every man's numbers as built from base, skills and kit -> balance/kit-after.csv, and the
+    /// averages by class and tier set against balance/kit-before.csv (the typed numbers before KT3) when it is there.
+    public static void Kit()
+    {
+        Directory.CreateDirectory("balance");
+        var inv = CultureInfo.InvariantCulture;
+        string F(float v) => v.ToString("0.##", inv);
+        var men = Troops.All.Where(t => !t.Wild).OrderBy(t => t.Tier).ThenBy(t => t.Id).ToList();
+        var csv = new StringBuilder("id,class,culture,tier,arms,riding,bowcraft,hp,damage,armor,reach,windup,recover,speed,block,pierce,range,reload,ammo,vsMounted,toughness,offence\n");
+        foreach (var t in men)
+            csv.AppendLine(string.Join(",", t.Id, t.Class, t.Culture, t.Tier, F(t.Skills.Arms), F(t.Skills.Riding), F(t.Skills.Bowcraft), F(t.MaxHp), F(t.Damage), F(t.Armor),
+                F(t.Reach), F(t.Windup), F(t.Recover), F(t.Speed), F(t.BlockChance), F(t.Pierce), F(t.Range), F(t.Reload), t.Ammo, F(t.VsMounted),
+                F(Troops.Toughness(t)), F(Troops.Offence(t))));
+        File.WriteAllText("balance/kit-after.csv", csv.ToString());
+        // The typed numbers from before, by id, to set the built ones against.
+        var before = new Dictionary<string, Dictionary<string, string>>();
+        if (File.Exists("balance/kit-before.csv"))
+        {
+            var lines = File.ReadAllLines("balance/kit-before.csv");
+            var head = lines[0].Split(',');
+            foreach (var l in lines.Skip(1)) { var c = l.Split(','); before[c[0]] = head.Zip(c).ToDictionary(p => p.First, p => p.Second); }
+        }
+        float Was(UnitType t, string k) => before.TryGetValue(t.Id, out var r) && float.TryParse(r.GetValueOrDefault(k), NumberStyles.Float, inv, out var v) ? v : float.NaN;
+        Console.WriteLine("class      tier  n   hp (was)      damage (was)   armour (was)  block (was)");
+        foreach (var g in men.GroupBy(t => (t.Class, t.Tier)).OrderBy(g => g.Key.Class).ThenBy(g => g.Key.Tier))
+        {
+            string P(Func<UnitType, float> now, string k, string fmt) => $"{g.Average(now).ToString(fmt, inv),5} ({g.Select(t => Was(t, k)).Where(v => !float.IsNaN(v)).DefaultIfEmpty(float.NaN).Average().ToString(fmt, inv),5})";
+            Console.WriteLine($"{g.Key.Class,-10} {Roman(g.Key.Tier),-4} {g.Count(),3}  {P(t => t.MaxHp, "hp", "0")}  {P(t => t.Damage, "damage", "0")}  {P(t => t.Armor, "armor", "0.0")}  {P(t => t.BlockChance, "block", "0.00")}");
+        }
+        Console.WriteLine("wrote balance/kit-after.csv");
+    }
+
     static string Roman(int n) => n switch { 0 => "0", 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", _ => n.ToString() };
 }

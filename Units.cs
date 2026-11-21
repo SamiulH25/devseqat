@@ -96,6 +96,8 @@ public sealed class UnitType
     public int Tier, Cost, UpgradeXp;
     public string[] UpgradesTo = Array.Empty<string>();
     public float MaxHp, Damage, Armor, Reach, Windup, Recover, Speed, BlockChance, Range, VsMounted = 1, Pierce, Reload = 1;
+    /// A man's Arms, Riding and Bowcraft (docs/pre-demo/KIT.md); his numbers above are built from them and his kit. Zero for creatures.
+    public FighterSkills Skills;
     /// Damage against creatures (wild troops), like VsMounted against riders. Above 1, a monster's fear does not reach them.
     public float VsMonster = 1;
     /// Drill (docs/archive/MELEE.md D1) when the troop data sets it (0-1); -1: from its tier.

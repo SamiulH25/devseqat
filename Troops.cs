@@ -43,6 +43,10 @@ public static class Troops
         public string[] Spells = Array.Empty<string>();
         public bool Leader;
         public LookDto Look = new();
+        /// A man's base (Data/gear.json `bases`; empty = "man", "mage" for casters, "captain") and skills (arms, riding, bowcraft;
+        /// missing = `Fighter.SkillsFor`). Creatures type their numbers instead (KIT.md).
+        public string Base = "";
+        public Dictionary<string, float>? Skills;
     }
 
     sealed class FileDto
@@ -60,6 +64,9 @@ public static class Troops
         }
         throw new FileNotFoundException("troop data not found", FileName);
     }
+
+    /// What went wrong building men from their kit, reported by Validate.
+    static readonly List<string> kitProblems = new();
 
     static void Load()
     {
@@ -80,6 +87,7 @@ public static class Troops
                 Look = new Look(l.Head, l.Body, l.Legs, l.Feet, l.Hands, l.Shield, l.Weapon, l.Tabard, l.Plume, l.Cape, l.Face),
             };
             var t = troops[d.Id];
+            if (!t.Wild) BuildMan(t, d);
             t.Flying = t.Has("flying");
             t.StyleRank = t.Wild || t.Leader ? 0 : Math.Clamp(t.Tier - 3, 0, 3);
             t.Style = t.StyleRank == 0 ? AttackStyle.None : d.Attack != null ? Enum.Parse<AttackStyle>(d.Attack, true) : Battle.StyleFor(t);
@@ -90,10 +98,34 @@ public static class Troops
         foreach (var t in troops.Values) { t.Mods = Battle.TroopMods(t); t.HasAura = t.Passives.Any(p => Effects.Get(p).Radius > 0); }
     }
 
-    /// Data checks: links exist, upgrades raise the tier, every look part has sprites, cavalry has horses.
+    /// A man's numbers from his base, skills and the kit he visibly wears (docs/pre-demo/KIT.md); typed numbers are for creatures.
+    static void BuildMan(UnitType t, TroopDto d)
+    {
+        if (d.Hp != 0 || d.Damage != 0 || d.Armor != 0 || d.Reach != 0 || d.Block != 0 || d.Speed != 0 || d.Ammo != 0)
+            kitProblems.Add($"{t.Id}: a man's numbers come from his kit and skills; only creatures type them");
+        var l = t.Look;
+        if (FighterKit.Of(l) is not { } kit)
+        {
+            var missing = new[] { ("weapon", l.Weapon), ("shield", l.Shield), ("body", l.Body), ("helm", l.Head), ("legs", l.Legs), ("feet", l.Feet), ("hands", l.Hands) }
+                .Where(p => Gear.PieceOf(p.Item1, p.Item2) == null).Select(p => $"{p.Item1} {p.Item2}");
+            kitProblems.Add($"{t.Id}: no gear piece for {string.Join(", ", missing)}");
+            return;
+        }
+        var def = t.Class == UnitClass.Captain ? default : Fighter.SkillsFor(t.Class, t.Tier, kit.Weapon.Ammo > 0); // the captain's are his own (CaptainType)
+        foreach (var k in d.Skills?.Keys ?? Enumerable.Empty<string>())
+            if (k is not ("arms" or "riding" or "bowcraft")) kitProblems.Add($"{t.Id}: unknown skill {k}");
+        float S(string k, float or) => d.Skills != null && d.Skills.TryGetValue(k, out var v) ? v : or;
+        t.Skills = new(S("arms", def.Arms), S("riding", def.Riding), S("bowcraft", def.Bowcraft));
+        string b = d.Base != "" ? d.Base : t.Class switch { UnitClass.Caster => "mage", UnitClass.Captain => "captain", _ => "man" };
+        if (!Gear.HasBase(b)) { kitProblems.Add($"{t.Id}: unknown base {b}"); return; }
+        Fighter.Build(t, Gear.Base(b), t.Skills, kit);
+    }
+
+    /// Data checks: links exist, upgrades raise the tier, every look part has sprites, cavalry has horses, every man's kit has pieces.
     public static IEnumerable<string> Validate()
     {
         if (troops == null) Load();
+        foreach (var p in kitProblems) yield return p;
         foreach (var t in troops!.Values)
         {
             foreach (var u in t.UpgradesTo)
@@ -137,21 +169,24 @@ public static class Troops
     }
 
     /// A higher tier is always better (docs/archive/COMPANIONS_MAGIC.md D0). An upgrade that keeps its class, weapon and shield
-    /// must lose no hp, damage, armour or block (nor range or pierce, for a bow) and gain in at least two of the four.
-    /// An upgrade that changes role (levies to bowmen, shieldmen to greatswords) is held to SelfTest.TroopTree's power sum
-    /// and the fight in SelfTest.HigherTierWins instead. Null = fine, else what fell.
+    /// must lose neither toughness nor offence (`Toughness`, `Offence`: a man's kit and skill read against a plain blow and a plain
+    /// coat) and gain in one of them; a bow must also keep its range and pierce. So lighter kit is fine when more skill pays for it
+    /// (KIT.md KT3). An upgrade that changes role (levies to bowmen, shieldmen to greatswords) is held to SelfTest.TroopTree's
+    /// power sum and the fight in SelfTest.HigherTierWins instead. Null = fine, else what fell.
     public static string? WorseUpgrade(UnitType t, UnitType next)
     {
         if (next.Class != t.Class || next.Look.Weapon != t.Look.Weapon || next.HasShield != t.HasShield) return null;
-        var stats = new List<(string name, float was, float now)>
-        {
-            ("hp", t.MaxHp, next.MaxHp), ("damage", t.Damage, next.Damage), ("armour", t.Armor, next.Armor), ("block", t.BlockChance, next.BlockChance),
-        };
-        int rose = stats.Count(s => s.now > s.was);
+        var stats = new List<(string name, float was, float now)> { ("toughness", Toughness(t), Toughness(next)), ("offence", Offence(t), Offence(next)) };
+        int rose = stats.Count(s => s.now > s.was * 1.001f);
         if (t.Ammo > 0) stats.AddRange(new[] { ("range", t.Range, next.Range), ("pierce", t.Pierce, next.Pierce) });
-        var fell = stats.Where(s => s.now < s.was).Select(s => s.name).ToList();
-        return fell.Count > 0 ? string.Join(", ", fell) + " fall" : rose < 2 ? "fewer than two of hp, damage, armour, block rise" : null;
+        var fell = stats.Where(s => s.now < s.was * 0.999f).Select(s => s.name).ToList();
+        return fell.Count > 0 ? string.Join(", ", fell) + " fall" : rose < 1 ? "neither toughness nor offence rises" : null;
     }
+
+    /// Plain blows (30 damage) a man takes to fall, his armour and half his block counted (as `Battle.Damage`).
+    public static float Toughness(UnitType t) => t.MaxHp / MathF.Max(7.5f, 30 - t.Armor) / (1 - 0.5f * t.BlockChance);
+    /// Damage a man deals a second against a coat of 8 armour (as `Battle.Damage`), from his blow and his swing.
+    public static float Offence(UnitType t) => MathF.Max(t.Damage * 0.25f, t.Damage - 8 * (1 - t.Pierce)) / (t.Windup + t.Recover + 1.2f) * (t.Ammo > 0 ? 1 / t.Reload : 1);
 
     /// Every troop reachable from `id` by upgrading (including itself).
     public static IEnumerable<UnitType> Tree(string id)

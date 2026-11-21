@@ -216,12 +216,13 @@ public sealed partial class Terrain
             if (Sq((p.X - VillageAt.X) / VillageRx) + Sq((p.Y - VillageAt.Y) / VillageRz) > 0.7f || RoadDist(p) < 5 || WaterDepth(p) > 0 || Blocked(p, 5.5f)) continue; // lanes between the houses
             Add(new Foliage(FoliageKind.House, p, 0.9f + rng.NextSingle() * 0.3f, 2.6f, rng.Next()));
             placed++;
-            // A garden fence behind some houses (away from the street).
+            // A garden fence behind some houses (away from the street, well inside the village fence so the two never form a dead-end pinch).
             if (rng.Next(2) == 0)
             {
                 float side = p.Y > VillageAt.Y ? 1 : -1;
                 var g = p + new Vector2(0, side * 5);
-                if (RoadDist(g) > 4) AddFeature(FeatureKind.Fence, g - new Vector2(4, 0), g + new Vector2(4, 0));
+                if (RoadDist(g) > 4 && Sq((g.X - VillageAt.X) / VillageRx) + Sq((g.Y - VillageAt.Y) / VillageRz) < 0.65f)
+                    AddFeature(FeatureKind.Fence, g - new Vector2(4, 0), g + new Vector2(4, 0));
             }
         }
         // The fence round the village, broken by gaps for lanes.

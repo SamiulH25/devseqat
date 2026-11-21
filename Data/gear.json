@@ -1,5 +1,61 @@
 {
-  "_comment": "The captain's gear (docs/archive/PROGRESSION.md P1). slot: weapon, shield, body, helm, horse. A weapon sets damage, reach, windup and recover; armour adds to the captain troop's armour and speed; a shield sets the block chance; a horse names a mount in troops.json. needs = the level of `skill` (Arms unless named) to use it, rank = the career rank to buy it (0 free company, 1 sworn sword, 2 vassal, 3 lord). look = the sprite part (weapon, shield, body or head).",
+  "_comment": "The captain's gear (docs/archive/PROGRESSION.md P1). slot: weapon, shield, body, helm, horse. A weapon sets damage, reach, windup and recover; armour adds to the captain troop's armour and speed; a shield sets the block chance; a horse names a mount in troops.json. needs = the level of `skill` (Arms unless named) to use it, rank = the career rank to buy it (0 free company, 1 sworn sword, 2 vassal, 3 lord). look = the sprite part (weapon, shield, body or head). Troop kit (docs/pre-demo/KIT.md KT1): every part a soldier wears is a piece here, looked up by slot and look; troop = no armourer sells it to the captain. Slots legs, feet and hands are troop slots: the captain's legs, feet and hands come with his body piece (its armour is the rest of the suit).",
+  "_bases": "Fighter bases (KIT.md KT2-KT3): a man's numbers before kit and skill, and what each point of Arms, Riding and Bowcraft adds (Fighter.Build). A soldier is 'man' (a caster 'mage'); the captain is a hero: his skills act through his perks and the battle (BattleCaptain), so his base scales only health and horse.",
+  "bases": [
+    {
+      "id": "man",
+      "hp": 60,
+      "speed": 3.75,
+      "reach": 0.85,
+      "hpPerArms": 0.025,
+      "damage": 0.4,
+      "damagePerArms": 0.01,
+      "block": 0.55,
+      "blockPerArms": 0.005,
+      "swing": 1.1,
+      "swingPerArms": -0.002,
+      "shot": 0.4,
+      "shotPerBowcraft": 0.01,
+      "reload": 1.15,
+      "reloadPerBowcraft": -0.0025,
+      "range": 0.9,
+      "rangePerBowcraft": 0.002,
+      "horsePerRiding": 0.0025
+    },
+    {
+      "id": "mage",
+      "hp": 160,
+      "speed": 3.75,
+      "reach": 0.85,
+      "hpPerArms": 0.025,
+      "damage": 0.4,
+      "damagePerArms": 0.01,
+      "block": 0.55,
+      "blockPerArms": 0.005,
+      "swing": 1.1,
+      "swingPerArms": -0.002,
+      "shot": 0.4,
+      "shotPerBowcraft": 0.01,
+      "reload": 1.15,
+      "reloadPerBowcraft": -0.0025,
+      "range": 0.9,
+      "rangePerBowcraft": 0.002,
+      "horsePerRiding": 0.0025
+    },
+    {
+      "id": "captain",
+      "hp": 220,
+      "speed": 4.4,
+      "hpPerArms": 0.002,
+      "damage": 1,
+      "block": 1,
+      "swing": 1,
+      "shot": 1,
+      "reload": 1,
+      "range": 1,
+      "horsePerRiding": 0.0025
+    }
+  ],
   "gear": [
     {
       "id": "arming_sword",
@@ -233,7 +289,8 @@
       "ammo": 24,
       "range": 45,
       "twoHanded": true,
-      "text": "Shoot from the saddle or on foot. 24 arrows."
+      "text": "Shoot from the saddle or on foot. 24 arrows.",
+      "parry": 0.5
     },
     {
       "id": "war_bow",
@@ -251,7 +308,8 @@
       "range": 60,
       "pierce": 0.15,
       "twoHanded": true,
-      "text": "A heavy draw that carries far. 24 arrows."
+      "text": "A heavy draw that carries far. 24 arrows.",
+      "parry": 0.5
     },
     {
       "id": "horn_bow",
@@ -268,7 +326,8 @@
       "ammo": 28,
       "range": 58,
       "twoHanded": true,
-      "text": "Sinew-backed recurve with horn tips. Fast and punchy."
+      "text": "Sinew-backed recurve with horn tips. Fast and punchy.",
+      "parry": 0.5
     },
     {
       "id": "heavy_crossbow",
@@ -286,7 +345,8 @@
       "pierce": 0.72,
       "reload": 2.5,
       "twoHanded": true,
-      "text": "Steel-prodded heavy crossbow wound by iron gear."
+      "text": "Steel-prodded heavy crossbow wound by iron gear.",
+      "parry": 0.5
     },
     {
       "id": "crossbow",
@@ -303,7 +363,8 @@
       "pierce": 0.6,
       "reload": 2.2,
       "twoHanded": true,
-      "text": "Slow to span, and punches through plate. 16 bolts."
+      "text": "Slow to span, and punches through plate. 16 bolts.",
+      "parry": 0.5
     },
     {
       "id": "no_shield",
@@ -373,7 +434,7 @@
       "look": "gambeson",
       "legs": "cloth",
       "feet": "boots",
-      "armor": 5,
+      "armor": 4,
       "speed": 0.15,
       "text": "Quilted cloth. Light and quick.",
       "needs": 0
@@ -388,7 +449,7 @@
       "feet": "boots",
       "text": "Rings from neck to knee.",
       "needs": 0,
-      "armor": 9,
+      "armor": 6.5,
       "speed": 0
     },
     {
@@ -400,7 +461,7 @@
       "look": "plate",
       "legs": "plate",
       "feet": "sabatons",
-      "armor": 14,
+      "armor": 9.5,
       "speed": -0.15,
       "text": "Steel from head to toe."
     },
@@ -413,7 +474,7 @@
       "look": "mail_hauberk",
       "legs": "mail",
       "feet": "boots",
-      "armor": 11,
+      "armor": 8.5,
       "speed": -0.05,
       "text": "Heavy mail braced with a leather war-baldric."
     },
@@ -426,7 +487,7 @@
       "look": "plate_surcoat",
       "legs": "plate",
       "feet": "sabatons",
-      "armor": 15,
+      "armor": 10.5,
       "speed": -0.12,
       "text": "Steel harness worn beneath a belted heraldic jupon."
     },
@@ -440,7 +501,7 @@
       "look": "plate_fluted",
       "legs": "plate",
       "feet": "sabatons",
-      "armor": 18,
+      "armor": 13.5,
       "speed": -0.08,
       "text": "Fluted Maximilian plate for a lord. Better and lighter."
     },
@@ -578,6 +639,970 @@
       "rank": 2,
       "mount": "cataphract_horse",
       "text": "A destrier in steel and cloth, for a vassal."
+    },
+    {
+      "id": "lance",
+      "slot": "weapon",
+      "name": "Lance",
+      "troop": true,
+      "cost": 240,
+      "look": "lance",
+      "damage": 30,
+      "reach": 2.9,
+      "windup": 0.4,
+      "recover": 0.75,
+      "parry": 0.7
+    },
+    {
+      "id": "pennon_lance",
+      "slot": "weapon",
+      "name": "Pennoned Lance",
+      "troop": true,
+      "cost": 260,
+      "look": "pennonlance",
+      "damage": 32,
+      "reach": 3.0,
+      "windup": 0.38,
+      "recover": 0.72,
+      "parry": 0.7
+    },
+    {
+      "id": "staff",
+      "slot": "weapon",
+      "name": "Staff",
+      "troop": true,
+      "cost": 190,
+      "look": "staff",
+      "damage": 30,
+      "reach": 2.0,
+      "windup": 0.5,
+      "recover": 0.65,
+      "twoHanded": true
+    },
+    {
+      "id": "pike",
+      "slot": "weapon",
+      "name": "Pike",
+      "troop": true,
+      "cost": 240,
+      "look": "pike",
+      "damage": 30,
+      "reach": 3.4,
+      "windup": 0.45,
+      "recover": 0.8,
+      "vsMounted": 2.3,
+      "twoHanded": true,
+      "thrust": true
+    },
+    {
+      "id": "falchion",
+      "slot": "weapon",
+      "name": "Falchion",
+      "troop": true,
+      "cost": 260,
+      "look": "falchion",
+      "damage": 32,
+      "reach": 2.0,
+      "windup": 0.4,
+      "recover": 0.5
+    },
+    {
+      "id": "gilded_longsword",
+      "slot": "weapon",
+      "name": "Gilded Longsword",
+      "troop": true,
+      "cost": 300,
+      "look": "longsword_gilded",
+      "damage": 37,
+      "reach": 2.4,
+      "windup": 0.4,
+      "recover": 0.48
+    },
+    {
+      "id": "flamberge",
+      "slot": "weapon",
+      "name": "Flamberge",
+      "troop": true,
+      "cost": 370,
+      "look": "flamberge",
+      "damage": 46,
+      "reach": 2.7,
+      "windup": 0.5,
+      "recover": 0.6,
+      "twoHanded": true
+    },
+    {
+      "id": "bardiche",
+      "slot": "weapon",
+      "name": "Bardiche",
+      "troop": true,
+      "cost": 460,
+      "look": "bardiche",
+      "damage": 44,
+      "reach": 2.4,
+      "windup": 0.5,
+      "recover": 0.6,
+      "pierce": 0.2,
+      "twoHanded": true
+    },
+    {
+      "id": "morningstar",
+      "slot": "weapon",
+      "name": "Morningstar",
+      "troop": true,
+      "cost": 390,
+      "look": "morningstar",
+      "damage": 32,
+      "reach": 2.0,
+      "windup": 0.42,
+      "recover": 0.52,
+      "pierce": 0.35
+    },
+    {
+      "id": "billhook",
+      "slot": "weapon",
+      "name": "Billhook",
+      "troop": true,
+      "cost": 370,
+      "look": "billhook",
+      "damage": 34,
+      "reach": 2.8,
+      "windup": 0.42,
+      "recover": 0.65,
+      "pierce": 0.25,
+      "vsMounted": 2.0,
+      "twoHanded": true
+    },
+    {
+      "id": "glaive",
+      "slot": "weapon",
+      "name": "Glaive",
+      "troop": true,
+      "cost": 320,
+      "look": "glaive",
+      "damage": 40,
+      "reach": 2.8,
+      "windup": 0.45,
+      "recover": 0.62,
+      "vsMounted": 2.1,
+      "twoHanded": true
+    },
+    {
+      "id": "javelins",
+      "slot": "weapon",
+      "name": "Javelins",
+      "troop": true,
+      "cost": 300,
+      "look": "javelin",
+      "damage": 30,
+      "reach": 2.6,
+      "windup": 0.45,
+      "recover": 0.8,
+      "vsMounted": 1.8,
+      "range": 26,
+      "ammo": 6,
+      "parry": 0.8
+    },
+    {
+      "id": "sling",
+      "slot": "weapon",
+      "name": "Sling",
+      "troop": true,
+      "cost": 200,
+      "look": "sling",
+      "damage": 22,
+      "reach": 1.2,
+      "windup": 0.4,
+      "recover": 0.5,
+      "range": 40,
+      "ammo": 28,
+      "parry": 0.5
+    },
+    {
+      "id": "recurve",
+      "slot": "weapon",
+      "name": "Recurve Bow",
+      "troop": true,
+      "cost": 330,
+      "look": "recurve",
+      "damage": 26,
+      "reach": 1.2,
+      "windup": 0.4,
+      "recover": 0.5,
+      "range": 52,
+      "ammo": 30,
+      "pierce": 0.2,
+      "twoHanded": true,
+      "parry": 0.5
+    },
+    {
+      "id": "arbalest",
+      "slot": "weapon",
+      "name": "Arbalest",
+      "troop": true,
+      "cost": 880,
+      "look": "arbalest",
+      "damage": 50,
+      "reach": 1.2,
+      "windup": 0.4,
+      "recover": 0.5,
+      "range": 60,
+      "ammo": 20,
+      "pierce": 0.7,
+      "reload": 2.4,
+      "twoHanded": true,
+      "parry": 0.5
+    },
+    {
+      "id": "buckler",
+      "slot": "shield",
+      "name": "Buckler",
+      "troop": true,
+      "cost": 120,
+      "look": "buckler",
+      "block": 0.5
+    },
+    {
+      "id": "bossed_round",
+      "slot": "shield",
+      "name": "Bossed Round Shield",
+      "troop": true,
+      "cost": 220,
+      "look": "round_bossed",
+      "block": 0.58
+    },
+    {
+      "id": "kalkan",
+      "slot": "shield",
+      "name": "Kalkan",
+      "troop": true,
+      "cost": 140,
+      "look": "kalkan",
+      "block": 0.52
+    },
+    {
+      "id": "dhal",
+      "slot": "shield",
+      "name": "Dhal",
+      "troop": true,
+      "cost": 180,
+      "look": "dhal",
+      "block": 0.55
+    },
+    {
+      "id": "targe",
+      "slot": "shield",
+      "name": "Targe",
+      "troop": true,
+      "cost": 190,
+      "look": "targe",
+      "block": 0.56
+    },
+    {
+      "id": "pavise",
+      "slot": "shield",
+      "name": "Pavise",
+      "troop": true,
+      "cost": 380,
+      "look": "pavise",
+      "block": 0.72,
+      "speed": -0.25
+    },
+    {
+      "id": "tower_shield",
+      "slot": "shield",
+      "name": "Tower Shield",
+      "troop": true,
+      "cost": 420,
+      "look": "tower",
+      "block": 0.75,
+      "speed": -0.25
+    },
+    {
+      "id": "gilded_heater",
+      "slot": "shield",
+      "name": "Gilded Heater",
+      "troop": true,
+      "cost": 310,
+      "look": "heater_gilded",
+      "block": 0.66
+    },
+    {
+      "id": "tunic",
+      "slot": "body",
+      "name": "Tunic",
+      "troop": true,
+      "cost": 10,
+      "look": "tunic",
+      "armor": 0.5,
+      "speed": 0.2
+    },
+    {
+      "id": "robe",
+      "slot": "body",
+      "name": "Robe",
+      "troop": true,
+      "cost": 20,
+      "look": "robe",
+      "armor": 1,
+      "speed": 0.1
+    },
+    {
+      "id": "furs",
+      "slot": "body",
+      "name": "Furs",
+      "troop": true,
+      "cost": 20,
+      "look": "fur",
+      "armor": 1.5,
+      "speed": 0.1
+    },
+    {
+      "id": "deel",
+      "slot": "body",
+      "name": "Deel",
+      "troop": true,
+      "cost": 20,
+      "look": "deel",
+      "armor": 1.5,
+      "speed": 0.15
+    },
+    {
+      "id": "burnous",
+      "slot": "body",
+      "name": "Burnous",
+      "troop": true,
+      "cost": 30,
+      "look": "burnous",
+      "armor": 2,
+      "speed": 0.15
+    },
+    {
+      "id": "leather",
+      "slot": "body",
+      "name": "Leather Jerkin",
+      "troop": true,
+      "cost": 50,
+      "look": "leather",
+      "armor": 2.5,
+      "speed": 0.15
+    },
+    {
+      "id": "fur_deel",
+      "slot": "body",
+      "name": "Fur-Lined Deel",
+      "troop": true,
+      "cost": 50,
+      "look": "deel_fur",
+      "armor": 2.5,
+      "speed": 0.1
+    },
+    {
+      "id": "fur_gambeson",
+      "slot": "body",
+      "name": "Fur Gambeson",
+      "troop": true,
+      "cost": 130,
+      "look": "gambeson_fur",
+      "armor": 4.5,
+      "speed": 0.1
+    },
+    {
+      "id": "kaftan",
+      "slot": "body",
+      "name": "Quilted Kaftan",
+      "troop": true,
+      "cost": 130,
+      "look": "kaftan",
+      "armor": 4.5,
+      "speed": 0.1
+    },
+    {
+      "id": "brigandine",
+      "slot": "body",
+      "name": "Brigandine",
+      "troop": true,
+      "cost": 230,
+      "look": "brigandine",
+      "armor": 6
+    },
+    {
+      "id": "fur_mail",
+      "slot": "body",
+      "name": "Mail and Furs",
+      "troop": true,
+      "cost": 300,
+      "look": "mail_fur",
+      "armor": 7
+    },
+    {
+      "id": "lamellar",
+      "slot": "body",
+      "name": "Lamellar",
+      "troop": true,
+      "cost": 300,
+      "look": "lamellar",
+      "armor": 7,
+      "speed": -0.05
+    },
+    {
+      "id": "gilded_brigandine",
+      "slot": "body",
+      "name": "Gilded Brigandine",
+      "troop": true,
+      "cost": 300,
+      "look": "brigandine_gilded",
+      "armor": 7
+    },
+    {
+      "id": "dark_lamellar",
+      "slot": "body",
+      "name": "Dark Lamellar",
+      "troop": true,
+      "cost": 350,
+      "look": "lamellar_dark",
+      "armor": 7.5,
+      "speed": -0.05
+    },
+    {
+      "id": "scale",
+      "slot": "body",
+      "name": "Scale Coat",
+      "troop": true,
+      "cost": 350,
+      "look": "scale",
+      "armor": 7.5,
+      "speed": -0.1
+    },
+    {
+      "id": "gilded_lamellar",
+      "slot": "body",
+      "name": "Gilded Lamellar",
+      "troop": true,
+      "cost": 350,
+      "look": "lamellar_gilded",
+      "armor": 7.5,
+      "speed": -0.05
+    },
+    {
+      "id": "iron_scale",
+      "slot": "body",
+      "name": "Iron Scale",
+      "troop": true,
+      "cost": 390,
+      "look": "scale_iron",
+      "armor": 8,
+      "speed": -0.1
+    },
+    {
+      "id": "breastplate",
+      "slot": "body",
+      "name": "Breastplate",
+      "troop": true,
+      "cost": 390,
+      "look": "breastplate",
+      "armor": 8,
+      "speed": -0.1
+    },
+    {
+      "id": "coat_of_plates",
+      "slot": "body",
+      "name": "Coat of Plates",
+      "troop": true,
+      "cost": 440,
+      "look": "coatofplates",
+      "armor": 8.5,
+      "speed": -0.1
+    },
+    {
+      "id": "mirror",
+      "slot": "body",
+      "name": "Mirror Armour",
+      "troop": true,
+      "cost": 440,
+      "look": "mirror",
+      "armor": 8.5,
+      "speed": -0.08
+    },
+    {
+      "id": "fur_plate",
+      "slot": "body",
+      "name": "Plate and Furs",
+      "troop": true,
+      "cost": 610,
+      "look": "plate_fur",
+      "armor": 10,
+      "speed": -0.15
+    },
+    {
+      "id": "jupon",
+      "slot": "body",
+      "name": "Plate under Jupon",
+      "troop": true,
+      "cost": 670,
+      "look": "jupon",
+      "armor": 10.5,
+      "speed": -0.12
+    },
+    {
+      "id": "gilded_plate",
+      "slot": "body",
+      "name": "Gilded Plate",
+      "troop": true,
+      "cost": 740,
+      "look": "plate_gilded",
+      "armor": 11,
+      "speed": -0.12
+    },
+    {
+      "id": "bare_head",
+      "slot": "helm",
+      "name": "Bare Head",
+      "troop": true,
+      "cost": 0,
+      "look": "none",
+      "armor": 0
+    },
+    {
+      "id": "hood",
+      "slot": "helm",
+      "name": "Hood",
+      "troop": true,
+      "cost": 10,
+      "look": "hood",
+      "armor": 0.3
+    },
+    {
+      "id": "turban",
+      "slot": "helm",
+      "name": "Turban",
+      "troop": true,
+      "cost": 10,
+      "look": "turban",
+      "armor": 0.5
+    },
+    {
+      "id": "fur_cap",
+      "slot": "helm",
+      "name": "Fur Cap",
+      "troop": true,
+      "cost": 10,
+      "look": "furcap",
+      "armor": 0.5
+    },
+    {
+      "id": "cap",
+      "slot": "helm",
+      "name": "Padded Cap",
+      "troop": true,
+      "cost": 20,
+      "look": "cap",
+      "armor": 0.8
+    },
+    {
+      "id": "coif",
+      "slot": "helm",
+      "name": "Mail Coif",
+      "troop": true,
+      "cost": 20,
+      "look": "coif",
+      "armor": 1
+    },
+    {
+      "id": "brigand_hat",
+      "slot": "helm",
+      "name": "Brigand Hat",
+      "troop": true,
+      "cost": 40,
+      "look": "brigand_hat",
+      "armor": 1.5
+    },
+    {
+      "id": "bearhead",
+      "slot": "helm",
+      "name": "Bear Head",
+      "troop": true,
+      "cost": 40,
+      "look": "bearhead",
+      "armor": 1.5
+    },
+    {
+      "id": "nasal",
+      "slot": "helm",
+      "name": "Nasal Helm",
+      "troop": true,
+      "cost": 70,
+      "look": "nasal",
+      "armor": 2
+    },
+    {
+      "id": "steppe_helm",
+      "slot": "helm",
+      "name": "Steppe Helm",
+      "troop": true,
+      "cost": 70,
+      "look": "steppe",
+      "armor": 2
+    },
+    {
+      "id": "litham",
+      "slot": "helm",
+      "name": "Litham and Cap",
+      "troop": true,
+      "cost": 70,
+      "look": "litham",
+      "armor": 2
+    },
+    {
+      "id": "chapel",
+      "slot": "helm",
+      "name": "Chapel de Fer",
+      "troop": true,
+      "cost": 70,
+      "look": "chapel",
+      "armor": 2
+    },
+    {
+      "id": "morion",
+      "slot": "helm",
+      "name": "Morion",
+      "troop": true,
+      "cost": 100,
+      "look": "morion",
+      "armor": 2.5
+    },
+    {
+      "id": "spike_helm",
+      "slot": "helm",
+      "name": "Spiked Helm",
+      "troop": true,
+      "cost": 100,
+      "look": "spike",
+      "armor": 2.5
+    },
+    {
+      "id": "steppe_horns",
+      "slot": "helm",
+      "name": "Horned Steppe Helm",
+      "troop": true,
+      "cost": 100,
+      "look": "steppe_horns",
+      "armor": 2.5
+    },
+    {
+      "id": "corsair",
+      "slot": "helm",
+      "name": "Corsair Helm",
+      "troop": true,
+      "cost": 100,
+      "look": "corsair",
+      "armor": 2.5
+    },
+    {
+      "id": "bucket",
+      "slot": "helm",
+      "name": "Bucket Helm",
+      "troop": true,
+      "cost": 150,
+      "look": "bucket",
+      "armor": 3
+    },
+    {
+      "id": "kulah",
+      "slot": "helm",
+      "name": "Kulah Khud",
+      "troop": true,
+      "cost": 150,
+      "look": "kulah",
+      "armor": 3
+    },
+    {
+      "id": "wolf_spangen",
+      "slot": "helm",
+      "name": "Wolf Spangenhelm",
+      "troop": true,
+      "cost": 150,
+      "look": "spangen_wolf",
+      "armor": 3
+    },
+    {
+      "id": "horned_spangen",
+      "slot": "helm",
+      "name": "Horned Spangenhelm",
+      "troop": true,
+      "cost": 150,
+      "look": "spangen_horns",
+      "armor": 3
+    },
+    {
+      "id": "steppe_mask",
+      "slot": "helm",
+      "name": "Masked Steppe Helm",
+      "troop": true,
+      "cost": 150,
+      "look": "steppe_mask",
+      "armor": 3
+    },
+    {
+      "id": "spike_turban",
+      "slot": "helm",
+      "name": "Turban Helm",
+      "troop": true,
+      "cost": 150,
+      "look": "spike_turban",
+      "armor": 3
+    },
+    {
+      "id": "galea",
+      "slot": "helm",
+      "name": "Galea",
+      "troop": true,
+      "cost": 150,
+      "look": "galea",
+      "armor": 3
+    },
+    {
+      "id": "tug_helm",
+      "slot": "helm",
+      "name": "Tug Helm",
+      "troop": true,
+      "cost": 150,
+      "look": "tug",
+      "armor": 3
+    },
+    {
+      "id": "bascinet",
+      "slot": "helm",
+      "name": "Bascinet",
+      "troop": true,
+      "cost": 200,
+      "look": "bascinet",
+      "armor": 3.5
+    },
+    {
+      "id": "gjermundbu",
+      "slot": "helm",
+      "name": "Gjermundbu",
+      "troop": true,
+      "cost": 200,
+      "look": "gjermundbu",
+      "armor": 3.5
+    },
+    {
+      "id": "barbute",
+      "slot": "helm",
+      "name": "Barbute",
+      "troop": true,
+      "cost": 200,
+      "look": "barbute",
+      "armor": 3.5
+    },
+    {
+      "id": "bevor_sallet",
+      "slot": "helm",
+      "name": "Sallet and Bevor",
+      "troop": true,
+      "cost": 200,
+      "look": "sallet_bevor",
+      "armor": 3.5
+    },
+    {
+      "id": "crested_sallet",
+      "slot": "helm",
+      "name": "Crested Sallet",
+      "troop": true,
+      "cost": 200,
+      "look": "sallet_crest",
+      "armor": 3.5
+    },
+    {
+      "id": "faceplate",
+      "slot": "helm",
+      "name": "Faceplate Helm",
+      "troop": true,
+      "cost": 200,
+      "look": "faceplate",
+      "armor": 3.5
+    },
+    {
+      "id": "crested_barbute",
+      "slot": "helm",
+      "name": "Crested Barbute",
+      "troop": true,
+      "cost": 260,
+      "look": "barbute_crest",
+      "armor": 4
+    },
+    {
+      "id": "winged_sallet",
+      "slot": "helm",
+      "name": "Winged Sallet",
+      "troop": true,
+      "cost": 260,
+      "look": "winged_sallet",
+      "armor": 4
+    },
+    {
+      "id": "ibex_helm",
+      "slot": "helm",
+      "name": "Ibex Helm",
+      "troop": true,
+      "cost": 260,
+      "look": "ibex",
+      "armor": 4
+    },
+    {
+      "id": "dragon_helm",
+      "slot": "helm",
+      "name": "Dragon Helm",
+      "troop": true,
+      "cost": 260,
+      "look": "dragon",
+      "armor": 4
+    },
+    {
+      "id": "armet",
+      "slot": "helm",
+      "name": "Armet",
+      "troop": true,
+      "cost": 330,
+      "look": "armet",
+      "armor": 4.5
+    },
+    {
+      "id": "winged_great_helm",
+      "slot": "helm",
+      "name": "Winged Great Helm",
+      "troop": true,
+      "cost": 330,
+      "look": "greathelm_wings",
+      "armor": 4.5
+    },
+    {
+      "id": "sun_great_helm",
+      "slot": "helm",
+      "name": "Sun Great Helm",
+      "troop": true,
+      "cost": 330,
+      "look": "greathelm_sun",
+      "armor": 4.5
+    },
+    {
+      "id": "lion_helm",
+      "slot": "helm",
+      "name": "Lion Helm",
+      "troop": true,
+      "cost": 330,
+      "look": "lion",
+      "armor": 4.5
+    },
+    {
+      "id": "frogmouth",
+      "slot": "helm",
+      "name": "Frog-Mouth Helm",
+      "troop": true,
+      "cost": 400,
+      "look": "frogmouth",
+      "armor": 5
+    },
+    {
+      "id": "cloth_hose",
+      "slot": "legs",
+      "name": "Hose",
+      "troop": true,
+      "cost": 0,
+      "look": "cloth",
+      "armor": 0
+    },
+    {
+      "id": "fur_leggings",
+      "slot": "legs",
+      "name": "Fur Leggings",
+      "troop": true,
+      "cost": 40,
+      "look": "furlegs",
+      "armor": 0.5
+    },
+    {
+      "id": "mail_chausses",
+      "slot": "legs",
+      "name": "Mail Chausses",
+      "troop": true,
+      "cost": 120,
+      "look": "mail",
+      "armor": 1.5
+    },
+    {
+      "id": "splinted_legs",
+      "slot": "legs",
+      "name": "Splinted Greaves",
+      "troop": true,
+      "cost": 160,
+      "look": "splint",
+      "armor": 2
+    },
+    {
+      "id": "plate_legs",
+      "slot": "legs",
+      "name": "Plate Legs",
+      "troop": true,
+      "cost": 200,
+      "look": "plate",
+      "armor": 2.5
+    },
+    {
+      "id": "boots",
+      "slot": "feet",
+      "name": "Boots",
+      "troop": true,
+      "cost": 0,
+      "look": "boots",
+      "armor": 0
+    },
+    {
+      "id": "riding_boots",
+      "slot": "feet",
+      "name": "Riding Boots",
+      "troop": true,
+      "cost": 20,
+      "look": "ridingboots",
+      "armor": 0.3
+    },
+    {
+      "id": "fur_boots",
+      "slot": "feet",
+      "name": "Fur Boots",
+      "troop": true,
+      "cost": 20,
+      "look": "furboots",
+      "armor": 0.3
+    },
+    {
+      "id": "sabatons",
+      "slot": "feet",
+      "name": "Sabatons",
+      "troop": true,
+      "cost": 80,
+      "look": "sabatons",
+      "armor": 1
+    },
+    {
+      "id": "bare_hands",
+      "slot": "hands",
+      "name": "Bare Hands",
+      "troop": true,
+      "cost": 0,
+      "look": "skin",
+      "armor": 0
+    },
+    {
+      "id": "gauntlets",
+      "slot": "hands",
+      "name": "Gauntlets",
+      "troop": true,
+      "cost": 80,
+      "look": "gauntlets",
+      "armor": 1
     }
   ]
 }

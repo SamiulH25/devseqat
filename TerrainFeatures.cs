@@ -123,15 +123,28 @@ public sealed partial class Terrain
     /// ends: a man passing that close to a fence's end catches on it.
     public bool CrossesFeatureNear(Vector2 a, Vector2 b, bool mounted = true, float pad = 0)
     {
-        if (!featureCells.TryGetValue(CellX(b.Y) * bucketSide + CellX(b.X), out var near)) return false;
-        foreach (int i in near)
+        bool Check(int key)
         {
-            var f = Features[i];
-            if (!f.Stops(mounted)) continue;
-            var more = pad > 0 && f.B != f.A ? Vector2.Normalize(f.B - f.A) * (f.Half + pad) : Vector2.Zero;
-            if (SegmentsCross(a, b, f.A - more, f.B + more)) return true;
+            if (!featureCells.TryGetValue(key, out var near)) return false;
+            var ab = b - a;
+            float ab2 = ab.LengthSquared();
+            foreach (int i in near)
+            {
+                var f = Features[i];
+                if (!f.Stops(mounted)) continue;
+                var more = pad > 0 && f.B != f.A ? Vector2.Normalize(f.B - f.A) * (f.Half + pad) : Vector2.Zero;
+                if (SegmentsCross(a, b, f.A - more, f.B + more)) return true;
+                if (pad > 0 && ab2 > 1e-4f) // a fence end sticking into the way ahead (a V-pinch too narrow to pass)
+                {
+                    float r2 = Sq(f.Half + pad);
+                    bool Pinch(Vector2 end) { float t = Vector2.Dot(end - a, ab) / ab2; return t > 0.05f && t < 1 && Vector2.DistanceSquared(end, a + ab * t) < r2; }
+                    if (Pinch(f.A) || Pinch(f.B)) return true;
+                }
+            }
+            return false;
         }
-        return false;
+        int kb = CellX(b.Y) * bucketSide + CellX(b.X), ka = CellX(a.Y) * bucketSide + CellX(a.X);
+        return Check(kb) || (ka != kb && Check(ka));
     }
 
     /// Does the straight line from a to b cross a feature that stops this man? (Pathing uses it.)

@@ -38,16 +38,22 @@ public static partial class SelfTest
             .Select(g => g.OrderBy(l => l.from.Id).ThenBy(l => l.to.Id).First())
             .OrderBy(l => l.to.Tier).ThenBy(l => l.to.Class);
 
-    /// D0: an upgrade that keeps its weapon may not lose a stat, and must gain in two; the check bites on a worse copy.
+    /// D0: an upgrade that keeps its weapon may lose neither toughness nor offence and must gain in one (KIT.md KT3: lighter kit
+    /// paid for by more skill is fine); the check bites on worse copies.
     static void UpgradeNeverWorse()
     {
         Check(Troops.All.All(t => t.Tier <= Troops.MaxTier && t.Pierce is >= 0 and <= 1), $"all troops are tier <= {Troops.MaxTier} with pierce in 0..1");
         Check(Troops.All.All(t => t.UpgradesTo.Select(Troops.Get).All(n => Troops.WorseUpgrade(t, n) == null)), "no upgrade in troops.json is worse than its parent");
         var guard = Troops.Get("iron_thanes");
-        var weaker = new UnitType { Id = "x", Class = guard.Class, Tier = 7, Look = guard.Look, MaxHp = guard.MaxHp + 10, Damage = guard.Damage + 5, Armor = guard.Armor - 1, BlockChance = guard.BlockChance };
-        Check(Troops.WorseUpgrade(guard, weaker) is string why && why.Contains("armour"), "an upgrade that loses armour is refused");
-        var same = new UnitType { Id = "y", Class = guard.Class, Tier = 7, Look = guard.Look, MaxHp = guard.MaxHp + 10, Damage = guard.Damage, Armor = guard.Armor, BlockChance = guard.BlockChance };
-        Check(Troops.WorseUpgrade(guard, same) != null, "an upgrade that gains in only one stat is refused");
+        var weaker = guard.Clone();
+        (weaker.Id, weaker.Tier, weaker.Armor, weaker.Damage) = ("x", 7, guard.Armor - 4, guard.Damage + 5);
+        Check(Troops.WorseUpgrade(guard, weaker) is string why && why.Contains("toughness"), "an upgrade that loses armour and gains no health is refused");
+        var same = guard.Clone();
+        (same.Id, same.Tier) = ("y", 7);
+        Check(Troops.WorseUpgrade(guard, same) != null, "an upgrade that gains nothing is refused");
+        var skilled = guard.Clone();
+        (skilled.Id, skilled.Tier, skilled.Armor, skilled.MaxHp) = ("z", 7, guard.Armor - 2, guard.MaxHp * 1.3f);
+        Check(Troops.WorseUpgrade(guard, skilled) == null, "lighter kit paid for with more health is an upgrade");
         foreach (var t in Troops.All.Where(t => !t.Wild && !t.Leader))
             foreach (var n in t.UpgradesTo.Select(Troops.Get))
                 Check(Rules.Might(n, 10) > Rules.Might(t, 10), $"auto-resolve rates {n.Name} above {t.Name}");

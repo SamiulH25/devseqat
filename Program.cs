@@ -86,6 +86,11 @@ if (args.Contains("--agree"))
     Ironfield.BalanceReport.Agree(nums.Count > 0 ? (int)nums[0] : 4, nums.Count > 1 ? nums[1] : 0.5f);
     return;
 }
+if (args.Contains("--kit"))
+{
+    Ironfield.BalanceReport.Kit();
+    return;
+}
 if (args.Contains("--tiers"))
 {
     var rest = args.SkipWhile(a => a != "--tiers").Skip(1).ToList();

@@ -37,7 +37,7 @@ public sealed class FlowField
                 {
                     int nx = x + dx, nz = z + dz;
                     if (nx < 0 || nz < 0 || nx >= n || nz >= n || cost[nz * n + nx] >= best) continue;
-                    if (t.CrossesFeatureNear(p, new Vector2(-t.Half + nx * t.Step, -t.Half + nz * t.Step), Horse)) continue;
+                    if (t.CrossesFeatureNear(p, new Vector2(-t.Half + nx * t.Step, -t.Half + nz * t.Step), Horse, Battle.Clearance(Horse))) continue;
                     best = cost[nz * n + nx]; bx = nx; bz = nz;
                 }
         if (bx == x && bz == z) return float.IsPositiveInfinity(here) ? Vector2.Zero : Goal - p is var g && g.LengthSquared() > 1e-4f ? Vector2.Normalize(g) : Vector2.Zero;
@@ -278,7 +278,7 @@ public partial class Battle
     internal static ushort StepBit(int dx, int dz) => (ushort)(1 << ((dz + 1) * 3 + dx + 1));
 
     /// How far past a hedge's or fence's edge a man needs to pass it: a man on foot, a horse (so stakes' gaps stay shut to horse).
-    static float Clearance(bool horse) => horse ? 1f : 0.4f;
+    internal static float Clearance(bool horse) => horse ? 1f : 0.4f;
 
     /// The cells round the line a-b, `pad` past it and one more.
     (int x0, int x1, int z0, int z1) CellBox(Vector2 a, Vector2 b, float pad)

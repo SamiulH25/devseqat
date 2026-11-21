@@ -185,18 +185,17 @@ public static class Rules
         GearDef body = Gear.Get(k.Body), helm = Gear.Get(k.Helm);
         var t = Troops.Get("captain").Clone();
         t.Look = t.Look with { Weapon = w.Look, Shield = shield.Look, Body = body.Look, Legs = body.Legs, Feet = body.Feet, Head = helm.Look, Visage = c.Visage }; // the face from the creator
-        (t.Damage, t.Reach, t.Windup, t.Recover, t.Pierce) = (w.Damage, w.Reach, w.Windup, w.Recover, w.Pierce);
-        (t.Ammo, t.Range, t.Reload, t.ThrustOnly) = (w.Ammo, w.Range, w.Reload, w.Thrust);
-        t.BlockChance = shield.Block;
-        // How well each piece is made (C9) scales its own numbers; the smith's marks ride on the man's Mods.
-        float Q(GearDef g) => Campaign.QualityScale(Campaign.ItemOf(c, g.Id)?.CountsAs() ?? ItemQuality.Plain);
-        t.Damage *= Q(w);
-        t.BlockChance = MathF.Min(0.95f, t.BlockChance * Q(shield));
-        t.Armor = body.Armor * Q(body) + helm.Armor * Q(helm);
-        t.Mods = t.Mods + Campaign.MarkMods(c, side);
-        t.Speed += body.Speed + helm.Speed + shield.Speed;
-        // Arms (F4): +2% health per 10 points, Hardened +20%, Duellist +15% damage.
-        t.MaxHp *= 1 + Skills.Level(c, "Arms") / 500f + (c.Perks.Contains("Hardened") ? 0.2f : 0);
+        // Base + skills + kit, as every soldier (docs/pre-demo/KIT.md). His legs, feet and hands come with his body piece and share
+        // how well it is made; how well each piece is made (C9) scales its own numbers.
+        var kit = new FighterKit(w, shield, body, helm, Gear.Piece("legs", body.Legs), Gear.Piece("feet", body.Feet), Gear.Piece("hands", t.Look.Hands));
+        float Q(GearDef g) => Campaign.QualityScale(Campaign.ItemOf(c, (g.Troop ? body : g).Id)?.CountsAs() ?? ItemQuality.Plain);
+        var cb = Gear.Base("captain");
+        t.Skills = new(Skills.Level(c, "Arms"), Skills.Level(c, "Riding"), Skills.Level(c, "Bowcraft"));
+        Fighter.Build(t, cb, t.Skills, kit, Q);
+        t.ThrustOnly = w.Thrust;
+        t.Mods = t.Mods + Campaign.MarkMods(c, side); // the smith's marks ride on the man's Mods
+        // Arms (F4) gives health in the base (+2% per 10 points); Hardened +20%, Duellist +15% damage.
+        if (c.Perks.Contains("Hardened")) t.MaxHp += cb.Hp * 0.2f;
         if (c.Perks.Contains("Duellist")) t.Damage *= 1.15f;
         if (w.Ranged && c.Perks.Contains("Marksman")) t.Damage *= 1.2f;   // Bowcraft perks (P3)
         if (w.Ranged && c.Perks.Contains("Fletcher")) t.Ammo = (int)(t.Ammo * 1.5f);

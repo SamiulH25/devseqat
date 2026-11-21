@@ -82,8 +82,9 @@ public partial class Battle
         }
 
         float reach = enemy == null ? 0 : ReachOf(u) + (enemy.Mounted ? 0.9f : 0);
-        // Brace for the charge: hold the slot and present the point instead of stepping out to meet it.
-        if (enemy is { Mounted: true } && CanBrace(u) && d < 16 && toSlot < 6)
+        // Brace for the charge: hold the slot and present the point instead of stepping out to meet it (a charging company
+        // only stops for a horse actually coming at it, not a standing one).
+        if (enemy is { Mounted: true } && CanBrace(u) && d < 16 && toSlot < 6 && (s.Order != Order.Charge || enemy.Speed > 3))
         {
             u.Face(enemy.Pos - u.Pos);
             if (d <= reach && u.Cooldown <= 0 && enemy.Speed < 4) StartSwing(u, enemy);
@@ -318,8 +319,8 @@ public partial class Battle
             if (!bowsAlone && ArcherSupply(s, team)) continue; // out of arrows: to the wagon
             s.Front = dir;
             float gap = GapTo(s, foe), range = s.Units[0].Type.Range;
-            // With the line gone, bows that have loosed nothing for 20 s (the foe on a height they cannot reach, behind a crest) close on him: two sides of bows out of each other's reach would never end the battle.
-            if (bowsAlone && Time - s.LoosedAt > 20) gap = MathF.Max(gap, range);
+            // Bows that have loosed nothing for 20 s while nothing is at blows (back rank out of reach, or the foe behind a crest) close on him.
+            if (Time - s.LoosedAt > 20 && (bowsAlone || !SquadsOf(team).Any(o => o.Alive > 0 && o.InContact))) gap = MathF.Max(gap, range);
             if (gap > range - 4 || !seesFoe) s.Anchor = DryAnchor(s.Centroid() + dir * 4); // close to bow range, or until they can see someone to shoot
             else if (!charged[team] && Role(foe, "horse").Any(h => h.Alive > 0) && CannotStake(s) == null) PlantStakes(s, record: false); // in range, horse about: stakes
             s.Target = SoftTarget(s, foe); // shoot the least armoured company in reach

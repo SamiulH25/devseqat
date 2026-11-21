@@ -22,7 +22,7 @@ public static partial class SelfTest
             foreach (var n in t.UpgradesTo.Select(Troops.Get))
             {
                 Check(t.Spells.All(n.Spells.Contains) && n.Spells.Length > t.Spells.Length, $"{n.Name} know every spell {t.Name} do, and more");
-                Check(n.MaxHp > t.MaxHp && n.Armor >= t.Armor, $"{n.Name} are tougher than {t.Name}");
+                Check(n.MaxHp > t.MaxHp && Troops.Toughness(n) > Troops.Toughness(t), $"{n.Name} are tougher than {t.Name}");
             }
         Check(mages.Where(t => t.Tier == 6).All(t => t.Spells.Any(id => Abilities.Get(id).Great)), "every tier VI mage knows a great working");
         Check(mages.Where(t => t.Tier < 6).All(t => !t.Spells.Any(id => Abilities.Get(id).Great)), "and none below");
