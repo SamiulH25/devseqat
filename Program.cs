@@ -86,6 +86,13 @@ if (args.Contains("--agree"))
     Ironfield.BalanceReport.Agree(nums.Count > 0 ? (int)nums[0] : 4, nums.Count > 1 ? nums[1] : 0.5f);
     return;
 }
+if (args.Contains("--tiers"))
+{
+    var rest = args.SkipWhile(a => a != "--tiers").Skip(1).ToList();
+    int n = rest.Select(a => int.TryParse(a, out var v) ? v : 0).FirstOrDefault(v => v > 0);
+    Ironfield.BalanceReport.Tiers(n > 0 ? n : 3, rest.FirstOrDefault(a => !int.TryParse(a, out _)) ?? "");
+    return;
+}
 if (args.Contains("--grounds"))
 {
     int n = args.SkipWhile(a => a != "--grounds").Skip(1).Select(a => int.TryParse(a, out var v) ? v : 0).FirstOrDefault();

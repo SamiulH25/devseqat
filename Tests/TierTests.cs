@@ -110,4 +110,18 @@ public static partial class SelfTest
             }
         Console.WriteLine($"tier survey: {lost} of {n} upgrades lose to their parent");
     }
+
+    /// TI0: the `--tiers` matrix: links keep their role, the three matchups set the parent's men as documented, and one bout
+    /// of an upgrade against its parent at equal men goes to the upgrade.
+    static void TierMatrix()
+    {
+        var links = BalanceReport.TierLinks();
+        Check(links.Count > 100 && links.All(l => l.to.Tier > l.from.Tier && l.to.Class == l.from.Class), $"{links.Count} upgrade links, each up a tier in its class");
+        var (from, to) = links.First(l => l.from.Id == "levies" && l.to.Class == UnitClass.Infantry);
+        Check(BalanceReport.ParentMen(from, to, "men") == 30, "equal men: thirty a side");
+        Check(BalanceReport.ParentMen(from, to, "upkeep") == (int)MathF.Round(30f * to.Cost / from.Cost), "equal upkeep: the parent's men by the wage ratio");
+        Check(BalanceReport.ParentMen(from, to, "places") == (int)MathF.Round(30 * Rules.TierWeight(to.Tier) / Rules.TierWeight(from.Tier)), "equal places: by the tier weight");
+        var (up, down, secs) = BalanceReport.TierBout(to, from, 30, 30, 7100);
+        Check(up > down && secs > 0, $"{to.Name} beat as many {from.Name}: {up:P0} against {down:P0} in {secs:0} s");
+    }
 }

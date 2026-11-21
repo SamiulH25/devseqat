@@ -4,7 +4,7 @@ The owner's brief (2026-11-21): "upgrading from levies to swordsmen makes a visu
 gameplay change it makes. Why should I care that it's upgraded, why should the user care? Why would a player want to get high
 tier soldiers?" This plan answers that from three sides: what a tier does, how the player sees it, and why it pays.
 
-Phase prefix: **TI**. Nothing is built yet.
+Phase prefix: **TI**. TI0 built (see "As built" at the end).
 
 ## Where things stand (2026-11-21)
 
@@ -50,7 +50,7 @@ The problems:
   It reports wins, men left and time to break. It also runs auto-resolve on the same matchups and compares the two.
 - **Targets** (owner to agree):
   - equal men: the next tier wins nine times in ten, keeping about a third more men
-  - equal upkeep: the trade is even near tier II, and quality pulls ahead from IV
+  - equal upkeep: the trade is even near tier II, and quality pulls ahead from III (owner, 2026-11-21)
   - equal places: the higher tier wins
 - The flat steps found here (levies to shieldmen first) are what TI1 fixes.
 
@@ -60,8 +60,8 @@ Every line shares one ladder, so a player learns it once:
 
 | Tier | Grade | What it can do (new at this tier) |
 |---|---|---|
-| I Levy | Rabble | Fights in a crowd: loose files, lunges out one by one, breaks early. **No shield wall, no brace**. Hold, charge and follow only |
-| II | Trained | **Keeps formation:** line, shield wall, brace against horse; rallies once after a rout |
+| I Levy | Rabble | Fights in a crowd: loose files, lunges out one by one, breaks early. **No shield wall, no formations**. Hold, charge, follow and brace only |
+| II | Trained | **Keeps formation:** line, shield wall, a firmer brace; rallies once after a rout |
 | III | Trained+ | **Answers orders quickly:** orders land a beat sooner, wheels to face a flank, relieves the line, can be split |
 | IV | Veteran | **Its attack style** (crush, riposte, thrust through...); re-forms by itself after its ranks break; a square or wedge on order; pursues, then comes back |
 | V | Veteran+ | **Passive traits**; shrugs off fear (monsters, the dead); rallies twice; fights from the ranks with the rear rank's spears or bows |
@@ -159,9 +159,42 @@ other. TI4 needs TI1 and touches contracts and the legacy. TI5 is a data pass th
 
 Size: large in total. TI0, TI1 and TI3 are medium on their own.
 
-## Open questions for the owner
+## The owner's answers (2026-11-21)
 
-1. **The ladder:** is the TI1 ladder right, especially taking the shield wall and brace away from tier I levies?
-2. **The trade:** at equal upkeep, should quality pull ahead from tier IV, or should cheap men stay an even trade all the way up?
-3. **Losses:** how hard should losing an elite company hurt? Only gold and time, or fame and named men too?
-4. **The fight preview:** is it wanted on the promotion screen, or is it too much like a calculator?
+1. **The ladder:** as written, except **levies keep brace** against horse (a crowd of spears). They still get no shield wall
+   and no formations: hold, charge, follow and brace only. Tier II brings the shield wall and formations.
+2. **The trade:** at equal upkeep, quality pulls ahead **from tier III** (even near tier II). TI0's target changes to match.
+3. **Losses:** losing an elite company costs gold, time (a town and weeks to replace), its named men and the company's fame.
+4. **The fight preview:** yes, the strip on the promotion screen: ten of the new troop against ten of the old, wins and men
+   left, from TI0's matrix (precomputed).
+
+## As built
+
+### TI0 (measure), as built (2026-11-21)
+- `dotnet run -c Release --no-build -- --tiers [seeds] [filter]` (`BalanceTiers.cs`: `Tiers`, `TierLinks`, `ParentMen`, `TierBout`).
+  Every upgrade link that keeps its class and shooting (370) fights its parent: 30 of the upgrade against 30 (men), against
+  30 x cost ratio (upkeep; wages are per man from `UnitType.Cost`) and against 30 x `TierWeight` ratio (places), on flat ground,
+  foot charging, bows holding and shooting, as `SelfTest.TierFight`. Bouts run in parallel (each its own `Battle` and dice, so the
+  numbers do not depend on the core count): about 3 minutes for 3 seeds on 16 cores. Writes `balance/tiers.csv` (one row a link and
+  matchup: wins, men kept each side, seconds, `Rules.Might` each side, whether auto-resolve calls the same winner) and prints a
+  table by tier step and the flattest steps. A filter is an id fragment or a culture. Test `TierMatrix`.
+- **What it found** (3 seeds, 2026-11-21):
+
+| Step | Equal men: up wins, kept up/down | Equal upkeep: up wins (parent men x) | Equal places: up wins | Auto agrees at equal upkeep |
+|---|---|---|---|---|
+| I -> II | 100 %, 0.83 / 0.00 | 0 % (x2.4) | 100 % | 100 % |
+| II -> III | 100 %, 0.71 / 0.00 | 4 % (x1.9) | 90 % | 73 % |
+| III -> IV | 100 %, 0.79 / 0.01 | 52 % (x1.6) | 99 % | 56 % |
+| IV -> V | 100 %, 0.71 / 0.00 | 35 % (x1.5) | 99 % | 34 % |
+| V -> VI | 100 %, 0.70 / 0.00 | 59 % (x1.4) | 99 % | 61 % |
+
+- **Reading it:**
+  - *Equal men* is far past the target at every step: the upgrade wipes its parent and keeps about three in four. Levies to
+    shieldmen is not thin in a fight; it is thin on screen and in behaviour (both are Rabble). TI1 and TI2 fix that, not the stats.
+  - *Equal places* meets the target (the higher tier wins).
+  - *Equal upkeep* misses badly: the wage steps are steeper than the strength steps. A tier II man costs 2.4 levies and a tier IV
+    man 2.6 tier III men (average `cost` by tier: 10, 36, 52, 135, 192, 278), so the same wage bill buys a crowd that wins until
+    tier IV, and IV -> V dips (bows 4 %, mages 0 %). The owner's target (even at II, ahead from III) needs the wage curve
+    flattened or a tier's worth raised for its price; with equal-men fights already one-sided, the wage curve is the lever.
+  - *Auto-resolve* calls the equal-upkeep fights wrong a third to two thirds of the time from tier IV up: `Rules.Might` rates
+    tier V bows and mages above what they do in a fight.

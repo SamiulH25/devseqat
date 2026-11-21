@@ -909,7 +909,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **PortraitPainter** (class, L13): MoodOf:17, Of:21, SoldierSeed:53, Of:58, OfMan:62, CohesionMood:77, Captain:80, Of:84, Paint:87, Resample:94
 - **Portraits** (class, L117): Of:122, Sized:125
 
-## Program.cs (139 lines)
+## Program.cs (146 lines)
 
 ## Puppet.cs (1100 lines)
 - **Puppet** (class, L13): PalOf:31, SetPal:114, GetLook:120, Puppet:126, Begin:128, Rad:137, W:138, Awed:164, Lean:181, Frame:188, View:198, Draw:218, Crossbow:355, Bow:379, HorseScale:407, Horse:415, sp_breathe:520, static:522, Beast:530, WolfBody:542, Warg:572, BeastCorpse:590, DrawLooseHorse:605, DrawDeadHorse:615, RotY:646, Shoulder:657, Arm:661, ArmTo:668, Elbow:680, Sink:707, Leg:716, SpanRect:728, Fallen:737, SpiritAscent:805, Corpse:846, Haze:886, Particle:898, Banner:913, Decal:972, Quad:985, PlumeY:999, HelmTop:1002, HeadBill:1016, BillRect:1019, Missile:1030, AxialSrc:1050, LongRect:1061, PlaneRect:1073, FlatRect:1083, FlatRot:1092
@@ -1082,8 +1082,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/StyleTests.cs (168 lines)
 - **SelfTest** (class, L6): Plain:26, StylesByTier:29, SweepHitsBeside:45, KnockThrowsBack:57, ThrustThrough:80, CrushBeatsShields:93, StylesOnlyAdd:117, PlungingShot:145
 
-## Tests/TierTests.cs (113 lines)
-- **SelfTest** (class, L6): Standing:9, SameRole:31, UpgradeNeverWorse:42, HigherTierWins:58, TierGap:79, TierSurvey:93
+## Tests/TierTests.cs (127 lines)
+- **SelfTest** (class, L6): Standing:9, SameRole:31, UpgradeNeverWorse:42, HigherTierWins:58, TierGap:79, TierSurvey:93, TierMatrix:116
 
 ## Tests/WallTests.cs (122 lines)
 - **SelfTest** (class, L6): Assault:9, Crewed:19, SectionsAndBreaches:49, TrebuchetBreaches:61, RamAtGate:75, TowerDocks:98, WallEnginesShoot:113
