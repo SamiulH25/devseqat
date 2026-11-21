@@ -493,6 +493,7 @@ public sealed partial class Campaign
         FlameDaily();
         CareerDaily();
         EventsDaily();
+        MenEventsDaily(); // the camp's (C5), on the roll's dice
         // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous;
         // a share of them come up near the player, and his country is kept to BanditNearMin bands even past the cap,
         // so he is never short of a fight.

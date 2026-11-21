@@ -9,9 +9,10 @@ public sealed record TalkTopic(string Id, string Group, string Label, string Tex
 /// One line a lord may say (Data/talk.json): for a topic ("greet" for the greeting), a mood towards you ("warm", "even",
 /// "cold", "hostile" or "" for any), a temper (a trait, or "" for any), an outcome ("yes", "no" or "" for any), and "war"
 /// (true: only when his realm is at war with yours). {name}, {house}, {realm}, {you} and {other} are filled in.
+/// Your own men's lines (topics `man_*`, Campaign/CampTalk.cs) take a nature and a `when` instead.
 public sealed class TalkLine
 {
-    public string Topic = "greet", Mood = "", Temper = "", Outcome = "", Text = "";
+    public string Topic = "greet", Mood = "", Temper = "", Outcome = "", Text = "", Nature = "", When = "";
     public bool War;
 }
 
@@ -75,6 +76,8 @@ public sealed partial class Campaign
         if (lines.Count == 0) { yield return "no talk lines"; yield break; }
         foreach (var l in lines)
         {
+            if (l.Topic.StartsWith("man_")) continue; // your own men's lines: ValidateMenTalk
+            if (l.Nature != "" || l.When != "") yield return $"{l.Topic}: nature and when are for your men's lines";
             if (l.Topic != "greet" && !Topics.Any(t => t.Id == l.Topic)) yield return $"unknown topic {l.Topic}";
             if (l.Mood is not ("" or "warm" or "even" or "cold" or "hostile")) yield return $"unknown mood {l.Mood}";
             if (l.Temper != "" && !LordTraits.Contains(l.Temper)) yield return $"unknown temper {l.Temper}";

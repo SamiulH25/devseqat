@@ -193,6 +193,90 @@ public static partial class SelfTest
         Check(c.CampFires()[0] == co, "the company with named men keeps the first fire");
     }
 
+    /// The camp's events (C5): the data knows the `men_*` triggers, holes and verbs; a trigger finds only living men; each verb
+    /// does what it says; the realm's dice do not draw them.
+    static void CampEvents()
+    {
+        Check(!Campaign.ValidateEvents().Any(), "events.json is valid: " + string.Join("; ", Campaign.ValidateEvents().Take(3)));
+        Check(Campaign.Events.Count(e => Campaign.MenTriggers.Contains(e.Trigger)) >= 15, "the camp has its events");
+        var c = Campaign.New(35);
+        var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+        co.Roll.Clear();
+        var a = c.NameMan(co, "Stood firm.")!; var b = c.NameMan(co, "Held the ford.")!;
+        a.Ties.Clear(); b.Ties.Clear();
+        a.Ties.Add(new SoldierTie { Other = b.Id, Kind = "Rivals" }); b.Ties.Add(new SoldierTie { Other = a.Id, Kind = "Rivals" });
+        var pe = c.FindMen("men_rivals");
+        Check(pe != null && (pe.Soldier == a.Id && pe.Other == b.Id || pe.Soldier == b.Id && pe.Other == a.Id), "two rivals are found as a pair");
+        ulong main = c.S.Rng;
+        for (int i = 0; i < 20; i++) c.FindMen("men_named");
+        Check(c.S.Rng == main, "the camp's events draw on the roll's dice, not the realm's");
+
+        // Words: {man}, {other} and {company} come out as the men's names.
+        Check(c.RaiseMenEvent("men_blows") != null && c.S.Event != null, "a camp event comes up");
+        string text = c.Fill(Campaign.EventOf("men_blows")!.Text, c.S.Event!);
+        Check(text.Contains(a.Name) && text.Contains(b.Name) && text.Contains(co.Name), $"the event names the two men and their company: {text}");
+        // tie: rivals made brothers.
+        c.Choose(0);
+        Check(a.Ties.Any(t => t.Other == b.Id && t.Kind == "Brothers") && b.Ties.Any(t => t.Other == a.Id && t.Kind == "Brothers"), "a night's watch together makes them brothers");
+        // man_deed and man_hurt.
+        a.Ties.Clear(); b.Ties.Clear();
+        a.Ties.Add(new SoldierTie { Other = b.Id, Kind = "Rivals" }); b.Ties.Add(new SoldierTie { Other = a.Id, Kind = "Rivals" });
+        c.RaiseMenEvent("men_blows");
+        var man = c.LivingMan(c.S.Event!.Soldier)!;
+        int deeds = man.Deeds.Count, wounded = co.Stacks.Sum(s => s.Wounded);
+        c.Choose(1);
+        Check(man.Hurt && man.Deeds[^1].StartsWith("Fought") && co.Stacks.Sum(s => s.Wounded) == wounded + 1, "letting them finish it hurts one, and he remembers it");
+        Check(Campaign.AtFire(co).Hurt.Contains(man), "the hurt man goes to the surgeon's");
+        // A hurt man is found by men_hurt and no longer by men_named.
+        for (int i = 0; i < 10; i++) Check(c.FindMen("men_named")?.Soldier != man.Id, "a hurt man is not at the fire");
+        // mention.
+        var fit = a == man ? b : a;
+        c.S.Event = new PendingEvent { Id = "men_watch", Soldier = fit.Id, Company = co.Id };
+        c.Choose(0);
+        Check(fit.Mentions == 1, "mention counts toward the banner");
+        // man_leaves: he goes from the roll alive, and is never named by an event again.
+        int men = co.Men;
+        c.S.Event = new PendingEvent { Id = "men_going_home", Soldier = fit.Id, Company = co.Id };
+        c.Choose(1);
+        Check(!co.Roll.Contains(fit) && c.S.Fallen.Any(m => m.Id == fit.Id && m.Fate == "left") && co.Men == men - 1, "a man who goes home leaves the roll, and his stack");
+        for (int i = 0; i < 10; i++)
+            foreach (var t in Campaign.MenTriggers)
+                if (c.FindMen(t) is PendingEvent f) Check(c.LivingMan(f.Soldier) != null && (f.Other < 0 || c.LivingMan(f.Other) != null), $"{t} names only living men");
+        // A man gone before you answer: the event leaves him alone.
+        c.S.Event = new PendingEvent { Id = "men_first_charge", Soldier = fit.Id, Company = co.Id };
+        int before = fit.Deeds.Count;
+        c.Choose(0);
+        Check(fit.Deeds.Count == before, "a man no longer on the roll gets no deed");
+    }
+
+    /// The men's talk (C5): the lines validate; every man can answer every question, by what is true and by his nature.
+    static void CampTalk()
+    {
+        Check(!Campaign.ValidateMenTalk().Any(), "the men's lines are valid: " + string.Join("; ", Campaign.ValidateMenTalk().Take(3)));
+        Check(!Campaign.ValidateTalk().Any(), "the lords' lines still are");
+        var c = Campaign.New(37);
+        var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+        co.Roll.Clear();
+        var a = c.NameMan(co, "Stood firm.")!; var b = c.NameMan(co, "Held the ford.")!;
+        a.Ties.Clear(); b.Ties.Clear();
+        a.Ties.Add(new SoldierTie { Other = b.Id, Kind = "Brothers" }); b.Ties.Add(new SoldierTie { Other = a.Id, Kind = "Brothers" });
+        foreach (var n in Campaign.Natures)
+        {
+            a.Nature = n;
+            foreach (var t in new[] { "man_greet" }.Concat(c.TopicsForMan(a).Select(x => x.Id)))
+            {
+                string line = c.ManLine(a, co, t);
+                Check(line != "" && !line.Contains('{'), $"{n} answers {t}: \"{line}\"");
+            }
+        }
+        Check(c.TopicsForMan(a).Count() == 3 && c.ManLine(a, co, "man_tie").Contains(b.Name), "he talks about his brother by name");
+        c.Player.Food = 0;
+        Check(c.CampState(co) == "hungry", "hunger comes first");
+        a.Nature = "Steady";
+        Check(c.ManLine(a, co, "man_men") == c.ManLine(a, co, "man_men"), "the same man says the same thing all day");
+        Check(c.ManLine(a, co, "man_men").Contains("food") || c.ManLine(a, co, "man_men").Contains("bread") || c.ManLine(a, co, "man_men").Contains("Hungry"), "a hungry camp is told true");
+    }
+
     static void RollChoices()
     {
         var c = Campaign.New(31);

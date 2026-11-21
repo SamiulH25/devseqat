@@ -6,6 +6,20 @@ namespace Ironfield;
 /// and numbered choices with their effects as chips.
 partial class MapScreen
 {
+    /// The faces of the men a camp event is about (C5), framed in the picture's corners: the man at the left, the other at the right.
+    void EventFaces(Rectangle pic, PendingEvent pe)
+    {
+        int fs = Math.Min(pic.Height - ui.U(30), ui.U(84));
+        foreach (var (id, left) in new[] { (pe.Soldier, true), (pe.Other, false) })
+        {
+            if (id < 0 || C.LivingMan(id) is not Soldier m) continue;
+            var k = C.Player.Companies.FirstOrDefault(z => z.Roll.Contains(m));
+            var fb = new Rectangle(left ? pic.X + ui.U(10) : pic.Right - ui.U(10) - fs, pic.Y + ui.U(8), fs, fs);
+            ui.Rect(new Rectangle(fb.X - ui.U(2), fb.Y - ui.U(2), fb.Width + ui.U(4), fb.Height + ui.U(4)), Kit.GiltDark);
+            ui.FaceHead(PortraitPainter.Of(m, k), fb);
+        }
+    }
+
     void EventPanel()
     {
         if (C.S.Event is not PendingEvent pe || Campaign.EventOf(pe.Id) is not EventDef e) { panel = PanelKind.None; return; }
@@ -20,6 +34,7 @@ partial class MapScreen
         ui.PlateBody(r, Kit.Gilt);
         var pic = new Rectangle(r.X + ui.U(6), r.Y + ui.U(6), r.Width - ui.U(12), picH);
         EventScene(pic, e.Id);
+        EventFaces(pic, pe);
         ui.Frame(pic, Color.Black * 0.7f, ui.U(1));
         ui.Ribbon(r.Center.X, pic.Bottom - ui.U(14), C.Fill(e.Title, pe).ToUpperInvariant(), new Color(130, 50, 36), 2);
         int x = r.X + ui.U(20), cw = r.Width - ui.U(40), y = pic.Bottom + ui.U(26);
@@ -111,6 +126,11 @@ partial class MapScreen
             "farsight" => ($"SEE FAR FOR {arg} DAYS", Style.Ok, "scroll"),
             "peace" => ("PEACE", Style.Ok, "flag"),
             "flag" => ("", Style.Dim, ""),
+            "man_deed" => ("ON HIS RECORD", Kit.Gilt, "scroll"),
+            "man_hurt" => ("HE IS HURT", Style.Bad, "skull"),
+            "man_leaves" => ("HE LEAVES", Style.Bad, "skull"),
+            "tie" => ("BROTHERS", Style.Ok, "heart"),
+            "mention" => ("MENTIONED", Kit.Gilt, "star"),
             _ => (fx.Replace('_', ' ').Replace(":", " ").ToUpperInvariant(), Style.Text, "scroll"),
         };
     }

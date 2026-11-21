@@ -647,6 +647,8 @@ public sealed class CampaignState
     /// Events (F8): the one waiting for your answer, when the next may come, and when each last fired.
     public PendingEvent? Event;
     public float NextEvent = 72;
+    /// When the next camp event may come (C5, Campaign/CampEvents.cs); 0 = not yet set.
+    public float NextMenEvent;
     public Dictionary<string, float> EventsFired = new();
     /// Grave fields of big battles whose dead were not buried (docs/archive/CREATURES.md phase 5): one may rise as an undead host.
     public List<Grave> Graves = new();

@@ -1,6 +1,6 @@
 # The men of the company, and their captain: plan
 
-Status: **partly built**: C0-C4 and C9-C14 shipped, C5 in part (the scene and a man's page; see "As built" at the end); the rest of C5 (talk, camp events, rites), C6, C7 and C8 are still open. It follows `docs/archive/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
+Status: **partly built**: C0-C5 and C9-C14 shipped (see "As built" at the end); C6, C7 and C8 are still open. It follows `docs/archive/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
 When a phase ships, add its "As built" note at the end. Numbers marked *(tune)* are starting values.
 Read `docs/archive/LEGACY.md` first: this plan is its second half.
 
@@ -545,7 +545,7 @@ and its range; plunging and flat shots drawn differently; fire pots; the flight'
 - Roll UI (`RollPanel`): click a man to pick him; the action bar under a divider names him; reasons on hover. The sergeant
   choice heads the roll (`SergeantPick`, faces as buttons). Test `RollChoices`.
 
-### C5 (the camp), as built so far
+### C5 (the camp), as built
 - **C5a, the scene and a man's page (2026-11-21).** Key C (`Act.CampScreen`, `PanelKind.Camp`; CAMP on the screens rail, in the
   F1 help). The country is painted like the street (`CampLook` reads the province as `LookOf` reads a town: its people, kind of
   country, hour, snow; `ColoursOf`, `Country`, `Clouds`, `Orb`, `Smoke`, `Snowfall` reused) at the street's pixel (`CampPixel`, a
@@ -561,7 +561,20 @@ and its range; plunging and flat shots drawn differently; fire pots; the flight'
   go to that man), and the four C4 actions (`ManActions`, now shared with the roll). REST A DAY on the bar.
   Changed from the plan: the camp is painted in the street's art and the men are puppets standing (the puppet has no sitting pose);
   the REST tab does not open the camp yet. Test `CampKnowsMood`; shots `IRONFIELD_CAMP_ONLY=1`.
-- **Still open in C5:** the talk with a man (topics and lines by nature in `Data/talk.json`), the `men` event trigger family with
-  its holes and verbs and about twenty events, the rites and feast buttons moving into the camp, and the plan's tests `CampEvents`
-  and `CampTalk`.
+- **C5b, talk, camp events and rites (2026-11-21).** *Talk* (`Campaign/CampTalk.cs`): on a man's page he greets you and answers
+  HOW ARE THE MEN? (a true line: hunger first, then pay, the last battle, the company's cohesion: `CampState`), WHERE ARE YOU FROM?
+  (near or far from his village) and ABOUT <HIS TIE> (by the tie's kind). Lines in `Data/talk.json` under the `man_` topics with
+  `nature` and `when` (`TalkLine.Nature`/`When`), scored when 3, nature 2, the same all day (`ManLine`); `ValidateMenTalk` needs a
+  plain line for every topic and `when`. *Camp events* (`Campaign/CampEvents.cs`): 18 triggers `men_*` (`MenTriggers`: rivals,
+  brothers, lad, veteran, old, home, in_town, hurt, avenging, named, and one per nature) find one man or a pair of living named
+  men on the roll's dice (`FindMen`, `RollRng`); 19 events in `Data/events.json` (scene `camp`) with holes `{man}`, `{other}`,
+  `{company}`, `{home}` and the verbs `man_deed` (the choice's `deed` goes on his record), `man_hurt`, `man_leaves`, `tie` (only
+  on rivals, brothers, lad), `mention`. They come on their own timer, every 4-8 days (`S.NextMenEvent`, `MenEventsDaily` after
+  `EventsDaily`), only when no event waits; the main stream never draws for them (`CampaignRun`'s pressure line is unchanged).
+  The event shows the two men's faces in the picture's corners (`EventFaces`). *Rites*: the camp rites and the circle's
+  spellbook are on a plate at the camp's top right (`CampRites`); the party screen keeps one CAMP RITES button that opens the camp.
+  Visuals rated by Hydrogen (T3) at the owner's asking: at night the men are darker and the fires light them, after a lost field
+  every other fire is cold ash, face marks dodge each other, props have ground shadows.
+  Changed from the plan: the company's feast stays in the town (it needs a market); the REST tab does not open the camp; no lab
+  page. Tests `CampEvents`, `CampTalk`; shots add `campaign-camp-event.png`.
 

@@ -114,7 +114,10 @@ with mountain ridges you cross by road at the passes; the minimap and the realm 
 - **The camp (C):** where the company is between battles. Each company keeps a fire with its banner, and its named men stand
   round it as they look in battle (the face over each is his); the hurt lie by the surgeon's tent. After a won field they cheer;
   after a lost one the fires are low and they stand apart. Click a man for his page: his face, nature, home, record, deeds, the
-  men he is tied to (click one to go to him), and the four things you can do for him (mention, arm, send home, move).
+  men he is tied to (click one to go to him), and the four things you can do for him (mention, arm, send home, move), and a few words with him: how the men are (he tells you true:
+  food, pay, the last fight, the company's spirit), where he is from, and the man he stands with. Every few days something happens
+  among the named men (two rivals come to blows, brothers ask to stand together, an old man asks to go home) and you choose. The
+  camp rites are worked here.
 - **The legend:** great battles are named and sewn on the company's banner as honours; a rout can lose one to the enemy until
   you win it back. Fame from your companies raises pay, recruits and the regard of lords. In battle, stand over a fallen named
   man to pull him out alive. THE LEGEND (R) lets you retire in glory or hand the company to a companion and play on.

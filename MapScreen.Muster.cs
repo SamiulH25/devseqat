@@ -276,20 +276,11 @@ partial class MapScreen
         y += ui.U(25);
         if (ui.Button(new Rectangle(x, y, w, ui.U(22)), $"DIVISIONS ({C.S.Divisions.Count})", true, ctl.Name(Act.DivisionsScreen))) OpenScreen(PanelKind.Divisions);
         y += ui.U(30);
-        // Camp rites (Rites.cs): only those someone in the company can work, two to a row.
-        var rites = Campaign.RiteList.Where(rt => C.CanWork(rt.Tradition)).ToList();
-        if (rites.Count > 0)
+        // The camp rites are worked at the camp (C5); here only the way there.
+        if (Campaign.RiteList.Any(rt => C.CanWork(rt.Tradition)))
         {
-            ui.Text(C.S.Relic ? $"CAMP RITES   RELIC {C.S.RelicCharges}/{Campaign.RelicCharges:0}" : "CAMP RITES", x, y, Kit.Gilt, 1);
-            y += ui.U(13);
-            for (int i = 0; i < rites.Count; i++)
-            {
-                var rt = rites[i];
-                var rb = new Rectangle(x + i % 2 * (w / 2 + ui.U(2)), y + i / 2 * ui.U(21), w / 2 - ui.U(2), ui.U(18));
-                if (ui.Button(rb, ui.Fit(rt.Name, rb.Width - ui.U(8)), C.S.Gold >= rt.Gold))
-                    note = C.Rite(rt.Id) ?? rt.Line;
-            }
-            y += (rites.Count + 1) / 2 * ui.U(21) + ui.U(6);
+            if (ui.Button(new Rectangle(x, y, w, ui.U(22)), C.S.Relic ? $"CAMP RITES   RELIC {C.S.RelicCharges}/{Campaign.RelicCharges:0}" : "CAMP RITES", true, ctl.Name(Act.CampScreen))) OpenScreen(PanelKind.Camp);
+            y += ui.U(28);
         }
         // Prisoners: turn them to your cause (green, cohesion 0) or let them go. Nothing shows while you hold none.
         if (C.PrisonerCount == 0) return;

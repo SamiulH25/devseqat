@@ -42,5 +42,7 @@ public sealed partial class Campaign
         }
         if (cos.Count > 0 && cos[0].Roll.Count > 0) cos[0].Roll[0].Mentions = BannerMentions;
         foreach (var k in cos.Skip(1).Take(2)) if (k.Roll.Count > 2) k.Roll[^1].Hurt = true;
+        if (!CanWork("faith")) // a priest, so the camp rites show
+            S.Characters.Add(new Character { Id = S.NextId++, Kind = "companion", Name = "Brother Aldo", Culture = "common", Calling = "Priest", PartyId = Player.Id, CompanyId = Player.Companies[0].Id });
     }
 }

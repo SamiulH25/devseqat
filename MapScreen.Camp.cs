@@ -19,6 +19,9 @@ partial class MapScreen
     /// The man whose page is open (null: the camp).
     Soldier? campMan;
     CompanyRecord? campManOf;
+    /// What you last asked the man whose page is open ("man_greet" when you have asked nothing).
+    string campTopic = "man_greet";
+    Soldier? campTopicOf;
     long campTick;
 
     /// The art pixel of the camp (like the street's: about 240 to the screen's height).
@@ -98,7 +101,8 @@ partial class MapScreen
         campTick = now;
         int w = gd.Viewport.Width, h = gd.Viewport.Height;
         CampLayout(w, h);
-        campStage.Render(w, h, campMen.Select(x => x.U).ToList(), CampPixel, CampLight(CampLook()), C.MoodOfCamp() == Campaign.CampMood.Won, dt);
+        var look = CampLook();
+        campStage.Render(w, h, campMen.Select(x => x.U).ToList(), CampPixel, look.Night ? 0.4f : CampLight(look), C.MoodOfCamp() == Campaign.CampMood.Won, dt);
     }
 
     void CampPanel()
@@ -117,7 +121,7 @@ partial class MapScreen
         finally { ui.S = s0; }
         if (campStage.Texture != null) ui.Sb.Draw(campStage.Texture, new Rectangle(0, 0, ui.W, ui.H), Color.White);
         ui.S = CampPixel;
-        try { foreach (var (fk, fire) in campFires.OrderBy(f => f.Fire.Z)) Fire(campStage.Project(fire), campStage.PerMetre(fire.Z), mood, l, t, fk.Id); }
+        try { foreach (var (fk, fire) in campFires.OrderBy(f => f.Fire.Z)) Fire(campStage.Project(fire), campStage.PerMetre(fire.Z), mood, l, t, fk.Id, Cold(fk, mood)); }
         finally { ui.S = s0; }
         ui.S = CampPixel;
         try { CampGear(l, c, back: false); }
@@ -125,6 +129,7 @@ partial class MapScreen
         if (l.Snow) { ui.S = CampPixel; try { Snowfall(new Rectangle(0, 0, ui.W, ui.H), t, l.Night); } finally { ui.S = s0; } }
         var hover = campMan == null ? CampMarks() : null;
         CampPlate(new Rectangle(ui.U(10), ui.U(10), Math.Min(ui.U(420), ui.W / 2), ui.U(78)), mood);
+        if (campMan == null) CampRites(new Rectangle(ui.W - ui.U(310), ui.U(10), ui.U(300), 0));
         CampBar(bar);
         if (hover is (Soldier m, CompanyRecord k) && ui.Clicked(ManBox(m))) { campMan = m; campManOf = k; note = ""; }
         if (campMan != null) ManPage();
@@ -177,7 +182,7 @@ partial class MapScreen
         }
         Surgeon(l, c, hd);
         foreach (var (k, fire) in campFires) // the smoke goes up behind the men
-            if (mood != Campaign.CampMood.Lost) Smoke((int)st.Project(fire).X, (int)st.Project(fire + new Vector3(0, 0.9f, 0)).Y, t, l.Night);
+            if (mood != Campaign.CampMood.Lost || !Cold(k, mood)) Smoke((int)st.Project(fire).X, (int)st.Project(fire + new Vector3(0, 0.9f, 0)).Y, t, l.Night);
         // Each company's banner by its fire, on the company's charge.
         foreach (var (k, fire) in campFires)
         {
@@ -244,12 +249,15 @@ partial class MapScreen
 
     /// A fire at `foot` (`pm` pixels a metre there): trodden earth, a ring of stones, logs, flames that move and their light;
     /// after a lost field it is embers. Drawn over the men, so those behind it stand in its light.
-    void Fire(Vector2 foot, float pm, Campaign.CampMood mood, TownLook l, float t, int seed)
+    /// After a lost field only every other company keeps its fire lit: "few fires tonight".
+    bool Cold(CompanyRecord k, Campaign.CampMood mood) => mood == Campaign.CampMood.Lost && campFires.FindIndex(f => f.K == k) % 2 == 1;
+
+    void Fire(Vector2 foot, float pm, Campaign.CampMood mood, TownLook l, float t, int seed, bool cold = false)
     {
         int x = (int)foot.X, y = (int)foot.Y, s = Math.Max(1, ui.U(1));
         float glow = l.Night ? 1f : l.Dusk ? 0.6f : 0.25f, hgt = mood == Campaign.CampMood.Lost ? 0.28f : 0.62f;
         var warm = new Color(255, 170, 80);
-        for (int i = 0; i < 10; i++) ui.Disc(new Vector2(x, y - pm * 0.3f), pm * (2.6f - i * 0.22f), warm * (0.016f * glow));
+        if (!cold) for (int i = 0; i < 10; i++) ui.Disc(new Vector2(x, y - pm * 0.3f), pm * (2.6f - i * 0.22f), warm * ((l.Night ? 0.024f : 0.016f) * glow));
         int rx = (int)(0.5f * pm), ry = Math.Max(s * 2, (int)(0.14f * pm));
         for (int i = 0; i < 12; i++) // the stones
         {
@@ -259,6 +267,7 @@ partial class MapScreen
         var log = l.Night ? new Color(46, 30, 24) : new Color(84, 56, 36);
         ui.Rect(new Rectangle(x - rx * 2 / 3, y - s * 2, rx * 4 / 3, s * 2), log);
         ui.Rect(new Rectangle(x - rx / 3, y - s * 4, rx * 2 / 3, s * 2), Kit.Mul(log, 1.2f));
+        if (cold) { ui.Rect(new Rectangle(x - rx / 2, y - s * 2, rx, s * 2), l.Night ? new Color(40, 38, 40) : new Color(70, 66, 64)); return; } // grey ash, no flame
         int tongues = mood == Campaign.CampMood.Lost ? 2 : 4;
         for (int i = 0; i < tongues; i++)
         {
@@ -284,7 +293,11 @@ partial class MapScreen
         Color wood = Color.Lerp(c.Near, new Color(124, 86, 54), lit), iron = Color.Lerp(c.Near, new Color(84, 84, 92), lit),
             sack = Color.Lerp(c.Near, new Color(186, 164, 120), lit), leather = Color.Lerp(c.Near, new Color(110, 64, 40), lit);
         int s = Math.Max(1, ui.U(1));
-        void Shadow(Vector2 p, float w) => ui.Rect(new Rectangle((int)(p.X - w / 2), (int)p.Y - s, (int)w, s * 2), Color.Black * 0.25f);
+        void Shadow(Vector2 p, float w)
+        {
+            ui.Rect(new Rectangle((int)(p.X - w * 0.6f), (int)p.Y - s, (int)(w * 1.2f), s * 3), Color.Black * 0.14f);
+            ui.Rect(new Rectangle((int)(p.X - w / 2), (int)p.Y - s * 2, (int)w, s * 4), Color.Black * 0.16f);
+        }
         Color line = Kit.Mul(c.Near, 0.55f);
         // A shape as rows (each row's half width from its height 0-1), outlined, lit from the left.
         void Blob(int cx, int bottom, int w, int h, Color col, Func<float, float> width)
@@ -300,7 +313,7 @@ partial class MapScreen
             }
             ui.Rect(new Rectangle(cx - (int)(w / 2f * width(0)), bottom - h - s, (int)(w * width(0)), s), line);
         }
-        foreach (var (kind, x, z) in new[] { ("spears", -6.4f, -6.2f), ("barrels", -3.9f, 9.0f), ("pot", -0.2f, 9.6f), ("sacks", 2.2f, 9.2f), ("log", -2.0f, 10.4f) })
+        foreach (var (kind, x, z) in new[] { ("spears", -6.4f, -6.2f), ("barrels", -3.9f, 10.9f), ("pot", -0.2f, 9.6f), ("sacks", 2.2f, 9.2f), ("log", -2.0f, 10.4f) })
         {
             var p = st.Project(new Vector3(x, 0, z));
             float pm = st.PerMetre(z);
@@ -321,6 +334,7 @@ partial class MapScreen
                 case "pot":
                 {
                     int leg = (int)(1.1f * pm), pw = (int)(0.5f * pm);
+                    Shadow(new Vector2(X, Y), pm * 0.9f);
                     ui.Rect(new Rectangle(X - (int)(0.5f * pm), Y - s * 2, (int)pm, s * 2), Color.Black * 0.3f); // the cold hearth under it
                     for (int k = 0; k < leg; k += s) { ui.Rect(new Rectangle(X - (int)(0.45f * pm) + k * 4 / 10, Y - k, s * 2, s), Kit.Mul(wood, 0.8f)); ui.Rect(new Rectangle(X + (int)(0.45f * pm) - k * 4 / 10, Y - k, s * 2, s), wood); }
                     ui.Rect(new Rectangle(X - s / 2, Y - leg, s, (int)(0.42f * pm)), iron); // the chain
@@ -373,6 +387,53 @@ partial class MapScreen
         }
     }
 
+    /// A few words with him (C5): what he says, and the questions you can put to him as buttons under it.
+    void ManTalk(Soldier m, CompanyRecord k, Rectangle box)
+    {
+        if (campTopicOf != m) { campTopicOf = m; campTopic = "man_greet"; }
+        var topics = C.TopicsForMan(m).ToList();
+        if (campTopic != "man_greet" && !topics.Any(t => t.Id == campTopic)) campTopic = "man_greet";
+        string said = C.ManLine(m, k, campTopic);
+        var speech = new Rectangle(box.X, box.Y, box.Width, ui.U(36));
+        ui.Rect(speech, Kit.Mul(Kit.Parchment, 0.16f));
+        ui.Frame(speech, Kit.Mul(Kit.Parchment, 0.35f), ui.U(1));
+        int ly = speech.Y + ui.U(7);
+        foreach (var line in ui.Wrap($"\"{said.ToUpperInvariant()}\"", speech.Width - ui.U(16)).Take(2)) { ui.Text(line, speech.X + ui.U(8), ly, Kit.Parchment, 1); ly += ui.U(12); }
+        int bx = box.X, by = speech.Bottom + ui.U(6);
+        foreach (var (id, label) in topics)
+        {
+            int bw = Math.Min(ui.TW(label, 1) + ui.U(16), box.Right - bx);
+            if (bw < ui.U(40)) break;
+            if (ui.Button(new Rectangle(bx, by, bw, ui.U(20)), ui.Fit(label, bw - ui.U(10)), true, "", id == campTopic)) campTopic = id;
+            bx += bw + ui.U(6);
+        }
+    }
+
+    /// The camp rites (Rites.cs), the circle's spellbook and its relic, on a plate at the top right: the camp is where they are worked.
+    void CampRites(Rectangle at)
+    {
+        var rites = Campaign.RiteList.Where(rt => C.CanWork(rt.Tradition)).ToList();
+        var circle = C.Player.Companies.FirstOrDefault(k => Rules.RoleOf(k) == "casters");
+        if (rites.Count == 0 && circle == null) return;
+        int rows = (rites.Count + 1) / 2 + (circle != null ? 1 : 0);
+        var p = new Rectangle(at.X, at.Y, at.Width, ui.U(26) + rows * ui.U(21));
+        ui.Rect(p, Kit.IronDark * 0.86f);
+        ui.Frame(p, Kit.Mul(Kit.GiltDark, 0.8f), ui.U(1));
+        int x = p.X + ui.U(8), w = p.Width - ui.U(16), y = p.Y + ui.U(8);
+        ui.Text(C.S.Relic ? $"CAMP RITES   RELIC {C.S.RelicCharges}/{Campaign.RelicCharges:0}" : "CAMP RITES", x, y, Kit.Gilt, 1);
+        y += ui.U(14);
+        for (int i = 0; i < rites.Count; i++)
+        {
+            var rt = rites[i];
+            var rb = new Rectangle(x + i % 2 * (w / 2 + ui.U(2)), y + i / 2 * ui.U(21), w / 2 - ui.U(2), ui.U(18));
+            if (ui.Button(rb, ui.Fit(rt.Name, rb.Width - ui.U(8)), C.S.Gold >= rt.Gold)) note = C.Rite(rt.Id) ?? rt.Line;
+            if (ui.Hover(rb)) ui.Tooltip(rb.X - ui.U(120), rb.Bottom + ui.U(4), rt.Name, ui.Wrap(rt.Line.ToUpperInvariant() + (rt.Gold > 0 ? $" {rt.Gold:0} CROWNS." : ""), ui.U(220)).ToArray());
+        }
+        y += (rites.Count + 1) / 2 * ui.U(21);
+        if (circle != null && ui.Button(new Rectangle(x, y, w, ui.U(18)), $"THE SPELLBOOK OF {circle.Name.ToUpperInvariant()}")) { rollOf = circle; rollPick = null; panel = PanelKind.Roll; note = ""; }
+        if (note != "" && campMan == null) ui.TextC(note, ui.W / 2f, ui.H - ui.U(62), Style.Warn, 1);
+    }
+
     // ---------- the men's marks ----------
 
     /// Where a man stands on the screen: from the mark over his head to his feet.
@@ -401,6 +462,7 @@ partial class MapScreen
             if (box.IsEmpty) continue;
             if (box.Contains(ui.Mouse) && ui.Mouse.Y < ui.H - ui.U(48)) over = (m, k);
         }
+        var placed = new List<Rectangle>();
         foreach (var (m, k, hurt) in marks)
         {
             var box = ManBox(m);
@@ -408,6 +470,9 @@ partial class MapScreen
             bool on = over?.Item1 == m;
             int fs = ui.U(16);
             var fb = new Rectangle(box.Center.X - fs / 2, hurt ? box.Y - fs / 2 : box.Y, fs, fs);
+            for (int tries = 0; tries < 6 && placed.Any(q => q.Intersects(new Rectangle(fb.X - ui.U(2), fb.Y - ui.U(2), fb.Width + ui.U(4), fb.Height + ui.U(4)))); tries++)
+                fb.Y = placed.Where(q => q.Intersects(new Rectangle(fb.X - ui.U(2), fb.Y - ui.U(2), fb.Width + ui.U(4), fb.Height + ui.U(4)))).Min(q => q.Y) - fs - ui.U(3);
+            placed.Add(fb);
             ui.Rect(new Rectangle(fb.X - ui.U(1), fb.Y - ui.U(1), fb.Width + ui.U(2), fb.Height + ui.U(2)), on ? Kit.Gilt : Campaign.OfBanner(m) ? Kit.Mul(Kit.Gilt, 0.7f) : Kit.IronDark);
             ui.FaceHead(PortraitPainter.Of(m, k), fb);
             if (m.Avenging) ui.Rect(new Rectangle(fb.X, fb.Bottom - ui.U(2), fb.Width, ui.U(2)), Style.Warn);
@@ -460,7 +525,7 @@ partial class MapScreen
             if (ui.Button(new Rectangle(mid, bar.Y + ui.U(10), ui.U(28), ui.U(28)), "<", campPage > 0)) campPage--;
             if (ui.Button(new Rectangle(right - ui.U(36), bar.Y + ui.U(10), ui.U(28), ui.U(28)), ">", campPage < pages - 1)) campPage++;
         }
-        string fires = string.Join("  .  ", campFires.Select(f => f.K.Name.ToUpperInvariant()));
+        string fires = string.Join(" . ", campFires.Select(f => f.K.Name.ToUpperInvariant()));
         ui.TextFitC(fires, (mid + ui.U(36) + right - ui.U(36)) / 2f, bar.Y + ui.U(14), right - mid - ui.U(80), Kit.Mul(Kit.Parchment, 0.9f), 1);
         if (pages > 1) ui.TextC($"FIRES {campPage + 1} OF {pages}", (mid + right) / 2f, bar.Y + ui.U(28), Style.Dim, 1);
         if (ui.Button(new Rectangle(right, bar.Y + ui.U(10), ui.U(148), ui.U(28)), "REST A DAY", C.Encounter == null)) { C.Rest(24); note = ""; }
@@ -522,6 +587,7 @@ partial class MapScreen
             }
             if (m.Avenging) { ui.TextFit("OUT FOR VENGEANCE: HE STRIKES HARDER NEXT BATTLE, AND TAKES MORE RISK.", x + ui.U(8), y, w - ui.U(8), Style.Warn, 1); y += ui.U(12); }
         }
+        ManTalk(m, k, new Rectangle(x, Math.Min(Math.Max(y, fb.Bottom - ui.U(62)) + ui.U(8), r.Bottom - ui.U(156)), w, ui.U(66)));
         ManActions(k, m, r.X + ui.U(24), r.Bottom - ui.U(84), r.Width - ui.U(48), () => campMan = null);
         Note(r);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(42), ui.U(180), ui.U(30)), "BACK TO THE FIRES", note: ctl.Name(Act.Menu))) campMan = null;

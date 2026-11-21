@@ -16,6 +16,8 @@ public sealed class EventDef
 public sealed class ChoiceDef
 {
     public string Label = "", Need = "";
+    /// What goes on the man's record when a camp event's `man_deed` applies (C5): "Fought {other} by the fire and shook his hand after."
+    public string Deed = "";
     public List<string> Effects = new();
 }
 
@@ -24,6 +26,8 @@ public sealed class PendingEvent
 {
     public string Id = "";
     public int Settlement = -1, Lord = -1, Party = -1, Company = -1, Grave = -1, Site = -1, Soldier = -1;
+    /// A camp event's second man (C5: {other}), a soldier id.
+    public int Other = -1;
 }
 
 /// Events, lord quests and named threats (step F8).
@@ -54,9 +58,10 @@ public sealed partial class Campaign
         "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury",
         "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man", "farsight", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown", "calm",
         "vigil", "breakthrough", "corrupt", "rival", "rival_bout", "rival_fate", "pact", "hollow_crown", "burn_out",
+        "man_deed", "man_hurt", "man_leaves", "tie", "mention", // the camp's (C5, Campaign/CampEvents.cs)
     };
-    static readonly string[] NoNumber = { "vigil", "breakthrough", "rival_bout", "rival_fate", "pact", "hollow_crown", "burn_out", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown" };
-    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion", "man", "rival" };
+    static readonly string[] NoNumber = { "man_deed", "man_hurt", "man_leaves", "tie", "mention", "vigil", "breakthrough", "rival_bout", "rival_fate", "pact", "hollow_crown", "burn_out", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown" };
+    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion", "man", "rival", "other", "home" };
 
     static List<EventDef>? events;
     public static IReadOnlyList<EventDef> Events
@@ -85,7 +90,7 @@ public sealed partial class Campaign
         foreach (var e in Events)
         {
             if (Events.Count(x => x.Id == e.Id) > 1) yield return $"{e.Id}: duplicate id";
-            if (!Triggers.Contains(e.Trigger) && !e.Trigger.StartsWith("flag:") && !(e.Trigger.StartsWith("trait:") && EarnedTraits.Contains(e.Trigger[6..]))
+            if (!Triggers.Contains(e.Trigger) && !MenTriggers.Contains(e.Trigger) && !e.Trigger.StartsWith("flag:") && !(e.Trigger.StartsWith("trait:") && EarnedTraits.Contains(e.Trigger[6..]))
                 && !(e.Trigger.StartsWith("origin:") && Origins.Births.Concat(Origins.Pasts).Any(o => o.Id == e.Trigger[7..])))
                 yield return $"{e.Id}: unknown trigger {e.Trigger}";
             if (e.Trigger.StartsWith("flag:") && !CodeFlags.Contains(e.Trigger[5..]) && !Events.Any(x => x.Choices.Any(c => c.Effects.Contains(e.Trigger)))) yield return $"{e.Id}: nothing sets {e.Trigger}";
@@ -93,8 +98,14 @@ public sealed partial class Campaign
             foreach (var text in new[] { e.Title, e.Text }.Concat(e.Choices.Select(c => c.Label)))
                 foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(text, @"\{(\w+)\}"))
                     if (!Holes.Contains(m.Groups[1].Value)) yield return $"{e.Id}: unknown placeholder {m.Value}";
+            if (!MenTrigger(e.Trigger) && System.Text.RegularExpressions.Regex.IsMatch(e.Title + e.Text + string.Concat(e.Choices.Select(c => c.Label)), @"\{(other|home)\}")) yield return $"{e.Id}: {{other}} and {{home}} are for the camp's events";
             foreach (var c in e.Choices)
             {
+                if (c.Effects.Contains("man_deed") != (c.Deed != "")) yield return $"{e.Id}: a deed and man_deed go together";
+                if (c.Effects.Any(fx => fx is "man_deed" or "man_hurt" or "man_leaves" or "tie" or "mention") && !MenTrigger(e.Trigger)) yield return $"{e.Id}: the man's verbs are for the camp's events";
+                if (c.Effects.Contains("tie") && e.Trigger is not ("men_rivals" or "men_brothers" or "men_lad")) yield return $"{e.Id}: tie needs two men";
+                foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(c.Deed, @"\{(\w+)\}"))
+                    if (m.Groups[1].Value is not ("man" or "other" or "company" or "home" or "foe")) yield return $"{e.Id}: unknown placeholder {m.Value} in a deed";
                 if (c.Need != "" && !(c.Need.StartsWith("gold:") && float.TryParse(c.Need[5..], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _)))
                     yield return $"{e.Id}: bad need {c.Need}";
                 foreach (var fx in c.Effects)
@@ -180,7 +191,7 @@ public sealed partial class Campaign
         BrigandKingsDaily();
         if (S.Event != null || S.Hours < S.NextEvent || Sailing) return; // no roadside event finds a ship
         var ready = new List<PendingEvent>();
-        foreach (var e in Events.Where(e => !Forced(e.Trigger)))
+        foreach (var e in Events.Where(e => !Forced(e.Trigger) && !MenTrigger(e.Trigger))) // the camp's come on their own (MenEventsDaily)
         {
             if (S.EventsFired.TryGetValue(e.Id, out float at) && S.Hours - at < e.Cooldown * 24) continue;
             if (Find(e.Trigger) is PendingEvent pe) { pe.Id = e.Id; ready.Add(pe); }
@@ -222,7 +233,9 @@ public sealed partial class Campaign
             .Replace("{site}", SiteById(pe.Site)?.Name ?? "the place")
             .Replace("{companion}", CharacterById(pe.Lord)?.Name ?? "your companion")
             .Replace("{rival}", CharacterById(Captain.Rival)?.Name ?? "your rival")
-            .Replace("{man}", S.Fallen.FirstOrDefault(m => m.Id == pe.Soldier)?.Name ?? "one of your men");
+            .Replace("{man}", (LivingMan(pe.Soldier) ?? S.Fallen.FirstOrDefault(m => m.Id == pe.Soldier))?.Name ?? "one of your men")
+            .Replace("{other}", LivingMan(pe.Other)?.Name ?? "his friend")
+            .Replace("{home}", EventMan(pe) is (Soldier hm, CompanyRecord hk) ? (hm.Home != "" ? hm.Home : hk.Home != "" ? hk.Home : "his village") : "his village");
     }
 
     /// Why a choice cannot be taken now ("" = it can).
@@ -241,7 +254,9 @@ public sealed partial class Campaign
         if (ChoiceBlocked(c) is { Length: > 0 } why) return why;
         S.Event = null;
         var lines = new List<string>();
+        choiceDeed = c.Deed;
         foreach (var fx in c.Effects) if (ApplyEffect(fx, pe) is string l) lines.Add(l);
+        choiceDeed = "";
         Log($"{Fill(e.Title, pe).ToLowerInvariant()}: {Fill(c.Label, pe).ToLowerInvariant()}." + (lines.Count > 0 ? " " + string.Join(" ", lines) : ""));
         return null;
     }
@@ -255,6 +270,7 @@ public sealed partial class Campaign
         var co = Player.Companies.FirstOrDefault(x => x.Id == pe.Company);
         string? said = SiteEffect(verb, n, pe, out bool siteVerb);
         if (siteVerb) return said;
+        if (MenEffect(verb, pe) is string camp) return camp == "" ? null : camp;
         switch (verb)
         {
             case "breakthrough": BreakThrough(pe.Id == "aura_grief" ? "In your rage the wall gives way." : "Your mourning is done, and you rise from it."); break;
