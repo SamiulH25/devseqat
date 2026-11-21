@@ -36,6 +36,8 @@ partial class MapScreen
     /// Where each building stood when last drawn (screen pixels), and the tab last open in each.
     readonly List<(string Place, Rectangle R)> spots = new();
     readonly Dictionary<string, string> lastTab = new();
+    /// The place the spots were laid for: another place's buildings are not this one's.
+    Settlement? spotsAt;
 
     void SettlementPanel()
     {
@@ -53,6 +55,7 @@ partial class MapScreen
         float lift = Ui.Anim(0x57ee7, open ? 1 : 0, 10);
         int ground = (int)MathHelper.Lerp(bar.Y - ui.U(46), well.Y + ui.U(12), lift);
         string? openPlace = open ? PlaceOfTab(s, tab) : null;
+        if (spotsAt != s) { spots.Clear(); lastTab.Clear(); spotsAt = s; } // a new place: last place's buildings and tabs do not carry over
         string? hover = null;
         foreach (var (p, r) in spots)
             if (r.Contains(ui.Mouse) && !bar.Contains(ui.Mouse) && !(open && well.Contains(ui.Mouse)) && Available(s, p, tabs)) hover = p;
@@ -71,7 +74,7 @@ partial class MapScreen
         ErrandBar(s, bar, tabs);
     }
 
-    bool Available(Settlement s, string place, string[] tabs) => PlacesOf(s).First(p => p.Place == place).Tabs.Any(tabs.Contains);
+    bool Available(Settlement s, string place, string[] tabs) => PlacesOf(s).FirstOrDefault(p => p.Place == place).Tabs?.Any(tabs.Contains) == true;
 
     // ---------- the signs over the buildings ----------
 
@@ -81,8 +84,8 @@ partial class MapScreen
     {
         foreach (var (place, r) in spots)
         {
-            var def = PlacesOf(s).First(p => p.Place == place);
-            var inside = def.Tabs.Where(tabs.Contains).ToArray();
+            var def = PlacesOf(s).FirstOrDefault(p => p.Place == place);
+            var inside = def.Tabs?.Where(tabs.Contains).ToArray() ?? Array.Empty<string>();
             if (inside.Length == 0) continue;
             bool on = place == openPlace, over = place == hover;
             int n = inside.Sum(t => TabCount(t, s));
@@ -184,12 +187,12 @@ partial class MapScreen
     {
         modalRect = r;
         ui.PlateBody(r, Kit.Gilt);
-        var def = place == null ? default : PlacesOf(s).First(p => p.Place == place);
-        var (icon, label) = place != null ? (def.Icon, place) : TabLook.GetValueOrDefault(tab, ("scroll", tab));
+        var def = place == null ? default : PlacesOf(s).FirstOrDefault(p => p.Place == place);
+        var (icon, label) = place != null && def.Tabs != null ? (def.Icon, place) : TabLook.GetValueOrDefault(tab, ("scroll", tab));
         ui.Icon(icon, r.X + ui.U(16), r.Y + ui.U(14), Kit.Gilt, 2);
         ui.Text(label, r.X + ui.U(36), r.Y + ui.U(14), Kit.Gilt, 2);
         int top = r.Y + ui.U(42);
-        if (place != null)
+        if (place != null && def.Tabs != null)
         {
             var inside = def.Tabs.Where(tabs.Contains).ToArray();
             if (inside.Length > 1)

@@ -784,6 +784,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Settlement.cs (749 lines)
 - **MapScreen** (class, L9): TabBody:12, TownTabs:41, HarbourTab:59, TownRow:88, PortraitWell:91, TroopStats:99, TroopOffer:107, RecruitTab:132, NoblesTab:147, TrainTab:165, RestTab:204, FoodTab:259, WorkshopTab:295, ForageTab:334, CaptivesTab:352, GarrisonTab:405, ContractTab:444, EldersTab:482, TavernTab:492, Goblet:555, TavernRow:573, MercenariesTab:580, MarketTab:603, GoodsList:637, Contracts:662, FiefTab:693
 
+## MapScreen.Street.cs (548 lines)
+- **MapScreen** (class, L9): readonly:12, readonly:19, readonly:24, PlaceOfTab:34, SettlementPanel:42, Available:77, Signs:83, Enter:127, PlacePlate:138, StandingPlate:174, Business:186, ErrandBar:216, Street:236, Glow:270, Footing:278, TownStreet:284, CastleStreet:330, VillageStreet:357, Spot:390, Barracks:396, Market:460, Green:516
+
 ## MapScreen.Talk.cs (184 lines)
 - **MapScreen** (class, L7): OpenTalk:15, LeaveTalk:26, TalkPanel:38, Arguments:108, Speak:136, HallTab:150
 
