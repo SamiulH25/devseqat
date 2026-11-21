@@ -31,7 +31,7 @@ Fix them roughly in this order: 1 and 2 first (they gate everything else being t
 | 7 | 8 tests red, 10 written but never registered | P2 | small |
 | 8 | Ten public methods with no callers; three are missing features | P2 | small |
 | 9 | C5 (the camp) has no screen | P2 | large |
-| 10 | `docs/pre-demo/COMPANY.md` status line is false | P2 | trivial |
+| 10 | `docs/archive/COMPANY.md` status line is false | P2 | trivial |
 | 11 | Two landing pages have diverged | P2 | trivial |
 | 12 | Junk in the repo root | P2 | trivial |
 | 13 | 63 keys, no way to learn them in the game | P3 | small |
@@ -353,7 +353,7 @@ existing `AutoTournament` call; decide whether the K sheet wants `TrialsFor` or 
 
 **P2 — largest remaining gap against the game's own fantasy**
 
-`docs/pre-demo/COMPANY.md` C5 plans a screen where the company exists between battles: men at rest, fires, the banner planted,
+`docs/archive/COMPANY.md` C5 plans a screen where the company exists between battles: men at rest, fires, the banner planted,
 faces you can click, camp events. Everything it depends on already shipped:
 
 - `CreatorStage` — the living puppet drawn into a render target.
@@ -369,11 +369,11 @@ man's page. Nothing else in that phase needs to land with it.
 
 ---
 
-## 10. `docs/pre-demo/COMPANY.md` status line is false
+## 10. `docs/archive/COMPANY.md` status line is false
 
 **P2 — trivial, and it misleads every fresh session**
 
-`docs/pre-demo/COMPANY.md:3` says:
+`docs/archive/COMPANY.md:3` says:
 
 > Status: **planned** (nothing built yet).
 

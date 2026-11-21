@@ -52,7 +52,7 @@ public static class PortraitPainter
     /// the man on the field.
     public static int SoldierSeed(int soldierId) => soldierId * 7919 + 1;
 
-    /// A named man's face (docs/pre-demo/COMPANY.md C1): his visage as the battle draws it, his age, a scar per two wounds, dress by
+    /// A named man's face (docs/archive/COMPANY.md C1): his visage as the battle draws it, his age, a scar per two wounds, dress by
     /// his troop's tier (cloth, a padded jack, mail under a cloak, plate; a knight of your order wears its mark), his company's charge on
     /// your colours, and his mood from its cohesion.
     public static Face Of(Soldier m, CompanyRecord? co) =>

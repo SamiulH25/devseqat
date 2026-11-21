@@ -504,8 +504,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/OwnOrder.cs (110 lines)
 - **Campaign** (class, L7): CannotFound:15, OrderNameOf:28, FoundOrder:39, NamedMan:53, CannotKnight:62, Knight:67, OwnVowBroken:78, HandOnAura:86
 
-## Campaign/Pilot.cs (303 lines)
-- **Pilot** (class, L8): Pilot:31, Run:42, Fight:64, Refuge:95, Visit:105, Kit:136, Worn:144, Worth:145, Fresh:149, Promote:159, TakePerks:170, Think:181, Arcane:243, Siege:265, Talk:288, S:302
+## Campaign/Pilot.cs (325 lines)
+- **Pilot** (class, L8): Pilot:33, Run:44, Fight:67, Refuge:98, Visit:108, Kit:139, Worn:147, Worth:148, Fresh:152, Promote:162, TakePerks:173, Roll:186, Think:202, Arcane:265, Siege:287, Talk:310, S:324
 
 ## Campaign/PlacePlans.cs (181 lines)
 - **PlacePlan** (record, L7): StreetScale:30, Dir:41
@@ -801,14 +801,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Orders.cs (109 lines)
 - **MapScreen** (class, L7): OrdersTab:10, VowWord:49, ChapterTab:61
 
-## MapScreen.Party.cs (335 lines)
-- **MapScreen** (class, L8): Regard:11, OpinionWord:13, OpinionColor:14, RoleTextOf:15, CharactersPanel:25, CompanionCard:117, CompanionNote:160, CompanyNote:175, PostButtons:190, DivisionsPanel:230, DivisionCard:255, NewDivisionCard:311
+## MapScreen.Party.cs (340 lines)
+- **MapScreen** (class, L8): Regard:11, OpinionWord:13, OpinionColor:14, RoleTextOf:15, CharactersPanel:25, CompanionCard:117, CompanionNote:165, CompanyNote:180, PostButtons:195, DivisionsPanel:235, DivisionCard:260, NewDivisionCard:316
 
 ## MapScreen.Quests.cs (107 lines)
 - **MapScreen** (class, L7): QuestsPanel:13, QuestRow:42, QuestMark:87
 
-## MapScreen.Realm.cs (418 lines)
-- **MapScreen** (class, L8): Vassals:11, RealmPanel:49, Legend:78, OwnOrderBlock:135, Realms:170, RealmCard:199, Relations:254, Chronicle:280, RankLadder:299, RealmColumn:316, KingDiplomacy:386
+## MapScreen.Realm.cs (424 lines)
+- **MapScreen** (class, L8): Vassals:11, RealmPanel:52, Legend:81, OwnOrderBlock:141, Realms:176, RealmCard:205, Relations:260, Chronicle:286, RankLadder:305, RealmColumn:322, KingDiplomacy:392
 
 ## MapScreen.Report.cs (290 lines)
 - **MapScreen** (class, L7): ResultsPanel:9, MentionRow:32, Well:49, Tally:60, Spoils:115, ReportCompanies:156, Progress:214

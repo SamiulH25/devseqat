@@ -14,6 +14,8 @@ partial class MapScreen
         var vassals = C.Vassals.ToList();
         var raisable = C.Companions.ToList();
         if (vassals.Count == 0 && raisable.Count == 0) return;
+        ui.Divider(x, y, r.Width - ui.U(48), Kit.Gilt * 0.6f);
+        y += ui.U(10);
         ui.Text("YOUR VASSALS", x, y, Style.Accent, 1);
         y += ui.U(16);
         foreach (var v in vassals.Take(4))
@@ -27,9 +29,10 @@ partial class MapScreen
             }
             y += ui.U(26);
         }
-        if (vassals.Count == 0) { ui.Text("NONE YET. AS A LORD WITH TWO FIEFS YOU MAY GIVE ONE TO A COMPANION.", x, y, Style.Dim, 1); y += ui.U(16); }
+        bool blocked = raisable.Count > 0 && !raisable.Any(k => C.CanRaiseVassal(k, out _));
+        if (vassals.Count == 0) { ui.Text(blocked ? "NONE YET." : "NONE YET. AS A LORD WITH TWO FIEFS YOU MAY GIVE ONE TO A COMPANION.", x, y, Style.Dim, 1); y += ui.U(16); }
         // While none may be raised, one line says why, not a dead button a companion.
-        if (raisable.Count > 0 && !raisable.Any(k => C.CanRaiseVassal(k, out _)))
+        if (blocked)
         {
             C.CanRaiseVassal(raisable[0], out string not);
             ui.TextFit(not, x, y, r.Width - ui.U(48), Style.Dim, 1);
@@ -92,24 +95,27 @@ partial class MapScreen
             var row = new Rectangle(x - ui.U(4), y - ui.U(3), w + ui.U(8), ui.U(38));
             ui.Rect(row, Color.White * 0.04f);
             ui.Banner(x + ui.U(12), y, ui.U(18), ui.U(26), hd);
-            for (int j = 0; j < Math.Min(3, c.BattleHonours.Count); j++) ui.Rect(new Rectangle(x + ui.U(23 + j * 3), y + ui.U(3), ui.U(2), ui.U(16 - j * 4)), Kit.Gilt); // a streamer an honour
-            int tx = x + ui.U(36), tw = w - ui.U(36);
+            for (int j = 0; j < Math.Min(3, c.BattleHonours.Count); j++) ui.Rect(new Rectangle(x + ui.U(33 + j * 4), y + ui.U(2), ui.U(2), ui.U(24 - j * 5)), Kit.Gilt); // a streamer an honour, hung beside the banner
+            int tx = x + ui.U(50), tw = w - ui.U(50);
             ui.Text(c.Name.ToUpperInvariant(), tx, y + ui.U(1), Style.Text, 1);
-            ui.TextR($"{Campaign.N(c.Battles, "BATTLE")}, FAME {Campaign.CompanyFame(c)} ({Campaign.FameWord(Campaign.CompanyFame(c))})", x + w, y + ui.U(1), Style.Dim, 1);
+            int fame = Campaign.CompanyFame(c);
+            ui.TextR($"{Campaign.N(c.Battles, "BATTLE")}, FAME {fame} ({Campaign.FameWord(fame)})", x + w, y + ui.U(1), fame > 0 ? Kit.Gilt : Kit.Mul(Style.Dim, 0.75f), 1);
             int hx = tx, hy = y + ui.U(15);
             if (c.BattleHonours.Count == 0 && c.LostHonours.Count == 0) ui.TextFit("NO BATTLE HONOURS YET. WIN OUTNUMBERED, SLAY THEIR CAPTAIN OR TAKE A WALL.", hx, hy + ui.U(3), tw, Style.Dim, 1);
             var chips = c.BattleHonours.Select(h => (h.ToUpperInvariant(), Kit.Gilt, "flag"))
-                .Concat(c.LostHonours.Select(l => ($"{l.Name.ToUpperInvariant()}: TAKEN BY THE {C.FactionNames[l.Faction].ToUpperInvariant()}", Style.Dim, "flag"))).ToList();
+                .Concat(c.LostHonours.Select(l => ($"{l.Name.ToUpperInvariant()}: LOST TO THE {C.FactionNames[l.Faction].ToUpperInvariant()}", Kit.Mul(Style.Dim, 0.7f), "flag"))).ToList();
             for (int j = 0; j < chips.Count; j++)
             {
                 var (text, col, icon) = chips[j];
                 if (hx + ui.TW(text, 1) + ui.U(30) > x + w) { ui.Text($"+{chips.Count - j}", hx, hy + ui.U(3), Style.Dim, 1); break; }
-                hx += ui.Chip(hx, hy, text, col, icon) + ui.U(4);
+                hx += ui.Chip(hx, hy, text, col, icon) + ui.U(8);
             }
             y += ui.U(42);
         }
-        OwnOrderBlock(x, Math.Max(y, a.Bottom - ui.U(168)), w, Cut);
-        y = Math.Max(y, a.Bottom - ui.U(122));
+        // The order and the fallen follow the rows (C8 review), pinned no lower than the foot of the panel.
+        int orderY = Math.Min(y + ui.U(4), a.Bottom - ui.U(168));
+        OwnOrderBlock(x, orderY, w, Cut);
+        y = orderY + ui.U(C.S.OwnOrder == null && C.CannotFound() != null ? 26 : 46);
         ui.Divider(x, y, w, Kit.Gilt * 0.5f);
         y += ui.U(10);
         var dead = C.S.Fallen.Where(m => m.Fate is "fell" or "missing").ToList();

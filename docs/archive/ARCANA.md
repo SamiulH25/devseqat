@@ -208,7 +208,7 @@ At Kindled the captain chooses a **path**; at Aura Expert he may open a second, 
 ### AR8. Legacy: magic remembered
 
 - Named casters on the roll (built: the master) gain **titles from great workings** ("Ylva Stormcaller of Greyford").
-  A great working names the battle (`Legacy.BattleName`). A fallen master's staff becomes a relic item (docs/pre-demo/COMPANY.md C9
+  A great working names the battle (`Legacy.BattleName`). A fallen master's staff becomes a relic item (docs/archive/COMPANY.md C9
   items) that teaches a spell.
 - Wells you consecrated or bound appear in THE LEGEND; a court mage you slew is a deed.
 - Files: `Campaign/Legacy.cs`, `Campaign/Roll.cs`, `Campaign/Items.cs`, `MapScreen.Realm.cs`.

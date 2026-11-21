@@ -1,10 +1,10 @@
 namespace Ironfield;
 
-/// How well a piece is made (docs/pre-demo/COMPANY.md C9): each step scales the piece's own numbers a little and raises its price.
+/// How well a piece is made (docs/archive/COMPANY.md C9): each step scales the piece's own numbers a little and raises its price.
 /// Named is one of a kind: a piece that earned its name, or came so from a famous hand.
 public enum ItemQuality { Worn, Plain, Fine, Masterwork, Named }
 
-/// A piece of gear the captain owns (docs/pre-demo/COMPANY.md C9): what it is (`Def`, a Data/gear.json id), how well it is made,
+/// A piece of gear the captain owns (docs/archive/COMPANY.md C9): what it is (`Def`, a Data/gear.json id), how well it is made,
 /// the smith's marks it carries (effect ids from Data/effects.json tagged "mark"), the name it earned, where it came from,
 /// and what it has done.
 public sealed class GearItem

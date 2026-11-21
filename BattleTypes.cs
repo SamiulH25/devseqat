@@ -24,9 +24,9 @@ public sealed class BattleOptions
     public HashSet<string> Perks = new();
     /// The captain's aura tier (docs/archive/KNIGHT_ORDERS.md 5.1): 0 unawakened, 1 kindled, 2 aura blade, 3 aura armour, 4 master, 5 transcendent.
     public int AuraTier;
-    /// Your renown: how worth noticing you are to the enemy (docs/pre-demo/COMPANY.md C12; full at 500).
+    /// Your renown: how worth noticing you are to the enemy (docs/archive/COMPANY.md C12; full at 500).
     public float Renown;
-    /// A lord with a grudge leads the enemy (docs/pre-demo/COMPANY.md C13): the line he swore, empty for none. He comes for you himself.
+    /// A lord with a grudge leads the enemy (docs/archive/COMPANY.md C13): the line he swore, empty for none. He comes for you himself.
     public string Grudge = "";
     /// The captain's forms in slot order (docs/archive/KNIGHT_ORDERS.md 5.6): the first three that are not great go on U, I, O; the first
     /// great one on L. Their ranks (1-3) by id.

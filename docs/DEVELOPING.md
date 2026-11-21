@@ -512,7 +512,8 @@ The campaign was built in steps F1-F9 (see `docs/archive/CAMPAIGN_OVERHAUL.md`);
 | Events (F8) | `Events.cs`, `Data/events.json` | Triggers find a subject; choices apply effect verbs. See 8.3. |
 | Houses, bonds, wants (LD0, LD2, LD4) | `Houses.cs`, `LordBonds.cs`, `Wants.cs` | Every lord has a house and kin; heirs come from the house. Bonds (kin, feud, friend, rival) add to `OpinionOf` and steer armies. Each lord wants one thing (`WantsDaily`); `HelpedWant` credits you when you bring it about. All on the kin dice `KRng`. |
 | Talk, halls, marriage (LD3, LD5, LD6) | `Talk.cs`, `Data/talk.json` | `TopicsFor` lists what can be raised, `CannotAsk` why not, `Odds` the chance, `Say` rolls it and `Grant` applies it. Lines are data (see 8.6). |
-| Pacing (F9) | `Pilot.cs`, `BalanceReport.cs` | A scripted captain plays headless; `--pacing` reports days per career stage. |
+| The roll and the company (L1-L8, C1-C14) | `Roll.cs`, `Natures.cs`, `Ties.cs`, `RollChoices.cs`, `Camp.cs`, `CampEvents.cs`, `CampTalk.cs`, `Remembered.cs`, `Legacy.cs` | Up to six named men a company (`Soldier` in `CompanyRecord.Roll`), each one man of his stack: faces, a nature, ties, deeds. Fates come from the battle (`RollFought`) or the dice (`RollFates`); `SyncRoll` keeps the roll inside the stacks. Your hand: `ChooseSergeant`, `Mention`, `Arm`, `Pension`, `MoveMan`. The camp, its events and talk read the roll; the fallen go to `S.Fallen`, cairns and the book; `S.LastFight` keeps the last battle for the party screen. Own dice `RollRng`. |
+| Pacing (F9) | `Pilot.cs`, `BalanceReport.cs` | A scripted captain plays headless; `--pacing` reports days per career stage. It also keeps the roll (chooses sergeants by nature, mentions the day's best man, pensions the old) and counts it. |
 
 ### 5.7 Balance values
 
@@ -706,6 +707,9 @@ tiers I-VI, six troops (`Troops.MaxTier`); each must be an upgrade of the one be
 - **Triggers** (`Campaign.Triggers` in `Events.cs`): `fief_unrest`, `fief_poor`, `fief_rich`, `lord_friend`,
   `lord_hates_liege`, `big_band`, `veterans`, `hungry_winter`, `unpaid`, `prisoners`, `war_weary`, `in_town`, and the forced
   `brigand_king`, `pretender`. Each is a `case` in `Find(trigger)` that picks the subject or returns null.
+- **Camp events** use the `men_*` triggers (`Campaign.MenTriggers` in `CampEvents.cs`; `FindMen` picks one or two named men),
+  scene `camp`, holes `{man}`, `{other}`, `{company}`, `{home}`, and their own verbs `man_deed` (with the choice's `deed` text),
+  `man_hurt`, `man_leaves`, `tie`, `mention` (`MenEffect`). `CampEvents` validates them.
 - **Effect verbs** (`Verbs`): `gold`, `renown`, `food`, `horses`, `opinion`, `opinion_liege`, `opinion_realm`, `unrest`,
   `prosperity`, `tax`, `cohesion`, `xp`, `exhaustion`, `gamble`, and without a number: `quest`, `bounty`, `revolt`,
   `prisoners_free`, `prisoners_recruit`, `disband`. Each is a `case` in `ApplyEffect`.
@@ -729,6 +733,10 @@ What lords say (`TalkLines`, read by `Campaign.Line`). Each entry in `lines` has
 naming his temper or the war come first, then those naming his mood; the pick among equals is fixed for the day. `{name}`, `{house}`, `{realm}`, `{you}` and
 `{other}` (what the granted topic adds, such as the news) are filled in. `ValidateTalk` refuses unknown values and needs a
 greeting for each mood and a yes line for every topic (and a no line for checked ones).
+
+A named man's lines (the camp's talk, `CampTalk.cs`) use the topics `man_greet`, `man_men`, `man_home`, `man_tie`, may narrow by
+`nature` and `when` (`Campaign.TalkWhens`: the company's food, pay, last fight, spirit), and fill `{man}`, `{other}`, `{company}`,
+`{home}`. His lines in battle (`man_felled_*`, `man_brother_down`, `man_saved`) are read by `BattleNamed.Speak`. `CampTalk` validates them.
 
 ---
 

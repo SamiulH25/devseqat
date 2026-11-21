@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A named man's words in a battle (docs/pre-demo/COMPANY.md C6): who said it, the line, when, his company.
+/// A named man's words in a battle (docs/archive/COMPANY.md C6): who said it, the line, when, his company.
 public sealed record Said(int Soldier, string Name, string Text, float Time, Squad? Squad);
 
 /// Named men in the fight (C6): an alert when one of yours is hard pressed near you, and a line from him (by his nature, from

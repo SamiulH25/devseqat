@@ -170,7 +170,7 @@ public sealed class Unit
     public bool Sergeant;
     /// A named man of his company (docs/archive/LEGACY.md L2): his Soldier id, 0 for the rest.
     public int SoldierId;
-    /// A named man out to avenge a brother or kin (docs/pre-demo/COMPANY.md C3): his blows land harder, and he takes more risk.
+    /// A named man out to avenge a brother or kin (docs/archive/COMPANY.md C3): his blows land harder, and he takes more risk.
     public bool Avenging;
     /// Enemies he has killed this battle, and whether one was a captain or a hero.
     public int Kills;
@@ -195,9 +195,9 @@ public sealed class Unit
     public bool Charging; // player holding the attack button
     public float BlockStart; // when the player raised the guard (parries need fresh timing)
     public Unit? Target;
-    /// He holds the enemy captain as his mark (docs/pre-demo/COMPANY.md C12; counted against `Battle.MarkCap`).
+    /// He holds the enemy captain as his mark (docs/archive/COMPANY.md C12; counted against `Battle.MarkCap`).
     public bool OnCaptain;
-    /// His place in the ring round his own captain (docs/pre-demo/COMPANY.md C13; -1: none).
+    /// His place in the ring round his own captain (docs/archive/COMPANY.md C13; -1: none).
     public int GuardSlot = -1;
     public bool Dead, Fled, Routing;
     public int Routs;        // how many times this man has broken (a second rout is final)

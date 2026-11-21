@@ -15,7 +15,7 @@ public sealed partial class Campaign
     public string? CannotFound()
     {
         if (S.OwnOrder != null) return "YOU HAVE FOUNDED YOUR ORDER";
-        if (Captain.AuraTier < FoundAura) return $"NEEDS AN AURA OF {AuraName(FoundAura).ToUpperInvariant()}";
+        if (Captain.AuraTier < FoundAura) return $"YOU MUST BE AN {AuraName(FoundAura).ToUpperInvariant()}";
         if (Rank < Rank.Lord && Fame < FoundFame) return $"NEEDS THE RANK OF LORD OR FAME {FoundFame} ({Fame} NOW)";
         if (FiefSeats == 0) return "NEEDS A SEAT OF YOUR OWN: A TOWN OR CASTLE";
         if (Captain.Order != "") return "LEAVE YOUR ORDER FIRST";

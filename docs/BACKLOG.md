@@ -14,7 +14,6 @@ them yourself (CLAUDE.md step 4); the scores in old notes are history only.
 
 | Plan | Open | Size | Notes |
 |---|---|---|---|
-| [`pre-demo/COMPANY.md`](pre-demo/COMPANY.md) | C8 polish, pilot, docs | medium | C7 shipped 2026-11-21 |
 | [`pre-demo/SIEGES.md`](pre-demo/SIEGES.md) | SE1-SE10: the siege overhaul: the field built from the place's plan, a fortress to move through, capture points and the heart, layered defence, equipment and assault plans, sieges on the map (sallies, relief, terms, sack), every kind of place | large | Owner's brief 2026-11-21. Nothing built. Four open questions for the owner at the end of the plan |
 | [`pre-demo/TIERS.md`](pre-demo/TIERS.md) | TI0-TI6: tiers that matter: measure each step, a ladder of things each tier can do, drill you can see, promotion that says what changes, reasons in the campaign to want good troops, lines with jobs | large | Owner's brief 2026-11-21. Nothing built. Four open questions for the owner at the end of the plan |
 | [`pre-demo/NOBILITY.md`](pre-demo/NOBILITY.md) | N3 knighting a named man; N4 AI lords' noble retinues and UI badge; N5 balance | medium | Gap: northern, southern, steppe and league have no non-order noble T4 |
@@ -37,6 +36,14 @@ them yourself (CLAUDE.md step 4); the scores in old notes are history only.
 - **Holds**: carts between a castle and its villages (drawing only).
 - **The drawn world** (`archive/WORLDMAP.md`): peoples of one realm are hard to tell apart (horse troops most); top-tier foot
   close to the tier below; crossbows read as a blob. Re-check after the sprite overhaul.
+- **The company** (`archive/COMPANY.md` "As built", closed 2026-11-21): C9b gear slots (hands, legs, cloak, harness,
+  keepsakes), ~90 graded culture pieces and their `Gear.Validate` checks, renown gating, the Named piece on the portrait line and
+  end summary; C10b companions and named men wearing baggage gear, N cycling up to three weapons, the armourer on the kit grid,
+  a link from the K sheet's doll, sprite parts in the kit cells; C11b monster-leader trophies and recipes, culture lord drops,
+  Named spoils from grand masters and kings, the smith's days for masterwork, gifts (ruins, order, liege, want, caravan,
+  wedding), sets, the pilot's gear spend; C13 a lord's offer of single combat in the field, brigand kings and monster leaders
+  hunting by `Prey`, a deed for a named man who saves you, the report's line; C3 rivals earning names faster, the lad's odds
+  from his master's.
 - **Ships**: encounters at sea; AI parties never sail.
 - **Saves** (`SAVES.md` "Not done"): cloud sync, import/export, a captain portrait on the card, a picture for the
   battle-start autosave.

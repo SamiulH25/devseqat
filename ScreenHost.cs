@@ -66,7 +66,7 @@ sealed class ScreenHost : Game
     /// Debug: with IRONFIELD_SAVES_ONLY=1 a campaign shots run writes a few saves (with their map pictures) into IRONFIELD_SAVES,
     /// and a second campaign's, then saves the save screens: `campaign-save-as.png`, `campaign-load.png`.
     static readonly bool savesOnly = Environment.GetEnvironmentVariable("IRONFIELD_SAVES_ONLY") == "1";
-    /// Debug: with IRONFIELD_CAMP_ONLY=1 a campaign shots run saves only the camp (docs/pre-demo/COMPANY.md C5): by day after a
+    /// Debug: with IRONFIELD_CAMP_ONLY=1 a campaign shots run saves only the camp (docs/archive/COMPANY.md C5): by day after a
     /// won field, at night, at dusk after a lost one, and a man's page (`campaign-camp-*.png`, `campaign-man.png`).
     static readonly bool campOnly = Environment.GetEnvironmentVariable("IRONFIELD_CAMP_ONLY") == "1";
     int campShot;

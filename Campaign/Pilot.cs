@@ -21,6 +21,8 @@ public sealed class Pilot
     /// and the day each aura tier was first reached (index = tier; -1 = not yet).
     public int MagicBattles, EnemyMagic, Vigils, Rites, LordBattles, LordMagic;
     public readonly int[] AuraDay = { 0, -1, -1, -1, -1, -1 };
+    /// Roll telemetry (docs/archive/COMPANY.md C8): sergeants chosen, men mentioned, men pensioned.
+    public int SergeantsChosen, Mentioned, Pensioned;
     /// A seeker (AR0) goes after the arcane as a player who wants it would: it rides to a vigil when its aura stands at a
     /// wall and works its circle's rites. Off by default, so the pacing runs and tests play as before.
     public bool Seeker;
@@ -48,6 +50,7 @@ public sealed class Pilot
             if (c.Encounter != null) Fight();
             if (c.Arrived is Settlement s) { c.Arrived = null; Visit(s); }
             if (c.Report is { Spoil.Length: > 0 }) c.TakeSpoil(); // a beaten chief's gear is free
+            if (c.Report != null) Roll();
             c.Report = null;
             c.Beat = null;
             if (c.S.Event is { Id: "aura_vigil" }) Vigils++;
@@ -178,9 +181,28 @@ public sealed class Pilot
                 if (c.Captain.FreePerks > 0 && Skills.Locked(c.Captain, sk, pk) == null) c.TakePerk(pk.Id);
     }
 
+    /// The roll (C4) as a careful player keeps it: choose the sergeant whose nature gives his company a trait, mention the
+    /// day's best man, and send home the old and the thrice-wounded when the purse can spare it.
+    void Roll()
+    {
+        foreach (var co in Me.Companies.ToList())
+        {
+            var pick = c.SergeantChoice(co);
+            if (pick.Count == 0) continue;
+            var best = pick.FirstOrDefault(m => Campaign.NatureTrait(m.Nature) is string t && !co.Traits.Contains(t)) ?? pick[0];
+            if (c.ChooseSergeant(co, best) == null) SergeantsChosen++;
+        }
+        var men = c.S.MentionPool.Select(c.LivingMan).OfType<Soldier>().OrderByDescending(m => m.Kills).ThenByDescending(m => m.Battles);
+        // Only from a full purse: early crowns go to men (a careful player mentions and pensions once the company is paid for).
+        if (men.FirstOrDefault() is Soldier hero && c.S.Gold - B.MentionPurse > Reserve * 3 && c.Mention(hero) == null) Mentioned++;
+        foreach (var m in Me.Companies.SelectMany(k => k.Roll).ToList())
+            if (c.S.Gold - B.PensionCost > Reserve * 3 && c.CannotPension(m) == null && c.Pension(m) == null) Pensioned++;
+    }
+
     void Think()
     {
         TakePerks();
+        Roll();
         Promote(); // men up to tier III rise in camp (docs/archive/HOLDS.md HD1); the rest wait for a town
         if (c.S.Hours >= nextTalk && c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && !c.Hostile(Me, p) && Vector2.Distance(p.Pos, Me.Pos) <= Campaign.TalkReach)
                 .Select(c.CharacterOf).FirstOrDefault(l => l != null && c.CannotTalk(l) == null) is Character talkTo)

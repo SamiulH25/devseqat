@@ -113,7 +113,9 @@ with mountain ridges you cross by road at the passes; the minimap and the realm 
   they fell a captain or a rider, when a brother falls, and when you pull one out. A company's banner carries its honours as gold
   streamers, and a fringe after ten battles.
   Those lost are kept for ever under THE FALLEN, named first in the battle report, and each costs his company cohesion. When a
-  company needs a sergeant, its senior named man rises to the post, and a sergeant of 15 battles joins your household.
+  company needs a sergeant, its senior named man rises to the post (if others qualify you have a day to choose one of them on the
+  roll), and a sergeant of 15 battles joins your household. The party screen keeps THE LAST BATTLE under the companies: the field,
+  won or lost, kills and losses, and a card for each named man it touched. The household tab gives each companion a full card.
 - **The camp (C):** where the company is between battles. Each company keeps a fire with its banner, and its named men stand
   round it as they look in battle (the face over each is his); the hurt lie by the surgeon's tent. After a won field they cheer;
   after a lost one the fires are low and they stand apart. Click a man for his page: his face, nature, home, record, deeds, the

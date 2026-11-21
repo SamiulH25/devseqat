@@ -88,7 +88,7 @@ partial class MapScreen
         if (ui.Gilded(new Rectangle(r.Right - ui.U(200), r.Bottom - ui.U(40), ui.U(180), ui.U(28)), "CLOSE", ctl.Name(Act.Menu))) { panel = PanelKind.None; renaming = null; }
     }
 
-    /// The board's lower half (docs/pre-demo/COMPANY.md C8): your last battle, and a card for each named man it touched.
+    /// The board's lower half (docs/archive/COMPANY.md C8): your last battle, and a card for each named man it touched.
     void LastFightBlock(Rectangle b, LastFight lf)
     {
         string head = "THE LAST BATTLE" + (lf.Field != "" ? ": " + lf.Field.ToUpperInvariant() : "");
@@ -115,12 +115,12 @@ partial class MapScreen
             ui.Rect(card, Color.White * 0.035f);
             var fb = new Rectangle(card.X + ui.U(4), card.Y + ui.U(4), ui.U(40), card.Height - ui.U(8));
             ui.Rect(new Rectangle(fb.X - 1, fb.Y - 1, fb.Width + 2, fb.Height + 2), gone ? Kit.IronDark : Campaign.OfBanner(m) ? Kit.Mul(Kit.Gilt, 0.7f) : Kit.IronDark);
-            if (gone) ui.FaceHead(PortraitPainter.Of(m, k) with { Mood = 1 }, fb, new Color(120, 122, 128));
+            if (gone) ui.FaceHead(PortraitPainter.Of(m, k) with { Mood = 1 }, fb, new Color(96, 96, 104));
             else ui.FaceHead(PortraitPainter.Of(m, k), fb);
             int tx = fb.Right + ui.U(8), tw = card.Right - tx - ui.U(4);
             ui.TextFit(m.Name.ToUpperInvariant(), tx, card.Y + ui.U(6), tw, gone ? Style.Dim : Style.Text, 1);
             var lines = ui.Wrap(what.ToUpperInvariant(), tw);
-            Color wc = gone ? Style.Bad : what.StartsWith("Wounded") ? Style.Warn : Kit.Mul(Kit.Parchment, 0.85f);
+            Color wc = gone ? new Color(232, 96, 84) : what.StartsWith("Wounded") ? Style.Warn : Kit.Mul(Kit.Parchment, 0.85f);
             for (int l = 0; l < Math.Min(2, lines.Count); l++) ui.TextFit(lines[l], tx, card.Y + ui.U(20 + l * 12), tw, wc, 1);
             if (k != null && !gone && ui.Clicked(card)) { musterPick = k; note = ""; }
         }
@@ -239,7 +239,7 @@ partial class MapScreen
             if (ui.Hover(b)) note = "A COMPANION: HE GROWS BETTER AT COMMAND WITH EVERY TWO BATTLES.";
             x = b.Right + ui.U(6);
         }
-        if (x + ui.U(260) < lane.Right) ui.TextFit(leaders.Count == 0 ? "NOBODY IS FREE TO LEAD ONE: COMPANIONS AND COMPANY SERGEANTS CAN." : "OR DRAG A COMPANY HERE: ITS SERGEANT TAKES COMMAND.", x + ui.U(6), lane.Center.Y - ui.U(3), lane.Right - x - ui.U(14), Style.Dim, 1);
+        if (x + ui.U(260) < lane.Right) ui.TextFit(leaders.Count == 0 ? "NOBODY IS FREE TO LEAD ONE: COMPANIONS AND COMPANY SERGEANTS CAN." : "OR DRAG ONE HERE: ITS SERGEANT LEADS.", x + ui.U(6), lane.Center.Y - ui.U(3), lane.Right - x - ui.U(14), Style.Dim, 1);
         if (drop && released) note = leaders.Any(l => l.Company == moving!.Id) ? C.MakeDivision(-1, moving!.Id) ?? "" : moving!.Officer == "" ? "IT HAS NO SERGEANT TO LEAD A DIVISION" : "ITS SERGEANT LEADS A DIVISION ALREADY";
     }
 

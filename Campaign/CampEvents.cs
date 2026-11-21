@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Campaign: the camp's events (docs/pre-demo/COMPANY.md C5). A trigger family, `men_*`, that finds one or two living named men
+/// Campaign: the camp's events (docs/archive/COMPANY.md C5). A trigger family, `men_*`, that finds one or two living named men
 /// it is true of (two rivals, brothers, a lad and his master, an old man, a man of one nature...); the events in Data/events.json
 /// name them with {man} and {other}, their company with {company}, his village with {home}, and act on them with the verbs
 /// `man_deed` (the choice's `deed` goes on his record), `man_hurt`, `man_leaves`, `tie` (the two become brothers) and `mention`.

@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// The camp (docs/pre-demo/COMPANY.md C5): what the company's rest looks like. Read only; the screen is MapScreen.Camp.cs.
+/// The camp (docs/archive/COMPANY.md C5): what the company's rest looks like. Read only; the screen is MapScreen.Camp.cs.
 public sealed partial class Campaign
 {
     /// How the camp feels: after a won field the men cheer, after a lost one the fires are few and they sit apart.

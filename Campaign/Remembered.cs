@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A cairn over your named men where they fell (docs/pre-demo/COMPANY.md C7): save state, never part of the map's generation.
+/// A cairn over your named men where they fell (docs/archive/COMPANY.md C7): save state, never part of the map's generation.
 public sealed class Cairn
 {
     public int Id, Day, Company = -1;
@@ -23,7 +23,7 @@ public sealed class DeadCaptain
 
 /// Campaign: what is remembered (C7). Cairns where named men fell, the day each year that a battle cost three or more of them,
 /// and the captain who can die. The book of the fallen reads `BookOfTheFallen`.
-/// Your last battle as the party screen tells it (docs/pre-demo/COMPANY.md C8): where, against whom, and the named men in it.
+/// Your last battle as the party screen tells it (docs/archive/COMPANY.md C8): where, against whom, and the named men in it.
 public sealed class LastFight
 {
     public int Day, Kills, Lost;

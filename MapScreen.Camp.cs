@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// MapScreen: the camp (docs/pre-demo/COMPANY.md C5, key C). Where the company is between battles: the country at the hour it
+/// MapScreen: the camp (docs/archive/COMPANY.md C5, key C). Where the company is between battles: the country at the hour it
 /// is, the tents, a fire for each company with its banner and its named men standing round it (the battle's own puppets and
 /// faces, `CampStage`), the hurt ones on pallets by the surgeon's tent. Click a man for his page. Drawing and input only; what
 /// the camp knows is in Campaign/Camp.cs.

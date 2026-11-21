@@ -52,7 +52,7 @@ public static class SpriteDump
         var first = PortraitPainter.Of(c, lords[0]);
         for (int m = 0; m < 4; m++) faces.Add(first with { Mood = m });
         foreach (var ch in lords.Skip(1).Take(Cols * 4 - 4)) faces.Add(PortraitPainter.Of(c, ch));
-        // A last row of named men (docs/pre-demo/COMPANY.md C1): tiers I, III, V and VII, fresh and then scarred.
+        // A last row of named men (docs/archive/COMPANY.md C1): tiers I, III, V and VII, fresh and then scarred.
         while (faces.Count % Cols != 0) faces.Add(faces[0] with { Seed = -1 });
         int id = 40 + seed;
         foreach (int tier in new[] { 1, 3, 5, 7 })

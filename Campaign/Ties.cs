@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Ties between the men (docs/pre-demo/COMPANY.md C3). A named man has at most two: Brothers (named in the same battle, or five battles
+/// Ties between the men (docs/archive/COMPANY.md C3). A named man has at most two: Brothers (named in the same battle, or five battles
 /// side by side), Kin (from the same village, one in four), Rivals (two proud men, or near-equal kills), Master and Lad (a man
 /// of ten battles and a newly named one). When a brother or kin falls the other remembers it and fights his next battle
 /// avenging; the company misses the fallen half again. When a master falls his lad takes his nature. Ties are by soldier id,

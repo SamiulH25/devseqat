@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// MapScreen: kit and baggage (docs/pre-demo/COMPANY.md C10, key I). The captain large on the left in what he wears, a slot round him
+/// MapScreen: kit and baggage (docs/archive/COMPANY.md C10, key I). The captain large on the left in what he wears, a slot round him
 /// for each piece (click one to take it off); on the right everything he can put on as a grid, the make in its colour and the
 /// smith's marks, with what it changes against what you wear on hover; under it the goods and the baggage's load. Kit
 /// changes anywhere outside a battle.

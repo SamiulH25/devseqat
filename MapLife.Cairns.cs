@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Cairns over your named men where they fell (docs/pre-demo/COMPANY.md C7): a mound of grey stones, a spear stood in it with a
+/// Cairns over your named men where they fell (docs/archive/COMPANY.md C7): a mound of grey stones, a spear stood in it with a
 /// pennon in your colours. Drawing only (`World.Extra`), from `CampaignState.Cairns`.
 sealed partial class MapLife
 {

@@ -161,14 +161,14 @@ public sealed class FoundedOrder
 public sealed class Soldier
 {
     public int Id, Battles, Kills, Wounds, Joined, DiedDay, Company = -1;
-    /// His age (docs/pre-demo/COMPANY.md C1): 17-30 when named, a year older each year; 0 on an old save (`AgeOf` makes one up).
+    /// His age (docs/archive/COMPANY.md C1): 17-30 when named, a year older each year; 0 on an old save (`AgeOf` makes one up).
     public int Age;
     public string Name = "", Troop = "", Fate = "", DiedAt = "", CompanyName = "";
-    /// The battle he fell in, by its name (docs/pre-demo/COMPANY.md C7: the book groups under it); "" before C7 or off the field.
+    /// The battle he fell in, by its name (docs/archive/COMPANY.md C7: the book groups under it); "" before C7 or off the field.
     public string Field = "";
-    /// His nature, one word (docs/pre-demo/COMPANY.md C2: Campaign.Natures), and the place he comes from.
+    /// His nature, one word (docs/archive/COMPANY.md C2: Campaign.Natures), and the place he comes from.
     public string Nature = "", Home = "";
-    /// Ties to other named men, at most two (docs/pre-demo/COMPANY.md C3), and whether he fights his next battle to avenge one.
+    /// Ties to other named men, at most two (docs/archive/COMPANY.md C3), and whether he fights his next battle to avenge one.
     public List<SoldierTie> Ties = new();
     public bool Avenging;
     /// Your hand on the roll (C4): times you mentioned him after a win (three make him "of the banner"), and what you armed
@@ -477,7 +477,7 @@ public sealed class CaptainState
     public int ArmorTier, HelmTier, HorseTier, Contract = 0; // Contract: faction you serve, -1 = none
     /// What the captain wears and carries (docs/archive/PROGRESSION.md P1).
     public CaptainKit Kit = new();
-    /// Every piece the captain owns as a thing (docs/pre-demo/COMPANY.md C9): make, marks, name, story. Free plain pieces need none.
+    /// Every piece the captain owns as a thing (docs/archive/COMPANY.md C9): make, marks, name, story. Free plain pieces need none.
     public List<GearItem> Baggage = new();
     /// Career (F5): you swore fealty to the realm you serve (a vassal, not a hired sword); when this contract began;
     /// and the highest rank reached so far (an int of Rank), so each career beat is shown once.
@@ -582,10 +582,10 @@ public sealed class CampaignState
     public int NextSoldier = 1;
     /// Every named man your companies have lost (L3), never trimmed.
     public List<Soldier> Fallen = new();
-    /// Cairns over your named men where they fell (docs/pre-demo/COMPANY.md C7), at most `Campaign.MaxCairns`; captains who died
+    /// Cairns over your named men where they fell (docs/archive/COMPANY.md C7), at most `Campaign.MaxCairns`; captains who died
     /// in the field (the opt-in rule `CaptainDeath`, set from the settings for new campaigns).
     public List<Cairn> Cairns = new();
-    /// Your last battle and the named men in it, for the party screen (docs/pre-demo/COMPANY.md C8); null before your first.
+    /// Your last battle and the named men in it, for the party screen (docs/archive/COMPANY.md C8); null before your first.
     public LastFight? LastFight;
     public List<DeadCaptain> DeadCaptains = new();
     public bool CaptainDeath;
@@ -833,11 +833,11 @@ public sealed class Balance
     public float WoundBase = 0.3f, WoundArmor = 40, WoundMin = 0.25f, WoundMax = 0.7f, CaptureChance = 0.5f, FledReturnOnDefeat = 0.7f;
     public float XpParticipation = 10, XpVictory = 1.5f, XpPerKillTier = 6;
     public float RenownPerVictory = 5, RenownStrengthDivisor = 50;
-    /// What the captain's baggage carries (docs/pre-demo/COMPANY.md C9): a base, and more for each spare horse (to six).
+    /// What the captain's baggage carries (docs/archive/COMPANY.md C9): a base, and more for each spare horse (to six).
     public float BaggageBase = 20, BaggagePerHorse = 5;
     /// Your hand on the roll (C4): the purse for a man you mention, and a pension for a man you send home.
     public int MentionPurse = 20, PensionCost = 40;
-    /// What a company's senior named man's nature adds to its might in auto-resolve (docs/pre-demo/COMPANY.md C2).
+    /// What a company's senior named man's nature adds to its might in auto-resolve (docs/archive/COMPANY.md C2).
     public float NatureWeight = 0.01f;
     public float CompanySlotsBase = 10, MenBase = 40, MenRenownDivisor = 5;
     /// Men per company, party, band and garrison are this many times the base numbers below; per-man prices are divided by it.

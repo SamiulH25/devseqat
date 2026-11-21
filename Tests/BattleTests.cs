@@ -1552,7 +1552,7 @@ public static partial class SelfTest
         Check(!hob2.Saved && b2.GoalState(goal) == -1, "left where he fell, he is lost, and the goal with him");
     }
 
-    /// Named men in the fight (docs/pre-demo/COMPANY.md C6): a man of yours hard pressed near you raises an alert, at most one every
+    /// Named men in the fight (docs/archive/COMPANY.md C6): a man of yours hard pressed near you raises an alert, at most one every
     /// 20 s; he speaks by his nature when he fells a captain or a horseman and when his brother falls; the battle plays as before.
     static void NamedInTheFight()
     {

@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The book of the fallen (docs/pre-demo/COMPANY.md C7): every named man lost, his face greyed, under the battle he fell in or
+/// The book of the fallen (docs/archive/COMPANY.md C7): every named man lost, his face greyed, under the battle he fell in or
 /// his company; what he was known for and whom he left behind. Captains who died in the field come first. Opened from THE
 /// LEGEND and from a company's roll.
 partial class MapScreen

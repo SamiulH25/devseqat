@@ -13,6 +13,7 @@ Open work is listed in `docs/BACKLOG.md`. The living docs are `CLAUDE.md`, `docs
 | [`COMBAT_OVERHAUL.md`](COMBAT_OVERHAUL.md) | Combat overhaul: plan |
 | [`COMBAT_QOL.md`](COMBAT_QOL.md) | Combat quality of life (Q1-Q6): fold, relieve and split, queued and standing orders, speed, alerts, groups and remembered deployment |
 | [`COMPANIONS_MAGIC.md`](COMPANIONS_MAGIC.md) | Companions, magic, abilities, buffs and auras (plan) |
+| [`COMPANY.md`](COMPANY.md) | The company as people (C0-C14): faces, natures, ties, the roll, the camp, named men in the fight, what is remembered, gear as things, the enemy sees and hunts the captain, arrows (closed 2026-11-21) |
 | [`CREATURES.md`](CREATURES.md) | Creatures and monsters: brainstorm and plan |
 | [`HOLDS.md`](HOLDS.md) | Castles by size, promotion anywhere, the castle's muster, villages bound to a holder (HD1-HD5; closed 2026-11-21) |
 | [`ISSUES.md`](ISSUES.md) | Code audit of 2026-11-17: issues found and fixed; the open ones moved to docs/BACKLOG.md |

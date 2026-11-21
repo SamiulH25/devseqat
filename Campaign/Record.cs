@@ -39,7 +39,7 @@ public sealed partial class Campaign
         return lines;
     }
 
-    /// The faces the end shows (docs/pre-demo/COMPANY.md C7): the men of the banner, the longest-serving dead, and those who rose
+    /// The faces the end shows (docs/archive/COMPANY.md C7): the men of the banner, the longest-serving dead, and those who rose
     /// from the ranks (their soldier's record, for the face), a few of each.
     public List<(string Title, List<Soldier> Men)> StoryFaces()
     {

@@ -1067,7 +1067,7 @@ sealed partial class Puppet3D
             AddQuad(mA + segNorm * 0.013f, mB + segNorm * 0.013f, bA + segNorm * 0.013f, bB + segNorm * 0.013f, segNorm, trimCol, shade, trimAlpha, u0, u1, h - trimH, h);
             AddQuad(mB - segNorm * 0.013f, mA - segNorm * 0.013f, bB - segNorm * 0.013f, bA - segNorm * 0.013f, -segNorm, trimCol, shade * 0.94f, trimAlpha, u1, u0, h - trimH, h);
 
-            if (fringe) // ten battles: a gold fringe under the trim (docs/pre-demo/COMPANY.md C6)
+            if (fringe) // ten battles: a gold fringe under the trim (docs/archive/COMPANY.md C6)
             {
                 // A dark seam, then the fringe in tassels of two lengths, so it reads apart from the trim.
                 var sA = bA - up * 0.02f; var sB = bB - up * 0.02f;

@@ -1018,7 +1018,7 @@ sealed partial class Puppet
         Quad(c - hw - hh, c + hw - hh, c - hw + hh, c + hw + hh, src, viewed && viewIdx == 1 && flip);
     }
 
-    /// A missile in the world (docs/pre-demo/COMPANY.md C14): the sprite `part` from its point `head` to its `tail`, turned about the
+    /// A missile in the world (docs/archive/COMPANY.md C14): the sprite `part` from its point `head` to its `tail`, turned about the
     /// shaft to face the camera, `thick` times as wide; a short band of the side's `cloth` over the fletching.
     public void Missile(Vector3 head, Vector3 tail, string part, float thick, Color cloth)
     {

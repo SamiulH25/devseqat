@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Your hand on the roll (docs/pre-demo/COMPANY.md C4): choose a new sergeant from the men who qualify, mention a man after a won
+/// Your hand on the roll (docs/archive/COMPANY.md C4): choose a new sergeant from the men who qualify, mention a man after a won
 /// battle, arm a man from your baggage or the looted arms, send an old or thrice-wounded man home with a pension, and move a
 /// man to another company. Each is a `string?` action (null = done, else the reason shown).
 public sealed partial class Campaign

@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// The camp's men (docs/pre-demo/COMPANY.md C5): the named men drawn as the battle draws them (the same puppet, the same face
+/// The camp's men (docs/archive/COMPANY.md C5): the named men drawn as the battle draws them (the same puppet, the same face
 /// from their soldier id), standing at their fires, into one transparent texture laid over the painted camp. A fixed camera
 /// looks over the field from a little above, so a point on the ground can be found on the screen (`Project`) and the painted
 /// fires, tents and banners stand where the men stand. Drawing only, like the creator's stage it is built after.

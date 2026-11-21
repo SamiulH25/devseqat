@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The enemy sees and hunts the captain (docs/pre-demo/COMPANY.md C12-C13).
+/// The enemy sees and hunts the captain (docs/archive/COMPANY.md C12-C13).
 public static partial class SelfTest
 {
     /// PT4: left alone while you command, the captain blocks the blows aimed at him (and never strikes back); the same

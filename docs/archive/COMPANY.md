@@ -1,6 +1,6 @@
 # The men of the company, and their captain: plan
 
-Status: **partly built**: C0-C7 and C9-C14 shipped (see "As built" at the end); C8 is in progress (see its note at the end). It follows `docs/archive/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
+Status: **built** (2026-11-21): C0-C14 shipped (see "As built" at the end); what was left out is in `docs/BACKLOG.md`. It follows `docs/archive/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
 When a phase ships, add its "As built" note at the end. Numbers marked *(tune)* are starting values.
 Read `docs/archive/LEGACY.md` first: this plan is its second half.
 
@@ -623,7 +623,7 @@ and its range; plunging and flat shots drawn differently; fire pots; the flight'
   Shots (with `IRONFIELD_CAMP_ONLY=1`, staged by `StageFallen`): `campaign-book.png`, `campaign-cairn.png`, `campaign-cairn-event.png`,
   `campaign-end.png`.
 
-### C8 (polish, pilot, docs), in progress (saved 2026-11-21)
+### C8 (polish, pilot, docs), as built (2026-11-21)
 Done so far:
 - *Overflow:* no overflow in the town or battle HUD shot runs; key names print as glyphs (`Bind.ToString`/`Parse` now also know `;` `'` `-` `\`).
 - *Party screen's lower half:* THE LAST BATTLE (`MapScreen.Board.cs` `LastFightBlock`): the field, won or lost, the day, the foe, kills
@@ -635,7 +635,20 @@ Done so far:
 - *Companion line bug* fixed (no ". AGE 30" or ". ." with no traits or role). "UNDER SGT SGT" fixed in the new-division lane.
 - *REST tab:* SEE THE CAMP opens the camp; Esc goes back to the place (`OpenScreen`/`CameFrom` now remember the settlement too).
 - Shots (`IRONFIELD_CAMP_ONLY=1`): `campaign-household.png`, `campaign-party.png`, `campaign-legend.png`.
-Still to do: the pilot (choose sergeants from `SergeantChoice`, mention the best of `S.MentionPool`, pension men `CannotPension`
-allows; telemetry counters; compare the auto-resolve win rate before and after with `--pacing`), Hydrogen rating of the three new shots,
-docs (README, DEVELOPING.md 5.6 and 8.x, CLAUDE.md file guide rows for LastFight and CompanionCard), UI lab pages for the man's page and
-the book, the C9b-C11b leftovers to docs/BACKLOG.md, then move this file to docs/archive/.
+- *The pilot keeps the roll* (`Pilot.Roll`, after each battle and every think): chooses the sergeant whose nature gives his company
+  a trait it lacks (else the risen man), mentions the day's best man (most kills), pensions the old and thrice-wounded, both only
+  while the purse holds three times its reserve. Counted as `SergeantsChosen`, `Mentioned`, `Pensioned` on the `--pacing` line.
+- *Pacing before and after* (`--pacing 4`): before, 4/4 seeds reached Marshal (days 106-162), 567 of 584 auto-resolved fights won
+  (97 %); after, 3/4 (Marshal days 106-274), 328 of 351 won (93 %), with 6-9 sergeants chosen, 44-105 mentions and 20-55 pensions a
+  run. The miss is seed 3: it lost all but 15 men in week 3 in both runs, the baseline then took 272 crowns of loot and recovered and
+  the new run (38 crowns) did not. A dice cascade on a knife-edge seed, not a steady drain; with purses spent from a reserve of 1
+  (the first try) two seeds stalled, so the pilot now waits for three.
+- *Review* (Hydrogen, one round on the three shots): the household card has fixed rows (name over a rule, calling and age, XP,
+  company, where he rose from, abilities, talents) with regard at its foot and a 4:5 face; the vassals block has a rule; THE LEGEND's
+  order and fallen lines follow the rows instead of sitting at the panel's foot, streamers hang beside the banner, fame is gilt
+  when won, a lost honour reads "LOST TO" in a darker chip; the fallen's faces on THE LAST BATTLE are greyer and "FELL." brighter.
+  "NEEDS AN AURA OF AURA EXPERT" now reads "YOU MUST BE AN AURA EXPERT"; the household no longer says twice why no vassal.
+- *Docs:* README (sergeant choice, the last battle, companion cards), DEVELOPING.md 5.6 (the roll and the company layer) and 8.3/8.6
+  (camp events, men's lines), CLAUDE.md rows, the left-out items (C3, C9b-C11b, C13) in `docs/BACKLOG.md`.
+- *Not done:* UI lab pages for the man's page and the book. The real screens are staged by `IRONFIELD_CAMP_ONLY=1`
+  (`campaign-man.png`, `campaign-book.png`), so mock-data copies in the lab would only drift from them.

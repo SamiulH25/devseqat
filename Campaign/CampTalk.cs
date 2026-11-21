@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Campaign: talking with your own men at the camp (docs/pre-demo/COMPANY.md C5). A named man answers a few plain questions:
+/// Campaign: talking with your own men at the camp (docs/archive/COMPANY.md C5). A named man answers a few plain questions:
 /// how the men are (a true line about food, pay, the last battle and the company's spirit), where he is from, and the man he
 /// is tied to. Lines live in Data/talk.json beside the lords', under the `man_` topics, picked by his nature the way a
 /// lord's are picked by his temper, and by what is true now (`when`). No dice: the same man says the same thing all day.

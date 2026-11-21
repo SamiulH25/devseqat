@@ -544,7 +544,7 @@ partial class BattleScreen
         zoom = 19;
     }
 
-    /// The enemy sees you (docs/pre-demo/COMPANY.md C12), staged for a shot: a famed captain on foot with his men either side, a rabble
+    /// The enemy sees you (docs/archive/COMPANY.md C12), staged for a shot: a famed captain on foot with his men either side, a rabble
     /// coming at him from the front, a veteran company sending its best man, and one foe behind (an edge mark). Field view.
     void MarkedScene()
     {
@@ -570,7 +570,7 @@ partial class BattleScreen
         pitch = 0.18f;
     }
 
-    /// Named men in the fight (docs/pre-demo/COMPANY.md C6), staged for a shot: your company's banner with three honours and the
+    /// Named men in the fight (docs/archive/COMPANY.md C6), staged for a shot: your company's banner with three honours and the
     /// fringe, one man out for vengeance and a lad among the marks, a man hard pressed (the alert) and two of them speaking.
     /// `far`: close behind the banner, to see the streamers and the fringe.
     void NamedScene(bool far = false)
@@ -605,7 +605,7 @@ partial class BattleScreen
         pitch = far ? 0.02f : 0.18f;
     }
 
-    /// The enemy hunts you (docs/pre-demo/COMPANY.md C13), staged for a shot: elite bows have marked the captain standing in the open
+    /// The enemy hunts you (docs/archive/COMPANY.md C13), staged for a shot: elite bows have marked the captain standing in the open
     /// (the warning ring on the ground) and the enemy horse is sent for him (the alert). Field view, looking at the bows.
     void HuntedScene()
     {
@@ -631,7 +631,7 @@ partial class BattleScreen
         pitch = 0.62f;
     }
 
-    /// Arrows you can see (docs/pre-demo/COMPANY.md C14), staged for a shot: two bow companies a side shooting across 45 m at men
+    /// Arrows you can see (docs/archive/COMPANY.md C14), staged for a shot: two bow companies a side shooting across 45 m at men
     /// holding their ground. 0: a volley in the air from command view; 1: the field view under it; 2: the beaten zone two
     /// minutes on, from above.
     void ArrowScene(int which)
