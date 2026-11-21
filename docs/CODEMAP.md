@@ -380,6 +380,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/CampaignWar.cs (301 lines)
 - **Campaign** (class, L6): TakePrisoners:10, RecruitPrisoners:21, SellPrisoners:43, FreePrisoners:57, LordRansom:65, RansomLord:67, FreeLord:79, Release:88, PrisonersWeekly:96, WithOfficer:111, OfficerAfterBattle:117, FoodPrice:148, BuyFood:151, Forage:162, EatDaily:184, Offers:212, OfferValid:220, RefreshOffers:227, Accept:246, CheckContracts:258, SergeantName:300
 
+## Campaign/CampEvents.cs (128 lines)
+- **Campaign** (class, L8): MenTrigger:15, FindMen:26, Set:63, MenEventsDaily:66, MenEffect:88, RaiseMenEvent:120
+
+## Campaign/CampTalk.cs (106 lines)
+- **Campaign** (class, L7): readonly:10, CampState:26, TalkWhen:37, HomeOf:47, ManLine:64, FillMan:79, ValidateMenTalk:90
+
 ## Campaign/Career.cs (612 lines)
 - **Rank** (enum, L6)
 - **Campaign** (class, L9): RankName:38, readonly:45, RulerOf:61, MarshalOf:62, Pct:92, ProvinceShare:95, CanSwearFealty:99, SwearFealty:113, LeaveRealm:125, GrantOnCapture:142, EnsureRulers:168, CareerDaily:195, SeatsOf:221, Vote:229, Liking:244, Council:248, CouncilFiefs:286, CouncilMarshal:319, CouncilWarMotion:343, RealmStrength:372, ObjectiveOf:376, PickObjective:384, ObjectiveChoices:395, SetObjective:400, ProposeWar:411, CanDeclareIndependence:425, DeclareIndependence:436, CannotClaimCrown:448, ClaimCrown:456, FoundRealm:467, TakeOver:514, Defect:523, DeclareWarBetween:540, DeclareWar:552, CheckRank:574, CheckEnd:585, RecruitPriceFactor:611
@@ -748,8 +754,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Board.cs (373 lines)
 - **MapScreen** (class, L10): readonly:24, RoleColor:28, PartyPanel:30, BoardSummary:91, DrawLane:118, NewLane:174, Dashed:207, CompanyTile:215, CompanyDetail:254
 
-## MapScreen.Camp.cs (595 lines)
-- **MapScreen** (class, L9): CampLight:30, CampLook:33, CampLayout:45, FireSpot:83, PrepareCamp:95, CampPanel:108, CampScene:141, Tent:201, Surgeon:220, Cold:253, Fire:255, CampGear:289, ManTalk:391, CampRites:413, ManBox:440, CampPlate:495, CampBar:515, ManPage:538
+## MapScreen.Camp.cs (597 lines)
+- **MapScreen** (class, L9): CampLight:30, CampLook:33, CampLayout:45, FireSpot:83, PrepareCamp:95, CampPanel:108, CampScene:141, Tent:201, Surgeon:220, Cold:255, Fire:257, CampGear:291, ManTalk:393, CampRites:415, ManBox:442, CampPlate:497, CampBar:517, ManPage:540
 
 ## MapScreen.Captain.cs (330 lines)
 - **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:85, AuraBlock:159, PathBlock:177, OwnFormBlock:200, FlameBlock:227, FormList:251, CaptainRecord:292
