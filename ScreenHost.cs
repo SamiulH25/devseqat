@@ -51,6 +51,7 @@ sealed class ScreenHost : Game
     };
     /// Debug: with IRONFIELD_TOWN_ONLY=1 a campaign shots run saves only the settlement screen's tabs (`town-*.png` and the like).
     static readonly bool townOnly = Environment.GetEnvironmentVariable("IRONFIELD_TOWN_ONLY") == "1";
+    static readonly string? townCulture = Environment.GetEnvironmentVariable("IRONFIELD_TOWN_CULTURE");
     /// Debug: with IRONFIELD_MAP_ONLY=1 a campaign shots run saves only the map: the overview, the land and its life, each kind of country.
     static readonly bool mapOnly = Environment.GetEnvironmentVariable("IRONFIELD_MAP_ONLY") == "1";
     /// Debug: with IRONFIELD_SAVES_ONLY=1 a campaign shots run writes a few saves (with their map pictures) into IRONFIELD_SAVES,
@@ -975,7 +976,7 @@ sealed class ScreenHost : Game
             {
                 // Every tab of the settlement screen (docs/PLAYTEST.md PT2), at a town, a castle, a village and a fief of yours,
                 // with something in each: wounded, prisoners, a captive lord, an engine or two.
-                var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction >= 0 && s.Mercenaries.Count > 0);
+                var town = (townCulture != null ? c.S.Settlements.FirstOrDefault(s => s.Kind == SettlementKind.Town && s.Faction >= 0 && Factions.PeopleOf(s.Culture) == townCulture) : null) ?? c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction >= 0 && s.Mercenaries.Count > 0);
                 var castle = c.S.Settlements.First(s => s.Kind == SettlementKind.Castle && s.Faction == town.Faction);
                 var village = c.S.Settlements.First(s => s.Kind == SettlementKind.Village && s.Faction == town.Faction);
                 var fief = c.S.Settlements.Last(s => s.Kind == SettlementKind.Town && s.Faction == town.Faction);

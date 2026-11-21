@@ -279,7 +279,7 @@ partial class MapScreen
     Color rimLight = Color.Transparent;
 
     /// The old town climbing the hill behind the wall to its keep, faint with distance; a few dim lights at night.
-    void UpperTown(Rectangle p, Settlement town, int wallTop, Color c, bool night, Color lit, Random rng, bool flat, float keepAt)
+    void UpperTown(Rectangle p, Settlement town, int wallTop, Color c, bool night, Color lit, Random rng, bool flat, float keepAt, bool drawKeep = true)
     {
         int crest = p.X + (int)(p.Width * keepAt), peak = p.Y + (int)(p.Height * 0.3f), s = Math.Max(1, ui.U(2));
         // The hill: highest at the keep, falling away to the wall on both sides.
@@ -302,6 +302,7 @@ partial class MapScreen
             else Gable(x, top + ui.U(2), w, h, w / 3, c);
             if (on) ui.Rect(new Rectangle(x + w / 2 - ui.U(1), top - h + ui.U(4), ui.U(2), ui.U(2)), lit * 0.4f);
         }
+        if (!drawKeep) return;
         // The keep on the crest, its banner over the town.
         int kx = crest - ui.U(12), ky = peak - ui.U(9);
         ui.Rect(new Rectangle(kx, ky, ui.U(24), ui.U(27)), c);
@@ -319,6 +320,9 @@ partial class MapScreen
     void TownWall(Rectangle p, int top, Color c, bool night, Color lit, Color cloth, Random rng)
     {
         ui.Rect(new Rectangle(p.X, top, p.Width, p.Bottom - top), c);
+        ui.Rect(new Rectangle(p.X, top, p.Width, Math.Max(1, ui.U(1))), Color.Lerp(c, rimLight, 0.35f));
+        ui.Rect(new Rectangle(p.X, top + ui.U(2), p.Width, Math.Max(1, ui.U(1))), Kit.Mul(c, 0.78f));
+        for (int y = top + ui.U(8); y < p.Bottom; y += ui.U(7)) ui.Rect(new Rectangle(p.X, y, p.Width, Math.Max(1, ui.U(1))), Kit.Mul(c, 0.9f));
         for (int x = p.X; x < p.Right; x += ui.U(8)) ui.Rect(new Rectangle(x, top - ui.U(3), ui.U(4), ui.U(3)), c);
         for (int x = p.X + ui.U(70); x < p.Right - ui.U(30); x += ui.U(130 + rng.Next(50)))
         {
@@ -393,14 +397,33 @@ partial class MapScreen
                 }
                 Glow(x + ui.U(10), ground - ui.U(24)); Glow(x + ui.U(32), ground - ui.U(24));
                 break;
-            case "crimson": // a market hall under red banners
-                Gable(x, ground, ui.U(60), ui.U(36), ui.U(18), c);
-                foreach (int k in new[] { -6, 30, 66 })
+            case "crimson": // a grand guildhall & forum bell-tower under crimson banners
+            {
+                int s1 = Math.Max(1, ui.U(1));
+                Gable(x - ui.U(6), ground, ui.U(72), ui.U(42), ui.U(18), c);
+                // Arched forum colonnade windows on the upper storey.
+                for (int i = 0; i < 4; i++)
                 {
-                    ui.Rect(new Rectangle(x + ui.U(k), ground - ui.U(70), ui.U(1), ui.U(30)), c);
-                    ui.Rect(new Rectangle(x + ui.U(k + 1), ground - ui.U(70), ui.U(6), ui.U(14)), cloth);
+                    int ax = x + ui.U(2 + i * 16), ay = ground - ui.U(36);
+                    ui.Rect(new Rectangle(ax, ay, ui.U(7), ui.U(10)), night ? lit * 0.75f : Kit.Mul(c, 0.62f));
+                    ui.Rect(new Rectangle(ax + ui.U(2), ay - ui.U(2), ui.U(3), ui.U(2)), night ? lit * 0.75f : Kit.Mul(c, 0.62f));
+                }
+                // Central guild bell-turret rising above the ridge.
+                int tx = x + ui.U(22), ty = ground - ui.U(78);
+                ui.Rect(new Rectangle(tx, ty, ui.U(16), ui.U(24)), c);
+                ui.Rect(new Rectangle(tx + ui.U(15), ty, s1, ui.U(24)), Color.Lerp(c, rimLight, 0.5f));
+                Gable(tx - ui.U(2), ty, ui.U(20), 0, ui.U(14), c);
+                Glow(tx + ui.U(7), ty + ui.U(6));
+                int wv = (int)MathF.Round(MathF.Sin(t * 2.8f) * s1);
+                foreach (int k in new[] { -8, 30, 68 })
+                {
+                    int py = k == 30 ? ty - ui.U(24) : ground - ui.U(68);
+                    ui.Rect(new Rectangle(x + ui.U(k), py, s1, ui.U(24)), c);
+                    ui.Rect(new Rectangle(x + ui.U(k) + s1, py, ui.U(7), ui.U(12) + wv), cloth);
+                    ui.Rect(new Rectangle(x + ui.U(k) + s1, py + ui.U(5), ui.U(7), s1), Color.Lerp(cloth, Kit.Gilt, 0.4f));
                 }
                 break;
+            }
             default: // a church with a tall spire (blue roofs and quiet bells, and the rest)
                 Gable(x, ground, ui.U(44), ui.U(36), ui.U(14), c);
                 Gable(x + ui.U(44), ground, ui.U(16), ui.U(56), ui.U(30), c); Glow(x + ui.U(51), ground - ui.U(48));

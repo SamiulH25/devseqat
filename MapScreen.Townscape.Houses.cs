@@ -53,10 +53,22 @@ partial class MapScreen
         if (l.Culture == "league" && rng.Next(3) > 0) { StepGable(x, ground, w, h, c.Roof); roof = ui.U(12); }
         else
         {
-            Gable(x, ground - h, w, 0, roof, c.Roof);
+            int s1 = Math.Max(1, ui.U(1));
+            Gable(x - s1, ground - h, w + 2 * s1, 0, roof, c.Roof);
+            for (int ty = ui.U(4); ty < roof; ty += ui.U(4))
+            {
+                int inset = (int)(ty / (float)roof * (w + 2 * s1) / 2);
+                ui.Rect(new Rectangle(x - s1 + inset, ground - h - ty, w + 2 * s1 - 2 * inset, s1), Kit.Mul(c.Roof, 0.78f));
+            }
             ui.Rect(new Rectangle(x, ground - h, w, h), c.Wall);
+            ui.Rect(new Rectangle(x, ground - h, w, ui.U(2)), Color.Black * 0.22f); // eave shadow
+            ui.Rect(new Rectangle(x, ground - ui.U(4), w, ui.U(4)), Kit.Mul(c.Wall, 0.78f)); // stone plinth
             Edges(x, ground - h, w, h, c.Wall);
-            if (l.Day) ui.Rect(new Rectangle(x, ground - h + ui.U(10), w, ui.U(1)), Kit.Mul(c.Wall, 0.55f)); // a beam
+            var beam = Kit.Mul(c.Wall, l.Night ? 0.55f : 0.48f);
+            ui.Rect(new Rectangle(x, ground - h + ui.U(10), w, s1), beam); // horizontal beam
+            ui.Rect(new Rectangle(x + s1, ground - h, s1, h - ui.U(4)), beam);
+            ui.Rect(new Rectangle(x + w - 2 * s1, ground - h, s1, h - ui.U(4)), beam);
+            if (w >= ui.U(24)) ui.Rect(new Rectangle(x + w / 2, ground - h, s1, ui.U(10)), beam);
         }
         if (rng.Next(4) == 0)
         {
@@ -282,6 +294,13 @@ partial class MapScreen
         ui.Rect(new Rectangle(r.X + ui.U(30), r.Y - ui.U(17), ui.U(6), ui.U(10)), roof); // the chimney
         Smoke(r.X + ui.U(33), r.Y - ui.U(20), t, l.Night);
         ui.Rect(r, plaster);
+        ui.Rect(new Rectangle(r.X, r.Y, r.Width, ui.U(3)), Color.Black * 0.24f); // deep eave shadow
+        // Stone plinth along the tavern base.
+        var plinth = HeroWall(l, c, new Color(134, 128, 120));
+        ui.Rect(new Rectangle(r.X, r.Bottom - ui.U(7), r.Width, ui.U(7)), plinth);
+        ui.Rect(new Rectangle(r.X, r.Bottom - ui.U(7), r.Width, Math.Max(1, ui.U(1))), Kit.Mul(plinth, 0.72f));
+        for (int sx = r.X + ui.U(10); sx < r.Right - ui.U(6); sx += ui.U(14))
+            ui.Rect(new Rectangle(sx, r.Bottom - ui.U(6), Math.Max(1, ui.U(1)), ui.U(6)), Kit.Mul(plinth, 0.78f));
         if (l.Culture == "order") // the order builds its ground floors in grey stone
         {
             var stone = l.Night ? new Color(66, 62, 76) : new Color(150, 148, 156);
@@ -336,15 +355,37 @@ partial class MapScreen
             }
         var door = new Rectangle(r.X + ui.U(67), r.Bottom - ui.U(32), ui.U(24), ui.U(30));
         TavernDoor(door, r.Bottom, l, c, timber, lights);
-        if (l.Culture == "crimson") // a porch roof over the door, the house's banner hung from it
+        if (l.Culture == "crimson") // a pitched tiled porch over the door, banners on the posts, barrels by the wall
         {
-            int py = door.Y - ui.U(8);
-            for (int k = 0; k < ui.U(6); k += Math.Max(1, ui.U(1))) ui.Rect(new Rectangle(door.X - ui.U(10) + k, py + k, door.Width + ui.U(20) - 2 * k, Math.Max(1, ui.U(1))), roof);
-            ui.Rect(new Rectangle(door.X - ui.U(10), py + ui.U(6), ui.U(2), r.Bottom - py - ui.U(6)), timber);
-            ui.Rect(new Rectangle(door.Right + ui.U(8), py + ui.U(6), ui.U(2), r.Bottom - py - ui.U(6)), timber);
-            var red = l.Night ? new Color(110, 34, 34) : new Color(176, 52, 44);
-            ui.Rect(new Rectangle(door.X - ui.U(26), r.Y + upper + ui.U(4), ui.U(10), ui.U(18)), red);
-            ui.Rect(new Rectangle(door.X - ui.U(26), r.Y + upper + ui.U(22), ui.U(5), ui.U(3)), red);
+            int s1 = Math.Max(1, ui.U(1)), py = door.Y - ui.U(3), pw = door.Width + ui.U(20), px0 = door.X - ui.U(10);
+            Gable(px0, py, pw, 0, ui.U(8), roof);
+            for (int ty = ui.U(3); ty < ui.U(8); ty += ui.U(3))
+            {
+                int inset = (int)(ty / (float)ui.U(8) * pw / 2);
+                ui.Rect(new Rectangle(px0 + inset, py - ty, pw - 2 * inset, s1), Kit.Mul(roof, 0.72f));
+            }
+            ui.Rect(new Rectangle(px0, py, pw, s1), Color.Lerp(roof, c.Rim, 0.45f));
+            ui.Rect(new Rectangle(px0 + ui.U(1), py + s1, ui.U(2), r.Bottom - py - s1), timber);
+            ui.Rect(new Rectangle(px0 + pw - ui.U(3), py + s1, ui.U(2), r.Bottom - py - s1), timber);
+            ui.Line(new Vector2(px0 + ui.U(2), py + ui.U(6)), new Vector2(px0 + ui.U(7), py + s1), timber, 1);
+            ui.Line(new Vector2(px0 + pw - ui.U(2), py + ui.U(6)), new Vector2(px0 + pw - ui.U(7), py + s1), timber, 1);
+            // Crimson & gold pennants hung cleanly on the upper timber posts (never blocking windows).
+            var red = l.Night ? new Color(118, 36, 36) : new Color(184, 52, 44);
+            foreach (int bx in new[] { posts[1] - ui.U(3), posts[2] - ui.U(2) })
+            {
+                ui.Rect(new Rectangle(bx - s1, r.Y + ui.U(5), ui.U(9), s1), timber);
+                ui.Rect(new Rectangle(bx, r.Y + ui.U(6), ui.U(7), ui.U(15)), red);
+                ui.Rect(new Rectangle(bx + ui.U(2), r.Y + ui.U(21), ui.U(3), ui.U(2)), red);
+                ui.Rect(new Rectangle(bx + ui.U(3), r.Y + ui.U(9), s1, ui.U(8)), Color.Lerp(red, Kit.Gilt, 0.6f));
+            }
+            // Ale barrels sitting outside the right wall.
+            var wood = l.Night ? new Color(68, 46, 34) : new Color(128, 86, 52);
+            foreach (int bx in new[] { r.X + ui.U(2), r.Right - ui.U(10) })
+            {
+                ui.Rect(new Rectangle(bx, r.Bottom - ui.U(9), ui.U(7), ui.U(9)), wood);
+                ui.Rect(new Rectangle(bx, r.Bottom - ui.U(7), ui.U(7), s1), Kit.Mul(wood, 0.55f));
+                ui.Rect(new Rectangle(bx, r.Bottom - ui.U(3), ui.U(7), s1), Kit.Mul(wood, 0.55f));
+            }
         }
         TavernSign(r.Right, r.Y + ui.U(4), l, c, timber);
         return lights;

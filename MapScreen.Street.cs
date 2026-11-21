@@ -294,14 +294,14 @@ partial class MapScreen
         // The upper town on its hill at the right, the keep on the crest as a castle of its own.
         float keepAt = 0.82f;
         var upper = new Rectangle(0, ground - ui.U(150), ui.W, ui.U(150));
-        if (l.Build != "tent") UpperTown(upper, s, ground - ui.U(30), c.Far, l.Night, c.Lit, rng, l.Build == "white", keepAt);
+        if (l.Build != "tent") UpperTown(upper, s, ground - ui.U(30), c.Far, l.Night, c.Lit, rng, l.Build == "white", keepAt, drawKeep: false);
         int crest = (int)(ui.W * keepAt), hill = l.Build == "tent" ? ground - ui.U(58) : upper.Y + (int)(upper.Height * 0.3f) + ui.U(14); // tents have no upper town: the hold stands on a rise behind the camp
         int k = ui.U(2);
-        var rK = new Rectangle(crest - 14 * k, hill - 26 * k, 28 * k, 26 * k);
+        var rK = new Rectangle(crest - 15 * k, hill - 30 * k, 30 * k, 30 * k);
         Glow(rK, "KEEP", hover, open);
         if (l.Build == "tent") ui.Hills(new Rectangle(crest - ui.U(70), 0, ui.U(140), ui.H), hill + ui.U(2), ui.U(6), 0.3f, c.Far, 2); // the rise
-        ui.Castle(crest, hill, 2, Color.Lerp(c.Far, c.Mid, 0.55f), l.Day ? null : c.Lit);
-        ui.Rect(new Rectangle(crest + k, hill - 26 * k, 4 * k, 2 * k), cloth);
+        Keep(crest, hill, 2, l, c, cloth, t, hero: false);
+        if (C.IsPort(s)) HarbourMasts(full, ground - ui.U(30), l, c, cloth, s.Id);
         if (!l.Day) ui.VGrad(new Rectangle(0, ground - ui.U(56), ui.W, ui.U(26)), c.Lit * 0f, c.Lit * (l.Night ? 0.12f : 0.08f), 2);
         rimLight = c.Rim;
         if (l.Build == "log") Palisade(full, ground - ui.U(28), c.Mid);
@@ -311,7 +311,8 @@ partial class MapScreen
         Landmark(new Rectangle(lmX - (int)(ui.W * 0.58f), 0, ui.W, ui.H), l.Culture, ground, c.Mid, l.Night, c.Lit, cloth, t);
         var back = c with { Wall = Color.Lerp(c.Wall, c.Mid, 0.6f), Roof = Color.Lerp(c.Roof, c.Mid, 0.6f) };
         HouseRow(0, ui.W, ground - ui.U(6), l, back, new Random(s.Id * 13 + 5), t, false);
-        Ground(full, l, c, ground, t);
+        if (l.Water == "") CobbleStreet(full, l, c, ground, s.Id);
+        else Ground(full, l, c, ground, t);
         var lights = new List<(int X, int W)>();
         if (mx - (bx + bw) > ui.U(30)) lights.AddRange(HouseRow(bx + bw + ui.U(6), mx - ui.U(6), ground, l, c, rng, t, true));
         if (tx - (mx + mw) > ui.U(30)) lights.AddRange(HouseRow(mx + mw + ui.U(6), tx - ui.U(8), ground, l, c, rng, t, true));
@@ -319,6 +320,7 @@ partial class MapScreen
         if (l.Build == "tent") Herd(full, ground, c, s.Id, tx);
         if (l.Water == "") Folk(full, l, c, ground, s.Id, tx);
         Glow(rB, "BARRACKS", hover, open); Barracks(rB, l, c, cloth, t);
+        Guard(rB.X + ui.U(26), ground, l, c, cloth, true);
         Glow(rM, "MARKET", hover, open); Market(rM, l, c, t, lights);
         Glow(rT, "TAVERN", hover, open); lights.AddRange(Tavern(rT, l, c, cloth, t));
         rimLight = Color.Transparent;
@@ -331,24 +333,30 @@ partial class MapScreen
     {
         var full = new Rectangle(0, 0, ui.W, ui.H);
         int keepX = ui.W * 13 / 20, k = ui.U(3);
-        var rK = new Rectangle(keepX - 15 * k, ground - ui.U(13) - 27 * k, 30 * k, 27 * k + ui.U(13));
+        var rK = new Rectangle(keepX - 15 * k, ground - ui.U(14) - 31 * k, 30 * k, 31 * k + ui.U(14));
         var rY = new Rectangle(ui.U(16), ground - ui.U(70), ui.U(100), ui.U(70));
+        if (C.IsPort(s)) HarbourMasts(full, ground - ui.U(24), l, c, cloth, s.Id);
         var back = c with { Wall = Color.Lerp(c.Wall, c.Mid, 0.6f), Roof = Color.Lerp(c.Roof, c.Mid, 0.6f) };
-        HouseRow(rY.Right, ui.W, ground - ui.U(6), l, back, new Random(s.Id * 13 + 5), t, false); // the village under its walls
+        HouseRow(rY.Right, ui.W, ground - ui.U(6), l, back, new Random(s.Id * 13 + 5), t, false); // the bailey houses under its walls
+        if (l.Country is not ("Desert" or "Badlands" or "Tundra"))
+        {
+            Tree(keepX - ui.U(96), ground - ui.U(4), ui.U(34), l, c, rng);
+            Tree(keepX + ui.U(98), ground - ui.U(4), ui.U(38), l, c, rng);
+        }
         Glow(rK, "KEEP", hover, open);
-        // The mound, then the castle on it, its windows lit after dusk, the realm's flag at the top.
-        for (int m = 0; m < ui.U(14); m += Math.Max(1, ui.U(1)))
-            ui.Rect(new Rectangle(keepX - ui.U(90) - m * 3, ground - ui.U(14) + m, ui.U(180) + m * 6, Math.Max(1, ui.U(1))), Color.Lerp(c.Mid, c.Ground, m / (float)ui.U(14)));
-        ui.Castle(keepX, ground - ui.U(13), 3, Color.Lerp(c.Mid, c.Wall, 0.6f), l.Day ? null : c.Lit);
-        ui.Rect(new Rectangle(keepX + k, ground - ui.U(13) - 26 * k, 4 * k, 2 * k), cloth);
-        Ground(full, l, c, ground, t);
+        if (l.Water == "") CobbleStreet(full, l, c, ground, s.Id);
+        else Ground(full, l, c, ground, t);
+        Keep(keepX, ground - ui.U(14), 3, l, c, cloth, t, hero: true);
         rimLight = c.Rim;
         var lights = new List<(int X, int W)>();
-        if (keepX - ui.U(110) > rY.Right + ui.U(30)) lights.AddRange(HouseRow(rY.Right + ui.U(14), keepX - ui.U(110), ground, l, c, rng, t, true));
+        if (keepX - ui.U(110) > rY.Right + ui.U(64)) lights.AddRange(HouseRow(rY.Right + ui.U(42), keepX - ui.U(110), ground, l, c, rng, t, true));
         if (ui.W - ui.U(8) > keepX + ui.U(130)) lights.AddRange(HouseRow(keepX + ui.U(120), ui.W - ui.U(8), ground, l, c, rng, t, true));
         if (l.Build == "tent") Herd(full, ground, c, s.Id, rY.Right - ui.U(200));
-        Folk(full, l, c, ground, s.Id, rY.Right - ui.U(196));
         Glow(rY, "YARD", hover, open); Barracks(rY, l, c, cloth, t);
+        // Men-at-arms flanking the keep's stone ramp and a warhorse tethered by the yard.
+        Warhorse(rY.Right + ui.U(12), ground, l, c, cloth);
+        Guard(keepX - ui.U(34), ground, l, c, cloth, true);
+        Guard(keepX + ui.U(26), ground, l, c, cloth, true);
         rimLight = Color.Transparent;
         Footing(rY, ground, "YARD", hover, open); Footing(new Rectangle(keepX - ui.U(60), 0, ui.U(120), 0), ground, "KEEP", hover, open);
         Spot("YARD", rY); Spot("KEEP", rK);
@@ -357,31 +365,39 @@ partial class MapScreen
     void VillageStreet(Settlement s, TownLook l, TownColours c, Color cloth, Random rng, int ground, float t, string? hover, string? open)
     {
         var full = new Rectangle(0, 0, ui.W, ui.H);
+        bool leafy = l.Country is not ("Desert" or "Badlands" or "Tundra");
+        if (leafy)
+        {
+            Tree(ui.U(18), ground - ui.U(4), ui.U(44), l, c, rng);
+            Tree(ui.W * 2 / 5, ground - ui.U(8), ui.U(40), l, c, rng);
+            Tree(ui.W * 3 / 4, ground - ui.U(8), ui.U(46), l, c, rng);
+            Tree(ui.W - ui.U(16), ground - ui.U(4), ui.U(42), l, c, rng);
+        }
         var back = c with { Wall = Color.Lerp(c.Wall, c.Mid, 0.6f), Roof = Color.Lerp(c.Roof, c.Mid, 0.6f) };
         HouseRow(ui.W / 5, ui.W - ui.U(30), ground - ui.U(6), l, back, new Random(s.Id * 13 + 5), t, false);
-        Ground(full, l, c, ground, t);
+        if (l.Water == "") VillageLane(full, l, c, ground, s.Id);
+        else Ground(full, l, c, ground, t);
         rimLight = c.Rim;
-        var rG = new Rectangle(ui.U(30), ground - ui.U(44), ui.U(84), ui.U(44));
-        int ew = ui.U(64), eh = ui.U(34), ex = ui.W * 11 / 20;
+        var rG = new Rectangle(ui.U(28), ground - ui.U(46), ui.U(88), ui.U(46));
+        int ew = ui.U(74), eh = ui.U(34), ex = ui.W * 11 / 20;
         var rE = new Rectangle(ex, ground - eh - ui.U(24), ew, eh + ui.U(24));
         var lights = new List<(int X, int W)>();
-        if (ex - ui.U(10) > rG.Right + ui.U(40)) lights.AddRange(HouseRow(rG.Right + ui.U(20), ex - ui.U(10), ground, l, c, rng, t, true));
-        lights.AddRange(HouseRow(ex + ew + ui.U(12), ui.W - ui.U(8), ground, l, c, rng, t, true));
+        SplitFence(rG.Right + ui.U(4), ex - ui.U(12), ground, l);
+        if (ex - ui.U(16) > rG.Right + ui.U(46)) lights.AddRange(HouseRow(rG.Right + ui.U(22), ex - ui.U(16), ground, l, c, rng, t, true));
+        lights.AddRange(HouseRow(ex + ew + ui.U(16), ui.W - ui.U(8), ground, l, c, rng, t, true));
+        Haystack(rG.Right + ui.U(4), ground, l, c);
         if (l.Build == "tent") Herd(full, ground, c, s.Id, ex - ui.U(180));
         Glow(rE, "ELDERS", hover, open);
-        var elders = new Random(s.Id * 3 + 1);
-        switch (l.Build)
+        if (l.Build == "tent")
         {
-            case "white": WhiteHouse(ex, ground, ew, eh, l, c, elders, lights); break;
-            case "log": LogHouse(ex, ground, ew, eh, l, c, elders, lights, t); break;
-            case "tent": Yurt(ex, ground, ew, l, c, elders, lights, t); break;
-            default: TimberHouse(ex, ground, ew, eh, l, c, elders, lights, t); break;
+            var elders = new Random(s.Id * 3 + 1);
+            Yurt(ex, ground, ew, l, c, elders, lights, t);
+            ui.Rect(new Rectangle(ex + ew / 2, rE.Y - ui.U(14), Math.Max(1, ui.U(1)), ui.U(16)), Kit.Mul(c.Roof, 0.6f));
+            ui.Rect(new Rectangle(ex + ew / 2 + ui.U(1), rE.Y - ui.U(14), ui.U(10), ui.U(5)), cloth);
+            if (!l.Day) Lantern(new Vector2(ex + ui.U(6), ground - ui.U(14)), c, Kit.Mul(c.Roof, 0.6f));
         }
-        // The elders' house is marked: a pennant over its roof, a lamp by its door.
-        ui.Rect(new Rectangle(ex + ew / 2, rE.Y - ui.U(14), Math.Max(1, ui.U(1)), ui.U(16)), Kit.Mul(c.Roof, 0.6f));
-        ui.Rect(new Rectangle(ex + ew / 2 + ui.U(1), rE.Y - ui.U(14), ui.U(10), ui.U(5)), cloth);
-        if (!l.Day) Lantern(new Vector2(ex + ui.U(6), ground - ui.U(14)), c, Kit.Mul(c.Roof, 0.6f));
-        Glow(rG, "GREEN", hover, open); Green(rG, l, c, cloth);
+        else EldersHall(rE, l, c, cloth, t, lights);
+        Glow(rG, "GREEN", hover, open); Green(rG, l, c, cloth, t);
         rimLight = Color.Transparent;
         Footing(rG, ground, "GREEN", hover, open); Footing(new Rectangle(ex, 0, ew, 0), ground, "ELDERS", hover, open);
         Spot("GREEN", rG); Spot("ELDERS", rE);
@@ -401,9 +417,12 @@ partial class MapScreen
         var shade = Kit.Mul(stone, 0.72f);
         var hall = new Rectangle(r.X + ui.U(20), ground - ui.U(44), ui.U(52), ui.U(44));
         ui.Rect(hall, stone);
-        for (int y = hall.Y + ui.U(8); y < ground; y += ui.U(8)) ui.Rect(new Rectangle(hall.X, y, hall.Width, s1), Kit.Mul(stone, 0.9f)); // courses
+        for (int y = hall.Y + ui.U(8); y < ground; y += ui.U(8)) ui.Rect(new Rectangle(hall.X, y, hall.Width, s1), Kit.Mul(stone, 0.88f)); // courses
+        foreach (var (ax, ay) in new[] { (4, 10), (38, 18), (6, 26), (40, 32) })
+            ui.Rect(new Rectangle(hall.X + ui.U(ax), hall.Y + ui.U(ay), ui.U(7), ui.U(5)), Kit.Mul(stone, 0.92f));
         for (int x = hall.X; x < hall.Right - ui.U(3); x += ui.U(8)) ui.Rect(new Rectangle(x, hall.Y - ui.U(4), ui.U(5), ui.U(4)), stone);
         ui.Rect(new Rectangle(hall.X, hall.Y, hall.Width, s1), Color.Lerp(stone, c.Rim, 0.5f));
+        ui.Rect(new Rectangle(hall.X, hall.Y + ui.U(2), hall.Width, s1), shade); // corbel shadow
         ui.Rect(new Rectangle(hall.Right - ui.U(3), hall.Y, ui.U(3), hall.Height), shade);
         // The tower at its left, with slits and the flag.
         var tower = new Rectangle(r.X, ground - ui.U(66), ui.U(24), ui.U(66));
@@ -424,6 +443,14 @@ partial class MapScreen
         ui.Rect(gate, l.Day ? new Color(36, 30, 28) : Color.Lerp(new Color(60, 36, 24), c.Lit, 0.35f));
         for (int x = gate.X + ui.U(2); x < gate.Right; x += ui.U(4)) ui.Rect(new Rectangle(x, gate.Y, s1, gate.Height - ui.U(6)), new Color(70, 66, 64));
         ui.Rect(new Rectangle(gate.X, gate.Y + ui.U(6), gate.Width, s1), new Color(70, 66, 64));
+        if (!l.Day)
+            foreach (int tx in new[] { gate.X - ui.U(5), gate.Right + ui.U(4) })
+            {
+                var tp = new Vector2(tx, gate.Y + ui.U(7));
+                ui.Rect(new Rectangle(tx, gate.Y + ui.U(7), s1, ui.U(4)), shade);
+                ui.Disc(tp, ui.U(7), c.Lit * 0.14f); ui.Disc(tp, ui.U(3), c.Lit * 0.28f);
+                ui.Rect(new Rectangle(tx - s1, gate.Y + ui.U(5), ui.U(2), ui.U(2)), new Color(255, 228, 148));
+            }
         // Banners either side of the gate, pointed at the foot.
         foreach (int bx in new[] { hall.X + ui.U(6), hall.Right - ui.U(17) })
         {
@@ -513,15 +540,17 @@ partial class MapScreen
     }
 
     /// The village green: the muster pole with the realm's colours, the well under its little roof, and a few men waiting.
-    void Green(Rectangle r, TownLook l, TownColours c, Color cloth)
+    void Green(Rectangle r, TownLook l, TownColours c, Color cloth, float t)
     {
         int ground = r.Bottom, s1 = Math.Max(1, ui.U(1));
+        int wave = (int)MathF.Round(MathF.Sin(t * 2.8f) * s1);
         var wood = l.Night ? new Color(64, 46, 36) : new Color(120, 84, 52);
         var stone = HeroWall(l, c, new Color(150, 142, 128));
         int pole = r.X + ui.U(6);
-        ui.Rect(new Rectangle(pole, ground - ui.U(44), ui.U(2), ui.U(44)), wood);
-        ui.Rect(new Rectangle(pole + ui.U(2), ground - ui.U(43), ui.U(16), ui.U(10)), cloth);
-        ui.Rect(new Rectangle(pole + ui.U(2), ground - ui.U(38), ui.U(16), s1), Kit.Mul(cloth, 0.7f));
+        ui.Rect(new Rectangle(pole - ui.U(2), ground - ui.U(2), ui.U(6), ui.U(2)), stone); // stone socket
+        ui.Rect(new Rectangle(pole, ground - ui.U(44), ui.U(2), ui.U(42)), wood);
+        ui.Rect(new Rectangle(pole + ui.U(2), ground - ui.U(43), ui.U(16), ui.U(10) + wave), cloth);
+        ui.Rect(new Rectangle(pole + ui.U(2), ground - ui.U(38), ui.U(16), s1), Color.Lerp(cloth, Kit.Gilt, 0.45f));
         int wx = r.X + ui.U(24);
         ui.Rect(new Rectangle(wx, ground - ui.U(10), ui.U(22), ui.U(10)), stone);
         ui.Rect(new Rectangle(wx - s1, ground - ui.U(11), ui.U(22) + 2 * s1, ui.U(2)), Color.Lerp(stone, c.Rim, 0.4f));
@@ -532,17 +561,27 @@ partial class MapScreen
         Gable(wx - ui.U(2), ground - ui.U(28), ui.U(26), 0, ui.U(7), c.Roof);
         ui.Rect(new Rectangle(wx + ui.U(11), ground - ui.U(22), s1, ui.U(7)), Kit.Mul(wood, 0.8f));
         ui.Rect(new Rectangle(wx + ui.U(9), ground - ui.U(15), ui.U(4), ui.U(4)), Kit.Mul(wood, 1.2f));
-        Color[] coats = { new(120, 60, 50), new(60, 80, 110), new(110, 96, 60), new(80, 96, 64) };
+        if (!l.Day) Lantern(new Vector2(wx + ui.U(20), ground - ui.U(21)), c, wood);
+        Color[] coats = { new(146, 56, 48), new(60, 84, 116), new(116, 98, 62), new(80, 96, 64) };
         for (int i = 0; i < 3; i++)
         {
             var coat = coats[i];
-            if (l.Night) coat = Kit.Mul(coat, 0.45f); else if (l.Dusk) coat = Kit.Mul(coat, 0.75f);
-            int x = r.X + ui.U(54 + i * 9), h = ui.U(15 + i % 2 * 2);
+            if (l.Night) coat = Kit.Mul(coat, 0.48f); else if (l.Dusk) coat = Kit.Mul(coat, 0.78f);
+            int x = r.X + ui.U(54 + i * 10), h = ui.U(16 + i % 2 * 2);
+            ui.Rect(new Rectangle(x - s1, ground, ui.U(7), ui.U(2)), Color.Black * 0.25f); // ground shadow
             ui.Rect(new Rectangle(x, ground - h + ui.U(5), ui.U(5), h - ui.U(8)), coat);
-            ui.Rect(new Rectangle(x + ui.U(1), ground - ui.U(3), s1, ui.U(3)), Kit.Mul(coat, 0.5f));
-            ui.Rect(new Rectangle(x + ui.U(3), ground - ui.U(3), s1, ui.U(3)), Kit.Mul(coat, 0.5f));
+            ui.Rect(new Rectangle(x, ground - ui.U(6), ui.U(5), s1), Kit.Mul(coat, 0.55f)); // belt
+            ui.Rect(new Rectangle(x + ui.U(1), ground - ui.U(3), s1, ui.U(3)), Kit.Mul(coat, 0.45f));
+            ui.Rect(new Rectangle(x + ui.U(3), ground - ui.U(3), s1, ui.U(3)), Kit.Mul(coat, 0.45f));
             ui.Rect(new Rectangle(x + ui.U(1), ground - h + ui.U(1), ui.U(3), ui.U(4)), l.Night ? new Color(150, 100, 70) : new Color(214, 170, 130));
-            if (i == 1) ui.Rect(new Rectangle(x + ui.U(5), ground - h - ui.U(4), s1, h + ui.U(1)), wood); // a pitchfork for a spear
+            ui.Rect(new Rectangle(x, ground - h, ui.U(5), s1), i == 2 ? (l.Night ? new Color(110, 96, 60) : new Color(196, 168, 96)) : Kit.Mul(coat, 0.65f)); // hat/hood
+            if (i == 1)
+            {
+                ui.Rect(new Rectangle(x + ui.U(5), ground - h - ui.U(4), s1, h + ui.U(1)), wood); // pitchfork
+                ui.Rect(new Rectangle(x + ui.U(4), ground - h - ui.U(5), ui.U(3), s1), Kit.Mul(wood, 1.3f));
+                ui.Rect(new Rectangle(x + ui.U(4), ground - h - ui.U(7), s1, ui.U(2)), Kit.Mul(wood, 1.3f));
+                ui.Rect(new Rectangle(x + ui.U(6), ground - h - ui.U(7), s1, ui.U(2)), Kit.Mul(wood, 1.3f));
+            }
         }
     }
 }
