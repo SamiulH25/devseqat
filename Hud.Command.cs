@@ -108,11 +108,15 @@ sealed partial class Hud
         TextC(label, r.Center.X, r.Y + U(3), hover ? Color.White : c, 1);
     }
 
+    readonly List<Vector2> ringMen = new(64);
+    readonly List<float> ringAlong = new(64), ringDeep = new(64);
+
     /// A footprint of the division's colour under each of its companies (command view): a box round the men's ranks, turned
     /// along its ranks, so you see at a glance who is whose without rings crossing the field.
     void DivisionRings()
     {
         var vp = new Viewport(0, 0, W, H);
+        Span<(float A, float B)> corners = stackalloc (float, float)[5];
         foreach (var d in B.DivisionsOf(0))
         {
             var col = (d == Div ? Gold : DivisionColour(d)) * (d == Div ? 0.9f : 0.6f);
@@ -121,23 +125,33 @@ sealed partial class Hud
             {
                 if (s.Alive == 0) continue;
                 // The ranks' own lie (the long axis of the men), not the order's facing, and the stragglers left out.
-                var men = s.Units.Where(u => !u.Dead).Select(u => u.Pos - s.Center).ToList();
-                if (men.Count == 0) continue;
+                ringMen.Clear();
+                var units = s.Units;
+                var sc = s.Center;
+                for (int i = 0; i < units.Count; i++) if (!units[i].Dead) ringMen.Add(units[i].Pos - sc);
+                int mc = ringMen.Count;
+                if (mc == 0) continue;
                 float cxx = 0, cyy = 0, cxy = 0;
-                foreach (var o in men) { cxx += o.X * o.X; cyy += o.Y * o.Y; cxy += o.X * o.Y; }
+                for (int i = 0; i < mc; i++) { var o = ringMen[i]; cxx += o.X * o.X; cyy += o.Y * o.Y; cxy += o.X * o.Y; }
                 float ang = 0.5f * MathF.Atan2(2 * cxy, cxx - cyy);
                 var rt = new Vector2(MathF.Cos(ang), MathF.Sin(ang));
                 var f = new Vector2(-rt.Y, rt.X);
-                var along = men.Select(o => Vector2.Dot(o, rt)).OrderBy(v => v).ToList();
-                var deep = men.Select(o => Vector2.Dot(o, f)).OrderBy(v => v).ToList();
-                int lo = men.Count / 40, hi = men.Count - 1 - men.Count / 40;
-                float minR = along[lo], maxR = along[hi], minF = deep[lo], maxF = deep[hi];
+                ringAlong.Clear(); ringDeep.Clear();
+                for (int i = 0; i < mc; i++) { var o = ringMen[i]; ringAlong.Add(Vector2.Dot(o, rt)); ringDeep.Add(Vector2.Dot(o, f)); }
+                ringAlong.Sort(); ringDeep.Sort();
+                int lo = mc / 40, hi = mc - 1 - mc / 40;
+                float minR = ringAlong[lo], maxR = ringAlong[hi], minF = ringDeep[lo], maxF = ringDeep[hi];
                 const float pad = 1.8f;
-                var corners = new[] { (minR - pad, minF - pad), (maxR + pad, minF - pad), (maxR + pad, maxF + pad), (minR - pad, maxF + pad) };
+                corners[0] = (minR - pad, minF - pad);
+                corners[1] = (maxR + pad, minF - pad);
+                corners[2] = (maxR + pad, maxF + pad);
+                corners[3] = (minR - pad, maxF + pad);
+                corners[4] = corners[0];
                 Vector2? prev = null;
-                foreach (var (a, b) in corners.Append(corners[0]))
+                for (int i = 0; i < 5; i++)
                 {
-                    var p = s.Center + rt * a + f * b;
+                    var (a, b) = corners[i];
+                    var p = sc + rt * a + f * b;
                     var v = vp.Project(new Vector3(p.X, B.Terrain.Height(p) + 0.3f, p.Y), Proj, View, Matrix.Identity);
                     if (v.Z is <= 0 or >= 1) { prev = null; continue; }
                     var sp = new Vector2(v.X, v.Y);

@@ -122,7 +122,7 @@ public sealed class UnitType
     public bool Huge => Size >= 1.6f;
     /// Bound to its boss: loses heart when he falls.
     public bool Bound => Has("craven") || Has("pack");
-    public bool Has(string trait) => Traits.Contains(trait);
+    public bool Has(string trait) => Traits.Length > 0 && Array.IndexOf(Traits, trait) >= 0;
     /// Has the "flying" trait (set once on load: the sim asks every tick).
     public bool Flying;
     public int Ammo;

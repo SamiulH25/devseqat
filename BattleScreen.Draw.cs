@@ -39,7 +39,9 @@ partial class BattleScreen
             DrawLines();
         }
         FrameProf.Begin("hud");
-        SyncHud();
+        if (!hudSynced) SyncHud();
+        else { hud.View = view; hud.Proj = proj; hud.Mouse = shotMouse ?? (shotNoMouse ? new Point(-999, -999) : ms.Position); }
+        hudSynced = false;
         if (!hudHidden)
         {
             hud.Draw();
@@ -289,24 +291,34 @@ partial class BattleScreen
     }
 
     readonly float[] stepTimer = new float[6];
+    float groundStepAcc;
 
     /// What the ground does under moving men (docs/archive/TERRAIN.md T8): dust under galloping hooves, splashes at fords and in water,
     /// mud thrown up, leaves shaken down in woods; and near the camera, their sounds (splash, squelch, rustle, bridge, snow, gravel).
     void GroundSteps(float dt)
     {
+        groundStepAcc += dt;
+        if (groundStepAcc < 0.05f) return;
+        dt = groundStepAcc;
+        groundStepAcc = 0;
         var t = battle.Terrain;
+        bool hasWater = t.Rivers.Count > 0;
         var ear = new Vector2(focusPoint.X, focusPoint.Z);
         float range = 25 + 30 * blend;
+        float range2 = range * range;
         Span<int> heard = stackalloc int[6]; // splash, squelch, rustle, hollow, snow, gravel
         Span<Vector2> where = stackalloc Vector2[6];
-        foreach (var u in battle.Units)
+        var units = battle.Units;
+        for (int ui = 0; ui < units.Count; ui++)
         {
-            if (u.Routing && u.Active && !u.Mounted && fx.NextSingle() < dt * 1.5f && u.Vel.LengthSquared() > 4) // men running for their lives kick up dust
+            var u = units[ui];
+            if (!u.Active) continue;
+            if (u.Routing && !u.Mounted && fx.NextSingle() < dt * 1.5f && u.Vel.LengthSquared() > 4) // men running for their lives kick up dust
                 Spray(u.Pos - u.Dir * 0.4f, 0.1f, 1, battle.Weather.Rain > 0.3f ? new Color(96, 82, 60) : new Color(176, 160, 124), 0.5f, 1.0f, 0.22f, false, 0.5f);
             float speed = MathF.Abs(u.Speed);
-            if (!u.Active || speed < 1.2f) continue;
+            if (speed < 1.2f) continue;
             var kind = t.GroundAt(u.Pos);
-            bool wet = t.WaterDepth(u.Pos) > 0.05f, fast = speed > 5.5f;
+            bool wet = hasWater && t.WaterDepth(u.Pos) > 0.05f, fast = speed > 5.5f;
             int cue = -1;
             if (wet)
             {
@@ -332,7 +344,7 @@ partial class BattleScreen
             else if (kind is GroundKind.Road or GroundKind.Street or GroundKind.Stony) cue = 5;
             else if (u.Mounted && fast && fx.NextSingle() < dt * 9)
                 Spray(u.Pos - u.HeadingDir * 0.8f, 0.1f, 1, battle.Weather.Rain > 0.3f ? new Color(96, 82, 60) : new Color(176, 160, 124), 0.6f, 1.2f, 0.3f, false, 0.7f);
-            if (cue >= 0 && Vector2.DistanceSquared(u.Pos, ear) < range * range) { heard[cue] += u.Mounted ? 3 : 1; where[cue] = u.Pos; }
+            if (cue >= 0 && Vector2.DistanceSquared(u.Pos, ear) < range2) { heard[cue] += u.Mounted ? 3 : 1; where[cue] = u.Pos; }
         }
         var audio = host.Audio;
         if (audio == null || !audio.Enabled) return;
@@ -419,36 +431,54 @@ partial class BattleScreen
         corpseTouched.Clear();
         drawQueue3D.Clear();
         float bNow = battle.Time;
+        float near3D = blend < 0.5f ? 15f : 14f;
+        float mid3D = blend < 0.5f ? 38f : 36f;
+        float near3DSq = near3D * near3D, mid3DSq = mid3D * mid3D;
+        int d0Count = 0;
         // units3D already initialized above for 3D banners
-        foreach (var u in battle.Units)
+        var allUnits = battle.Units;
+        for (int ui = 0; ui < allUnits.Count; ui++)
         {
+            var u = allUnits[ui];
             if (u.Fled) continue;
             if (u.Dead && bNow > 0 && bNow - u.DiedAt > (forSun ? 0.8f : 4.2f)) continue; // ascended spirits cast no shadow and clear cleanly
             if (deploying && !battle.Options.Scouted && u.Team == 1 && !u.IsLeader) continue; // unscouted: banners only
             if (u.Team == 1 && !u.IsLeader && !battle.Shown(u.Squad)) continue; // hidden by a crest or a wood
             float h = t.Height(u.Pos);
             if (!forSun && !u.IsPlayer && u.Team == 0 && blend < 0.5f && LensFill(u.Pos, h)) continue; // friends don't fill the lens
-            float rear = RearOf(u, !forSun);
             float seenRad = u.Dead ? 5f : MathF.Max(u.Mounted ? 2.5f : 1.5f, u.Type.Size * (u.Type.Flying ? 3.5f : 1.5f));
             if (!Seen(u.Pos, h + (u.Dead ? 2.5f : u.Altitude), seenRad)) continue; // rising spirits or a wyvern on the wing
             if (do3D)
             {
-                var look = puppet3D!.ExactLook ? u.Type.Look : Variety.Of(u);
                 bool wisp = false;
                 if (u.Dead && bNow > 0)
                 {
-                    float ft = (look.Beast ? Ironfield.Fall.Plain : u.DiedFall) switch { Ironfield.Fall.Saddle => 0.75f, Ironfield.Fall.Flung => 0.6f, _ => 0.45f + Ease.Hash(u.Index) * 0.3f };
+                    float ft = (u.Type.Look.Beast ? Ironfield.Fall.Plain : u.DiedFall) switch { Ironfield.Fall.Saddle => 0.75f, Ironfield.Fall.Flung => 0.6f, _ => 0.45f + Ease.Hash(u.Index) * 0.3f };
                     if (bNow - u.DiedAt >= ft) wisp = true;
                 }
                 if (!wisp)
                 {
-                    float d3Sq = Vector3.DistanceSquared(new Vector3(u.Pos.X, h + 1f, u.Pos.Y), eye);
-                    int det = forSun ? (d3Sq < 16f * 16f ? 1 : 2) : (d3Sq < 40f * 40f ? 0 : d3Sq < 125f * 125f ? 1 : 2);
+                    int det;
+                    if (forSun) det = 2;
+                    else if (u.IsPlayer) det = 0;
+                    else
+                    {
+                        float d3Sq = Vector3.DistanceSquared(new Vector3(u.Pos.X, h + 1f, u.Pos.Y), eye);
+                        if (d3Sq < near3DSq)
+                        {
+                            if (d0Count < 48 || d3Sq < 100f) { det = 0; d0Count++; }
+                            else det = 1;
+                        }
+                        else det = d3Sq < mid3DSq ? 1 : 2;
+                    }
+                    // Far LOD (Detail 2, alive) never reads Variety look fields, so skip Variety.Of and RearOf for a big win.
+                    var look = (det >= 2 && !u.Dead) || puppet3D!.ExactLook ? u.Type.Look : Variety.Of(u);
+                    float rear = det >= 2 && !u.Dead ? 0f : RearOf(u, !forSun);
                     drawQueue3D.Add((u, h, det, rear, look));
                     continue;
                 }
             }
-            puppet.Rear = rear;
+            puppet.Rear = RearOf(u, !forSun);
             if (u.Dead && bNow - u.DiedAt > 1f)
             {
                 int cx = Math.Clamp((int)MathF.Floor(u.Pos.X / 0.9f) + 256, 0, 511);
@@ -477,8 +507,8 @@ partial class BattleScreen
                     wp.ShadowOnly = forSun;
                     wp.BeginCamera(viewer);
                     wp.PendingHaze.Clear();
-                    int from = w * qCount / nW, to = (w + 1) * qCount / nW;
-                    for (int i = from; i < to; i++)
+                    // Strided partitioning spreads Detail 0/1/2 units evenly across all worker cores (Units are clustered by squad).
+                    for (int i = w; i < qCount; i += nW)
                     {
                         var item = drawQueue3D[i];
                         wp.Detail = item.Detail;

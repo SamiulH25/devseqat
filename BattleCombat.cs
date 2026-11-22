@@ -467,27 +467,47 @@ public partial class Battle
     /// Braced spears catch a horse that rides onto their points (their reach beats a couched lance).
     void Braces()
     {
-        foreach (var b in Units)
+        if (!anyMounted0 && !anyMounted1) return;
+        var units = Units;
+        for (int ui = 0; ui < units.Count; ui++)
         {
-            if (!b.Active || b.BraceCd > 0 || !Braced(b)) continue;
+            var b = units[ui];
+            if (!b.Active || b.BraceCd > 0) continue;
+            if (b.Team == 0 ? !anyMounted1 : !anyMounted0) continue;
+            if (!Braced(b)) continue;
             float reach = ReachOf(b) + BraceExtra * (1 + b.Mods.Brace); // set spears reach further
-            foreach (var u in Near(b.Pos, reach + 0.5f, nearBrace))
+            float sr = reach + 0.5f;
+            var bp = b.Pos;
+            int x0 = CellOf(bp.X - sr), x1 = CellOf(bp.X + sr), z0 = CellOf(bp.Y - sr), z1 = CellOf(bp.Y + sr);
+            bool hit = false;
+            for (int z = z0; z <= z1 && !hit; z++)
             {
-                if (!u.Active || !u.Mounted || u.Team == b.Team) continue;
-                if (u.IsPlayer && b.Type.Tier < 4 && Perk("KnightOfTheCharge")) continue; // their points do not stop your charge
-                var to = u.Pos - b.Pos;
-                float d = to.Length();
-                if (d > reach || d < 0.01f || Vector2.Dot(to / d, b.Dir) < 0.5f) continue;
-                float closing = Vector2.Dot(u.Vel - b.Vel, -to / d);
-                if (closing < 5) continue;
-                b.BraceCd = 1.5f;
-                b.Action = UnitAction.Recover; // shows the thrust
-                b.Swing = AttackDir.Thrust;
-                b.ActionTimer = b.Type.Recover;
-                HitHorse(u, closing * (b.Type.Class == UnitClass.Skirmisher ? 8 : 4.5f) * (1 + b.Mods.Brace), b);
-                Sound(Cue.LanceImpact, u.Pos, priority: u.IsPlayer);
-                if (u.Mounted) { u.Speed *= 0.25f; Stagger(u, 0.6f); }
-                break;
+                int row = z * GridN;
+                for (int x = x0; x <= x1 && !hit; x++)
+                {
+                    var cell = cells[row + x];
+                    int cnt = cell.Count;
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        var u = cell[i];
+                        if (!u.Active || !u.Mounted || u.Team == b.Team) continue;
+                        if (u.IsPlayer && b.Type.Tier < 4 && Perk("KnightOfTheCharge")) continue; // their points do not stop your charge
+                        var to = u.Pos - bp;
+                        float d = to.Length();
+                        if (d > reach || d < 0.01f || Vector2.Dot(to / d, b.Dir) < 0.5f) continue;
+                        float closing = Vector2.Dot(u.Vel - b.Vel, -to / d);
+                        if (closing < 5) continue;
+                        b.BraceCd = 1.5f;
+                        b.Action = UnitAction.Recover; // shows the thrust
+                        b.Swing = AttackDir.Thrust;
+                        b.ActionTimer = b.Type.Recover;
+                        HitHorse(u, closing * (b.Type.Class == UnitClass.Skirmisher ? 8 : 4.5f) * (1 + b.Mods.Brace), b);
+                        Sound(Cue.LanceImpact, u.Pos, priority: u.IsPlayer);
+                        if (u.Mounted) { u.Speed *= 0.25f; Stagger(u, 0.6f); }
+                        hit = true;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -495,24 +515,41 @@ public partial class Battle
     /// Couched lances: the point is a segment ahead of the horse; damage comes from the closing speed alone.
     void Lances()
     {
-        foreach (var u in Units)
+        if (!anyMounted0 && !anyMounted1) return;
+        var units = Units;
+        for (int ui = 0; ui < units.Count; ui++)
         {
+            var u = units[ui];
             if (!u.Active || !u.Couched || !u.Mounted) continue;
             var hd = u.HeadingDir;
             Vector2 a = u.Pos + hd * LanceFrom, b = u.Pos + hd * LanceTip;
-            foreach (var t in Near((a + b) / 2, 2, nearBrace))
+            var mid = (a + b) * 0.5f;
+            int x0 = CellOf(mid.X - 2), x1 = CellOf(mid.X + 2), z0 = CellOf(mid.Y - 2), z1 = CellOf(mid.Y + 2);
+            bool hit = false;
+            for (int z = z0; z <= z1 && !hit; z++)
             {
-                if (!t.Active || t.Team == u.Team) continue;
-                float r = t.Mounted ? 0.9f : 0.35f;
-                if (DistToSegment(t.Pos, a, b) > r) continue;
-                float closing = Vector2.Dot(u.Vel - t.Vel, hd);
-                if (closing < 4) continue;
-                u.Swing = AttackDir.Thrust;
-                Hit(u, t, (10 + closing * 4.2f * Terrain.GroundDefAt(t.Pos).Charge) * (u.IsPlayer ? (1 + 0.2f * RidingEdge) * (Perk("Lancer") ? 1.25f : 1) : 1) * (1 + u.Mods.Charge), false, lance: true);
-                u.Couched = false;
-                u.Cooldown = 1.8f;
-                u.Contact = true;
-                break;
+                int row = z * GridN;
+                for (int x = x0; x <= x1 && !hit; x++)
+                {
+                    var cell = cells[row + x];
+                    int cnt = cell.Count;
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        var t = cell[i];
+                        if (!t.Active || t.Team == u.Team) continue;
+                        float r = t.Mounted ? 0.9f : 0.35f;
+                        if (DistToSegment(t.Pos, a, b) > r) continue;
+                        float closing = Vector2.Dot(u.Vel - t.Vel, hd);
+                        if (closing < 4) continue;
+                        u.Swing = AttackDir.Thrust;
+                        Hit(u, t, (10 + closing * 4.2f * Terrain.GroundDefAt(t.Pos).Charge) * (u.IsPlayer ? (1 + 0.2f * RidingEdge) * (Perk("Lancer") ? 1.25f : 1) : 1) * (1 + u.Mods.Charge), false, lance: true);
+                        u.Couched = false;
+                        u.Cooldown = 1.8f;
+                        u.Contact = true;
+                        hit = true;
+                        break;
+                    }
+                }
             }
         }
     }

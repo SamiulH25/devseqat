@@ -116,33 +116,60 @@ sealed partial class Hud
         hiddenCards = mine.Count - shown;
     }
 
+    readonly List<Cmd> layoutShapes = new(8), layoutMore = new(12);
+
     /// The deck's buttons for the companies that listen: orders, the formations any of them can take, and what else fits
     /// (bows get FIRE, longbows STAKES, mages CAST; SPLIT, FOLD IN and RELIEVE come with one, two and exactly two chosen).
     void LayoutOrders()
     {
         var who = Listening();
-        var rows = new List<List<Cmd>> { MoveRow.ToList() };
-        var shapes = ShapeRow.Where(c => who.Any(s => s.Units.Count > 0 && s.Shapes(s.Units[0].Type.HasShield).Contains(ShapeOf(c)!.Value))).ToList(); // unlearned ones greyed (TI1)
-        if (shapes.Count > 0) rows.Add(shapes);
-        var more = new List<Cmd>();
-        if (who.Any(Shoots)) more.Add(Cmd.FireAtWill);
-        more.Add(Cmd.Spacing);
-        if (!Deploying) more.Add(Cmd.Rule);
-        if (B.Player.Active && !Deploying) more.Add(Cmd.FormHere);
-        if (who.Any(s => s.Units.Count > 0 && s.Units[0].Type.Has("stakes"))) more.Add(Cmd.Stakes);
-        if (!Deploying && who.Any(s => s.Spells.Length > 0)) more.Add(Cmd.Cast);
-        if (Selected.Count >= 1) more.Add(Cmd.Split);
-        if (Selected.Count >= 2) more.Add(Cmd.Merge);
-        if (Selected.Count == 2) more.Add(Cmd.Relieve);
-        const int cols = 6;
-        for (int i = 0; i < more.Count; i += cols) rows.Add(more.Skip(i).Take(cols).ToList());
+        layoutShapes.Clear();
+        for (int ci = 0; ci < ShapeRow.Length; ci++)
+        {
+            var c = ShapeRow[ci];
+            var shape = ShapeOf(c)!.Value;
+            for (int wi = 0; wi < who.Count; wi++)
+            {
+                var s = who[wi];
+                if (s.Units.Count > 0 && Array.IndexOf(s.Shapes(s.Units[0].Type.HasShield), shape) >= 0) { layoutShapes.Add(c); break; }
+            }
+        }
+        layoutMore.Clear();
+        bool anyShoots = false, anyStakes = false, anySpells = false;
+        for (int wi = 0; wi < who.Count; wi++)
+        {
+            var s = who[wi];
+            if (!anyShoots && Shoots(s)) anyShoots = true;
+            if (!anyStakes && s.Units.Count > 0 && s.Units[0].Type.Has("stakes")) anyStakes = true;
+            if (!anySpells && s.Spells.Length > 0) anySpells = true;
+        }
+        if (anyShoots) layoutMore.Add(Cmd.FireAtWill);
+        layoutMore.Add(Cmd.Spacing);
+        if (!Deploying) layoutMore.Add(Cmd.Rule);
+        if (B.Player.Active && !Deploying) layoutMore.Add(Cmd.FormHere);
+        if (anyStakes) layoutMore.Add(Cmd.Stakes);
+        if (!Deploying && anySpells) layoutMore.Add(Cmd.Cast);
+        if (Selected.Count >= 1) layoutMore.Add(Cmd.Split);
+        if (Selected.Count >= 2) layoutMore.Add(Cmd.Merge);
+        if (Selected.Count == 2) layoutMore.Add(Cmd.Relieve);
 
+        const int cols = 6;
+        int rowCount = 1 + (layoutShapes.Count > 0 ? 1 : 0) + (layoutMore.Count + cols - 1) / cols;
         int bs = U(44), bh = U(38), gap = U(3), gw = cols * bs + (cols - 1) * gap;
-        int x0 = W - gw - U(18), y0 = H - U(18) - rows.Count * (bh + gap) + gap;
+        int x0 = W - gw - U(18), y0 = H - U(18) - rowCount * (bh + gap) + gap;
         deck = new Rectangle(x0 - U(8), y0 - U(22), gw + U(16), H - U(10) - (y0 - U(22)));
-        for (int r = 0; r < rows.Count; r++)
-            for (int i = 0; i < rows[r].Count; i++)
-                buttons.Add((new Rectangle(x0 + i * (bs + gap), y0 + r * (bh + gap), bs, bh), rows[r][i]));
+        int r = 0;
+        for (int i = 0; i < MoveRow.Length; i++)
+            buttons.Add((new Rectangle(x0 + i * (bs + gap), y0 + r * (bh + gap), bs, bh), MoveRow[i]));
+        r++;
+        if (layoutShapes.Count > 0)
+        {
+            for (int i = 0; i < layoutShapes.Count; i++)
+                buttons.Add((new Rectangle(x0 + i * (bs + gap), y0 + r * (bh + gap), bs, bh), layoutShapes[i]));
+            r++;
+        }
+        for (int i = 0; i < layoutMore.Count; i++)
+            buttons.Add((new Rectangle(x0 + (i % cols) * (bs + gap), y0 + (r + i / cols) * (bh + gap), bs, bh), layoutMore[i]));
     }
 
     // ---------- the top bar ----------

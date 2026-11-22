@@ -77,7 +77,7 @@ sealed partial class BattleScreen
             Tips.Show("forms", $"Your aura is awake. {ctl.First(Act.Form1)}, {ctl.First(Act.Form2)}, {ctl.First(Act.Form3)}: your forms; {ctl.First(Act.GreatForm)}: the great form, once a battle.\nEach costs aura. The aura row by your health shows the pool.");
         if (b.HasRelic && !b.RelicRaised)
             Tips.Show("relic", $"You carry the relic. Press {ctl.First(Act.Relic)} once this battle to raise it: a Blessing on the companies\naround you and aura for you. It costs a charge.");
-        if (b.Squads.Any(s => s.Team == 0 && s.Spells.Length > 0 && s.Units.Any(u => u.Active && u.Type.Spells.Length > 0)))
+        if (!Settings.Current.TipsSeen.Contains("circle") && b.Squads.Any(s => s.Team == 0 && s.Spells.Length > 0 && s.Units.Any(u => u.Active && u.Type.Spells.Length > 0)))
             Tips.Show("circle", $"Your circle casts on its own when a spell fits. In command view select it and press {ctl.First(Act.Cast)}\nto pick a spell, then click the ground to cast it there.");
     }
 
@@ -98,7 +98,7 @@ sealed partial class BattleScreen
     bool command, paused, menuOpen, helpOpen, wheelOpen, skipMouse = true, shotNoMouse, attackMoveMode;
     float yaw, pitch, fieldDist = 5.5f;       // field camera: third person behind the player
     float camYaw, camPitch, zoom = 45;        // command camera: free orbit around camFocus
-    float blend, frameDt, realTime, lastCardClick, lastFieldClick;
+    float blend, frameDt, realTime, simAcc, soundscapeAcc, lastCardClick, lastFieldClick;
     bool replaySaved;
     Squad? lastCardSquad, lastFieldSquad;
     /// A company card pressed in deployment: dragged onto a post zone or an officer's card, it goes under him (OF4).
@@ -146,7 +146,7 @@ sealed partial class BattleScreen
         if (host.MeshKit != null)
         {
             puppet3D = new Puppet3D(host.MeshKit, units3D) { FxPuppet = puppet };
-            int nW = Math.Clamp(Environment.ProcessorCount, 1, 6);
+            int nW = Math.Clamp(Environment.ProcessorCount, 1, 8);
             workerVerts = new Verts<VertexPNCT>[nW];
             workerPuppets = new Puppet3D[nW];
             for (int i = 0; i < nW; i++)
@@ -241,6 +241,48 @@ sealed partial class BattleScreen
         camFocus = focus; camPitch = camPitch2; zoom = zoom2;
     }
 
+    /// Reproducible staging for IRONFIELD_QUICK_BENCH=1 (does not affect normal play).
+    public void BenchStage(int stage)
+    {
+        intro = -1;
+        hudHidden = false;
+        if (stage == 0)
+        {
+            // Seeded quick battle with AutoPlayer so both armies advance and clash when unpaused.
+            var rng = new Random(7);
+            int men = int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_MEN"), out var m) ? m : Settings.Current.BattleSize / 2;
+            battle = new Battle(7, Armies.Divide(Armies.Large(rng, 3, 0, men)), Armies.Divide(Armies.Large(rng, 3, 1, men)),
+                new BattleOptions { Weather = Weather.Clear, Cap = Math.Max(Settings.Current.BattleSize, men * 2 + 20), Ground = TerrainParams.Meadow, AutoPlayer = true });
+            SetWorld();
+            deploying = true; paused = false;
+            SetCommand(true); blend = 1;
+            var mid = (battle.Centroid(0) + battle.Centroid(1)) * 0.5f;
+            var d = battle.Centroid(1) - battle.Centroid(0);
+            camFocus = mid; camYaw = MathF.Atan2(d.Y, d.X) + 0.55f; camPitch = 0.55f; zoom = 95f;
+            UpdateCamera();
+        }
+        else if (stage == 1)
+        {
+            // Advance 22s into thick melee clash, then switch to Field View behind captain.
+            deploying = false; paused = false;
+            for (int i = 0; i < 22 * 60 && battle.Winner < 0; i++) battle.Update(1 / 60f);
+            SetCommand(false); blend = 0;
+            var d = battle.Centroid(1) - battle.Player.Pos;
+            yaw = battle.Player.Heading = MathF.Atan2(d.Y, d.X); pitch = 0.16f;
+            UpdateCamera();
+        }
+        else if (stage == 2)
+        {
+            // Active melee: Command Overview over the clash.
+            deploying = false; paused = false;
+            SetCommand(true); blend = 1;
+            var mid = (battle.Centroid(0) + battle.Centroid(1)) * 0.5f;
+            var d = battle.Centroid(1) - battle.Centroid(0);
+            camFocus = mid; camYaw = MathF.Atan2(d.Y, d.X) + 0.65f; camPitch = 0.52f; zoom = 85f;
+            UpdateCamera();
+        }
+    }
+
     void FinishCampaignBattle()
     {
         var r = battle.Result();
@@ -316,7 +358,7 @@ sealed partial class BattleScreen
         ResetMagicFx();
         ResetArrows();
         ResetSpectacle();
-        markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = 0; ending = -1; lastHitAt = lastPlayerHp = -1;
+        markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = simAcc = soundscapeAcc = 0; ending = -1; lastHitAt = lastPlayerHp = -1;
         Array.Clear(trample); trampleAt = 0; trampleDirty = true;
         world?.Dispose();
         world = new World(GraphicsDevice, battle.Terrain);
@@ -358,8 +400,13 @@ sealed partial class BattleScreen
         if (Pressed(Keys.F9)) { Settings.Current.PixelScale = Settings.Current.PixelScale == 2 ? 3 : Settings.Current.PixelScale == 3 ? 1 : 2; Settings.Current.Save(); battle.Log($"3D pixel scale: {pixelScale}x"); }
         if (Pressed(Keys.F10)) { Settings.Current.PixelArt = !Settings.Current.PixelArt; Settings.Current.Save(); battle.Log(use3DPixel ? $"3D Pixel Art ON ({pixelScale}x)" : "Classic 2D Sprites"); }
         else if (!TipsHeld && LmbPressed && Tips.Active && command && tipUi.Blocks(ms.Position)) Tips.Dismiss();
-        if (battle.Units.Any(battle.Rescuable))
-            Tips.Show("rescue", "One of your named men is down (the gold mark). Stand over him while the fight goes on\nand you carry him out alive, if you are quick.");
+        if (!Settings.Current.TipsSeen.Contains("rescue"))
+            for (int i = 0; i < battle.Units.Count; i++)
+                if (battle.Rescuable(battle.Units[i]))
+                {
+                    Tips.Show("rescue", "One of your named men is down (the gold mark). Stand over him while the fight goes on\nand you carry him out alive, if you are quick.");
+                    break;
+                }
         if (deploying) Tips.Show("deploy", $"Deployment. Select a company (click its card or press 1-9), then hold RMB and drag to draw its line.\nYou can only deploy in your third of the field. Press {ctl.First(Act.Pause)} (or START BATTLE) to begin.");
         else if (!command && battle.Player.Active)
         {
@@ -417,9 +464,26 @@ sealed partial class BattleScreen
         if (scale > 0 && Settings.Current.PauseOnAlerts && battle.Alerts.Count > alertsSeen
             && battle.Alerts.Skip(alertsSeen).Any(a => a.Kind is "breaking" or "horse" or "leaderless")) { paused = true; scale = 0; battle.Log("Paused: see the alert."); }
         alertsSeen = battle.Alerts.Count;
-        if (scale > 0) { battle.Advance(dt * scale); PlaySounds(); Effects(dt * scale); TrackArrows(); SpectacleFrame(dt); Feel(); LeaveMarks(); Trample(); if (battle.WallVersion != wallSeen) { wallSeen = battle.WallVersion; world.RebuildFoliage(); } }
+        if (scale > 0)
+        {
+            // Fixed-timestep accumulator (60 Hz) avoids both over-ticking above 60 fps and the 2x-tick cliff at 59 fps.
+            const float FixedDt = 1f / 60f;
+            simAcc = MathF.Min(simAcc + dt * scale, FixedDt * 6f);
+            bool stepped = false;
+            while (simAcc >= FixedDt)
+            {
+                battle.Update(FixedDt);
+                simAcc -= FixedDt;
+                stepped = true;
+                if (battle.Sounds.Count > 0) { PlaySounds(); LeaveMarks(); }
+            }
+            Effects(dt * scale);
+            if (stepped) { TrackArrows(); Feel(); Trample(); if (battle.WallVersion != wallSeen) { wallSeen = battle.WallVersion; world.RebuildFoliage(); } }
+            SpectacleFrame(dt);
+        }
         FieldLife(dt * scale);
-        Soundscape();
+        soundscapeAcc += dt;
+        if (soundscapeAcc >= 0.1f || battle.Winner >= 0) { soundscapeAcc = 0; Soundscape(); }
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;
         if (shotDir != null) { shotFrames++; if (PressSeed != null) PressScript(); else ShotScript(); }
@@ -561,10 +625,12 @@ sealed partial class BattleScreen
     /// The dotted way the first chosen company would take while you draw an order (round a river by the ford, through a hedge's gap).
     List<Vector2>? route;
     Vector2? routeAt;
+    bool hudSynced;
 
     /// Hand the HUD everything it shows, and lay it out (also used for clicks).
     void SyncHud()
     {
+        hudSynced = true;
         hud.B = battle; hud.Selected = selected; hud.Ctl = ctl; hud.Minimap = world.Minimap; hud.GroundMap = world.GroundMap;
         hud.GroundView = groundView ?? deploying; // the ground map is up while you deploy, until you close it
         hud.GroundLine = command && shotMouse == null && !hud.Over(ms.Position) && dragStart == null ? Grounds.Describe(battle.Terrain.GroundAt(mouseGround)) : null;

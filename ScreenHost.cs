@@ -399,7 +399,7 @@ sealed class ScreenHost : Game
         if (gpuReport != null)
         {
             if (mode != Mode.Battle) QuickBattle();
-            else if (gpuReport.Frame(Quality)) Exit();
+            else if (gpuReport.Frame(Quality, battle)) Exit();
         }
         Ui.FrameEnd();
         base.Draw(gameTime);

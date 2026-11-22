@@ -9,18 +9,28 @@ public sealed partial class Battle
     const float CellSize = 4;
     const int GridN = 128;
     readonly List<Unit>[] cells = Enumerable.Range(0, GridN * GridN).Select(_ => new List<Unit>(8)).ToArray();
+    readonly List<int> dirtyCells = new(512);
     readonly List<Unit> near = new(64), nearBrace = new(64), nearMass = new(32);
+    bool anyMounted0, anyMounted1;
 
     static int CellOf(float v) => Math.Clamp((int)MathF.Floor(v / CellSize) + GridN / 2, 0, GridN - 1);
 
     void BuildGrid()
     {
-        foreach (var c in cells) c.Clear();
-        for (int i = 0; i < Units.Count; i++)
+        for (int i = 0; i < dirtyCells.Count; i++) cells[dirtyCells[i]].Clear();
+        dirtyCells.Clear();
+        anyMounted0 = anyMounted1 = false;
+        var units = Units;
+        for (int i = 0; i < units.Count; i++)
         {
-            var u = Units[i];
+            var u = units[i];
             u.Index = i;
-            if (u.Active) cells[CellOf(u.Pos.Y) * GridN + CellOf(u.Pos.X)].Add(u);
+            if (!u.Active) continue;
+            if (u.Mounted) { if (u.Team == 0) anyMounted0 = true; else anyMounted1 = true; }
+            int idx = CellOf(u.Pos.Y) * GridN + CellOf(u.Pos.X);
+            var cell = cells[idx];
+            if (cell.Count == 0) dirtyCells.Add(idx);
+            cell.Add(u);
         }
     }
 
@@ -31,7 +41,10 @@ public sealed partial class Battle
         int x0 = CellOf(p.X - r), x1 = CellOf(p.X + r), z0 = CellOf(p.Y - r), z1 = CellOf(p.Y + r);
         for (int z = z0; z <= z1; z++)
             for (int x = x0; x <= x1; x++)
-                into.AddRange(cells[z * GridN + x]);
+            {
+                var cell = cells[z * GridN + x];
+                if (cell.Count > 0) into.AddRange(cell);
+            }
         return into;
     }
 
@@ -41,15 +54,28 @@ public sealed partial class Battle
     (Unit? unit, float dist) NearestFast(Unit u, Squad? only)
     {
         if (only != null) return NearestScan(u, only.Units);
+        var up = u.Pos;
+        int uTeam = u.Team;
         foreach (float r in Rings)
         {
             Unit? best = null;
             float bd = r * r;
-            foreach (var o in Near(u.Pos, r, near))
+            int x0 = CellOf(up.X - r), x1 = CellOf(up.X + r), z0 = CellOf(up.Y - r), z1 = CellOf(up.Y + r);
+            for (int z = z0; z <= z1; z++)
             {
-                if (o.Team == u.Team || o.Routing) continue;
-                float d = Vector2.DistanceSquared(o.Pos, u.Pos);
-                if (d < bd) { bd = d; best = o; }
+                int row = z * GridN;
+                for (int x = x0; x <= x1; x++)
+                {
+                    var cell = cells[row + x];
+                    int cnt = cell.Count;
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        var o = cell[i];
+                        if (o.Team == uTeam || o.Routing) continue;
+                        float d = Vector2.DistanceSquared(o.Pos, up);
+                        if (d < bd) { bd = d; best = o; }
+                    }
+                }
             }
             if (best != null) return (best, MathF.Sqrt(bd));
         }
@@ -78,11 +104,24 @@ public sealed partial class Battle
         Unit? best = null;
         float bd = MathF.Min(than, 16);
         bd *= bd;
-        foreach (var o in Near(u.Pos, 16, near))
+        var up = u.Pos;
+        int uTeam = u.Team;
+        int x0 = CellOf(up.X - 16), x1 = CellOf(up.X + 16), z0 = CellOf(up.Y - 16), z1 = CellOf(up.Y + 16);
+        for (int z = z0; z <= z1; z++)
         {
-            if (o.Team == u.Team || !o.Routing || !o.Active) continue;
-            float d = Vector2.DistanceSquared(o.Pos, u.Pos);
-            if (d < bd) { bd = d; best = o; }
+            int row = z * GridN;
+            for (int x = x0; x <= x1; x++)
+            {
+                var cell = cells[row + x];
+                int cnt = cell.Count;
+                for (int i = 0; i < cnt; i++)
+                {
+                    var o = cell[i];
+                    if (o.Team == uTeam || !o.Routing || !o.Active) continue;
+                    float d = Vector2.DistanceSquared(o.Pos, up);
+                    if (d < bd) { bd = d; best = o; }
+                }
+            }
         }
         return best == null ? null : (best, MathF.Sqrt(bd));
     }
@@ -114,12 +153,24 @@ public sealed partial class Battle
         float foot = Footing(m);
         if (foot <= 1) return mass; // out of his place: nobody at his back
         int behind = 0;
-        foreach (var o in Near(m.Pos, 4, nearMass))
+        var mp = m.Pos;
+        int x0 = CellOf(mp.X - 4), x1 = CellOf(mp.X + 4), z0 = CellOf(mp.Y - 4), z1 = CellOf(mp.Y + 4);
+        for (int z = z0; z <= z1 && behind < 3; z++)
         {
-            if (o == m || o.Squad != s || !o.Active || o.Routing || Vector2.DistanceSquared(o.Pos, o.Slot) > 1) continue;
-            var d = o.Pos - m.Pos;
-            float along = Vector2.Dot(d, dir), aside = MathF.Abs(d.X * dir.Y - d.Y * dir.X);
-            if (along > 0.3f && along < 4 && aside < 0.9f && ++behind == 3) break;
+            int row = z * GridN;
+            for (int x = x0; x <= x1 && behind < 3; x++)
+            {
+                var cell = cells[row + x];
+                int cnt = cell.Count;
+                for (int i = 0; i < cnt; i++)
+                {
+                    var o = cell[i];
+                    if (o == m || o.Squad != s || !o.Active || o.Routing || Vector2.DistanceSquared(o.Pos, o.Slot) > 1) continue;
+                    var d = o.Pos - mp;
+                    float along = Vector2.Dot(d, dir), aside = MathF.Abs(d.X * dir.Y - d.Y * dir.X);
+                    if (along > 0.3f && along < 4 && aside < 0.9f && ++behind == 3) break;
+                }
+            }
         }
         return (mass + behind) * foot;
     }
@@ -129,21 +180,34 @@ public sealed partial class Battle
     /// from behind as often as not). A heavy horse still coming on hard is left to Impact, which may carry it through.
     void HoldHorseOff()
     {
+        if (!anyMounted0 && !anyMounted1) return;
         foreach (var h in Units)
         {
             if (!h.Active || !h.Mounted || Airborne(h)) continue;
             float rh = BodyRadius(h), way = BodyMass(h) * MathF.Max(MathF.Abs(h.Speed), 1);
-            foreach (var m in Near(h.Pos, 2.1f, near))
+            var hp = h.Pos;
+            int x0 = CellOf(hp.X - 2.1f), x1 = CellOf(hp.X + 2.1f), z0 = CellOf(hp.Y - 2.1f), z1 = CellOf(hp.Y + 2.1f);
+            for (int z = z0; z <= z1; z++)
             {
-                if (!m.Active || m.Mounted || m.Team == h.Team) continue;
-                float r = rh + BodyRadius(m);
-                var d = h.Pos - m.Pos;
-                float l2 = d.LengthSquared();
-                if (l2 >= r * r) continue;
-                float l = MathF.Sqrt(MathF.Max(l2, 1e-6f));
-                var n = l2 > 1e-6f ? d / l : -h.HeadingDir;
-                if (BraceMass(m, -n) * BraceSpeed < way) continue; // he cannot hold it
-                h.Pos = m.Pos + n * r;
+                int row = z * GridN;
+                for (int x = x0; x <= x1; x++)
+                {
+                    var cell = cells[row + x];
+                    int cnt = cell.Count;
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        var m = cell[i];
+                        if (!m.Active || m.Mounted || m.Team == h.Team) continue;
+                        float r = rh + BodyRadius(m);
+                        var d = h.Pos - m.Pos;
+                        float l2 = d.LengthSquared();
+                        if (l2 >= r * r) continue;
+                        float l = MathF.Sqrt(MathF.Max(l2, 1e-6f));
+                        var n = l2 > 1e-6f ? d / l : -h.HeadingDir;
+                        if (BraceMass(m, -n) * BraceSpeed < way) continue; // he cannot hold it
+                        h.Pos = m.Pos + n * r;
+                    }
+                }
             }
         }
     }
@@ -152,51 +216,64 @@ public sealed partial class Battle
     void Separate(float dt)
     {
         BuildGrid();
-        foreach (var a in Units)
+        var units = Units;
+        for (int ui = 0; ui < units.Count; ui++)
         {
+            var a = units[ui];
             if (!a.Active || Airborne(a)) continue; // a wyvern aloft passes over them
             float ra = BodyRadius(a), ma = BodyMass(a);
-            foreach (var b in Near(a.Pos, 2.1f, near))
+            var ap = a.Pos;
+            int x0 = CellOf(ap.X - 2.1f), x1 = CellOf(ap.X + 2.1f), z0 = CellOf(ap.Y - 2.1f), z1 = CellOf(ap.Y + 2.1f);
+            for (int z = z0; z <= z1; z++)
             {
-                if (b.Index <= a.Index || !b.Active || Airborne(b)) continue;
-                float rb = BodyRadius(b), r = ra + rb;
-                var d = b.Pos - a.Pos;
-                float l2 = d.LengthSquared();
-                if (l2 >= r * r) continue;
-                if (l2 < 1e-6f) { d = new Vector2(0.01f, 0); l2 = 1e-4f; }
-                float l = MathF.Sqrt(l2), mb = BodyMass(b);
-                if (a.Team != b.Team)
+                int row = z * GridN;
+                for (int x = x0; x <= x1; x++)
                 {
-                    // A man holding his place in the ranks is hard to shove. Against a horse he weighs what he can brace
-                    // (BraceMass: the men at his back too, if the horse comes at their front), told against the horse's way:
-                    // a slow horse is shoved back by a formed file, a galloping one shoves through all but the deepest.
-                    var n0 = d / MathF.Sqrt(l2);
-                    if (b.Mounted && !a.Mounted) ma = BraceMass(a, -n0) * BraceSpeed / MathF.Max(MathF.Abs(b.Speed), 2);
-                    else ma = BodyMass(a) * Footing(a);
-                    if (a.Mounted && !b.Mounted) mb = BraceMass(b, n0) * BraceSpeed / MathF.Max(MathF.Abs(a.Speed), 2);
-                    else mb *= Footing(b);
-                }
-                else ma = BodyMass(a);
-                var n = d / l;
-                var push = n * (r - l);
-                a.Pos -= push * (mb / (ma + mb));
-                b.Pos += push * (ma / (ma + mb));
-                if (a.Team == b.Team) continue;
-                if (a.Mounted && !b.Mounted) Impact(a, b, n, dt);
-                else if (b.Mounted && !a.Mounted) Impact(b, a, -n, dt);
-                else if (a.Mounted)
-                {
-                    a.Speed *= 1 - 1.5f * dt;
-                    b.Speed *= 1 - 1.5f * dt;
-                    float closing = MathF.Abs(Vector2.Dot(a.Vel - b.Vel, n));
-                    if (closing >= 6 && a.ImpactCd <= 0 && b.ImpactCd <= 0)
+                    var cell = cells[row + x];
+                    int cnt = cell.Count;
+                    for (int i = 0; i < cnt; i++)
                     {
-                        a.ImpactCd = b.ImpactCd = 0.6f;
-                        Sound(Cue.Impact, (a.Pos + b.Pos) * 0.5f);
-                        a.Speed *= 0.65f;
-                        b.Speed *= 0.65f;
-                        HitHorse(a, closing * 1.1f, b);
-                        HitHorse(b, closing * 1.1f, a);
+                        var b = cell[i];
+                        if (b.Index <= a.Index || !b.Active || Airborne(b)) continue;
+                        float rb = BodyRadius(b), r = ra + rb;
+                        var d = b.Pos - a.Pos;
+                        float l2 = d.LengthSquared();
+                        if (l2 >= r * r) continue;
+                        if (l2 < 1e-6f) { d = new Vector2(0.01f, 0); l2 = 1e-4f; }
+                        float l = MathF.Sqrt(l2), mb = BodyMass(b);
+                        var n = d / l;
+                        if (a.Team != b.Team)
+                        {
+                            // A man holding his place in the ranks is hard to shove. Against a horse he weighs what he can brace
+                            // (BraceMass: the men at his back too, if the horse comes at their front), told against the horse's way:
+                            // a slow horse is shoved back by a formed file, a galloping one shoves through all but the deepest.
+                            if (b.Mounted && !a.Mounted) ma = BraceMass(a, -n) * BraceSpeed / MathF.Max(MathF.Abs(b.Speed), 2);
+                            else ma = BodyMass(a) * Footing(a);
+                            if (a.Mounted && !b.Mounted) mb = BraceMass(b, n) * BraceSpeed / MathF.Max(MathF.Abs(a.Speed), 2);
+                            else mb *= Footing(b);
+                        }
+                        else ma = BodyMass(a);
+                        var push = n * (r - l);
+                        a.Pos -= push * (mb / (ma + mb));
+                        b.Pos += push * (ma / (ma + mb));
+                        if (a.Team == b.Team) continue;
+                        if (a.Mounted && !b.Mounted) Impact(a, b, n, dt);
+                        else if (b.Mounted && !a.Mounted) Impact(b, a, -n, dt);
+                        else if (a.Mounted)
+                        {
+                            a.Speed *= 1 - 1.5f * dt;
+                            b.Speed *= 1 - 1.5f * dt;
+                            float closing = MathF.Abs(Vector2.Dot(a.Vel - b.Vel, n));
+                            if (closing >= 6 && a.ImpactCd <= 0 && b.ImpactCd <= 0)
+                            {
+                                a.ImpactCd = b.ImpactCd = 0.6f;
+                                Sound(Cue.Impact, (a.Pos + b.Pos) * 0.5f);
+                                a.Speed *= 0.65f;
+                                b.Speed *= 0.65f;
+                                HitHorse(a, closing * 1.1f, b);
+                                HitHorse(b, closing * 1.1f, a);
+                            }
+                        }
                     }
                 }
             }

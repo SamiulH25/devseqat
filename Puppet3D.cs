@@ -34,8 +34,26 @@ sealed partial class Puppet3D
 
     Vector3 origin, fwd, right;
     Vector3 camRight = Vector3.UnitX;
-    float scale, tilt, tiltX, tiltZ, twist;
+    float scale, tilt, tiltX, tiltZ, tiltCos = 1f, tiltSin, twist;
     float unitIdHash;
+
+    static readonly byte[] PatAlpha = BuildPatAlpha();
+    static byte[] BuildPatAlpha()
+    {
+        var table = new byte[5 * UnitMatTable.Slots];
+        var metalQ = UnitMatTable.MetalQ;
+        for (int p = 0; p < 5; p++)
+            for (int m = 0; m < UnitMatTable.Slots; m++)
+            {
+                byte pat = 0;
+                if (p == MeshKit3D.PatMail && m == 5) pat = MeshKit3D.PatMail;
+                else if (p == MeshKit3D.PatScale && (m == 4 || m == 5 || m == 6 || m == 7)) pat = MeshKit3D.PatScale;
+                else if (p == MeshKit3D.PatQuilt && (m == 1 || m == 2)) pat = MeshKit3D.PatQuilt;
+                else if (m == 4 || m == 8) pat = MeshKit3D.PatBrushed;
+                table[p * UnitMatTable.Slots + m] = (byte)((pat << 4) | metalQ[m]);
+            }
+        return table;
+    }
 
     public Puppet3D(MeshKit3D kit, Verts<VertexPNCT> verts)
     {
@@ -72,19 +90,20 @@ sealed partial class Puppet3D
 
     void Lean(float x, float z)
     {
-        float m = MathF.Sqrt(x * x + z * z);
-        if (m < 0.01f) { tilt = 0; return; }
+        float m2 = x * x + z * z;
+        if (m2 < 1e-4f) { tilt = 0; tiltCos = 1f; tiltSin = 0f; return; }
+        float m = MathF.Sqrt(m2);
         tilt = Rad(m); tiltX = x / m; tiltZ = z / m;
+        (tiltSin, tiltCos) = MathF.SinCos(tilt);
     }
 
     Vector3 W(Vector3 local)
     {
         if (tilt != 0)
         {
-            float c = MathF.Cos(tilt), s = MathF.Sin(tilt);
             float h = local.X * tiltX + local.Z * tiltZ;
-            float d = h * (c - 1) + local.Y * s;
-            local = new Vector3(local.X + d * tiltX, local.Y * c - h * s, local.Z + d * tiltZ);
+            float d = h * (tiltCos - 1f) + local.Y * tiltSin;
+            local = new Vector3(local.X + d * tiltX, local.Y * tiltCos - h * tiltSin, local.Z + d * tiltZ);
         }
         return origin + (right * local.X + Vector3.Up * local.Y + fwd * local.Z) * scale;
     }
@@ -93,12 +112,14 @@ sealed partial class Puppet3D
     {
         if (tilt != 0)
         {
-            float c = MathF.Cos(tilt), s = MathF.Sin(tilt);
             float h = dir.X * tiltX + dir.Z * tiltZ;
-            float d = h * (c - 1) + dir.Y * s;
-            dir = new Vector3(dir.X + d * tiltX, dir.Y * c - h * s, dir.Z + d * tiltZ);
+            float d = h * (tiltCos - 1f) + dir.Y * tiltSin;
+            dir = new Vector3(dir.X + d * tiltX, dir.Y * tiltCos - h * tiltSin, dir.Z + d * tiltZ);
         }
-        return Vector3.Normalize(right * dir.X + Vector3.Up * dir.Y + fwd * dir.Z);
+        return new Vector3(
+            right.X * dir.X + fwd.X * dir.Z,
+            dir.Y,
+            right.Z * dir.X + fwd.Z * dir.Z);
     }
 
     /// Hot-path zero-allocation mesh emission into `verts.A` with packed (patternId, metallic) in Color.A and meter-scale UVs.
@@ -109,7 +130,11 @@ sealed partial class Puppet3D
 
         Vector3 wPos = W(pos);
         Vector3 nR = WDir(rx), nU = WDir(uy), nF = WDir(fz);
-        Vector3 wR = nR * (scale * sx), wU = nU * (scale * sy), wF = nF * (scale * sz);
+        float sRx = scale * sx, sUy = scale * sy, sFz = scale * sz;
+        float wRx = nR.X * sRx, wRy = nR.Y * sRx, wRz = nR.Z * sRx;
+        float wUx = nU.X * sUy, wUy = nU.Y * sUy, wUz = nU.Z * sUy;
+        float wFx = nF.X * sFz, wFy = nF.Y * sFz, wFz = nF.Z * sFz;
+        float oX = wPos.X, oY = wPos.Y, oZ = wPos.Z;
 
         verts.Reserve(len);
         var dst = verts.A;
@@ -121,47 +146,46 @@ sealed partial class Puppet3D
                 ref readonly var v = ref part[i];
                 dst[n++] = new VertexPNCT(
                     new Vector3(
-                        wPos.X + wR.X * v.Pos.X + wU.X * v.Pos.Y + wF.X * v.Pos.Z,
-                        wPos.Y + wR.Y * v.Pos.X + wU.Y * v.Pos.Y + wF.Y * v.Pos.Z,
-                        wPos.Z + wR.Z * v.Pos.X + wU.Z * v.Pos.Y + wF.Z * v.Pos.Z),
+                        oX + wRx * v.Pos.X + wUx * v.Pos.Y + wFx * v.Pos.Z,
+                        oY + wRy * v.Pos.X + wUy * v.Pos.Y + wFy * v.Pos.Z,
+                        oZ + wRz * v.Pos.X + wUz * v.Pos.Y + wFz * v.Pos.Z),
                     Vector3.Up, Color.White, Vector2.Zero);
             }
             verts.N = n;
             return;
         }
 
+        float nRx = nR.X, nRy = nR.Y, nRz = nR.Z;
+        float nUx = nU.X, nUy = nU.Y, nUz = nU.Z;
+        float nFx = nF.X, nFy = nF.Y, nFz = nF.Z;
         var cols = palCols;
-        var metalQ = UnitMatTable.MetalQ;
+        var patAlpha = PatAlpha;
+        int patBase = partPat * UnitMatTable.Slots;
 
         for (int i = 0; i < len; i++)
         {
             ref readonly var v = ref part[i];
-            float px = wPos.X + wR.X * v.Pos.X + wU.X * v.Pos.Y + wF.X * v.Pos.Z;
-            float py = wPos.Y + wR.Y * v.Pos.X + wU.Y * v.Pos.Y + wF.Y * v.Pos.Z;
-            float pz = wPos.Z + wR.Z * v.Pos.X + wU.Z * v.Pos.Y + wF.Z * v.Pos.Z;
+            float vx = v.Pos.X, vy = v.Pos.Y, vz = v.Pos.Z;
+            float px = oX + wRx * vx + wUx * vy + wFx * vz;
+            float py = oY + wRy * vx + wUy * vy + wFy * vz;
+            float pz = oZ + wRz * vx + wUz * vy + wFz * vz;
 
-            float nx = nR.X * v.Norm.X + nU.X * v.Norm.Y + nF.X * v.Norm.Z;
-            float ny = nR.Y * v.Norm.X + nU.Y * v.Norm.Y + nF.Y * v.Norm.Z;
-            float nz = nR.Z * v.Norm.X + nU.Z * v.Norm.Y + nF.Z * v.Norm.Z;
+            float vnx = v.Norm.X, vny = v.Norm.Y, vnz = v.Norm.Z;
+            float nx = nRx * vnx + nUx * vny + nFx * vnz;
+            float ny = nRy * vnx + nUy * vny + nFy * vnz;
+            float nz = nRz * vnx + nUz * vny + nFz * vnz;
 
             int m = v.MatId;
             ref readonly var mc = ref cols[m];
-            int cr = (int)(mc.X * v.R); if (cr > 255) cr = 255;
-            int cg = (int)(mc.Y * v.G); if (cg > 255) cg = 255;
-            int cb = (int)(mc.Z * v.B); if (cb > 255) cb = 255;
-
-            byte pat = 0;
-            if (partPat == MeshKit3D.PatMail && m == 5) pat = MeshKit3D.PatMail;
-            else if (partPat == MeshKit3D.PatScale && (m == 4 || m == 5 || m == 6 || m == 7)) pat = MeshKit3D.PatScale;
-            else if (partPat == MeshKit3D.PatQuilt && (m == 1 || m == 2)) pat = MeshKit3D.PatQuilt;
-            else if (m == 4 || m == 8) pat = MeshKit3D.PatBrushed;
-
-            byte alpha = (byte)((pat << 4) | metalQ[m]);
+            int cr = (int)(mc.X * v.R); if ((uint)cr > 255u) cr = cr < 0 ? 0 : 255;
+            int cg = (int)(mc.Y * v.G); if ((uint)cg > 255u) cg = cg < 0 ? 0 : 255;
+            int cb = (int)(mc.Z * v.B); if ((uint)cb > 255u) cb = cb < 0 ? 0 : 255;
+            uint packed = (uint)(cr | (cg << 8) | (cb << 16) | (patAlpha[patBase + m] << 24));
 
             dst[n++] = new VertexPNCT(
                 new Vector3(px, py, pz),
                 new Vector3(nx, ny, nz),
-                new Color(cr, cg, cb, alpha),
+                new Color { PackedValue = packed },
                 new Vector2(v.U, v.V));
         }
         verts.N = n;
