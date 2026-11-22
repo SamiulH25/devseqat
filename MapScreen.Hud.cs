@@ -31,55 +31,58 @@ partial class MapScreen
         bool click = pendingClick;
         pendingClick = false;
         ui.Begin(gd.Viewport, ms.Position, click);
-        // A panel has the screen to itself (docs/archive/PLAYTEST.md PT2a): the map's labels, clock, feed, minimap, captain's card,
-        // company cards and contracts are drawn only while no panel is open (the panels show the crowns and men they need).
-        if (panel == PanelKind.None)
+        try
         {
-            Flags();
-            TopBar();
-            Feed();
-            NextChip();
-            Overview();
-            CaptainPanel();
-            Cards();
-            Contracts();
-            QuestMark();
-            TutorialCard();
+            // A panel has the screen to itself (docs/archive/PLAYTEST.md PT2a): the map's labels, clock, feed, minimap, captain's card,
+            // company cards and contracts are drawn only while no panel is open (the panels show the crowns and men they need).
+            if (panel == PanelKind.None)
+            {
+                Flags();
+                TopBar();
+                Feed();
+                NextChip();
+                Overview();
+                CaptainPanel();
+                Cards();
+                Contracts();
+                QuestMark();
+                TutorialCard();
+            }
+            if (panel == PanelKind.None) { Tooltip(); Hints(); }
+            switch (panel)
+            {
+                case PanelKind.Encounter: EncounterPanel(); break;
+                case PanelKind.Settlement: SettlementPanel(); break;
+                case PanelKind.Party: PartyPanel(); break;
+                case PanelKind.Upgrade: UpgradePanel(); break;
+                case PanelKind.Roll: RollPanel(); break;
+                case PanelKind.Results: ResultsPanel(); break;
+                case PanelKind.Menu: MenuPanel(); break;
+                case PanelKind.Saves: SavesPanel(); break;
+                case PanelKind.GameOver: GameOverPanel(); break;
+                case PanelKind.Siege: SiegePanel(); break;
+                case PanelKind.Characters: CharactersPanel(); break;
+                case PanelKind.Talk: TalkPanel(); break;
+                case PanelKind.Skills: SkillsPanel(); break;
+                case PanelKind.Realm: RealmPanel(); break;
+                case PanelKind.Beat: BeatPanel(); break;
+                case PanelKind.Event: EventPanel(); break;
+                case PanelKind.Divisions: DivisionsPanel(); break;
+                case PanelKind.Quests: QuestsPanel(); break;
+                case PanelKind.Atlas: AtlasPanel(); break;
+                case PanelKind.Inventory: InventoryPanel(); break;
+                case PanelKind.Camp: CampPanel(); break;
+                case PanelKind.Fallen: BookPanel(); break;
+                case PanelKind.Help: HelpPanel(); break;
+            }
+            if (panel != PanelKind.None && modalIn < 1) ui.Rect(modalRect, Kit.IronDark * (1 - modalIn)); // the panel's entrance: it comes up out of the dark
+            if (panel != lastPanel) { lastPanel = panel; panelSince = Ui.Now; }
+            // Tips draw last so nothing covers them; over an open panel they sit at the top, clear of its buttons. A tip that was
+            // already waiting when the panel opened keeps waiting for the map (only tips about the panel itself show over it).
+            if (panel == PanelKind.None) Tips.Draw(ui, ui.U(10));
+            else { TutorialStrip(); if (Tips.Since >= panelSince) Tips.DrawAt(ui, ui.U(6)); }
         }
-        if (panel == PanelKind.None) { Tooltip(); Hints(); }
-        switch (panel)
-        {
-            case PanelKind.Encounter: EncounterPanel(); break;
-            case PanelKind.Settlement: SettlementPanel(); break;
-            case PanelKind.Party: PartyPanel(); break;
-            case PanelKind.Upgrade: UpgradePanel(); break;
-            case PanelKind.Roll: RollPanel(); break;
-            case PanelKind.Results: ResultsPanel(); break;
-            case PanelKind.Menu: MenuPanel(); break;
-            case PanelKind.Saves: SavesPanel(); break;
-            case PanelKind.GameOver: GameOverPanel(); break;
-            case PanelKind.Siege: SiegePanel(); break;
-            case PanelKind.Characters: CharactersPanel(); break;
-            case PanelKind.Talk: TalkPanel(); break;
-            case PanelKind.Skills: SkillsPanel(); break;
-            case PanelKind.Realm: RealmPanel(); break;
-            case PanelKind.Beat: BeatPanel(); break;
-            case PanelKind.Event: EventPanel(); break;
-            case PanelKind.Divisions: DivisionsPanel(); break;
-            case PanelKind.Quests: QuestsPanel(); break;
-            case PanelKind.Atlas: AtlasPanel(); break;
-            case PanelKind.Inventory: InventoryPanel(); break;
-            case PanelKind.Camp: CampPanel(); break;
-            case PanelKind.Fallen: BookPanel(); break;
-            case PanelKind.Help: HelpPanel(); break;
-        }
-        if (panel != PanelKind.None && modalIn < 1) ui.Rect(modalRect, Kit.IronDark * (1 - modalIn)); // the panel's entrance: it comes up out of the dark
-        if (panel != lastPanel) { lastPanel = panel; panelSince = Ui.Now; }
-        // Tips draw last so nothing covers them; over an open panel they sit at the top, clear of its buttons. A tip that was
-        // already waiting when the panel opened keeps waiting for the map (only tips about the panel itself show over it).
-        if (panel == PanelKind.None) Tips.Draw(ui, ui.U(10));
-        else { TutorialStrip(); if (Tips.Since >= panelSince) Tips.DrawAt(ui, ui.U(6)); }
-        ui.End();
+        finally { ui.End(); }
         if (panel == PanelKind.None && click && !ui.Blocks(ms.Position)) pendingClick = true; // the map gets it
     }
 

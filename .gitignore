@@ -20,3 +20,5 @@ Data/world.json.bak
 BlenderMCP/customer_uuid.txt
 __pycache__/
 playtest/
+tools/gltf/node_modules/
+tools/gltf/out/

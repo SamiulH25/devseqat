@@ -14,13 +14,15 @@ public sealed partial class Campaign
     /// The named men who fell in the battle being applied (company id, soldier id), for the burial (L3).
     readonly List<(int Company, int Soldier)> rollFell = new();
 
-    /// After a battle you won where named men fell: a burial for the longest-serving of them, if nothing else is waiting.
+    /// After a battle you won where named men fell: a burial for the longest-serving of them, if nothing else is waiting and
+    /// none was held this week (a company that fights every few days buries its dead without a page each time).
     void RaiseBurial()
     {
-        if (S.Event != null || rollFell.Count == 0 || Events.All(e => e.Id != "bury_named")) return;
+        if (rollFell.Count == 0 || S.Event != null) return;
+        if (S.EventsFired.TryGetValue("bury_named", out float held) && S.Hours - held < 7 * 24) return;
         var (co, id) = rollFell.OrderByDescending(f => S.Fallen.FirstOrDefault(m => m.Id == f.Soldier)?.Battles ?? 0).First();
         if (Player.Companies.All(c => c.Id != co)) return;
-        Raise(new PendingEvent { Id = "bury_named", Company = co, Soldier = id });
+        Force("bury_named", new PendingEvent { Company = co, Soldier = id });
     }
 
     static string Known(Soldier m) => m.Deeds.Count > 0 ? " " + m.Deeds[^1] : "";

@@ -185,7 +185,7 @@ public sealed partial class PlaySession
             }
         }
         if (C.S.Event is PendingEvent pe && Campaign.EventOf(pe.Id) is EventDef ev)
-            sb.AppendLine($"\nEVENT \"{C.Fill(ev.Title, pe)}\": see `event`, answer with `choose <n>`");
+            sb.AppendLine($"\nEVENT \"{C.Fill(ev.Title, pe).ToUpperInvariant()}\": see `event`, answer with `choose <n>`");
         if (C.Arrived is Settlement s) sb.AppendLine($"\nARRIVED at #{s.Id} {s.Name}: see `place {s.Id}`");
         if (C.Beat is var (title, lines)) sb.AppendLine($"\nCAREER: {title}: {string.Join(" ", lines)}");
         if (C.Report is BattleReport r) sb.AppendLine("\n" + ReportText(r));
@@ -278,10 +278,13 @@ public sealed partial class PlaySession
     {
         if (C.S.Event is not PendingEvent pe || Campaign.EventOf(pe.Id) is not EventDef ev) return "no event waiting";
         var sb = new StringBuilder($"EVENT {ev.Id}: {C.Fill(ev.Title, pe)}\n{C.Fill(ev.Text, pe)}\n");
-        for (int i = 0; i < ev.Choices.Count; i++)
+        foreach (var (i, ch) in C.OfferedChoices(pe))
         {
-            string blocked = C.ChoiceBlocked(ev.Choices[i]);
-            sb.AppendLine($"  {i}: {C.Fill(ev.Choices[i].Label, pe)}{(blocked != "" ? $"  [BLOCKED: {blocked}]" : "")}");
+            string blocked = C.ChoiceBlocked(ch, pe);
+            string cost = string.Join(", ", ch.Cost.Select(fx => C.CostLine(fx, pe).Text));
+            string check = ch.Check is CheckDef k ? $"  [CHECK {C.CheckText(k, pe)}: {Campaign.OddsWord(C.Odds(k, pe))} {C.Odds(k, pe):P0}]" : "";
+            sb.AppendLine($"  {i}: {C.Fill(ch.Label, pe)}{(cost != "" ? $"  [COST {cost}]" : "")}{check}{(blocked != "" ? $"  [BLOCKED: {blocked}]" : "")}");
+            if (ch.Hint != "") sb.AppendLine($"     ({C.Fill(ch.Hint, pe)})");
         }
         return sb.ToString();
     }
@@ -313,7 +316,15 @@ public sealed partial class PlaySession
     {
         if (C.S.Event == null) return "ERROR: no event waiting";
         var at = Mark;
-        return Do(() => C.Choose(i), "chosen") + "\n" + LogSince(at, all: true) + Pending();
+        string done = Do(() => C.Choose(i), "chosen");
+        if (C.EventOutcome is EventResult res)
+        {
+            done += $"\n{(res.Odds >= 0 ? $"{res.Result.ToUpperInvariant()} (odds {res.Odds:P0}): " : "")}{res.Text}";
+            foreach (var l in res.Lines) done += $"\n  {(l.Sign > 0 ? "+" : l.Sign < 0 ? "-" : " ")} {l.Text}";
+            if (res.More) done += "\n  (this is not the end of it)";
+            C.EventOutcome = null;
+        }
+        return done + "\n" + LogSince(at, all: true) + Pending();
     }
 
     string Go(Settlement s) { if (C.Encounter != null) return "ERROR: answer the encounter first"; C.GoTo(s); return $"riding to #{s.Id} {s.Name}, {Dist(s.Pos):0} away. `wait` to travel."; }

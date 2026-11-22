@@ -28,5 +28,8 @@
   "BearsPerWild": 0.12, "BearSpawnChance": 0.1, "BearMen": 2, "BountyBear": 120,
   "WyvernStart": 1, "WyvernEvery": 75, "WyvernMax": 4, "WyvernSpawnChance": 0.25, "WyvernMen": 1, "BountyWyvern": 450,
   "MonsterRavageChance": 0.12,
+  "EventQuietMin": 1.5, "EventQuietMax": 3, "EventHeavyQuiet": 1.5, "EventWeekCap": 3, "EventOverdue": 0.6,
+  "EventRoad": 0.06, "EventTown": 0.04, "EventCamp": 0.5, "EventArrive": 0.35, "EventBattle": 0.6, "EventProvince": 0.2, "EventWeek": 0.3,
+  "EventCheckSpread": 60, "EventCheckFloor": 0.05, "EventCheckEdge": 0.2,
   "HorseCostRate": 0.5
 }

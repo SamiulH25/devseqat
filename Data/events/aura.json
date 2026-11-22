@@ -1,0 +1,89 @@
+{
+  // The captain's aura, the Black Flame, and the rival from your order (docs/archive/KNIGHT_ORDERS.md K5-K7).
+  "events": [
+    {
+      "id": "aura_vigil", "scene": "shrine", "cast": { "site": {} },
+      "title": "A Vigil at {site}",
+      "text": "Your aura has stopped growing. It has been the same for a long time now. The old knights say a night alone in a holy place can break that wall, or break you.",
+      "choices": [
+        { "label": "Keep the vigil until dawn", "outcome": { "text": "You kneel on the cold stone and wait. The night is very long.", "do": ["vigil", "spent:20"] } },
+        { "label": "Not tonight", "outcome": { "text": "You sleep with the company. The wall will still be there tomorrow.", "do": [] } }
+      ]
+    },
+    {
+      "id": "aura_grief", "scene": "camp", "heavy": true, "cast": { "companion": { "optional": true } },
+      "title": "{companion}",
+      "text": "{companion} is dead. Something in your chest has gone hot and tight, and you can feel the wall you have been pushing against start to give.",
+      "choices": [
+        { "label": "Let it break in anger", "hint": "Rage burns through the wall. It leaves a mark the Hollow Crown can smell.", "outcome": { "text": "You let it all out and the wall goes with it. When you come back to yourself, the men are keeping their distance.", "do": ["breakthrough", "corrupt:5"] } },
+        { "label": "Mourn, and wait", "outcome": { "text": "You sit with the body through the night. The grief does not let go of you, but it does change shape.", "do": ["cohesion:2"], "then": { "id": "aura_mourned", "days": [6, 9] } } }
+      ]
+    },
+    {
+      "id": "aura_mourned", "scene": "camp",
+      "title": "After the Mourning",
+      "text": "The worst of it has passed. One morning you notice the wall that held you back is gone. You cannot say exactly when it went.",
+      "choices": [
+        { "label": "Rise", "outcome": { "text": "You take up your sword. It feels lighter than it has in a year.", "do": ["breakthrough"] } },
+        { "label": "Raise a cup to the dead first", "outcome": { "text": "The company drinks with you. Then you take up your sword.", "do": ["breakthrough", "cohesion:2"] } }
+      ]
+    },
+    {
+      "id": "flame_bargain", "scene": "flame", "heavy": true,
+      "title": "The Hollow Crown",
+      "text": "A knight in blackened mail sits down at your fire as if he were invited. He knows about your cracked core. He says there is a faster way past the wall, and a black iron circlet waiting for someone who will take it.",
+      "choices": [
+        { "label": "Take his hand", "hint": "Ser Roland of Castelnoir took that hand once. He burned three baronies before his own brothers caught him.", "outcome": { "text": "His grip is cold right through the glove. Something in you catches light.", "do": ["pact"] } },
+        { "label": "Send him away", "outcome": { "text": "He smiles as if he had expected that, and walks off into the dark without a torch.", "do": ["renown:2"] } },
+        { "label": "Draw on him", "check": { "skill": "Arms", "against": 55 }, "hint": "He is quicker than any living man ought to be.",
+          "pass": { "text": "Your blade catches him across the cheek. He touches the cut, looks at the blood, and goes.", "do": ["renown:5", "calm:4"] },
+          "fail": { "text": "He knocks your sword aside without getting up. Before he leaves, he tells you that you will ask him back.", "do": ["corrupt:3"] } }
+      ]
+    },
+    {
+      "id": "flame_rival", "scene": "flame",
+      "title": "{rival}",
+      "text": "{rival} rides into camp in black mail with something burning behind his eyes. He has found the faster way, and he is offering you the same.",
+      "choices": [
+        { "label": "Take what he offers", "outcome": { "text": "He laughs and claps you on the shoulder. Brothers again, he says.", "do": ["pact"] } },
+        { "label": "Drive him off", "outcome": { "text": "Your men level spears at him. He wheels away still laughing.", "do": ["renown:3"] } }
+      ]
+    },
+    {
+      "id": "flame_end", "scene": "flame", "heavy": true,
+      "title": "The Black Flame",
+      "text": "There is nothing left in you for the fire to burn. Behind your eyes the black iron circlet is waiting.",
+      "choices": [
+        { "label": "Take the Hollow Crown", "outcome": { "text": "You put it on.", "do": ["hollow_crown"] } },
+        { "label": "Burn out", "outcome": { "text": "You turn your face away from it, and the fire takes the rest of you instead.", "do": ["burn_out"] } }
+      ]
+    },
+    {
+      "id": "rival_meet", "scene": "court",
+      "title": "{rival}",
+      "text": "A young knight of your order has been watching you all through the chapter's dinner. When he finally comes over, he introduces himself as {rival} and says he has heard a lot about you.",
+      "choices": [
+        { "label": "Offer him your hand", "outcome": { "text": "He takes it, and grins. There will be lists at the next chapter, he says. He hopes to see you there.", "do": ["rival:12"], "then": { "id": "rival_lists", "days": [7, 12] } } },
+        { "label": "Measure him coldly", "outcome": { "text": "He is not used to being looked at like that. He remembers it.", "do": ["rival:-8", "renown:2"], "then": { "id": "rival_lists", "days": [7, 12] } } }
+      ]
+    },
+    {
+      "id": "rival_lists", "scene": "court",
+      "title": "At the Lists",
+      "text": "The whole chapter has come out to watch. {rival} is already armed at the far end of the field.",
+      "choices": [
+        { "label": "Fight in earnest", "outcome": { "text": "The trumpets sound.", "do": ["rival_bout"], "then": { "id": "rival_end", "days": [10, 16] } } },
+        { "label": "Yield to him with grace", "outcome": { "text": "You bow from the saddle and leave him the field. Some of the brothers mutter, and he notices that you let him have it.", "do": ["rival:10", "renown:-2"], "then": { "id": "rival_end", "days": [10, 16] } } }
+      ]
+    },
+    {
+      "id": "rival_end", "scene": "court",
+      "title": "{rival}",
+      "text": "There is news of {rival} from the chapter house, and the messenger will not tell you what it is until you have read the letter.",
+      "choices": [
+        { "label": "Ride to him", "outcome": { "text": "You go yourself.", "do": ["rival_fate"] } },
+        { "label": "Read it where you stand", "outcome": { "text": "You break the seal.", "do": ["rival_fate"] } }
+      ]
+    }
+  ]
+}

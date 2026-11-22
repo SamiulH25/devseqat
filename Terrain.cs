@@ -486,12 +486,66 @@ public sealed partial class Terrain
         return false;
     }
 
+    /// Proactive local obstacle avoidance: if a solid building, rock or trunk lies ahead along `dir` within `lookAhead`,
+    /// returns a unit detour direction curving smoothly around the nearer side (or Vector2.Zero when the way ahead is clear).
+    public Vector2 AvoidObstacle(Vector2 pos, Vector2 dir, float r, float lookAhead, int tieSign = 1)
+    {
+        if (Foliage.Count == 0 && Wall == null) return Vector2.Zero;
+        var right = new Vector2(-dir.Y, dir.X);
+        float bestAlong = float.MaxValue;
+        Vector2 bestDetour = Vector2.Zero;
+
+        void Consider(Vector2 center, float alongHalf, float acrossHalf)
+        {
+            var rel = center - pos;
+            float along = Vector2.Dot(rel, dir);
+            float clearance = acrossHalf + r + 0.2f;
+            if (along < 0 || along > lookAhead + alongHalf) return;
+            float lat = Vector2.Dot(rel, right);
+            if (MathF.Abs(lat) >= clearance) return;
+            float hitAt = MathF.Max(0, along - alongHalf);
+            if (hitAt >= bestAlong) return;
+            bestAlong = hitAt;
+            float side = MathF.Abs(lat) < 0.25f ? tieSign : (lat > 0 ? -1 : 1);
+            float urgency = Math.Clamp(1 - hitAt / MathF.Max(1f, lookAhead), 0.2f, 1f);
+            var tangent = dir * (1 - urgency * 0.45f) + right * (side * (0.45f + urgency * 0.55f));
+            bestDetour = tangent.LengthSquared() > 1e-4f ? Vector2.Normalize(tangent) : right * side;
+        }
+
+        if (Wall != null)
+        {
+            foreach (var b in Wall.Buildings)
+            {
+                float alongHalf = MathF.Abs(Vector2.Dot(dir, b.Along)) * b.W * 0.5f + MathF.Abs(Vector2.Dot(dir, b.Across)) * b.D * 0.5f;
+                float acrossHalf = MathF.Abs(Vector2.Dot(right, b.Along)) * b.W * 0.5f + MathF.Abs(Vector2.Dot(right, b.Across)) * b.D * 0.5f;
+                Consider(b.Pos, alongHalf, acrossHalf);
+            }
+        }
+        if (Foliage.Count > 0)
+        {
+            var probe = pos + dir * (lookAhead * 0.5f);
+            int bx = (int)((probe.X + Half) / Cell), bz = (int)((probe.Y + Half) / Cell);
+            for (int z = bz - 1; z <= bz + 1; z++)
+                for (int x = bx - 1; x <= bx + 1; x++)
+                {
+                    if (x < 0 || z < 0 || x >= bucketSide || z >= bucketSide) continue;
+                    foreach (int i in buckets[z * bucketSide + x])
+                    {
+                        var f = Foliage[i];
+                        if (f.Radius <= 0) continue;
+                        Consider(f.Pos, f.Radius, f.Radius);
+                    }
+                }
+        }
+        return bestDetour;
+    }
+
     /// Push a circle of radius r out of any trunk or boulder it overlaps. Returns true if it hit something.
     public bool PushOut(ref Vector2 p, float r, bool mounted = true)
     {
         bool hit = PushOutFeatures(ref p, r, mounted);
         if (Wall != null && Wall.PushOutBuildings(ref p, r)) hit = true;
-        if (IsFlat) return hit;
+        if (Foliage.Count == 0) return hit;
         int bx = (int)((p.X + Half) / Cell), bz = (int)((p.Y + Half) / Cell);
         for (int z = bz - 1; z <= bz + 1; z++)
             for (int x = bx - 1; x <= bx + 1; x++)

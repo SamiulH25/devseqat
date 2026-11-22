@@ -306,7 +306,7 @@ sealed partial class Puppet3D
             if (k >= 1f) return false; // let rising spirit wisps draw via Puppet
         }
 
-        int palIdx = u.IsPlayer ? 2 : u.Palette;
+        int palIdx = u.Palette;
         Color tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;
         if (u.Poison > 0 && u.HitFlash <= 0) tint = Color.Lerp(tint, new Color(150, 230, 110), 0.4f);
         unitIdHash = Ease.Hash(u.Index * 37 + 11);

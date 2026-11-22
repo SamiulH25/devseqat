@@ -136,13 +136,18 @@ public partial class Battle
         return front;
     }
 
-    /// An anchor the general would put in deep water moves to the nearest crossing (a ford or bridge on its side),
-    /// so the line goes over where it can instead of wading (T5 "take the crossing").
+    /// An anchor the general would put in deep water or inside a building moves to clear ground nearby,
+    /// so companies route around structures and take crossings instead of walking into walls (T5).
     Vector2 DryAnchor(Vector2 anchor)
     {
-        if (Terrain.Rivers.Count == 0 || Terrain.WaterDepth(anchor) < 0.6f) return anchor;
-        var crossing = BestPlace(anchor, 200, p => p.Kind is PlaceKind.Ford or PlaceKind.Bridge ? 1 : 0);
-        return crossing?.Pos ?? anchor;
+        if (Terrain.Rivers.Count > 0 && Terrain.WaterDepth(anchor) >= 0.6f)
+        {
+            var crossing = BestPlace(anchor, 200, p => p.Kind is PlaceKind.Ford or PlaceKind.Bridge ? 1 : 0);
+            if (crossing is { } cr) anchor = cr.Pos;
+        }
+        if (Terrain.House(anchor, 1.5f))
+            Terrain.PushOut(ref anchor, 2.2f, true);
+        return anchor;
     }
 
     /// How bad an enemy company's ground is for a horse charge: woods, mud, water, or well uphill (0 = good going).

@@ -3,7 +3,8 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// 5x7 bitmap font built at startup (uppercase only), so the HUD needs no SpriteFont content.
+/// 5x7 bitmap font built at startup, so the HUD needs no SpriteFont content. The interface writes in capitals; a lowercase set
+/// (5x9, two rows below the line for descenders) is used only by `DrawMixed`, for prose such as the event book.
 public sealed class PixelFont
 {
     const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,:-/()!%+[]=><?'\u00b7";
@@ -21,6 +22,18 @@ public sealed class PixelFont
         "0E02020202020E", "00001F001F0000", "08040201020408", "02040810080402", "0E110102040004", "04040800000000",
         "0000000C0C0000", // a middle dot, between the parts of a one-line card (docs/archive/OFFICERS.md OF4)
     };
+
+    /// a-z, nine rows each (row 6 is the line the capitals stand on; rows 7-8 the descenders).
+    static readonly string[] Lower =
+    {
+        "00000E010F110F0000", "1010161911111E0000", "00000E1010110E0000", "01010D1311110F0000", "00000E111F100E0000", "0609081C0808080000",
+        "00000F1111110F010E", "101016191111110000", "04000C0404040E0000", "02000602020202120C", "101012141814120000", "0C04040404040E0000",
+        "00001A151515150000", "000016191111110000", "00000E1111110E0000", "00001E1111111E1010", "00000F1111110F0101", "000016191010100000",
+        "00000F100E011E0000", "08081C080809060000", "0000111111130D0000", "00001111110A040000", "0000111115150A0000", "0000110A040A110000",
+        "0000111111110F010E", "00001F0204081F0000",
+    };
+    /// Texture rows of the lowercase cells: with their shadow, and plain (ink on paper). Ten rows a cell.
+    const int LowShadow = 16, LowPlain = 26;
 
     readonly Texture2D tex;
     static readonly sbyte[] CharIdx = BuildCharIdx();
@@ -40,7 +53,7 @@ public sealed class PixelFont
         // black at 200/255, so a tint scales it with the glyph). One sprite a character then draws both. The last cell is solid
         // white: rectangles are drawn from this texture too, so text and boxes batch together.
         int cells = Chars.Length + 1, stride = cells * 6;
-        var data = new Color[stride * 16]; // rows 8-15: the same glyphs with no shadow, for writing on paper
+        var data = new Color[stride * 36]; // rows 8-15: the same glyphs with no shadow, for writing on paper; 16-35: lowercase
         var shadow = new Color(0, 0, 0, 200);
         for (int g = 0; g < Glyphs.Length; g++)
             for (int row = 0; row < 7; row++)
@@ -56,8 +69,22 @@ public sealed class PixelFont
                 for (int b = 0; b < 5; b++)
                     if ((bits >> (4 - b) & 1) != 0) data[row * stride + g * 6 + b] = data[(row + 8) * stride + g * 6 + b] = Color.White;
             }
+        for (int g = 0; g < Lower.Length; g++)
+            for (int row = 0; row < 9; row++)
+            {
+                int bits = Convert.ToInt32(Lower[g].Substring(row * 2, 2), 16);
+                for (int b = 0; b < 5; b++)
+                    if ((bits >> (4 - b) & 1) != 0) data[(LowShadow + row + 1) * stride + g * 6 + b + 1] = shadow;
+            }
+        for (int g = 0; g < Lower.Length; g++)
+            for (int row = 0; row < 9; row++)
+            {
+                int bits = Convert.ToInt32(Lower[g].Substring(row * 2, 2), 16);
+                for (int b = 0; b < 5; b++)
+                    if ((bits >> (4 - b) & 1) != 0) data[(LowShadow + row) * stride + g * 6 + b] = data[(LowPlain + row) * stride + g * 6 + b] = Color.White;
+            }
         for (int row = 0; row < 8; row++) for (int b = 0; b < 6; b++) data[row * stride + Chars.Length * 6 + b] = Color.White;
-        tex = new Texture2D(gd, stride, 16);
+        tex = new Texture2D(gd, stride, 36);
         tex.SetData(data);
     }
 
@@ -82,6 +109,21 @@ public sealed class PixelFont
 
     /// The glyphs alone, with no black shadow under them (ink on paper, where a dark shadow would smear dark letters).
     public void DrawPlain(SpriteBatch sb, string s, Vector2 pos, Color c, int scale = 2) => DrawRun(sb, s, pos, c, scale, 8);
+
+    /// Capitals and lowercase as written, for prose (the event book). A line takes ten rows, not eight: leave room for the
+    /// descenders. `plain` drops the shadow (ink on paper).
+    public void DrawMixed(SpriteBatch sb, string s, Vector2 pos, Color c, int scale = 2, bool plain = false)
+    {
+        int space = CharIdx[' '];
+        for (int k = 0; k < s.Length; k++)
+        {
+            char ch = s[k];
+            var src = ch is >= 'a' and <= 'z' ? new Rectangle((ch - 'a') * 6, plain ? LowPlain : LowShadow, 6, 10)
+                : new Rectangle((ch < 256 ? CharIdx[ch] : space) * 6, plain ? 8 : 0, 6, 8);
+            sb.Draw(tex, pos, src, c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+            pos.X += 6 * scale;
+        }
+    }
 
     void DrawRun(SpriteBatch sb, string s, Vector2 pos, Color c, int scale, int top = 0)
     {

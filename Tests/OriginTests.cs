@@ -10,7 +10,7 @@ public static partial class SelfTest
         Check(!Origins.Validate().Any(), "origins.json validates: " + string.Join("; ", Origins.Validate()));
         var icons = Kit.IconNames.ToHashSet();
         Check(Origins.Births.Concat(Origins.Pasts).Concat(Origins.Roads).All(o => icons.Contains(o.Icon)), "every origin has a known icon");
-        Check(Origins.Pasts.All(p => Campaign.Events.Any(e => e.Trigger == "origin:" + p.Id)), "every past has its own story event");
+        Check(Origins.Pasts.All(p => Campaign.Events.Any(e => e.When.Contains("origin:" + p.Id))), "every past has its own story event");
 
         var m = new CaptainMaking { Name = "TESTA OF THE FORD", Company = "THE TEST BAND", Realm = 2, Birth = "guild", Past = "hedge_knight", Road = "lance", Skin = 3, Hair = 5, Beard = 2, Nose = 2, Scar = 1, Arms = (int)Emblem.Sun };
         var c = Campaign.New(77, m.Realm, m);
@@ -41,9 +41,9 @@ public static partial class SelfTest
             Check(Origins.RoadGives(road.Id).Count >= 2 && rc.CannotUse(Gear.Get(rc.Captain.Kit.Weapon)) == null, $"the {road.Id} road gives skills and kit you can use");
         }
         // Origin events: only yours, and only after the first fortnight.
-        Check(c.Find("origin:hedge_knight") == null, "the past waits a fortnight");
+        Check(Campaign.EventOf("origin_hedge_knight")!.When.Contains("day>=14") && !c.Holds("day>=14"), "the past waits a fortnight");
         c.S.Hours = 15 * 24;
-        Check(c.Find("origin:hedge_knight") != null && c.Find("origin:guild") != null && c.Find("origin:poacher") == null, "an origin's events come only to its captain");
+        Check(c.Holds("day>=14") && c.Holds("origin:hedge_knight") && c.Holds("origin:guild") && !c.Holds("origin:poacher"), "an origin's events come only to its captain");
 
         // A deserter flies their own banner, with spearmen at their back and their homeland's lords cold.
         var d = new CaptainMaking { Name = "RUNAWAY", Realm = 1, Birth = "camp", Past = "deserter", Road = "sword" };
@@ -57,6 +57,22 @@ public static partial class SelfTest
         dc.S.Hours += 2000 * 24;
         Check(dc.HasBuff("camp_born") && dc.ActiveBuffs.Contains("run_before"), "a renewal never shortens a lasting boon, and it is still on years later");
         Check(Origins.Births.Concat(Origins.Pasts).Count(o => Origins.Boons(o).Any()) >= 15, "most origins lay a boon");
+
+        // Each homeland dresses the captain in its own starting kit, owned and usable, matching the preview.
+        var realmKits = new HashSet<string>();
+        for (int r = 0; r < Factions.All.Count; r++)
+        {
+            var rm = new CaptainMaking { Realm = r, Birth = "camp", Past = "sellsword", Road = "sword" };
+            var rc = Campaign.New(80 + r, r, rm);
+            var rp = Origins.Preview(rm);
+            var k = rc.Captain.Kit;
+            Check(k.Body == rp.Kit.Body && k.Helm == rp.Kit.Helm && k.Shield == rp.Kit.Shield && k.Weapon == rp.Kit.Weapon && k.Horse == rp.Kit.Horse, $"realm {r} campaign kit matches preview");
+            foreach (var id in k.Worn) Check(rc.Owns(id) && rc.CannotUse(Gear.Get(id)) == null, $"realm {r} captain owns and can use {id}");
+            Check(rc.PlayerPalette == Factions.All[r].Palette && PortraitPainter.Of(rm).Palette == Factions.All[r].Palette, $"realm {r} captain wears its faction palette");
+            realmKits.Add($"{k.Body}|{k.Helm}|{k.Shield}|{k.Weapon}|{k.Horse}");
+        }
+        Check(realmKits.Count == Factions.All.Count, "every realm gives its own distinct starting kit");
+        Check(dc.PlayerPalette == 2 && PortraitPainter.Of(d).Palette == 2, "a free company wears gold");
 
         // Without the creator nothing changes.
         var plain = Campaign.New(77);

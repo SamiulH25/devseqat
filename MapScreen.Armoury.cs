@@ -59,7 +59,7 @@ partial class MapScreen
         var sbox = new Rectangle(r.X + ui.U(4), r.Y + ui.U(3), r.Height - ui.U(6), r.Height - ui.U(6));
         ui.Rect(sbox, Color.Black * 0.45f);
         ui.Frame(sbox, Kit.Mul(make == ItemQuality.Plain ? col : MakeColour(make), 0.55f), ui.U(1));
-        ui.GearSprite(g, Kit.Inset(sbox, ui.U(2)));
+        ui.GearSprite(g, Kit.Inset(sbox, ui.U(2)), C.PlayerPalette);
         int tx = sbox.Right + ui.U(6);
         string state = main ? (g.Slot == "weapon" ? " . IN HAND" : " . WORN") : second ? " . SECOND" : "";
         var makeCol = make == ItemQuality.Plain ? col : MakeColour(make);

@@ -220,7 +220,7 @@ sealed partial class Puppet
         if (u.Fled || u.Raised) return; // a raised corpse walks again as a new man
         tilt = 0;
         look = Variety.Of(u);
-        SetPal(PalOf(u.IsPlayer ? 2 : u.Palette));
+        SetPal(PalOf(u.Palette));
         curLook = GetLook(look, pal);
         neutralPal ??= palCache.TryGetValue("/n", out var np) ? np : (palCache["/n"] = new PalSprites(art, "/n"));
         tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;

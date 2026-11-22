@@ -1,0 +1,53 @@
+{
+  // What the captain has become (earned traits, Campaign/Traits.cs) draws its own events.
+  "events": [
+    {
+      "id": "trait_lionheart", "moments": ["arrive", "town"], "when": ["trait:Lionheart", "in:town"], "cooldown": 90, "scene": "town",
+      "title": "A Song About You",
+      "text": "A minstrel in the tavern is singing about a captain who stood alone in front of a charge. It takes you a verse and a half to realise the song is about you.",
+      "choices": [
+        { "label": "Toss him a purse", "cost": ["gold:40"], "outcome": { "text": "He adds a verse on the spot. It is mostly about your generosity.", "do": ["renown:6"] } },
+        { "label": "Let him sing", "outcome": { "text": "Someone buys your ale. Then someone else does.", "do": ["renown:3"] } }
+      ]
+    },
+    {
+      "id": "trait_steadfast", "moments": ["arrive"], "when": ["trait:Steadfast"], "cooldown": 90, "scene": "village",
+      "title": "They Ask for You",
+      "text": "Six farm lads are waiting at the edge of the village. They heard you never break, and they want to stand in a line that holds.",
+      "choices": [
+        { "label": "Take them on", "outcome": { "text": "They will need a lot of drilling, and they know it.", "do": ["men:2"] } },
+        { "label": "Send them home to their fields", "outcome": { "text": "Their mothers thank you.", "do": ["renown:2"] } }
+      ]
+    },
+    {
+      "id": "trait_merciful", "moments": ["arrive", "road"], "when": ["trait:Merciful"], "cooldown": 90, "scene": "village",
+      "title": "Bread for the Captain",
+      "text": "An old woman brings you a loaf. You spared her son after the last fight, and she has walked from the next valley to say so.",
+      "choices": [
+        { "label": "Accept it with thanks", "outcome": { "text": "You eat it in front of her. She is satisfied.", "do": ["food:1", "cohesion:1"] } },
+        { "label": "Give it to the poor of the village", "outcome": { "text": "The story gets told on its own.", "do": ["renown:3"] } }
+      ]
+    },
+    {
+      "id": "trait_ruthless", "moments": ["arrive"], "when": ["trait:Ruthless", "!in:town"], "cooldown": 90, "scene": "village",
+      "title": "Barred Doors",
+      "text": "The village has barred its doors before you ride in. They have heard what you did the last time.",
+      "choices": [
+        { "label": "Let them fear you", "outcome": { "text": "The men take what they want. Nobody stops them.", "do": ["cohesion:2", "renown:-2", "food:3"] } },
+        { "label": "Pay for what the men take", "cost": ["gold:80"], "outcome": { "text": "The doors open, one by one.", "do": ["renown:2"] } }
+      ]
+    },
+    {
+      "id": "trait_coward", "moments": ["camp"], "when": ["trait:Coward"], "cooldown": 60, "scene": "camp",
+      "title": "Talk by the Fires",
+      "text": "The men stop talking when you walk past. You do not need to hear what they were saying about the last fight.",
+      "choices": [
+        { "label": "Stand before them and answer for it", "check": { "skill": "Leadership", "against": 40 }, "hint": "They may not like what you have to say.",
+          "pass": { "text": "You tell them why you pulled back, and enough of them believe you.", "do": ["cohesion:2", "renown:1"] },
+          "fail": { "text": "They listen in silence. It does not help.", "do": ["cohesion:-3"] } },
+        { "label": "Double their pay this week", "cost": ["gold:100"], "outcome": { "text": "The talk stops. The pay will not keep it stopped for long.", "do": ["cohesion:4"] } },
+        { "label": "Say nothing", "outcome": { "text": "The talk goes on.", "do": ["cohesion:-1"] } }
+      ]
+    }
+  ]
+}

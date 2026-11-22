@@ -1,0 +1,55 @@
+{
+  // Towns and villages: what you find when you ride in, and what happens if you stay.
+  "events": [
+    {
+      "id": "tournament", "moments": ["arrive", "town"], "when": ["!at_war"], "cast": { "settlement": { "where": ["here", "kind:Town"] } }, "cooldown": 30, "scene": "court",
+      "title": "Lists at {settlement}",
+      "text": "The heralds of {settlement} are crying a tournament. There is prize money, and lords in the stands who might be looking for a captain.",
+      "choices": [
+        { "label": "Enter the lists", "outcome": { "text": "You put your name down.", "do": ["lists"] } },
+        { "label": "Watch from the stands", "outcome": { "text": "You watch a good afternoon of jousting and drink with the losers afterwards.", "do": ["cohesion:1"] } }
+      ]
+    },
+    {
+      "id": "tavern_brawl", "moments": ["town"], "cast": { "settlement": { "where": ["here"] } }, "cooldown": 40, "scene": "town",
+      "title": "A Brawl at the Tavern",
+      "text": "Some of your men got into a fight with the town watch. Tables are broken, the landlord wants paying, and two watchmen are in the stocks with your men's handiwork on their faces.",
+      "choices": [
+        { "label": "Pay the landlord and the watch", "cost": ["gold:50"], "outcome": { "text": "The town takes your money and forgets about it.", "do": ["cohesion:1"] } },
+        { "label": "Hand the brawlers over", "outcome": { "text": "The town is satisfied. Your men are not.", "do": ["cohesion:-3", "unrest:-3"] } },
+        { "label": "Talk the reeve round", "check": { "skill": "Charm", "against": 35 }, "hint": "Reeves have long memories and short tempers.",
+          "pass": { "text": "By the end of the evening he is laughing about it.", "do": ["cohesion:2"] },
+          "fail": { "text": "He fines you double, and the gates close behind you.", "do": ["gold:-80", "unrest:5"] } }
+      ]
+    },
+    {
+      "id": "smith_offer", "moments": ["arrive", "town"], "when": ["in:town"], "cooldown": 45, "scene": "town",
+      "title": "The Smith at the Gate",
+      "text": "The town smith has seen the state of your men's blades. He will put an edge on every one of them for a fair price, if you have the time.",
+      "choices": [
+        { "label": "Pay him", "cost": ["gold:70"], "outcome": { "text": "A day of grinding and sparks. Every edge in the company is fit to shave with.", "do": ["buff:whetted:10"] } },
+        { "label": "The men can sharpen their own", "outcome": { "text": "They do, more or less.", "do": [] } }
+      ]
+    },
+    {
+      "id": "recruits_square", "moments": ["arrive", "town"], "when": ["in"], "cooldown": 40, "scene": "village",
+      "title": "Lads in the Square",
+      "text": "A crowd of young men are hanging around the well, watching your company. They look as if they would follow anyone who offered them a meal and a reason.",
+      "choices": [
+        { "label": "Offer them both", "outcome": { "text": "Some of them step forward. Their mothers are not pleased.", "do": ["men:2", "food:-2"] } },
+        { "label": "Hold a drill in the square for them to watch", "check": { "skill": "Training", "against": 25 }, "hint": "If the drill goes wrong, the whole village will laugh.",
+          "pass": { "text": "The company moves like one man. Afterwards, the boldest of the lads walk up and ask to join.", "do": ["men:3", "renown:1"] },
+          "fail": { "text": "Somebody trips and the whole line falls about. The village laughs, and so do your men, eventually.", "do": ["cohesion:1"] } }
+      ]
+    },
+    {
+      "id": "village_culture", "moments": ["arrive"], "cast": { "settlement": { "where": ["here", "kind:Village", "foreign", "open"] } }, "cooldown": 30, "scene": "village",
+      "title": "Strangers in {settlement}",
+      "text": "Your men have never seen people like the folk of {settlement}, with their strange food and strange gods. The villagers do not quite know what to make of your men either.",
+      "choices": [
+        { "label": "Eat at their tables, and learn", "outcome": { "text": "Odd food, and good. The men pick up words of the language, and a few of the villagers pick up yours.", "do": ["cohesion:1", "learn:2"] } },
+        { "label": "Keep to the road", "outcome": { "text": "They watch you go.", "do": [] } }
+      ]
+    }
+  ]
+}

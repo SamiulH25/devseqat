@@ -20,6 +20,7 @@ sealed class Ui
     /// Called when the mouse comes onto a new button (a soft tick).
     public static Action? OnHover;
     static Rectangle hoverWas;
+    static int hoverKey;
     static bool hoverSeen;
 
     /// The mouse is on button `r` this frame: tick once when it arrives on a new one.
@@ -27,13 +28,21 @@ sealed class Ui
     {
         if (hoverSeen) return;
         hoverSeen = true;
-        if (r != hoverWas) { hoverWas = r; OnHover?.Invoke(); }
+        if (hoverKey != 0 || r != hoverWas) { hoverKey = 0; hoverWas = r; OnHover?.Invoke(); }
+    }
+
+    /// The mouse is on a moving control identified by a stable key (e.g. an animating street building): tick once on arrival.
+    public static void Hovered(int key)
+    {
+        if (hoverSeen) return;
+        hoverSeen = true;
+        if (key != hoverKey || hoverWas != Rectangle.Empty) { hoverKey = key; hoverWas = Rectangle.Empty; OnHover?.Invoke(); }
     }
 
     /// End of a frame: forget the hovered button once the mouse has left every button.
     /// The mouse is on an enabled button this frame (the game's cursor warms up over one).
     public static bool OverButton => hoverSeen;
-    public static void FrameEnd() { if (!hoverSeen) hoverWas = Rectangle.Empty; hoverSeen = false; }
+    public static void FrameEnd() { if (!hoverSeen) { hoverWas = Rectangle.Empty; hoverKey = 0; } hoverSeen = false; }
     /// Characters typed since the last frame (the window's text input), for renaming companies.
     public static readonly Queue<char> Typed = new();
 
@@ -155,6 +164,14 @@ sealed class Ui
         var at = new Vector2(MathF.Floor(x), MathF.Floor(y));
         font.DrawPlain(Sb, s, at + new Vector2(0, scale * S), new Color(250, 242, 216) * 0.75f, scale * S);
         font.DrawPlain(Sb, s, at, c, scale * S);
+    }
+    /// Prose in ink on paper, capitals and lowercase as written (the event book): a line wants `U(10)` a scale, not 8.
+    public void InkProse(string s, float x, float y, Color c, int scale = 1)
+    {
+        if (Overflow.On) Overflow.Text(s, MathF.Floor(x), MathF.Floor(y), TW(s, scale));
+        var at = new Vector2(MathF.Floor(x), MathF.Floor(y));
+        font.DrawMixed(Sb, s, at + new Vector2(0, scale * S), new Color(250, 242, 216) * 0.6f, scale * S, true);
+        font.DrawMixed(Sb, s, at, c, scale * S, true);
     }
     public int TW(string s, int scale = 2) => PixelFont.Width(s, scale * S);
     public void TextC(string s, float cx, float y, Color c, int scale = 2) => Text(s, cx - TW(s, scale) / 2f, y, c, scale);

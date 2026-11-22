@@ -1,0 +1,64 @@
+{
+  // Events the world raises (docs/pre-demo/EVENTS.md): the code calls them by id (Campaign.CodeRaised) and fills their cast.
+  // Format and the condition and effect words: Campaign/Events.cs, EventConditions.cs, EventVerbs.cs.
+  "events": [
+    {
+      "id": "start_road", "scene": "camp", "once": true, "title": "The Road You Came By",
+      "text": "The company is new. You are not. Before anyone handed you a captain's staff, you had already made a name for yourself somewhere. How?",
+      "choices": [
+        { "label": "With sword and shield, in the front rank", "outcome": { "text": "Twenty years of shield walls. Your arm still knows where the next blow will come from.", "do": ["road_sword"] } },
+        { "label": "With the lance, from the saddle", "outcome": { "text": "You learned to ride before you could read, and to charge before you could shave.", "do": ["road_lance"] } },
+        { "label": "With the bow, from behind the stakes", "outcome": { "text": "You held the line at a hundred paces. Plenty of knights who laughed at archers are lying under the grass now.", "do": ["road_bow"] } }
+      ]
+    },
+    {
+      "id": "brigand_king", "scene": "burning", "heavy": true, "cast": { "band": {}, "lord": {} },
+      "title": "A Brigand King",
+      "text": "{lord} has gathered the outlaw bands of the country into one host and calls himself their king. Villages pay him or burn.",
+      "choices": [
+        { "label": "Swear before the company to bring him down", "outcome": { "text": "The men cheer the oath. Every reeve between here and the hills will know your name by the end of the week.", "do": ["bounty", "renown:3"] } },
+        { "label": "Keep out of his way", "outcome": { "text": "There are easier ways to earn a living. The villages will have to look after themselves.", "do": ["renown:-1"] } }
+      ]
+    },
+    {
+      "id": "pretender", "scene": "burning", "heavy": true, "cast": { "settlement": {}, "band": {}, "lord": {} },
+      "title": "A Pretender in {settlement}",
+      "text": "{lord} says {settlement} was his grandfather's, and the rebels in the hills have given him a banner. Half the town wants to believe him.",
+      "choices": [
+        { "label": "Ride against him at once", "outcome": { "text": "You put a price on his head and turn the column round.", "do": ["bounty"] } },
+        { "label": "Offer him gold to go away", "cost": ["gold:300"], "outcome": { "text": "He weighs the purse and then his chances. The purse is heavier.", "do": ["disband", "unrest:-15"] } },
+        { "label": "Talk to the townsfolk before he can", "check": { "skill": "Charm", "against": 35 }, "hint": "A captain who comes to talk and fails looks weak.",
+          "pass": { "text": "You stand in the market and answer every question they put to you. By evening the pretender's banner hangs alone.", "do": ["unrest:-25", "renown:2"] },
+          "fail": { "text": "They hear you out and then go home to argue about it. More of them argue for him.", "do": ["unrest:10"] } }
+      ]
+    },
+    {
+      "id": "free_crown", "scene": "court", "heavy": true, "cast": { "settlement": {} },
+      "title": "{settlement} Is Yours",
+      "text": "The gates are open and the keys are in your hand. Nobody holds your contract any more. You could give the town to the {realm}, or you could keep it for yourself.",
+      "choices": [
+        { "label": "Hand it to the {realm}", "outcome": { "text": "You send the keys to court with a letter. They will remember who took it for them.", "do": ["renown:5", "opinion_realm:4"] } },
+        { "label": "Keep it, and rule in your own name", "outcome": { "text": "The banner over the gate is yours now. The neighbouring lords will have something to say about that.", "do": ["crown"] } }
+      ]
+    },
+    {
+      "id": "peace_offer", "scene": "court", "heavy": true, "cast": { "lord": {} },
+      "title": "An Envoy from {lord}",
+      "text": "A rider under a white branch waits at the edge of the camp. {lord} is tired of the war, and you are the one he wants to end it with.",
+      "choices": [
+        { "label": "Make peace", "outcome": { "text": "You put your seal to the terms. The men cheer, and then they start to ask what comes after the war.", "do": ["peace", "renown:2"] } },
+        { "label": "Fight on", "outcome": { "text": "The envoy rides back with your answer. He does not look surprised.", "do": ["renown:1", "opinion:-5"] } }
+      ]
+    },
+    {
+      "id": "bury_dead", "scene": "field", "heavy": true, "cast": { "settlement": { "optional": true } },
+      "title": "The Dead of the Field",
+      "text": "The crows came down before the last of the wounded had been carried off. Too many men are lying in the open, and you know what happens to unburied dead where the Tide runs thick.",
+      "choices": [
+        { "label": "Bury them, friend and foe alike", "outcome": { "text": "Two days with spades. The men work quietly, and when they finish, the ground is just ground again.", "do": ["bury", "food:-3", "cohesion:2"] } },
+        { "label": "Burn them", "outcome": { "text": "The smoke hangs over the camp for a day. The dead will not get up, but the men do not forget the smell.", "do": ["bury", "cohesion:-2"] } },
+        { "label": "March on", "outcome": { "text": "You leave the field to the crows and whatever comes after them.", "do": [] } }
+      ]
+    }
+  ]
+}

@@ -151,7 +151,9 @@ public partial class Battle
             if (enemy != null && d < 15 && toSlot < 25)
             {
                 // Counter-charge whatever comes close: horses standing still are easy meat for a charge.
-                u.Wish = (enemy.Pos - u.Pos) / MathF.Max(d, 0.01f) * (d > 5 ? h.Gallop : h.Trot);
+                var aim = Via(u, enemy.Pos);
+                var toE = aim - u.Pos;
+                u.Wish = toE.LengthSquared() > 1e-4f ? Vector2.Normalize(toE) * (d > 5 ? h.Gallop : h.Trot) : Vector2.Zero;
                 if (u.Type.Class == UnitClass.Cavalry && u.Speed > 6.5f && d > 4 && u.Cooldown <= 0) u.Couched = true;
                 return;
             }
@@ -184,7 +186,8 @@ public partial class Battle
             {
                 // Bogged down: stand and hack, then break off.
                 u.CavTimer -= dt;
-                u.Wish = td > MountedMeleeReach ? (t.Pos - u.Pos) / td * h.Trot * 0.6f : Vector2.Zero;
+                var aimM = Via(u, t.Pos) - u.Pos;
+                u.Wish = td > MountedMeleeReach && aimM.LengthSquared() > 1e-4f ? Vector2.Normalize(aimM) * h.Trot * 0.6f : Vector2.Zero;
                 if (u.CavTimer <= 0) { u.Cav = CavState.Withdraw; u.CavTimer = 4f; }
                 return;
             }
@@ -199,7 +202,8 @@ public partial class Battle
                     return;
                 }
                 var to = (t.Pos - u.Pos) / MathF.Max(td, 0.01f);
-                var aimAt = Via(u, t.Pos + to * 6);
+                var past = t.Pos + to * 6;
+                var aimAt = Via(u, Terrain.House(past, 1.0f) ? t.Pos : past);
                 u.Wish = (aimAt - u.Pos).LengthSquared() > 1e-4f ? Vector2.Normalize(aimAt - u.Pos) * h.Gallop : Vector2.Zero;
                 if (u.Type.Class == UnitClass.Cavalry && u.Speed > 6.5f && td < 30 && u.Cooldown <= 0) u.Couched = true;
                 if (td < 4) u.Contact = true;
@@ -286,7 +290,7 @@ public partial class Battle
         var hold = HoldsGround(team, front, foe);
         var basis = hold ?? front;
         float step = hold != null ? 0 : 6;
-        if (reserveSquad[team] is Squad { BrokeRanks: false } r && r.Alive > 0) { r.Order = Order.Hold; r.Front = dir; r.Anchor = front - dir * 14; }
+        if (reserveSquad[team] is Squad { BrokeRanks: false } r && r.Alive > 0) { r.Order = Order.Hold; r.Front = dir; r.Anchor = DryAnchor(front - dir * 14); }
         // The line advances company by company: each goes in when it is close to the enemy company opposite it
         // (docs/archive/MELEE.md D4); 20 s after the first charge the rest follow.
         foreach (var s in inf) if (s.Order != Order.Charge) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - depth.GetValueOrDefault(s)) + side * lateral.GetValueOrDefault(s)); }
@@ -309,7 +313,7 @@ public partial class Battle
             Log(team == 1 ? "The enemy line charges!" : "Your line charges!");
             Sound(Cue.Shout, front);
         }
-        foreach (var s in Led(team, "casters").Where(s => s.Alive > 0)) { s.Front = dir; s.Anchor = front - dir * 15; s.Order = Order.Hold; } // a necromancer works from behind his dead
+        foreach (var s in Led(team, "casters").Where(s => s.Alive > 0)) { s.Front = dir; s.Anchor = DryAnchor(front - dir * 15); s.Order = Order.Hold; } // a necromancer works from behind his dead
         // With no one left to hold a line, archers shoot what they carry and then go in: no trips back to the wagon.
         bool bowsAlone = !Units.Any(u => u.Team == team && u.Active && !u.Routing && u.Type.Ammo == 0);
         bool seesFoe = Squads.Any(o => o.Team != team && o.Alive > 0 && Visible(o, team));
@@ -345,7 +349,7 @@ public partial class Battle
         if (team == 1)
         {
             eGuard.Front = dir;
-            if (inf.Count > 0) eGuard.Anchor = front - dir * 4; // captain leads from just behind the line (with no line, front is his own guard: he stays put)
+            if (inf.Count > 0) eGuard.Anchor = DryAnchor(front - dir * 4); // captain leads from just behind the line (with no line, front is his own guard: he stays put)
             if (charged[1] && Time - chargedAt[1] > Nature.CaptainJoins && eGuard.Order != Order.Charge) { eGuard.Order = Order.Charge; Log(EnemyCaptain.Type.Wild ? $"The {EnemyCaptain.Type.Name.ToLowerInvariant()} joins the fight!" : "The enemy captain joins the fight!"); }
             HuntGeneral(); // he hunts you (BattleHunt.cs)
         }

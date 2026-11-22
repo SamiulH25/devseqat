@@ -1,0 +1,45 @@
+{
+  // Your fiefs (F6): letters from your reeves with the week, and what you find when you ride in.
+  "events": [
+    {
+      "id": "fief_unrest", "moments": ["week", "arrive"], "cast": { "settlement": { "where": ["fief", "unrest>=50", "!kind:Village"] } }, "cooldown": 30, "scene": "town",
+      "title": "Grumbling in {settlement}",
+      "text": "Your reeve writes from {settlement}. The people are muttering about your taxes and your absence. Someone has painted something rude on the church door.",
+      "choices": [
+        { "label": "Lower the taxes for a season", "outcome": { "text": "The muttering stops. So does some of your income.", "do": ["unrest:-20", "prosperity:-3"] } },
+        { "label": "Hang the ringleaders", "outcome": { "text": "Fear works, for a while.", "do": ["unrest:-10", "renown:-2", "prosperity:-5"] } },
+        { "label": "Ride in and hear their grievances", "check": { "skill": "Stewardship", "against": 35 }, "hint": "A lord who listens and then does nothing has made things worse.",
+          "pass": { "text": "Most of their complaints are fair, and you fix the ones you can. They cheer you out of the gate.", "do": ["unrest:-30", "renown:2"] },
+          "fail": { "text": "You listen all day and promise too much. They know it.", "do": ["unrest:5"] } }
+      ]
+    },
+    {
+      "id": "famine", "moments": ["week"], "cast": { "settlement": { "where": ["fief", "prosperity<30"] } }, "cooldown": 45, "heavy": true, "scene": "village",
+      "title": "Hunger in {settlement}",
+      "text": "The harvest failed in {settlement}. The children are thin, and the old are dying in their beds. The reeve begs for grain.",
+      "choices": [
+        { "label": "Buy grain for them", "cost": ["gold:200"], "outcome": { "text": "Carts of grain go up the road. Nobody in {settlement} will forget whose carts they were.", "do": ["prosperity:12", "unrest:-15", "renown:3"] } },
+        { "label": "Send food from the company's wagons", "cost": ["food:6"], "outcome": { "text": "The company tightens its belt. The village eats.", "do": ["prosperity:6", "unrest:-10", "cohesion:-1"] } },
+        { "label": "They will manage", "outcome": { "text": "Some of them do.", "do": ["prosperity:-5", "unrest:10"] } }
+      ]
+    },
+    {
+      "id": "fief_rich", "moments": ["week"], "cast": { "settlement": { "where": ["fief", "prosperity>=80"] } }, "cooldown": 60, "scene": "town",
+      "title": "A Good Year in {settlement}",
+      "text": "The merchants of {settlement} have had their best year in a generation. They want to put up a market cross with your arms carved on it, if you will pay for half.",
+      "choices": [
+        { "label": "Pay your half", "cost": ["gold:150"], "outcome": { "text": "Your arms in stone in the middle of the square.", "do": ["renown:5", "unrest:-5", "prosperity:3"] } },
+        { "label": "Tax the good year instead", "outcome": { "text": "Coin in the chest, and a few sour looks.", "do": ["gold:180", "unrest:8"] } }
+      ]
+    },
+    {
+      "id": "fief_bandits", "moments": ["week"], "cast": { "settlement": { "where": ["fief"] }, "band": { "where": ["near"] } }, "cooldown": 45, "scene": "burning",
+      "title": "The {band} Near {settlement}",
+      "text": "The {band} have been raiding round {settlement}. Your reeve wants to know what his lord means to do about it.",
+      "choices": [
+        { "label": "Post a price on their heads", "outcome": { "text": "The bounty goes up on the church door.", "do": ["bounty", "unrest:-5"] } },
+        { "label": "Tell the reeve to raise the militia", "outcome": { "text": "Farmers with spears. Better than nothing.", "do": ["unrest:5", "prosperity:-2"] } }
+      ]
+    }
+  ]
+}

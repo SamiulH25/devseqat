@@ -44,7 +44,7 @@ public static partial class SelfTest
         foreach (var k in Campaign.SiteKinds)
         {
             Check(kinds.Contains(k), $"some map has a {k}");
-            Check(Campaign.Events.Any(e => e.Trigger == "site_" + k), $"a {k} has an event");
+            Check(Campaign.Events.Any(e => e.Moments.Contains("site") && e.When.Contains("at_site:" + k)), $"a {k} has an event");
         }
         var c = Campaign.New(7);
         // A spring: ride there, the event comes up, resting heals, and the spring rests for two weeks.
@@ -283,7 +283,7 @@ public static partial class SelfTest
         var c = Campaign.New(4242);
         new Pilot(c).Run(240 * 24);
         // The spread counts the daily draw; forced events (burying your dead, sites you ride to, a brigand king) follow the world.
-        var drawn = c.EventTally.Where(k => !Campaign.Forced(Campaign.EventOf(k.Key)!.Trigger)).ToList();
+        var drawn = c.EventTally.Where(k => !Campaign.CodeRaised.Contains(k.Key) && !k.Key.StartsWith("site_") && Campaign.EventOf(k.Key)!.Moments.Count > 0).ToList();
         int total = drawn.Sum(k => k.Value), forced = c.EventTally.Values.Sum() - total;
         var top = drawn.OrderByDescending(k => k.Value).First();
         Console.WriteLine($"events in 240 days: {total} drawn ({drawn.Count} kinds) and {forced} forced; most often {top.Key} ({top.Value})");
@@ -296,13 +296,14 @@ public static partial class SelfTest
         Check(q.S.Flags.ContainsKey("map"), "keeping the map sets a flag");
         q.S.NextEvent = 0;
         float gold = q.S.Gold;
-        for (int d = 0; d < Campaign.FlagDays + 8 && !q.EventTally.ContainsKey("map_found"); d++)
+        for (int d = 0; d < 14 && !q.EventTally.ContainsKey("map_found"); d++)
         {
             Days(q, 1);
             if (q.S.Event is { Id: not "map_found" }) { q.S.Event = null; q.S.NextEvent = 0; }
         }
-        Check(q.S.Event is { Id: "map_found" } && !q.S.Flags.ContainsKey("map"), "a week later the map's event follows");
+        Check(q.S.Event is { Id: "map_found" }, "a week later the map's event follows");
         q.Choose(0);
+        Check(!q.S.Flags.ContainsKey("map"), "digging spends the map");
         Check(q.S.Gold > gold, "digging where the map says finds coin");
         // New verbs: a fever lays men low; a tip reveals a site.
         var men = q.Player.Men;

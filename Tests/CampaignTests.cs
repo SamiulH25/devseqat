@@ -1431,7 +1431,7 @@ public static partial class SelfTest
         int mended = 0;
         while (c.MendWound() != null) mended++;
         Check(mended == 3 && c.Captain.Wounds.SequenceEqual(new[] { "scar" }), "a healing spring mends wounds, never the scar");
-        Check(Campaign.Events.First(e => e.Id == "site_spring").Choices[0].Effects.Contains("mend"), "the spring's rest mends a wound");
+        Check(Campaign.Events.First(e => e.Id == "site_spring").Choices[0].Outcome!.Do.Contains("mend"), "the spring's rest mends a wound");
     }
 
     static void CaptainTraits()
@@ -1443,7 +1443,7 @@ public static partial class SelfTest
         c.S.Tally["fled"] = 4;
         c.TraitsWeekly();
         Check(c.Me.Traits.Contains("Coward") && c.OpinionOfYou(lord) <= before - 10, "four flights and few wins: lords think less of a coward");
-        Check(c.Find("trait:Coward") != null && c.Find("trait:Lionheart") == null, "a trait is a trigger for its events");
+        Check(c.Holds("trait:Coward") && !c.Holds("trait:Lionheart"), "a trait is a trigger for its events");
         c.S.Tally["victories"] = 10;
         c.TraitsWeekly();
         Check(!c.Me.Traits.Contains("Coward") && c.OpinionOfYou(lord) == before, "ten wins later the name is gone");
@@ -1454,7 +1454,7 @@ public static partial class SelfTest
         c.S.Tally["robbed"] = 6;
         c.TraitsWeekly();
         Check(c.Me.Traits.Contains("Ruthless") && !c.Me.Traits.Contains("Merciful"), "robbing caravans outweighs old mercy");
-        Check(Campaign.Events.Count(e => e.Trigger.StartsWith("trait:")) >= Campaign.EarnedTraits.Length, "each earned trait has an event");
+        Check(Campaign.EarnedTraits.All(t => Campaign.Events.Any(e => e.When.Contains("trait:" + t))), "each earned trait has an event");
         // Age: past 45 a season costs a point of Arms, and Leadership comes quicker.
         var young = Campaign.New(38);
         var old = Campaign.New(38);

@@ -358,6 +358,7 @@ sealed partial class BattleScreen
         ResetMagicFx();
         ResetArrows();
         ResetSpectacle();
+        ResetLod();
         markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = simAcc = soundscapeAcc = 0; ending = -1; lastHitAt = lastPlayerHp = -1;
         Array.Clear(trample); trampleAt = 0; trampleDirty = true;
         world?.Dispose();
@@ -478,7 +479,7 @@ sealed partial class BattleScreen
                 if (battle.Sounds.Count > 0) { PlaySounds(); LeaveMarks(); }
             }
             Effects(dt * scale);
-            if (stepped) { TrackArrows(); Feel(); Trample(); if (battle.WallVersion != wallSeen) { wallSeen = battle.WallVersion; world.RebuildFoliage(); } }
+            if (stepped) { PlayPlayerSounds(); TrackArrows(); Feel(); Trample(); if (battle.WallVersion != wallSeen) { wallSeen = battle.WallVersion; world.RebuildFoliage(); } }
             SpectacleFrame(dt);
         }
         FieldLife(dt * scale);
@@ -494,18 +495,20 @@ sealed partial class BattleScreen
     Battle? suiteFor;
     string foeCultureSuite = "battle_azure";
 
-    /// Battle sound cues, heard from the camera (closest first so nearby blows always claim the frame's voice budget).
+    /// Battle sound cues, heard from the camera (in command view from the ground focus so zooming out never silences the fight).
     void PlaySounds()
     {
         var audio = host.Audio;
         if (audio == null || !audio.Enabled) return;
         var right = Matrix.Invert(view).Right;
+        var listener = Vector3.Lerp(eye, focusPoint + new Vector3(0, 8f, 0), blend);
+        var listener2 = new Vector2(listener.X, listener.Z);
+        float zoomScale = 1f + MathF.Max(0, zoom - 45f) * 0.01f * blend;
         if (battle.Sounds.Count > 0)
         {
-            var eye2 = new Vector2(eye.X, eye.Z);
             sortedSounds.Clear();
             sortedSounds.AddRange(battle.Sounds);
-            sortedSounds.Sort((a, b) => Vector2.DistanceSquared(a.Pos, eye2).CompareTo(Vector2.DistanceSquared(b.Pos, eye2)));
+            sortedSounds.Sort((a, b) => Vector2.DistanceSquared(a.Pos, listener2).CompareTo(Vector2.DistanceSquared(b.Pos, listener2)));
             foreach (var (cue, p) in sortedSounds)
             {
                 float range = cue switch
@@ -515,11 +518,17 @@ sealed partial class BattleScreen
                     Cue.Ram or Cue.RamSwing or Cue.EngineRelease or Cue.EngineWinch or Cue.RaiseDead or Cue.ChampionClash or Cue.BearRoar => 120,
                     Cue.Volley => 90,
                     _ => 70,
-                };
+                } * zoomScale;
                 bool nearPlayer = battle.Player.Active && Vector2.DistanceSquared(p, battle.Player.Pos) < 9f;
-                audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), eye, right, range, priority: nearPlayer);
+                audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), listener, right, range, priority: nearPlayer);
             }
         }
+    }
+
+    void PlayPlayerSounds()
+    {
+        var audio = host.Audio;
+        if (audio == null || !audio.Enabled) return;
         var pl = battle.Player;
         if (pl.Active && !command && pl.Hp < pl.Type.MaxHp * 0.28f && (pulseTimer -= frameDt) <= 0)
         {
@@ -527,7 +536,11 @@ sealed partial class BattleScreen
             audio.Play(Cue.LowHpPulse, 0.55f, priority: true);
         }
         bool spanning = pl.Active && Look.GripOf(pl.Type.Look.Weapon) == Grip.Crossbow && pl.Cooldown > 0.35f;
-        if (spanning && !wasSpanning) audio.PlayAt(Cue.CrossbowSpan, new Vector3(pl.Pos.X, battle.Terrain.Height(pl.Pos) + 1, pl.Pos.Y), eye, right, 35, priority: true);
+        if (spanning && !wasSpanning)
+        {
+            var right = Matrix.Invert(view).Right;
+            audio.PlayAt(Cue.CrossbowSpan, new Vector3(pl.Pos.X, battle.Terrain.Height(pl.Pos) + 1, pl.Pos.Y), eye, right, 35, priority: true);
+        }
         wasSpanning = spanning;
     }
     float pulseTimer;

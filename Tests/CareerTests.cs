@@ -359,7 +359,7 @@ public static partial class SelfTest
     static void EventsAndQuests()
     {
         var problems = Campaign.ValidateEvents().ToList();
-        Check(problems.Count == 0, "events.json is valid: " + string.Join("; ", problems));
+        Check(problems.Count == 0, "the events are valid: " + string.Join("; ", problems));
         Check(Campaign.Events.Count >= 12, "a dozen events or more");
 
         // A long campaign played by the stand-in captain: events come, and they name what is in its world.
@@ -402,7 +402,9 @@ public static partial class SelfTest
         band.Cooldown = 30; // kept out of fights for the day, so a passing lord cannot scatter it first
         Days(b, 1);
         var king = b.CharacterOf(band);
-        Check(king is { Kind: "brigand" } && b.S.Event is { Id: "brigand_king" }, "the largest band crowns a brigand king");
+        // Another event may be up first: the king's waits in the queue and comes next.
+        for (int i = 0; i < 3 && b.S.Event is { Id: not "brigand_king" }; i++) { b.Choose(b.EventOf0()); b.Tick(1); }
+        Check(king is { Kind: "brigand" } && b.S.Event is { Id: "brigand_king" }, $"the largest band crowns a brigand king (event {b.S.Event?.Id})");
         b.Choose(0);
         Check(b.S.Contracts.Any(k => k.Target == band.Id && k.Reward >= 400), "a bounty is posted on the brigand king");
         b.Player.Companies.Clear();

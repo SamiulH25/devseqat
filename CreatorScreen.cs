@@ -69,7 +69,7 @@ sealed class CreatorScreen
     {
         if (!Open || stage == null || well.Width <= 0) return;
         Refresh();
-        stage.Render(well.Width, well.Height, preview, !helm, Act, dt);
+        stage.Render(well.Width, well.Height, preview, !helm, Act, dt, Palette);
     }
 
     /// Open on a fresh, randomly named captain of the first realm.
@@ -86,6 +86,7 @@ sealed class CreatorScreen
 
     int U(float v) => ui.U(v);
     string Culture => Factions.All[Math.Clamp(M.Realm, 0, Factions.All.Count - 1)].Culture;
+    int Palette => Origins.Free(M) ? 2 : Factions.All[Math.Clamp(M.Realm, 0, Factions.All.Count - 1)].Palette;
 
     string RandomName()
     {
@@ -134,7 +135,7 @@ sealed class CreatorScreen
 
     void Refresh()
     {
-        string choices = $"{M.Realm}|{M.Birth}|{M.Past}|{M.Road}|{M.Visage}|{M.Arms}";
+        string choices = $"{M.Realm}|{M.FreeStart}|{M.Birth}|{M.Past}|{M.Road}|{M.Visage}|{M.Arms}";
         if (choices != choiceKey)
         {
             if (choiceKey != "")
@@ -280,7 +281,7 @@ sealed class CreatorScreen
         {
             int k = Math.Max(1, (int)(well.Height / (1.75f / Art.Px)));
             int breathe = Ui.Instant ? 0 : (int)MathF.Round(MathF.Sin(time * 1.6f) * U(1));
-            ui.Portrait(look, new Rectangle(well.X, well.Y + U(4) + breathe, well.Width, well.Height - U(4)), k, 2.3f);
+            ui.Portrait(look, new Rectangle(well.X, well.Y + U(4) + breathe, well.Width, well.Height - U(4)), k, 2.3f, palette: Palette);
         }
         this.well = well;
         ui.Frame(well, Color.Black * 0.6f, U(1));
@@ -425,7 +426,7 @@ sealed class CreatorScreen
         Section();
         ui.Text("KIT", inner.X, y, Kit.Gilt, 1); y += U(14);
         var kit = preview.Kit;
-        foreach (var (slot, id) in new[] { ("HAND", kit.Weapon), ("SIDE", kit.Side), ("SHIELD", Gear.Get(kit.Weapon).TwoHanded ? "" : kit.Shield), ("BODY", kit.Body), ("HORSE", kit.Horse) })
+        foreach (var (slot, id) in new[] { ("HAND", kit.Weapon), ("SIDE", kit.Side), ("SHIELD", Gear.Get(kit.Weapon).TwoHanded ? "" : kit.Shield), ("BODY", kit.Body), ("HELM", kit.Helm), ("HORSE", kit.Horse) })
         {
             if (id == "" || y + U(10) > inner.Bottom) continue;
             ui.Text(slot, inner.X, y, Style.Dim, 1);
@@ -434,7 +435,7 @@ sealed class CreatorScreen
             {
                 var g = Gear.Get(id);
                 int pal = Origins.Free(M) ? 2 : Factions.All[M.Realm].Palette;
-                string[] tries = slot == "SHIELD" ? new[] { $"shield.{g.Look}/{pal}" } : slot == "BODY" ? new[] { $"torso.{g.Look}.f/{pal}", $"torso.{g.Look}.f/0" } : slot == "HORSE" ? new[] { "hhead/n" } : new[] { g.Look + "/0" };
+                string[] tries = slot == "SHIELD" ? new[] { $"shield.{g.Look}/{pal}" } : slot == "BODY" ? new[] { $"torso.{g.Look}.f/{pal}", $"torso.{g.Look}.f/0" } : slot == "HELM" ? new[] { $"helm.{g.Look}.f/{pal}", $"helm.{g.Look}.f/0" } : slot == "HORSE" ? new[] { "hhead/n" } : new[] { g.Look + "/0" };
                 string? key = tries.FirstOrDefault(k => ui.HasSprite(k));
                 Card(g.Name.ToUpperInvariant(), g.Text.ToUpperInvariant(), key, slot == "HORSE" ? new Color(Style.Coats[0]) : null, null);
             }
@@ -658,7 +659,7 @@ sealed class CreatorScreen
             foreach (var line in ui.Wrap($"\"{o.Line.ToUpperInvariant()}\"", w - U(20)))
             { ui.TextC(line, pane.Center.X, y, Kit.Parchment * 0.85f, 1); y += U(10); }
         }
-        if (Campaign.Events.Any(e => e.Trigger == "origin:" + o.Id) && y + U(24) < pane.Bottom)
+        if (Campaign.Events.Any(e => e.When.Contains("origin:" + o.Id)) && y + U(24) < pane.Bottom)
         {
             y += U(10);
             string hint = Origins.Births.Contains(o) ? "WHERE YOU CAME FROM MAY CALL YOU BACK." : "YOUR PAST MAY CATCH UP WITH YOU.";
@@ -672,7 +673,7 @@ sealed class CreatorScreen
     int RoadKit(int x, int y, int w, OriginDef road, int bottom)
     {
         // The captain this road makes with your birth and past: the kit you will really carry (a past's horse and all).
-        var c = Origins.Preview(new CaptainMaking { Realm = M.Realm, Birth = M.Birth, Past = M.Past, Road = road.Id });
+        var c = Origins.Preview(new CaptainMaking { Realm = M.Realm, FreeStart = M.FreeStart, Birth = M.Birth, Past = M.Past, Road = road.Id });
         var weapon = Gear.Get(c.Kit.Weapon);
         var pieces = new List<(string Slot, GearDef G, string Key, Color? Tint)> { ("IN HAND", weapon, weapon.Look + "/0", null) };
         if (!weapon.TwoHanded && c.Kit.Shield != "" && Gear.Get(c.Kit.Shield).Look is var sl && sl != "none") pieces.Add(("SHIELD", Gear.Get(c.Kit.Shield), $"shield.{sl}/{(Origins.Free(M) ? 2 : Factions.All[M.Realm].Palette)}", null));

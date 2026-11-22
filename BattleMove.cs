@@ -16,12 +16,22 @@ public partial class Battle
         foreach (var u in Units)
         {
             if (!u.Active) continue;
+            var wish = u.Wish;
+            // Only apply local obstacle avoidance when not already following a squad flow-field route, and never mutate u.Wish
+            // (u.Wish persists across staggered ThinkNow ticks; mutating it here caused 60 Hz left/right oscillation in villages).
+            if (!u.IsPlayer && !Airborne(u) && u.Squad?.Path == null && wish.LengthSquared() > 0.1f)
+            {
+                float wlen = wish.Length();
+                float ar = u.Mounted ? 0.9f : BodyRadius(u);
+                var detour = Terrain.AvoidObstacle(u.Pos, wish / wlen, ar, u.Mounted ? 6.5f : 3.5f, (u.Index & 1) == 0 ? 1 : -1);
+                if (detour != Vector2.Zero) wish = detour * wlen;
+            }
             if (u.Mounted)
             {
-                if (!u.IsPlayer) Steer(u, dt);
+                if (!u.IsPlayer) { var saved = u.Wish; u.Wish = wish; Steer(u, dt); u.Wish = saved; }
                 u.Vel = u.HeadingDir * u.Speed;
             }
-            else u.Vel = u.Wish * (u.Squad is { } fs && !u.Routing && fs.Order != Order.Charge ? fs.Pace : 1) * (u.Mounted ? 1 : Fatigue(u));
+            else u.Vel = wish * (u.Squad is { } fs && !u.Routing && fs.Order != Order.Charge ? fs.Pace : 1) * (u.Mounted ? 1 : Fatigue(u));
             u.Slope = Slope(Terrain, u.Pos, u.Vel);
             float pace = u.Type.Flying ? 1 : SlopeFactor(u.Slope, u.Mounted) * GroundSpeed(u); // the ground and the slope set the pace (not a flyer's)
             if (pace < 1) pace += (1 - pace) * u.Mods.Footing;              // sure-footed men shrug off part of it
@@ -43,14 +53,14 @@ public partial class Battle
             if (Terrain.PushOut(ref u.Pos, r, u.Mounted))
             {
                 if (u.Mounted && u.Speed > 3) u.Speed *= 0.6f;
-                // A man walking into a trunk edges round it, the way he is already leaning (else he stands against it for ever).
-                else if (!u.Mounted && u.Vel.LengthSquared() > 0.1f && (u.Pos - was).LengthSquared() > 1e-8f)
+                // A man or horse hitting a building or trunk edges round it instead of sticking against the wall.
+                if (u.Vel.LengthSquared() > 0.1f && (u.Pos - was).LengthSquared() > 1e-8f)
                 {
                     var n = Vector2.Normalize(u.Pos - was);
                     var side = new Vector2(-n.Y, n.X);
                     float lean = Vector2.Dot(side, u.Vel);
-                    if (MathF.Abs(lean) < 0.05f) lean = u.Place % 2 == 0 ? 1 : -1;
-                    u.Pos += side * MathF.Sign(lean) * u.Vel.Length() * 0.8f * dt;
+                    if (MathF.Abs(lean) < 0.05f) lean = (u.Place & 1) == 0 ? 1 : -1;
+                    u.Pos += side * MathF.Sign(lean) * u.Vel.Length() * (u.Mounted ? 0.55f : 0.8f) * dt;
                     Terrain.PushOut(ref u.Pos, r, u.Mounted);
                 }
             }

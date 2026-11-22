@@ -113,7 +113,7 @@ Characters.cs           lords, companions, wanderers, opinion and memories
 Companies.cs            troop stacks, promotion, honours, ledgers; Scaled(n) (army scale)
 Divisions.cs            your divisions: make, assign, goals, leader temper and command, WithDivisions (into battle)
 Diplomacy.cs            war exhaustion, peace terms, alliances, tribute, hosts, summons
-Events.cs               events from Data/events.json, lord quests, brigand kings, pretenders
+Events.cs               events (storylets) from Data/events/*.json; EventConditions, EventVerbs, EventDirector; Threats (brigand kings, pretenders)
 Fiefs.cs                prosperity, unrest, taxes, buildings, revolts, vassals, defection
 Skills.cs               the captain's skill tree and perks
 Rules.cs                static company math, Strength, AutoResolve, Army (campaign -> battle armies)
@@ -509,7 +509,7 @@ The campaign was built in steps F1-F9 (see `docs/archive/CAMPAIGN_OVERHAUL.md`);
 | Career (F5) | `Career.cs` | Ranks FreeCompany -> SwornSword -> Vassal -> Lord -> Marshal -> King, derived from the world. Thresholds are constants at the top of the file. The council every 14 days grants fiefs, elects a marshal, sets the objective, votes on war. |
 | Fiefs (F6) | `Fiefs.cs` | Prosperity and unrest, taxes, buildings, revolts at unrest 70+, defection at 100; vassals with standing orders. |
 | Diplomacy (F7) | `Diplomacy.cs` | War exhaustion, peace terms (`Terms`), alliances, tribute, hosts and summons. |
-| Events (F8) | `Events.cs`, `Data/events.json` | Triggers find a subject; choices apply effect verbs. See 8.3. |
+| Events | `Events.cs`, `EventConditions.cs`, `EventVerbs.cs`, `EventDirector.cs`, `Data/events/*.json` | Storylets drawn at moments by the director; choices pay costs, roll checks, apply verbs. See 8.3. |
 | Houses, bonds, wants (LD0, LD2, LD4) | `Houses.cs`, `LordBonds.cs`, `Wants.cs` | Every lord has a house and kin; heirs come from the house. Bonds (kin, feud, friend, rival) add to `OpinionOf` and steer armies. Each lord wants one thing (`WantsDaily`); `HelpedWant` credits you when you bring it about. All on the kin dice `KRng`. |
 | Talk, halls, marriage (LD3, LD5, LD6) | `Talk.cs`, `Data/talk.json` | `TopicsFor` lists what can be raised, `CannotAsk` why not, `Odds` the chance, `Say` rolls it and `Grant` applies it. Lines are data (see 8.6). |
 | The roll and the company (L1-L8, C1-C14) | `Roll.cs`, `Natures.cs`, `Ties.cs`, `RollChoices.cs`, `Camp.cs`, `CampEvents.cs`, `CampTalk.cs`, `Remembered.cs`, `Legacy.cs` | Up to six named men a company (`Soldier` in `CompanyRecord.Roll`), each one man of his stack: faces, a nature, ties, deeds. Fates come from the battle (`RollFought`) or the dice (`RollFates`); `SyncRoll` keeps the roll inside the stacks. Your hand: `ChooseSergeant`, `Mention`, `Arm`, `Pension`, `MoveMan`. The camp, its events and talk read the roll; the fallen go to `S.Fallen`, cairns and the book; `S.LastFight` keeps the last battle for the party screen. Own dice `RollRng`. |
@@ -672,7 +672,7 @@ Check visual changes with the screenshot commands in section 1 and look at the P
 
 ## 8. Data files
 
-All in `Data/`. `troops.json`, `factions.json` and `events.json` carry `//` comments that explain their format; `campaign.json`
+All in `Data/`. `troops.json`, `factions.json` and `events/*.json` carry `//` comments that explain their format; `campaign.json`
 uses a `_comment` key instead. Keys match C# field names case-insensitively.
 
 ### 8.1 `troops.json`
@@ -695,26 +695,43 @@ tier, unknown look parts, cavalry without a horse) and `TroopTree` checks every 
 `cultures` (id, name, root troop, text) and the realms: name, palette, culture, and `lines` (the troop each role fields at
 tiers I-VI, six troops (`Troops.MaxTier`); each must be an upgrade of the one before, or the same).
 
-### 8.3 `events.json`
+### 8.3 `events/*.json` (docs/pre-demo/EVENTS.md)
 
-```json
-{ "id": "famine", "trigger": "fief_poor", "cooldown": 30, "title": "HUNGER IN {settlement}",
-  "text": "...", "choices": [
-    { "label": "OPEN YOUR STORES", "need": "gold:200", "effects": ["gold:-200", "prosperity:12", "unrest:-10"] },
-    { "label": "LET THEM FEND", "effects": ["unrest:12", "prosperity:-3"] } ] }
+One file a theme (`road`, `camp`, `court`, `fief`, `war`, `faith`, `wild`, `town`, `sites`, `origins`, `traits`, `aura`, `fallen`,
+`world`), each `{ "events": [ ... ] }`. A storylet:
+
+```jsonc
+{ "id": "ford_toll", "moments": ["road"], "when": ["river", "!in"], "cooldown": 40, "scene": "ford",
+  "cast": { "lord": { "where": ["near", "!enemy"], "optional": true } },
+  "title": "The Toll at the Ford", "text": "... {lord} ...",
+  "choices": [
+    { "label": "Pay the toll", "cost": ["gold:40"], "outcome": { "text": "...", "do": [] } },
+    { "label": "Wade the shallows", "check": { "skill": "Logistics", "against": 30 }, "hint": "The river is running high.",
+      "pass": { "text": "...", "do": ["cohesion:1"] }, "fail": { "text": "...", "do": ["horses:-2", "food:-2"] } },
+    { "label": "Follow the dead man's map", "outcome": { "text": "...", "do": ["flag:map"], "then": { "id": "map_found", "days": [7, 10] } } } ] }
 ```
 
-- **Triggers** (`Campaign.Triggers` in `Events.cs`): `fief_unrest`, `fief_poor`, `fief_rich`, `lord_friend`,
-  `lord_hates_liege`, `big_band`, `veterans`, `hungry_winter`, `unpaid`, `prisoners`, `war_weary`, `in_town`, and the forced
-  `brigand_king`, `pretender`. Each is a `case` in `Find(trigger)` that picks the subject or returns null.
-- **Camp events** use the `men_*` triggers (`Campaign.MenTriggers` in `CampEvents.cs`; `FindMen` picks one or two named men),
-  scene `camp`, holes `{man}`, `{other}`, `{company}`, `{home}`, and their own verbs `man_deed` (with the choice's `deed` text),
-  `man_hurt`, `man_leaves`, `tie`, `mention` (`MenEffect`). `CampEvents` validates them.
-- **Effect verbs** (`Verbs`): `gold`, `renown`, `food`, `horses`, `opinion`, `opinion_liege`, `opinion_realm`, `unrest`,
-  `prosperity`, `tax`, `cohesion`, `xp`, `exhaustion`, `gamble`, and without a number: `quest`, `bounty`, `revolt`,
-  `prisoners_free`, `prisoners_recruit`, `disband`. Each is a `case` in `ApplyEffect`.
-- **Holes** in text: `{settlement}`, `{lord}`, `{band}`, `{company}`, `{realm}`, `{liege}`.
-- `ValidateEvents` (run by the `EventsAndQuests` test) rejects unknown triggers, verbs and holes.
+- **Moments** (`Campaign.Moments`): `road` (moving), `camp` (the evening, away from a place), `arrive`, `town` (six hours in a place),
+  `battle` (just fought), `province` (a new one), `week`, and `site` (a site reached; `Sites.cs` raises it). The director
+  (`EventDirector.cs`) checks hourly: after the quiet since the last event (`Balance.EventQuietMin/Max`, heavier events more) and
+  under the weekly cap of drawn events (`EventWeekCap`), a moment's chance (`EventRoad`, `EventCamp`...) rising when overdue
+  (`EventOverdue`) draws one that fits, by weight x freshness (its theme and itself seen lately) x fit (more conditions, more fit).
+- **Conditions** (`when`, `needs`, a cast role's `where`, a follow-up's `when`): `[!]key[:arg][op number]`, op `< <= > >= = !=`.
+  Global keys are `Campaign.GlobalConds` (`season:winter`, `gold>=100`, `trait:Lionheart`, `origin:poacher`, `in:town`, `land:Forest`,
+  `chose:event.N` (1-based), `flag:x`, `omen>=12`...); role keys `Campaign.CastConds` (lord `near`/`friend`/`cold`/`hates_liege`,
+  man `nature:Bold`/`tie:Rivals`/`veteran`/`hurt`, settlement `fief`/`unrest>=50`/`kind:Village`...).
+- **Cast:** roles `lord`, `companion`, `man`, `other` (found from the man's ties), `settlement`, `site`, `band`, `company`; holes
+  `{role}` plus `Campaign.FreeHoles` (`{realm}`, `{liege}`, `{rival}`, `{home}`, `{field}`, `{dead}`, `{fallen}`...). A role the code fills
+  (`optional` with no `where`) is never searched for.
+- **Choices:** `cost` (gold/food/horses, paid first, bars the choice if you cannot), `needs` (conditions; `why` overrides the
+  reason shown), one `outcome`, or a `check` (`skill`, or `man`: man/other/companion, `nature`, `trait`; `against`) with `pass`/`fail`
+  and optional `great`/`awful` (the outer `EventCheckEdge` of each side). Odds = clamp(0.5 + (score - against) / `EventCheckSpread`,
+  `EventCheckFloor`); a skill scores 20 + the skill, a man 25 + battles, mentions, nature. The odds shown are the odds rolled.
+- **Outcomes:** `text`, `do` (verbs, `Campaign.Verbs`: numbers like `gold:-50`, words like `quest`, `bounty`, `man_deed`), `deed`
+  (for `man_deed`), `then` (a follow-up queued `days` later about the same cast, kept 10 days while its `when` waits).
+- Events the code raises (`Campaign.CodeRaised`: burial, cairns, the Flame, the rival, envoys, brigand kings...) have no moments;
+  `Force` raises one now or queues it ahead of everything drawn. `ValidateEvents` (test `EventsValidate`) refuses unknown keys,
+  conditions, holes and verbs, a check without a hint, an unused verb.
 
 ### 8.4 `campaign.json`
 
@@ -838,10 +855,11 @@ stand-in captain and reports career stage days against targets (slow: ~10 min fo
 3. Read `Options.MyField` in the battle code. Replays store `Options`, so they keep working.
 
 ### 10.7 Add an event
-1. Add an entry to `Data/events.json` using existing triggers and verbs (8.3).
-2. For a new trigger: a `case` in `Find` returning a `PendingEvent` (or null) and its name in `Triggers`.
-   For a new verb: a `case` in `ApplyEffect` and its name in `Verbs` (and `NoNumber` if it takes no number).
-3. `tools/check.sh` (`EventsAndQuests` validates the file).
+1. Add a storylet to the fitting `Data/events/<theme>.json` (8.3): moments, conditions, cast, choices; prefer a check with a hint
+   for any choice that should be able to go wrong.
+2. A new condition: an entry in `GlobalConds` or `CastConds` (`EventConditions.cs`). A new verb: an entry in `Verbs` and a case in
+   `ApplyEffect` (`EventVerbs.cs`). An event the code raises: its id in `CodeRaised` and `Force(id, pe)` where it happens.
+3. `--selftest EventsValidate`, then `--events 4` to see it fire and that nothing dominates; shots with `IRONFIELD_EVENTS_ONLY=1`.
 
 ### 10.8 Change battle AI or combat
 1. Find the step in the tick table (4.3); AI in `BattleAI.cs`, damage in `BattleCombat.cs`, morale in `BattleMorale.cs`.

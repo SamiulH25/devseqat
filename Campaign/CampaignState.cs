@@ -623,6 +623,8 @@ public sealed class CampaignState
     public ulong OrderRng;
     /// The houses' stream (families, births, deaths, marriages; Campaign/Houses.cs).
     public ulong KinRng;
+    /// The events' stream (Rng.Events): the director, casts and checks, so a new event never moves the world's dice.
+    public ulong EventRng;
     /// The noble houses (Campaign/Houses.cs).
     public List<House> Houses = new();
     /// The knight orders (docs/archive/KNIGHT_ORDERS.md 4), made on load for saves from before them.
@@ -666,18 +668,25 @@ public sealed class CampaignState
     public List<Payment> Payments = new();
     public List<string> Treaties = new();
     public Summons? Summons;
-    /// Events (F8): the one waiting for your answer, when the next may come, and when each last fired.
+    /// Events (docs/pre-demo/EVENTS.md): the one waiting for your answer, the quiet before the director may draw another,
+    /// and when each last fired.
     public PendingEvent? Event;
     public float NextEvent = 72;
-    /// When the next camp event may come (C5, Campaign/CampEvents.cs); 0 = not yet set.
-    public float NextMenEvent;
     public Dictionary<string, float> EventsFired = new();
+    /// Events the world raised while another waited, and follow-ups due later (EV1, EV2); drained before anything is drawn.
+    public List<QueuedEvent> EventQueue = new();
+    /// What you chose in each event, newest last (read by the `chose:` and `seen:` conditions).
+    public List<EventMemory> EventHistory = new();
+    /// The director's memory of the moments it has seen: the place you were last at, the province, the day of the last camp,
+    /// the battle it last answered (Campaign/EventDirector.cs).
+    public int EventPlace = -1, EventProvince = -1, EventCampDay = -1;
+    public float EventBattle = -9999, EventPlaceSince;
     /// Grave fields of big battles whose dead were not buried (docs/archive/CREATURES.md phase 5): one may rise as an undead host.
     public List<Grave> Graves = new();
     public float LastSummons = -1000;
     public int LastBattleFoe = -1;             // the last party you defeated (for hunt contracts)
     public float LastBattleAt = -9999;         // when you last fought (the after_battle events, S6)
-    /// Follow-up events waiting (S6): a "flag:name" effect sets name to the hour; a "flag:name" trigger fires a week later.
+    /// Things the events remember (a "flag:name" effect sets name to the hour; read by the `flag:name` condition).
     public Dictionary<string, float> Flags = new();
     /// Your deeds for the chronicle and the end summary (S7), what you did counted by kind, and a watchtower's long view.
     public List<LogEntry> Deeds = new();
@@ -790,7 +799,7 @@ public sealed class Rng
     }
 
     readonly CampaignState s;
-    readonly bool roll, orders, kin;
+    readonly bool roll, orders, kin, events;
     public Rng(CampaignState state) { s = state; if (s.Rng == 0) s.Rng = 0x9E3779B97F4A7C15UL ^ (ulong)(uint)s.Seed; }
     /// The roll's stream (CampaignState.RollRng), seeded apart from the main one.
     public Rng(CampaignState state, bool roll) : this(state) { this.roll = roll; if (roll && s.RollRng == 0) s.RollRng = 0xD1B54A32D192ED03UL ^ (ulong)(uint)s.Seed; }
@@ -810,12 +819,20 @@ public sealed class Rng
         return r;
     }
     bool kinStream { init => kin = value; }
+    /// The events' stream (CampaignState.EventRng).
+    public static Rng Events(CampaignState state)
+    {
+        var r = new Rng(state, false, false) { eventStream = true };
+        if (state.EventRng == 0) state.EventRng = 0x8EBC6AF09C88C6E3UL ^ (ulong)(uint)state.Seed;
+        return r;
+    }
+    bool eventStream { init => events = value; }
 
     public ulong NextU()
     {
-        ulong x = kin ? s.KinRng : orders ? s.OrderRng : roll ? s.RollRng : s.Rng;
+        ulong x = events ? s.EventRng : kin ? s.KinRng : orders ? s.OrderRng : roll ? s.RollRng : s.Rng;
         x ^= x >> 12; x ^= x << 25; x ^= x >> 27;
-        if (kin) s.KinRng = x; else if (orders) s.OrderRng = x; else if (roll) s.RollRng = x; else s.Rng = x;
+        if (events) s.EventRng = x; else if (kin) s.KinRng = x; else if (orders) s.OrderRng = x; else if (roll) s.RollRng = x; else s.Rng = x;
         return x * 0x2545F4914F6CDD1DUL;
     }
 
@@ -919,6 +936,14 @@ public sealed class Balance
     public float HoldoutsPerWildProvince = 0.7f, HoldoutSpawnChance = 0.45f, HoldoutClearance = 12;
     public float HoldoutStartMen = 10, HoldoutMaxMen = 45, HoldoutGrowPerDay = 0.7f, HoldoutBossMen = 35;
     public float HoldoutRaidDays = 4, HoldoutRaidMen = 18, HoldoutRaidBand = 10, HoldoutRaidRange = 45;
+    /// The events' director (docs/pre-demo/EVENTS.md EV1): days of quiet after an event (EventHeavyQuiet more after a weighty
+    /// one), at most EventWeekCap drawn in seven days; the chance an hour's moment draws one (road and town are rolled every
+    /// hour, the rest once as they happen), raised by EventOverdue for each day past the quiet.
+    public float EventQuietMin = 1.5f, EventQuietMax = 3, EventHeavyQuiet = 1.5f, EventWeekCap = 3, EventOverdue = 0.6f;
+    public float EventRoad = 0.06f, EventTown = 0.04f, EventCamp = 0.5f, EventArrive = 0.35f, EventBattle = 0.6f, EventProvince = 0.2f, EventWeek = 0.3f;
+    /// A check (EV2): the odds of a score against a difficulty are 0.5 + (score - against) / EventCheckSpread, kept within
+    /// EventCheckFloor and 1 - EventCheckFloor; the best and worst EventCheckEdge of each side are a great or an awful result.
+    public float EventCheckSpread = 60, EventCheckFloor = 0.05f, EventCheckEdge = 0.2f;
     /// A holdout's host counts this many times its strength in an auto-resolved fight: it fights from its holes.
     public float HoldoutDefence = 2.5f;
     /// Days a realm's lords hunt a holdout after its raiders plunder one of their villages.

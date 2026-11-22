@@ -2080,6 +2080,51 @@ public static partial class SelfTest
         var p = new LodGovernor();
         p.Pin(0.25f);
         Check(MathF.Abs(p.Distances().Near - (LodGovernor.NearMin + (LodGovernor.NearMax - LodGovernor.NearMin) * 0.25f)) < 1e-3f, "a pinned level sets the distances");
+
+        // After dropping to the floor, returning to smooth frames (even 56 fps) recovers all the way back to full distance promptly.
+        var rec = new LodGovernor();
+        for (int i = 0; i < 30 * 5; i++) rec.Frame(1 / 30f);
+        Check(rec.Level == 0f, "drops to floor under load");
+        for (int i = 0; i < 56 * 10; i++) rec.Frame(1 / 56f);
+        Check(rec.Level >= 0.99f && rec.Distances().Near >= LodGovernor.NearMax - 0.5f, $"recovers to full render distance when smooth frames return (level {rec.Level:0.00})");
+    }
+
+    /// Charging infantry and cavalry route around a solid building directly between them and the enemy instead of stalling against its wall.
+    static void ChargeAroundBuilding()
+    {
+        // Foot charge around a house directly in the way (close enough that PathNear would once have sent them straight into it).
+        var b = Battle.Empty(91);
+        b.Terrain.AddProp(new Foliage(FoliageKind.House, new Vector2(0, 0), 1f, 3.6f, 1));
+        Check(b.Terrain.CrossesHouse(new(0, -8), new(0, 8)), "CrossesHouse detects a building on the straight line");
+        var detour = b.Terrain.AvoidObstacle(new(0, -6.5f), Vector2.UnitY, 0.5f, 5f);
+        Check(detour != Vector2.Zero && MathF.Abs(detour.X) > 0.35f, $"AvoidObstacle steers laterally around the building ({detour})");
+
+        var foot = b.AddSquad(0, UnitType.Shieldman, 12, new(0, -10), 6, Vector2.UnitY);
+        var foe = b.AddSquad(1, UnitType.Shieldman, 12, new(0, 10), 6, -Vector2.UnitY);
+        foot.Order = Order.Charge; foot.Target = foe;
+        foe.Order = Order.Hold; foe.Anchor = new(0, 10); foe.Front = -Vector2.UnitY;
+        bool reached = false;
+        for (int i = 0; i < 60 * 25; i++)
+        {
+            b.Update(1 / 60f);
+            if (foot.Units.Any(u => u.Active && u.Pos.Y > 3)) { reached = true; break; }
+        }
+        Check(reached, $"charging foot route around a house to reach the enemy behind it (center {foot.Center})");
+
+        // Cavalry charge around a house directly between them and the enemy.
+        var c = Battle.Empty(92);
+        c.Terrain.AddProp(new Foliage(FoliageKind.House, new Vector2(0, 0), 1f, 3.6f, 2));
+        var cav = c.AddSquad(0, UnitType.Lancer, 8, new(0, -18), 4, Vector2.UnitY);
+        var target = c.AddSquad(1, UnitType.Shieldman, 12, new(0, 14), 6, -Vector2.UnitY);
+        cav.Order = Order.Charge; cav.Target = target;
+        target.Order = Order.Hold; target.Anchor = new(0, 14); target.Front = -Vector2.UnitY;
+        bool cavReached = false;
+        for (int i = 0; i < 60 * 20; i++)
+        {
+            c.Update(1 / 60f);
+            if (cav.Units.Any(u => u.Active && u.Pos.Y > 4)) { cavReached = true; break; }
+        }
+        Check(cavReached, $"charging cavalry curve around a house to reach the enemy behind it (center {cav.Center})");
     }
 }
 

@@ -116,9 +116,8 @@ partial class MapScreen
                 var tip = new Rectangle(Math.Clamp(r.Center.X - tw / 2, ui.U(4), ui.W - tw - ui.U(4)), plate.Bottom + ui.U(3), tw, ui.U(15));
                 ui.Rect(tip, Color.Black * 0.7f);
                 ui.Text(what, tip.X + ui.U(6), tip.Y + ui.U(4), Style.Text, 1);
-                Ui.Hovered(r);
             }
-            if (over || plate.Contains(ui.Mouse)) Ui.Hovered(plate);
+            if (over || plate.Contains(ui.Mouse)) Ui.Hovered(Rng.Of("street:" + place));
             if (ui.Clicked(plate) || over && ui.Clicked(r)) Enter(s, place, inside);
         }
     }

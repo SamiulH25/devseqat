@@ -220,7 +220,7 @@ public sealed partial class Campaign
     void GriefTrial(Character k)
     {
         if (!Captain.AuraWall || S.Event != null || !Events.Any(e => e.Id == "aura_grief")) return;
-        Raise(new PendingEvent { Id = "aura_grief", Lord = k.Id });
+        Raise(new PendingEvent { Id = "aura_grief", Companion = k.Id });
     }
 
     /// A duel won against a champion above you breaks any wall: an order knight of your aura or more, or a lord whose

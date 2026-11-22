@@ -875,19 +875,23 @@
       "id": "kalkan",
       "slot": "shield",
       "name": "Kalkan",
-      "troop": true,
       "cost": 140,
+      "needs": 0,
+      "rank": 0,
       "look": "kalkan",
-      "block": 0.52
+      "block": 0.52,
+      "text": "Woven fig-wood shield with an iron boss, light enough for the saddle."
     },
     {
       "id": "dhal",
       "slot": "shield",
       "name": "Dhal",
-      "troop": true,
       "cost": 180,
+      "needs": 0,
+      "rank": 0,
       "look": "dhal",
-      "block": 0.55
+      "block": 0.55,
+      "text": "Domed Qadiri round shield of hardened hide and brass bosses."
     },
     {
       "id": "targe",
@@ -902,11 +906,13 @@
       "id": "pavise",
       "slot": "shield",
       "name": "Pavise",
-      "troop": true,
       "cost": 380,
+      "needs": 0,
+      "rank": 0,
       "look": "pavise",
       "block": 0.72,
-      "speed": -0.25
+      "speed": -0.25,
+      "text": "Tall Brinemere standing shield built to turn bolts and spears alike."
     },
     {
       "id": "tower_shield",
@@ -1001,30 +1007,42 @@
       "id": "fur_gambeson",
       "slot": "body",
       "name": "Fur Gambeson",
-      "troop": true,
       "cost": 130,
+      "needs": 0,
+      "rank": 0,
       "look": "gambeson_fur",
+      "legs": "cloth",
+      "feet": "boots",
       "armor": 4.5,
-      "speed": 0.1
+      "speed": 0.1,
+      "text": "Heavy quilted Skarland coat lined with wolf-pelt against the frost."
     },
     {
       "id": "kaftan",
       "slot": "body",
       "name": "Quilted Kaftan",
-      "troop": true,
       "cost": 130,
+      "needs": 0,
+      "rank": 0,
       "look": "kaftan",
+      "legs": "cloth",
+      "feet": "boots",
       "armor": 4.5,
-      "speed": 0.1
+      "speed": 0.1,
+      "text": "Layered steppe riding coat stitched thick enough to turn a glancing cut."
     },
     {
       "id": "brigandine",
       "slot": "body",
       "name": "Brigandine",
-      "troop": true,
       "cost": 230,
+      "needs": 0,
+      "rank": 0,
       "look": "brigandine",
-      "armor": 6
+      "legs": "cloth",
+      "feet": "boots",
+      "armor": 6,
+      "text": "Steel plates riveted beneath Vespran wool; flexible and hard-wearing."
     },
     {
       "id": "fur_mail",
@@ -1239,19 +1257,23 @@
       "id": "steppe_helm",
       "slot": "helm",
       "name": "Steppe Helm",
-      "troop": true,
       "cost": 70,
+      "needs": 0,
+      "rank": 0,
       "look": "steppe",
-      "armor": 2
+      "armor": 2,
+      "text": "Conical iron cap with a furred rim, common across the Naryn banners."
     },
     {
       "id": "litham",
       "slot": "helm",
       "name": "Litham and Cap",
-      "troop": true,
       "cost": 70,
+      "needs": 0,
+      "rank": 0,
       "look": "litham",
-      "armor": 2
+      "armor": 2,
+      "text": "Iron skullcap wrapped in desert linen against sun, sand and steel."
     },
     {
       "id": "chapel",
@@ -1266,10 +1288,12 @@
       "id": "morion",
       "slot": "helm",
       "name": "Morion",
-      "troop": true,
       "cost": 100,
+      "needs": 0,
+      "rank": 0,
       "look": "morion",
-      "armor": 2.5
+      "armor": 2.5,
+      "text": "Crested Brinemere steel hat with a curved brim to shed downward blows."
     },
     {
       "id": "spike_helm",
@@ -1302,10 +1326,12 @@
       "id": "bucket",
       "slot": "helm",
       "name": "Bucket Helm",
-      "troop": true,
       "cost": 150,
+      "needs": 0,
+      "rank": 0,
       "look": "bucket",
-      "armor": 3
+      "armor": 3,
+      "text": "Flat-topped iron helm worn by sworn brothers of the Chapter of Tarn."
     },
     {
       "id": "kulah",

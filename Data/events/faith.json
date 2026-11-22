@@ -1,0 +1,61 @@
+{
+  // Faith, Craft and Omen (docs/LORE.md 3): what the men see when the old craft is worked in your camp, and who comes to pray.
+  "events": [
+    {
+      "id": "omen_crows", "moments": ["camp", "road"], "when": ["omen>=12"], "cooldown": 14, "scene": "camp",
+      "title": "Crows over the Camp",
+      "text": "Ever since the craft was worked in this camp, the crows have not left it. The men make the sign of the Grey Light and mutter.",
+      "choices": [
+        { "label": "Pay a priest to keep the watch-prayer", "cost": ["gold:60"], "outcome": { "text": "He prays through the night. In the morning the crows are gone.", "do": ["calm:6", "cohesion:1"] } },
+        { "label": "Tell them crows are crows", "outcome": { "text": "They do not believe you, but they say nothing.", "do": ["cohesion:-2", "calm:2"] } }
+      ]
+    },
+    {
+      "id": "omen_fever", "moments": ["camp"], "when": ["omen>=12"], "cooldown": 20, "scene": "camp",
+      "title": "A Sickness in the Ranks",
+      "text": "Men are waking with fever and they blame the witchery. A few of them talk about leaving before the curse takes them all.",
+      "choices": [
+        { "label": "Burn the charms and herbs in front of them", "outcome": { "text": "The smoke is foul and the men cheer it.", "do": ["calm:8", "renown:-2"] } },
+        { "label": "Let it run its course", "outcome": { "text": "It does.", "do": ["sick:5", "calm:3"] } }
+      ]
+    },
+    {
+      "id": "omen_village", "moments": ["arrive"], "when": ["omen>=12", "!in:town"], "cooldown": 25, "scene": "village",
+      "title": "The Village Shuts Its Doors",
+      "text": "Word of your company's craft has got here before you. The village has barred its gate, and the priest is ringing the bell.",
+      "choices": [
+        { "label": "Give alms to the church", "cost": ["gold:100"], "outcome": { "text": "The gate opens a crack, then the rest of the way.", "do": ["calm:10", "renown:1"] } },
+        { "label": "Ride on", "outcome": { "text": "Doors stay shut behind you all the way down the valley.", "do": ["calm:2", "renown:-1", "buff:shaken:3"] } }
+      ]
+    },
+    {
+      "id": "bone_caller_sign", "moments": ["road", "camp"], "when": ["omen>=20"], "cooldown": 40, "heavy": true, "scene": "field",
+      "title": "Something Walks the Barrows",
+      "text": "Your scouts found a barrow with its stones pulled aside from the inside. There are tracks going away from it that do not look like a living man's.",
+      "choices": [
+        { "label": "Seal it with prayer and salt", "check": { "skill": "Leadership", "against": 40 }, "hint": "Fear spreads faster than salt.",
+          "pass": { "text": "The men work steadily, and when the last stone is set, the air feels lighter.", "do": ["calm:10", "renown:2"] },
+          "fail": { "text": "Halfway through, someone screams, and they all run. The barrow stays open.", "do": ["dread:5", "buff:shaken:5"] } },
+        { "label": "March on, fast", "outcome": { "text": "You put a lot of road between you and it.", "do": ["buff:footsore:2"] } }
+      ]
+    },
+    {
+      "id": "lector_blessing", "moments": ["arrive", "town"], "when": ["in:town"], "cooldown": 60, "weight": 0.7, "scene": "shrine",
+      "title": "A Lector's Blessing",
+      "text": "A grey-robed Lector of the Vigil offers to bless the company before it marches. He mentions the cathedral roof fund as he does it.",
+      "choices": [
+        { "label": "Give to the roof", "cost": ["gold:50"], "outcome": { "text": "He blesses every man by name, which takes a while.", "do": ["buff:heartened:5", "calm:3"] } },
+        { "label": "A short blessing, then", "outcome": { "text": "Short, and to the point.", "do": ["cohesion:1"] } }
+      ]
+    },
+    {
+      "id": "relic_prayer", "moments": ["camp"], "when": ["relic"], "cooldown": 60, "scene": "camp",
+      "title": "The Relic at Night",
+      "text": "Some of the men have started sitting up with the relic you carry. They whisper to it about the fights to come.",
+      "choices": [
+        { "label": "Sit with them", "outcome": { "text": "You stay with them until the fire is out. Nobody says much.", "do": ["cohesion:2", "calm:2"] } },
+        { "label": "Send them to bed", "outcome": { "text": "They go, but they look back at it.", "do": [] } }
+      ]
+    }
+  ]
+}

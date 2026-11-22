@@ -263,7 +263,7 @@ public static partial class SelfTest
         float omen = c.S.Omen;
         Check(c.Rite("bones") == null && c.S.FarSightUntil > c.S.Hours && c.S.Omen == omen + 3, "the bones show far and draw the Omen");
         c.S.Omen = Campaign.OmenEvents;
-        Check(Campaign.Events.Count(e => e.Trigger == "dark_omens") >= 3, "dark omens have events");
+        Check(Campaign.Events.Count(e => e.When.Any(w => w.StartsWith("omen>="))) >= 3, "dark omens have events");
 
         c.S.Relic = true; c.S.RelicCharges = 1;
         var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit);

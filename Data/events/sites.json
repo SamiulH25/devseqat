@@ -1,0 +1,116 @@
+{
+  // Places on the map (docs/archive/SIDE_CONTENT.md S2): reaching a ready site raises one of these for its kind (the "site"
+  // moment, Campaign.SiteEvent). Cooldown 0: a site's own wait ("spent:days") decides when it may be visited again.
+  // The first choice of each is always open (WorldTests.Sites takes it).
+  "events": [
+    {
+      "id": "site_ruin", "moments": ["site"], "when": ["at_site:ruin"], "cooldown": 0, "scene": "site_ruin",
+      "title": "The {site}",
+      "text": "Nettles grow through the floor of what was once a hall. One corner of the roof still stands, and the cellar steps go down into the dark.",
+      "choices": [
+        { "label": "Search the ruin", "hint": "Kobs like a dark cellar.", "outcome": { "text": "You send the men down with torches.", "do": ["search", "spent:9999"] } },
+        { "label": "Leave it to the crows", "outcome": { "text": "Whatever is down there can stay there.", "do": [] } }
+      ]
+    },
+    {
+      "id": "site_ruin_chapel", "moments": ["site"], "when": ["at_site:ruin"], "cooldown": 0, "weight": 0.6, "scene": "site_ruin",
+      "title": "A Chapel in the {site}",
+      "text": "Under the rubble there is a chapel the old builders made, with its altar still standing. Someone has been leaving candles here, and not long ago.",
+      "choices": [
+        { "label": "Clear the rubble from the altar", "outcome": { "text": "It takes the afternoon. When it is done the men stand around, not sure what to do next, and then one of them kneels.", "do": ["calm:4", "cohesion:2", "spent:60"] } },
+        { "label": "Dig under the altar stone", "check": { "skill": "Logistics", "against": 30 }, "hint": "Old builders did not always leave their dead in peace, or their dead unguarded.",
+          "pass": { "text": "There is a lead box under the stone, and a saint's finger-bone in it, wrapped in rotten silk.", "do": ["search", "spent:9999"] },
+          "fail": { "text": "The stone cracks as you lever it, and the vault underneath it falls in. You lose a day pulling men out of the rubble.", "do": ["sick:3", "dread:3", "spent:9999"] } },
+        { "label": "Leave the candles burning", "outcome": { "text": "You add one of your own and ride on.", "do": [] } }
+      ]
+    },
+    {
+      "id": "site_shrine", "moments": ["site"], "when": ["at_site:shrine"], "cooldown": 0, "scene": "shrine",
+      "title": "{site}",
+      "text": "A roadside shrine of the Vigil, with a stone basin and a saint carved so long ago that his face has worn smooth. The men take off their helmets without being told.",
+      "choices": [
+        { "label": "Pray before the march", "outcome": { "text": "A short prayer for the Grey Light to keep you. The men march better for it.", "do": ["cohesion:3", "spent:30"] } },
+        { "label": "Leave an offering", "cost": ["gold:60"], "outcome": { "text": "Silver in the basin. The priest who keeps the shrine will remember the company's name.", "do": ["cohesion:5", "renown:2", "calm:3", "spent:30"] } },
+        { "label": "Ride on", "outcome": { "text": "You have no time for saints today.", "do": [] } }
+      ]
+    },
+    {
+      "id": "site_shrine_pilgrims", "moments": ["site"], "when": ["at_site:shrine"], "cooldown": 0, "weight": 0.6, "scene": "shrine",
+      "title": "Pilgrims at {site}",
+      "text": "Twenty pilgrims are camped round the shrine, with no escort and no money left to hire one. They ask whether they can walk with the company as far as the next town.",
+      "choices": [
+        { "label": "Take them along", "outcome": { "text": "They slow you down by half a day and sing at every halt. When they leave, two of their sons stay behind with the company.", "do": ["food:-2", "men:2", "renown:2", "spent:30"] } },
+        { "label": "Point them to the road and wish them well", "outcome": { "text": "They bless you anyway.", "do": ["spent:30"] } }
+      ]
+    },
+    {
+      "id": "site_stones", "moments": ["site"], "when": ["at_site:stones"], "cooldown": 0, "scene": "site_stones",
+      "title": "{site}",
+      "text": "A ring of standing stones that the older world raised, taller than a mounted man. The farmers plough round them. The air inside the ring feels thick.",
+      "choices": [
+        { "label": "Camp among the stones", "hint": "The Tide runs thick in old rings. Some nights it brings good dreams.", "outcome": { "text": "You light the fires inside the ring.", "do": ["omen", "spent:20"] } },
+        { "label": "Ride on", "outcome": { "text": "The men are glad to leave the stones behind.", "do": [] } }
+      ]
+    },
+    {
+      "id": "site_battlefield", "moments": ["site"], "when": ["at_site:battlefield"], "cooldown": 0, "scene": "field",
+      "title": "The {site}",
+      "text": "An old battlefield. The bones turn up whenever it rains, and the mounds the farmers have been ploughing round all these years are not natural.",
+      "choices": [
+        { "label": "Scavenge the field", "outcome": { "text": "Rusted mail, buckles, a few coins of an old reign. The men are quiet that evening.", "do": ["find:140", "cohesion:-1", "spent:60"] } },
+        { "label": "Say words for the dead", "outcome": { "text": "The dead of both sides get their prayer at last. The camp sleeps easier for it.", "do": ["renown:2", "cohesion:2", "calm:3", "spent:60"] } },
+        { "label": "Ride on", "outcome": { "text": "You keep to the road.", "do": [] } }
+      ]
+    },
+    {
+      "id": "site_mine", "moments": ["site"], "when": ["at_site:mine"], "cooldown": 0, "scene": "site_mine",
+      "title": "{site}",
+      "text": "A silver mine cut into the hillside, its wagons and its miners covered in grey dust. The overseer counts your spears before he counts anything else.",
+      "choices": [
+        { "label": "Ask the overseer what he will pay for an escort", "outcome": { "text": "He pays something to see you go, which is close enough.", "do": ["find:120", "spent:30"] } },
+        { "label": "Take a toll of the silver", "outcome": { "text": "Nobody stops you. Word of it gets to the realm's lords before you reach the next town.", "do": ["find:220", "opinion_realm:-2", "spent:30"] } },
+        { "label": "Hire diggers for the ranks", "cost": ["gold:80"], "outcome": { "text": "Five strong backs who know how to use a pick. They will learn to use a spear.", "do": ["men:5", "spent:30"] } }
+      ]
+    },
+    {
+      "id": "site_hermit", "moments": ["site"], "when": ["at_site:hermit"], "cooldown": 0, "scene": "site_hermit",
+      "title": "The {site}",
+      "text": "An old man lives in a hut of turf and stones and grows beans. He was a soldier once, and when he looks at your company he can see exactly what it is.",
+      "choices": [
+        { "label": "Ask his counsel", "outcome": { "text": "He talks until the fire burns down. Most of it is about beans. The part that is not about beans is worth hearing.", "do": ["learn:6", "spent:9999"] } },
+        { "label": "Ask what moves in the country", "outcome": { "text": "He sees everyone who goes past on the road, and he remembers all of them.", "do": ["spy", "spent:20"] } },
+        { "label": "Leave him be", "outcome": { "text": "He waves you off with his hoe.", "do": [] } }
+      ]
+    },
+    {
+      "id": "site_watchtower", "moments": ["site"], "when": ["at_site:watchtower"], "cooldown": 0, "scene": "site_watchtower",
+      "title": "{site}",
+      "text": "An old watchtower with half its stair fallen. From the top a man can see three days' ride in every direction.",
+      "choices": [
+        { "label": "Climb to the top", "outcome": { "text": "You stay up there until the wind gets too much.", "do": ["spy", "farsight:2", "spent:3"] } },
+        { "label": "Ride on", "outcome": { "text": "You have seen enough country for one week.", "do": [] } }
+      ]
+    },
+    {
+      "id": "site_spring", "moments": ["site"], "when": ["at_site:spring"], "cooldown": 0, "scene": "site_spring",
+      "title": "{site}",
+      "text": "A spring the healers swear by. St. Mireille's companies camped by springs like this one when the fever came. The water is so cold it makes your teeth hurt.",
+      "choices": [
+        { "label": "Rest the wounded here", "outcome": { "text": "Two days by the water. Men walk out of the camp who were carried into it.", "do": ["heal:35", "mend", "spent:14"] } },
+        { "label": "Fill the water skins and go", "outcome": { "text": "Every skin filled. It is good water.", "do": ["heal:10", "spent:14"] } }
+      ]
+    },
+    {
+      "id": "site_mill", "moments": ["site"], "when": ["at_site:mill"], "cooldown": 0, "scene": "site_mill",
+      "title": "{site}",
+      "text": "The mill wheel turns, and the miller is standing in his door. He has flour to sell, and the price goes up as he counts how many men you have.",
+      "choices": [
+        { "label": "Talk the price down", "check": { "skill": "Stewardship", "against": 25 }, "hint": "If he takes offence, he will close the door on you.",
+          "pass": { "text": "He grumbles, but he sells at last year's price.", "do": ["gold:-30", "food:5", "spent:7"] },
+          "fail": { "text": "He shuts the door. You hear the bolt go across.", "do": ["spent:7"] } },
+        { "label": "Buy flour", "cost": ["gold:50"], "outcome": { "text": "Five days of bread for the column.", "do": ["food:5", "spent:7"] } },
+        { "label": "Buy everything he has", "cost": ["gold:120"], "outcome": { "text": "He helps you load the wagons himself, whistling.", "do": ["food:12", "spent:14"] } }
+      ]
+    }
+  ]
+}

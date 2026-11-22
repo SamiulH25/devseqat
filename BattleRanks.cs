@@ -129,9 +129,9 @@ public partial class Battle
             if (dist > 2) { dir = to / dist; walk = MathF.Min(dist, 3); }
             else dir = face;
         }
-        // On a route round water or hedges, the front follows the route until it is near.
+        // On a route round water, buildings or hedges, the front follows the route until it is near and unobstructed.
         bool onRoute = false;
-        if (s.Path != null && nd > 100 && s.Path.Dir(f) is var pd && pd != Vector2.Zero) { dir = pd; onRoute = true; }
+        if (s.Path != null && (nd > 100 || WayBlocked(f, near.Pos, false)) && s.Path.Dir(f) is var pd && pd != Vector2.Zero) { dir = pd; onRoute = true; }
         float turn = (s.InContact ? 0.15f : 1.5f) * dt; // at blows a line barely turns: wheeling would open it
         float a = MathF.Atan2(s.Front.Y, s.Front.X), b = MathF.Atan2(dir.Y, dir.X);
         a += Math.Clamp(MathHelper.WrapAngle(b - a), -turn, turn);
@@ -140,7 +140,7 @@ public partial class Battle
         // length short of the foe.
         if (s.InContact) return;
         float ahead = walk >= 0 ? walk : onRoute ? 3 : Math.Clamp(Vector2.Dot(near.Pos - f, dir) - standoff, 0, 3);
-        s.Anchor = f + dir * ahead;
+        s.Anchor = DryAnchor(f + dir * ahead);
     }
 
     /// Its foe is a huge beast or a handful of men (a quarter of its own number or fewer): ranks are no use, it closes round them.

@@ -117,7 +117,9 @@ public sealed partial class Battle
             float cost = f.CostFrom(u.Pos);
             if (!float.IsPositiveInfinity(cost))
             {
-                if (Vector2.DistanceSquared(u.Pos, dest) < PathNear * PathNear && !w.CrossesWall(u.Pos, dest, out _))
+                if (Vector2.DistanceSquared(u.Pos, dest) < PathNear * PathNear
+                    && !w.CrossesWall(u.Pos, dest, out _)
+                    && !Terrain.CrossesHouse(u.Pos, dest, Clearance(u.Mounted)))
                     return dest;
                 var d = f.Dir(u.Pos);
                 if (d != Vector2.Zero) return u.Pos + d * 3f;

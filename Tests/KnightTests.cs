@@ -552,7 +552,7 @@ public static partial class SelfTest
         Check(rival != null && rival.Order == "lily" && c.S.Flags.ContainsKey("rival_meet"), "swearing draws a rival and starts his chain");
         c.S.Event = new PendingEvent { Id = "rival_meet" };
         c.Choose(0);
-        Check(c.OpinionOf(rival!, c.Me) > 0 && c.S.Flags.ContainsKey("rival_lists"), "offering your hand warms him; the lists come next");
+        Check(c.OpinionOf(rival!, c.Me) > 0 && c.S.EventQueue.Any(q => q.Event.Id == "rival_lists"), "offering your hand warms him; the lists come next");
         c.S.Event = new PendingEvent { Id = "rival_end" };
         c.Choose(0);
         Check(rival!.OrderRank == 1 && rival.Order == "lily", "a friend is knighted beside you");

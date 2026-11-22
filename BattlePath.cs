@@ -90,7 +90,7 @@ public partial class Battle
     /// Refresh a company's route every half second: a field when the way is blocked, none when it is clear.
     void UpdatePath(Squad s, float dt)
     {
-        if (scripted && Wall == null && Terrain.Features.Count == 0 && Terrain.Rivers.Count == 0) return;
+        if (scripted && Wall == null && Terrain.Features.Count == 0 && Terrain.Rivers.Count == 0 && Terrain.Foliage.Count == 0) return;
         if ((s.PathTimer -= dt) > 0) return;
         s.PathTimer = 0.5f;
         if (s.Alive == 0) { s.Path = null; return; }
@@ -135,7 +135,8 @@ public partial class Battle
         // with its places a few metres beyond, and never settle to shoot or fight).
         bool Far(Vector2 p) => Vector2.DistanceSquared(p, g) > PathNear * PathNear
             || (Wall != null && Wall.CrossesWall(p, g, out _))
-            || (Terrain.Features.Count > 0 && Terrain.CrossesFeatureNear(p, g, s.Cavalry, Clearance(s.Cavalry)));
+            || (Terrain.Features.Count > 0 && Terrain.CrossesFeatureNear(p, g, s.Cavalry, Clearance(s.Cavalry)))
+            || Terrain.CrossesHouse(p, g, Clearance(s.Cavalry));
         if (Far(s.Center) && WayBlocked(s.Center, g, s.Cavalry)) return true;
         int n = s.Units.Count;
         for (int k = 0; k < 4; k++)
@@ -195,7 +196,8 @@ public partial class Battle
         if (f == null || u.Routing || f.Mode != mode || Vector2.DistanceSquared(dest, f.Goal) > 30 * 30) return dest;
         if (Vector2.DistanceSquared(u.Pos, dest) < PathNear * PathNear
             && (Wall == null || !Wall.CrossesWall(u.Pos, dest, out _))
-            && !Terrain.CrossesFeatureNear(u.Pos, dest, u.Mounted, Clearance(u.Mounted))) return dest; // near and nothing between
+            && !Terrain.CrossesFeatureNear(u.Pos, dest, u.Mounted, Clearance(u.Mounted))
+            && !Terrain.CrossesHouse(u.Pos, dest, Clearance(u.Mounted))) return dest; // near and nothing between
         var d = f.Dir(u.Pos);
         return d == Vector2.Zero ? dest : u.Pos + d * 3;
     }
@@ -240,6 +242,20 @@ public partial class Battle
         var cost = new float[n * n];
         Array.Fill(cost, float.PositiveInfinity);
         int gx = Math.Clamp((int)MathF.Round((goal.X + Terrain.Half) / Terrain.Step), 0, n - 1), gz = Math.Clamp((int)MathF.Round((goal.Y + Terrain.Half) / Terrain.Step), 0, n - 1);
+        // If the goal landed inside a solid building cell, snap to the nearest passable cell so routes still lead right up to it.
+        if (float.IsPositiveInfinity(step[gz * n + gx]))
+        {
+            int bestX = gx, bestZ = gz, bestD = int.MaxValue;
+            for (int dz = -3; dz <= 3; dz++)
+                for (int dx = -3; dx <= 3; dx++)
+                {
+                    int nx = gx + dx, nz = gz + dz;
+                    if (nx < 0 || nz < 0 || nx >= n || nz >= n || float.IsPositiveInfinity(step[nz * n + nx])) continue;
+                    int d2 = dx * dx + dz * dz;
+                    if (d2 < bestD) { bestD = d2; bestX = nx; bestZ = nz; }
+                }
+            gx = bestX; gz = bestZ;
+        }
         // Only the part of the field the battle uses (a margin past the flight radius or fortress) is searched.
         float reach = Wall != null ? MathF.Max(MapRadius + 40, Wall.Center.Length() + Wall.Radius + 40) : MapRadius + 40;
         int lim = (int)MathF.Min(n / 2, reach / Terrain.Step), lo = n / 2 - lim, hi = n / 2 + lim;

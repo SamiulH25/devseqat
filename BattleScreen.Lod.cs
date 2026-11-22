@@ -17,6 +17,8 @@ sealed partial class BattleScreen
     /// The level now (0 = the floor distances, 1 = the ceiling).
     public float LodLevel => lod.Level;
 
+    void ResetLod() { lod.Reset(); lodLast = 0; }
+
     /// Once a drawn frame: time it against the last and move the level.
     void UpdateLod()
     {
@@ -42,7 +44,7 @@ public sealed class LodGovernor
     public const float NearMin = 15f, NearMax = 40f, MidMin = 38f, MidMax = 125f, AlwaysFull = 10f;
     public const int FullCapMin = 48, FullCapMax = 600;
     /// Below SlowFps the level drops; at SmoothFps or better for CalmFor seconds it climbs.
-    public const float SlowFps = 50f, SmoothFps = 57f, CalmFor = 1.5f, DropRate = 0.5f, ClimbRate = 0.08f, CeilingRelax = 0.02f;
+    public const float SlowFps = 50f, SmoothFps = 54f, CalmFor = 1.2f, DropRate = 0.5f, ClimbRate = 0.16f, CeilingRelax = 0.12f;
 
     float calm;
 
@@ -54,25 +56,34 @@ public sealed class LodGovernor
     public float Fps { get; private set; } = 60f;
 
     public void Pin(float level) => Level = Ceiling = Math.Clamp(level, 0f, 1f);
+    public void Reset() { Level = Ceiling = 1f; Fps = 60f; calm = 0; }
 
     /// One drawn frame that took `sec` seconds.
     public void Frame(float sec)
     {
         if (sec <= 0 || sec > 0.25f) return; // the first frame, a load or a window drag: not a measure of drawing
         Fps += (1f / sec - Fps) * MathF.Min(1f, sec * 4f);
-        Ceiling = MathF.Min(1f, Ceiling + CeilingRelax * sec);
         if (Fps < SlowFps)
         {
             calm = 0;
             Level = MathF.Max(0f, Level - DropRate * sec * (1f + (SlowFps - Fps) / SlowFps * 2f));
-            Ceiling = MathF.Min(Ceiling, Level + 0.05f);
+            Ceiling = MathF.Min(Ceiling, Level + 0.08f);
         }
         else if (Fps >= SmoothFps)
         {
             calm += sec;
-            if (calm >= CalmFor) Level = MathF.Min(Ceiling, Level + ClimbRate * sec);
+            if (calm >= CalmFor)
+            {
+                Ceiling = MathF.Min(1f, Ceiling + CeilingRelax * 1.5f * sec);
+                Level = MathF.Min(Ceiling, Level + ClimbRate * sec);
+            }
+            else Ceiling = MathF.Min(1f, Ceiling + CeilingRelax * 0.5f * sec);
         }
-        else calm = 0;
+        else
+        {
+            calm = MathF.Max(0f, calm - sec);
+            Ceiling = MathF.Min(1f, Ceiling + CeilingRelax * 0.25f * sec);
+        }
     }
 
     /// The distances at the level now: full detail within Near m, the middle look within Mid m; FullCap men at most get the

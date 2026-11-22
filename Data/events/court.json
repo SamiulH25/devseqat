@@ -1,0 +1,57 @@
+{
+  // Lords: favours, plots, feuds and gifts. They come when you reach a place, when you linger, or with the week's letters.
+  "events": [
+    {
+      "id": "lord_favour", "moments": ["arrive", "week"], "cast": { "lord": { "where": ["friend", "free", "!enemy"] } }, "cooldown": 45, "scene": "court",
+      "title": "{lord} Asks a Favour",
+      "text": "{lord} sends a rider to your camp. He would take it kindly if your company could do something for him, and he does not need to say he will remember it.",
+      "choices": [
+        { "label": "Hear what he wants", "outcome": { "text": "He tells you over a cup of wine.", "do": ["quest"] } },
+        { "label": "Send your regrets", "outcome": { "text": "He has his answer.", "do": ["opinion:-6"] } }
+      ]
+    },
+    {
+      "id": "lord_plot", "moments": ["week", "arrive"], "when": ["fealty"], "cast": { "lord": { "where": ["realm", "hates_liege", "free"] } }, "cooldown": 90, "heavy": true, "scene": "court",
+      "title": "A Word in Private",
+      "text": "{lord} takes you aside after dinner. He thinks {liege} is a fool who will lose the realm, and he would like to know whose side you would be on, if it came to it.",
+      "choices": [
+        { "label": "Warn {liege}", "outcome": { "text": "Your liege thanks you. {lord} will find out who told.", "do": ["opinion_liege:12", "opinion:-20"] } },
+        { "label": "Say you heard nothing", "outcome": { "text": "{lord} smiles. You have done him a favour, and he knows it.", "do": ["opinion:8"] } },
+        { "label": "Draw him out further", "check": { "skill": "Charm", "against": 45 }, "hint": "He is not as drunk as he is pretending to be.",
+          "pass": { "text": "He names names. You know now which lords are with him, and so will {liege}.", "do": ["opinion_liege:18", "opinion_realm:-2", "opinion:-20"] },
+          "fail": { "text": "He catches himself, and goes cold. You have made an enemy, and you have learned nothing.", "do": ["opinion:-15"] } }
+      ]
+    },
+    {
+      "id": "lord_gift", "moments": ["arrive"], "when": ["renown>=60"], "cast": { "lord": { "where": ["near", "realm", "opinion>=10", "free"] } }, "cooldown": 60, "scene": "court",
+      "title": "A Gift from {lord}",
+      "text": "{lord} has sent a groom with a horse, a good one, and a note in his own hand saying he hopes you will ride beside him in the next campaign.",
+      "choices": [
+        { "label": "Accept it", "outcome": { "text": "A fine animal. Now you owe him.", "do": ["horses:1", "opinion:5"] } },
+        { "label": "Send it back with thanks", "outcome": { "text": "Your hands stay free, and he understands why.", "do": ["renown:1"] } }
+      ]
+    },
+    {
+      "id": "lord_insult", "moments": ["arrive"], "cast": { "lord": { "where": ["near", "cold", "free"] } }, "cooldown": 60, "scene": "court",
+      "title": "{lord} Laughs at Your Company",
+      "text": "In front of half the hall, {lord} asks loudly which ditch you found your men in.",
+      "choices": [
+        { "label": "Laugh it off", "outcome": { "text": "The hall laughs with you. {lord} laughs a little less.", "do": ["renown:1"] } },
+        { "label": "Answer him in kind", "check": { "skill": "Charm", "against": 40 }, "hint": "Wit is a blade too, and a duller one than you think.",
+          "pass": { "text": "Your answer gets a bigger laugh than his question did. He leaves early.", "do": ["renown:4", "opinion:-5"] },
+          "fail": { "text": "It comes out wrong. He laughs at that as well.", "do": ["renown:-2"] } },
+        { "label": "Challenge him", "outcome": { "text": "He refuses to fight a sellsword. The hall decides you won.", "do": ["renown:3", "opinion:-12"] } }
+      ]
+    },
+    {
+      "id": "liege_summons_feast", "moments": ["week"], "when": ["fealty", "!at_war"], "cooldown": 90, "scene": "court",
+      "title": "A Feast at Court",
+      "text": "{liege} is holding a feast for the lords of the {realm}. Your name is on the list, a long way down, but it is there.",
+      "choices": [
+        { "label": "Go, and bring a gift", "cost": ["gold:120"], "outcome": { "text": "Your gift is the talk of the second table. That is good enough.", "do": ["opinion_liege:8", "opinion_realm:3"] } },
+        { "label": "Go empty-handed", "outcome": { "text": "You are fed, and then forgotten.", "do": ["opinion_realm:1"] } },
+        { "label": "Stay with the company", "outcome": { "text": "Your absence is noticed.", "do": ["opinion_liege:-3", "cohesion:1"] } }
+      ]
+    }
+  ]
+}

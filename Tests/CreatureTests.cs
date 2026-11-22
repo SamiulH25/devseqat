@@ -361,6 +361,10 @@ public static partial class SelfTest
         Check(c.S.Graves.Count == 1 && c.S.Event?.Id == "bury_dead", $"a big battle leaves a grave field, and you are asked to bury it ({c.S.Graves.Count}, {c.S.Event?.Id})");
         Check(c.Choose(0) == null && c.S.Graves.Count == 0, "buried, the dead lie quiet");
         Fight();
+        Check(c.S.Event == null && c.S.Graves.Count == 1, "you are asked once a week; the next field the same day is not put to you");
+        c.S.Graves.Clear();
+        c.S.EventsFired["bury_dead"] -= 7 * 24; // a week on
+        Fight();
         Check(c.Choose(2) == null && c.S.Graves.Count == 1, "march on and the field stays unburied");
         int dead = c.S.Graves[0].Dead, gid = c.S.Graves[0].Id;
         string where = c.Map.ProvinceAt(c.S.Graves[0].Pos).Name;

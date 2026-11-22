@@ -90,10 +90,10 @@ sealed class AudioEngine
             void Beds(params Bed[] bs) { foreach (var b in bs) bedData[b] = AudioAssets.LoadBed(b) ?? Synth.MakeBed(b); }
             Cues(Cue.Click, Cue.Hover, Cue.Page, Cue.Coin);
             Beds(Bed.Wind);
+            Cues(Enum.GetValues<Cue>().Where(c => !cueData.ContainsKey(c)).ToArray());
             _ = AudioBank.Shared;
             _ = MusicLibrary.All;
             Beds(Bed.Birds, Bed.Crickets, Bed.Town, Bed.Rain);
-            Cues(Enum.GetValues<Cue>().Where(c => !cueData.ContainsKey(c)).ToArray());
             Beds(Enum.GetValues<Bed>().Where(b => !bedData.ContainsKey(b)).ToArray());
         }
         catch (Exception e) { Console.WriteLine("audio: " + e.Message); }

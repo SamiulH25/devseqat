@@ -27,7 +27,9 @@ public partial class Campaign
         if (!playerIn && prov.Faction >= 0 && rng.Chance(B.RealmBuryChance)) return; // the realm buries its dead
         var grave = new Grave { Id = S.NextId++, Pos = at, Dead = fallen, Hours = S.Hours };
         S.Graves.Add(grave);
-        if (playerIn && S.Settlements.OrderBy(s => Vector2.Distance(s.Pos, at)).FirstOrDefault() is Settlement near)
+        // You are asked to bury it at most once a week, and only with nothing else waiting; an unasked field is left to the realm or the Tide.
+        bool askedLately = S.EventsFired.TryGetValue("bury_dead", out float asked) && S.Hours - asked < 7 * 24;
+        if (playerIn && !askedLately && S.Event == null && S.Settlements.OrderBy(s => Vector2.Distance(s.Pos, at)).FirstOrDefault() is Settlement near)
             Force("bury_dead", new PendingEvent { Grave = grave.Id, Settlement = near.Id });
     }
 

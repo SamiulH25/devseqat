@@ -37,12 +37,12 @@ public static class PortraitPainter
         bool ruler = ch.Faction >= 0 && c.RulerOf(ch.Faction) == ch;
         int dress = ch.Kind == "knight" || ch.Order != "" ? 3 : ch.Kind is "captain" ? 2 : ch.Kind == "lord" && !female && (ch.Traits.Contains("Reckless") || ch.Traits.Contains("Ambitious") || H(5) < 0.3f) ? 2 : ch.Kind == "kin" ? 0 : 1;
         var house = c.HouseOf(ch);
-        int palette = ch.Kind == "captain" ? 2 : Style.PaletteOf(ch.Faction);
+        int palette = ch.Kind == "captain" ? c.PlayerPalette : Style.PaletteOf(ch.Faction);
         var charge = house != null ? (Emblem)(house.Charge % 9) : Style.Sides[palette].Charge;
         if (charge == Emblem.None) charge = Emblem.Fess;
         int mood = ch.Kind == "captain" ? 0 : MoodOf(c.OpinionOfYou(ch));
         if (ch.Kind == "captain" && c.Captain.Likeness is { } l) // the face chosen in the creator, and your arms behind it
-            return Captain(seed, skin, hair, l, c.Captain.Arms >= 0 ? (Emblem)c.Captain.Arms : charge, ch.Age) with { Scar = Math.Max(l.Scar, scar) };
+            return Captain(seed, skin, hair, l, c.Captain.Arms >= 0 ? (Emblem)c.Captain.Arms : charge, ch.Age, palette) with { Scar = Math.Max(l.Scar, scar) };
         return new Face(seed, skin, hair, cut, beard, (int)(H(6) * EyeColours.Length) % EyeColours.Length, (int)(H(7) * 3) % 3, (int)(H(8) * 3) % 3,
             (int)(H(10) * 3) % 3, female, ch.Age, scar, dress, ruler, mood, palette, charge, house?.Field ?? 0);
     }
@@ -76,12 +76,13 @@ public static class PortraitPainter
     /// A company's cohesion as a man's mood: warm when it is high, cold when it frays.
     public static int CohesionMood(float cohesion) => cohesion >= 18 ? 0 : cohesion >= 7 ? 1 : 2;
 
-    /// The captain as chosen in the creator: the face on the free companies' colours with your charge.
-    public static Face Captain(int seed, int skin, int hair, CaptainLook l, Emblem arms, int age) =>
-        new(seed, skin, hair, l.Cut, l.Beard, l.Eye, l.Brow, l.Nose, l.Jaw, false, age, l.Scar, 2, false, 0, 2, arms == Emblem.None ? Emblem.Fess : arms, 0);
+    /// The captain as chosen in the creator: the face on the realm's colours (or gold for a free company) with your charge.
+    public static Face Captain(int seed, int skin, int hair, CaptainLook l, Emblem arms, int age, int palette = 2) =>
+        new(seed, skin, hair, l.Cut, l.Beard, l.Eye, l.Brow, l.Nose, l.Jaw, false, age, l.Scar, 2, false, 0, palette, arms == Emblem.None ? Emblem.Fess : arms, 0);
 
     /// The creator's preview of a making.
-    public static Face Of(CaptainMaking m) => Captain(7932, m.Skin, m.Hair, m.Look, (Emblem)m.Arms, Origins.Age(m));
+    public static Face Of(CaptainMaking m) => Captain(7932, m.Skin, m.Hair, m.Look, (Emblem)m.Arms, Origins.Age(m),
+        Origins.Free(m) ? 2 : Factions.All[Math.Clamp(m.Realm, 0, Factions.All.Count - 1)].Palette);
 
     /// The face in pixels, W x H, opaque (painted by `Bust`, PortraitBust.cs).
     public static Color[] Paint(Face f) => new Bust(f).Paint();

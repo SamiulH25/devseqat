@@ -48,12 +48,15 @@ partial class MapScreen
     void KitDoll(Rectangle c)
     {
         var cap = C.Captain;
+        int pal = C.PlayerPalette;
         int sw = ui.U(132), sh = ui.U(48);
         var stage = new Rectangle(c.X + sw + ui.U(6), c.Y, c.Width - 2 * (sw + ui.U(6)), ui.U(184));
-        ui.VGrad(stage, Kit.Mul(Style.Sides[2].Cloth, 0.6f), new Color(18, 16, 14), 2);
+        ui.VGrad(stage, Kit.Mul(Style.Sides[pal].Cloth, 0.6f), new Color(18, 16, 14), 2);
         ui.Stars(new Rectangle(stage.X, stage.Y, stage.Width, stage.Height / 3), (float)C.S.Hours, 24);
         ui.Hills(stage, stage.Bottom - ui.U(28), ui.U(10), 1.5f, new Color(30, 24, 20));
-        ui.Portrait(Rules.CaptainType(cap), new Rectangle(stage.X, stage.Y + ui.U(10), stage.Width, stage.Height - ui.U(14)), 3 * ui.S);
+        var doll = Rules.CaptainType(cap);
+        doll.Look = doll.Look with { Tabard = false };
+        ui.Portrait(doll, new Rectangle(stage.X, stage.Y + ui.U(10), stage.Width, stage.Height - ui.U(14)), 3 * ui.S, palette: pal);
         ui.Frame(stage, Color.Black * 0.6f, ui.U(1));
         string[] left = { "weapon", "side", "shield" }, rightSlots = { "helm", "body", "horse" };
         int sy = c.Y + ui.U(8), step = sh + ui.U(12);
@@ -120,7 +123,7 @@ partial class MapScreen
         var ibox = new Rectangle(x, y, ui.U(46), ui.U(46));
         ui.VGrad(ibox, new Color(34, 30, 28), new Color(16, 14, 15), 2);
         ui.Frame(ibox, item is { Battered: true } ? Style.Bad : Kit.Mul(col, 0.8f), ui.U(1));
-        ui.GearSprite(g, Kit.Inset(ibox, ui.U(4)));
+        ui.GearSprite(g, Kit.Inset(ibox, ui.U(4)), C.PlayerPalette);
 
         int hx = ibox.Right + ui.U(8), hw = r.Right - hx - ui.U(8);
         ui.TextFit(Campaign.ItemName(item, g).ToUpperInvariant(), hx, y, hw, col, 2);
@@ -223,7 +226,7 @@ partial class MapScreen
         var sbox = new Rectangle(r.X + ui.U(4), r.Y + ui.U(4), sSize, sSize);
         ui.Rect(sbox, Color.Black * 0.45f);
         ui.Frame(sbox, Color.White * 0.12f, ui.U(1));
-        if (g != null) ui.GearSprite(g, Kit.Inset(sbox, ui.U(2)));
+        if (g != null) ui.GearSprite(g, Kit.Inset(sbox, ui.U(2)), C.PlayerPalette);
 
         int tx = sbox.Right + ui.U(5), tw = r.Right - tx - ui.U(4);
         ui.TextFit(SlotNames[slot], tx, r.Y + ui.U(4), tw, Style.Dim, 1);
@@ -401,7 +404,7 @@ partial class MapScreen
         ui.Frame(r, edge, ui.U(pickedGear ? 2 : 1));
 
         var gbox = new Rectangle(r.X + ui.U(8), r.Y + ui.U(4), r.Width - ui.U(16), ui.U(40));
-        ui.GearSprite(g, gbox);
+        ui.GearSprite(g, gbox, C.PlayerPalette);
 
         // Top-left status badge (HAND / 2ND / WORN) or top-right battered/marks pip
         if (worn)

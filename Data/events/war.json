@@ -1,0 +1,75 @@
+{
+  // After a fight, in a long war, and in the company's own troubles: prisoners, wounded, pay.
+  "events": [
+    {
+      "id": "battle_looting", "moments": ["battle"], "cast": { "company": {} }, "cooldown": 20, "scene": "field",
+      "title": "Looting the Field",
+      "text": "The fight is over, and {company} have scattered across the field turning over the dead. Some of the dead are still moving.",
+      "choices": [
+        { "label": "Let them have their pickings", "outcome": { "text": "Boots, rings, a good belt or two. The men are happy.", "do": ["cohesion:2", "renown:-1"] } },
+        { "label": "Order the wounded seen to first", "outcome": { "text": "Grumbling, but they do it. Some of the enemy's wounded will live because of it.", "do": ["renown:2", "cohesion:-1"] } }
+      ]
+    },
+    {
+      "id": "battle_wounded_foe", "moments": ["battle"], "cooldown": 30, "scene": "field",
+      "title": "A Knight in the Mud",
+      "text": "A knight of the enemy is pinned under his dead horse. His armour alone is worth a year's pay, and he is offering a ransom for his life.",
+      "choices": [
+        { "label": "Take his ransom", "outcome": { "text": "He swears it on his sword, and his family pays it.", "do": ["gold:120", "renown:1"] } },
+        { "label": "Take his armour", "outcome": { "text": "He will not be needing it.", "do": ["find:100", "renown:-2"] } },
+        { "label": "Let him go free", "outcome": { "text": "He gives you his name and his thanks. Knights talk.", "do": ["renown:4"] } }
+      ]
+    },
+    {
+      "id": "battle_after_win", "moments": ["battle"], "when": ["named>=3"], "cooldown": 20, "weight": 0.8, "scene": "camp",
+      "title": "The Night After",
+      "text": "They are calling it a victory around the fires. The surgeon is calling it something else.",
+      "choices": [
+        { "label": "Break out the wine", "cost": ["gold:40"], "outcome": { "text": "They drink to the living and the dead. In the morning they march with their heads up.", "do": ["cohesion:3", "buff:heartened:4"] } },
+        { "label": "Walk among the wounded", "outcome": { "text": "You stop at every blanket. The men will remember that you came.", "do": ["cohesion:2", "heal:5"] } }
+      ]
+    },
+    {
+      "id": "prisoners_trouble", "moments": ["camp", "battle"], "when": ["prisoners>=20"], "cooldown": 30, "scene": "camp",
+      "title": "Too Many Prisoners",
+      "text": "The prisoner lines are long, and the guards are tired. Someone has already tried to slip his rope.",
+      "choices": [
+        { "label": "Offer them service", "outcome": { "text": "Some of them take it. The ones who do will want watching.", "do": ["prisoners_recruit", "cohesion:-1"] } },
+        { "label": "Let them go", "outcome": { "text": "They scatter into the hills. The guards sleep at last.", "do": ["prisoners_free", "renown:2"] } },
+        { "label": "Keep them, and double the guard", "outcome": { "text": "Nobody gets much rest.", "do": ["buff:footsore:2"] } }
+      ]
+    },
+    {
+      "id": "war_weary", "moments": ["week", "camp"], "when": ["contract", "exhaustion>=40"], "cooldown": 45, "scene": "camp",
+      "title": "Tired of the War",
+      "text": "The men talk about home a lot now. In the villages the farmers say the war has been going on longer than they can remember, and they are not far wrong.",
+      "choices": [
+        { "label": "Speak for peace in the realm's council", "outcome": { "text": "Your word joins the others. The weariness of the {realm} grows.", "do": ["exhaustion:8", "opinion_liege:-3", "cohesion:1"] } },
+        { "label": "Tell the men the war is nearly won", "check": { "skill": "Leadership", "against": 40 }, "hint": "They have heard that one before.",
+          "pass": { "text": "They believe you. Some of them even cheer.", "do": ["cohesion:3", "buff:heartened:5"] },
+          "fail": { "text": "Nobody believes it, including you.", "do": ["cohesion:-2"] } }
+      ]
+    },
+    {
+      "id": "unpaid_men", "moments": ["camp", "week"], "when": ["unpaid>=1"], "cooldown": 14, "heavy": true, "scene": "camp",
+      "title": "No Pay",
+      "text": "The pay chest is empty and the men know it. A delegation from the ranks is waiting outside your tent.",
+      "choices": [
+        { "label": "Promise double pay at the next town", "check": { "skill": "Leadership", "against": 45 }, "hint": "A captain's word only goes so far.",
+          "pass": { "text": "They believe you, this once.", "do": ["cohesion:-1", "flag:promised_pay"] },
+          "fail": { "text": "That night, some of them leave.", "do": ["desert:5", "cohesion:-2"] } },
+        { "label": "Sell the spare horses", "needs": ["horses>=3"], "outcome": { "text": "It is enough to pay them for a week.", "do": ["horses:-3", "gold:90"] } },
+        { "label": "Let the ones who want to go, go", "outcome": { "text": "The ones who stay are the ones you can count on.", "do": ["desert:8", "cohesion:2"] } }
+      ]
+    },
+    {
+      "id": "veterans_ask", "moments": ["camp", "week"], "cast": { "company": { "where": ["veteran"] } }, "cooldown": 60, "scene": "camp",
+      "title": "{company} Asks for Its Own Banner",
+      "text": "The old hands of {company} have fought together long enough to want their own colours, sewn with the names of their fields.",
+      "choices": [
+        { "label": "Have it made", "cost": ["gold:60"], "outcome": { "text": "They carry it into the next fight as if it were a holy relic.", "do": ["cohesion:4", "renown:2"] } },
+        { "label": "One banner is enough for one company", "outcome": { "text": "They grumble about it for a month.", "do": ["cohesion:-2"] } }
+      ]
+    }
+  ]
+}

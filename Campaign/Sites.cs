@@ -65,8 +65,8 @@ public sealed partial class Campaign
 
     public void GoTo(Site s) { if (Sailing) return; Player.Goal = s.Pos; Player.Moving = true; Player.ChaseId = -1; Player.GoalSettlement = -1; S.GoalSite = s.Id; Player.Resting = false; }
 
-    /// You reach a site: the first visit is remembered, and a ready site raises its event (one of the events whose trigger
-    /// is "site_" + its kind).
+    /// You reach a site: the first visit is remembered, and a ready site raises its event (one of the events at the `site`
+    /// moment that holds for its kind).
     internal void ArriveAtSite(Site site)
     {
         if (!S.SitesSeen.Contains(site.Id)) S.SitesSeen.Add(site.Id);
@@ -76,11 +76,7 @@ public sealed partial class Campaign
         if (!SiteReady(site)) { Log($"{site.Name}: {SiteWait(site).ToLowerInvariant()}."); return; }
         if (site.Kind == "shrine") { AddBuff("shrine_blessing", 3); RelicFilled(); Log($"The men pray at the {site.Name}. They march on blessed."); }
         if (VigilAt(site)) { Raise(new PendingEvent { Id = "aura_vigil", Site = site.Id, Settlement = SettlementNear(site.Pos)?.Id ?? -1 }); return; } // a trial for your aura (K5)
-        var fits = Events.Where(e => e.Trigger == "site_" + site.Kind).ToList();
-        if (fits.Count == 0 || S.Event != null) return;
-        var pe = new PendingEvent { Site = site.Id, Settlement = SettlementNear(site.Pos)?.Id ?? -1 };
-        pe.Id = fits[rng.Next(fits.Count)].Id;
-        Raise(pe);
+        SiteEvent(site); // one of the events for its kind (EventDirector.cs)
     }
 
     Settlement? SettlementNear(Vector2 p) => S.Settlements.OrderBy(s => Vector2.Distance(s.Pos, p)).FirstOrDefault();

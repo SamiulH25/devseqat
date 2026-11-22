@@ -1,0 +1,50 @@
+{
+  // The Unkept (docs/LORE.md 5): the country going wild, and the people who live on its edge.
+  "events": [
+    {
+      "id": "kob_tracks", "moments": ["road"], "when": ["land:Hills", "!in"], "cooldown": 40, "scene": "hills",
+      "title": "Kob Tracks",
+      "text": "There are small bare footprints all over the mud of the track, and too many of them. The scouts found a cave mouth with bones outside it.",
+      "choices": [
+        { "label": "Smoke the cave out", "check": { "skill": "Tactics", "against": 35 }, "hint": "Kob warrens have more than one way out.",
+          "pass": { "text": "They come boiling out of the smoke into your spears. It is over quickly.", "do": ["renown:3", "xp:3"] },
+          "fail": { "text": "They come out behind you instead, from a hole nobody saw, and get among the baggage before you drive them off.", "do": ["food:-3", "sick:2"] } },
+        { "label": "Go round, quietly", "outcome": { "text": "You give the hills a wide berth.", "do": [] } }
+      ]
+    },
+    {
+      "id": "weaver_road", "moments": ["road"], "when": ["land:Forest", "!in"], "cooldown": 60, "scene": "forest",
+      "title": "The Webbed Road",
+      "text": "The logging road ahead is strung with webs from tree to tree, grey and thick as sailcloth. Something has been wrapped up in them, and it is about the size of a man.",
+      "choices": [
+        { "label": "Burn it all and go through", "outcome": { "text": "The webs burn fast and stink. Something big moves off into the trees.", "do": ["food:-1", "dread:2"] } },
+        { "label": "Cut the bundle down first", "check": { "skill": "Arms", "against": 35 }, "hint": "Weavers come back to check on their larder.",
+          "pass": { "text": "A woodcutter, half-dead and grateful. He knows these woods, and he joins you.", "do": ["man", "renown:2"] },
+          "fail": { "text": "It comes back while you are still cutting. You get away, but not everyone gets away clean.", "do": ["sick:3", "dread:2"] } }
+      ]
+    },
+    {
+      "id": "grim_wolves", "moments": ["camp"], "when": ["season:winter", "!in"], "cooldown": 45, "scene": "forest",
+      "title": "Wolves Round the Camp",
+      "text": "Grim-wolves have been circling the camp since dusk. Every so often a pair of eyes catches the firelight and moves on. The horses will not settle.",
+      "choices": [
+        { "label": "Build up the fires and wait for dawn", "outcome": { "text": "They are gone at first light. Nobody slept.", "do": ["buff:footsore:2"] } },
+        { "label": "Hunt them", "check": { "skill": "Bowcraft", "against": 35 }, "hint": "A grim-wolf is bigger than a pony, and they hunt as a pack.",
+          "pass": { "text": "Three pelts by morning, and a story the men will tell for years.", "do": ["renown:3", "cohesion:2"] },
+          "fail": { "text": "They take a horse and a man's arm before they break off.", "do": ["horses:-1", "sick:2"] } }
+      ]
+    },
+    {
+      "id": "unkept_village", "moments": ["road", "province"], "when": ["!own_land"], "cast": { "settlement": { "where": ["near", "kind:Village", "unrest>=30"] } }, "cooldown": 60, "scene": "village",
+      "title": "The Village Is Going Unkept",
+      "text": "The headman of {settlement} meets you on the road. The garrison left in spring, the woods have been coming closer ever since, and things come out of them at night.",
+      "choices": [
+        { "label": "Leave men to watch it for a week", "outcome": { "text": "A week of watches. Nothing comes. The village is grateful.", "do": ["unrest:-15", "renown:2", "food:-2"] } },
+        { "label": "Teach them to fight for themselves", "check": { "skill": "Training", "against": 30 }, "hint": "Farmers with spears can panic.",
+          "pass": { "text": "By the end of the day they can hold a line, if nobody pushes too hard.", "do": ["unrest:-10", "prosperity:3"] },
+          "fail": { "text": "They are hopeless. You leave them with spears they do not know how to hold.", "do": ["unrest:5"] } },
+        { "label": "It is not your village", "outcome": { "text": "The headman watches you go.", "do": [] } }
+      ]
+    }
+  ]
+}

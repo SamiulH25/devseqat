@@ -83,8 +83,22 @@ public static class Origins
     public static int Age(CaptainMaking m) => BaseAge + Chosen(m).Sum(o => o.Age);
     public static IEnumerable<string> Perks(CaptainMaking m) => Chosen(m).Select(o => o.Perk).Where(p => p != "");
 
-    /// Shape the captain from a making: the face, the road, skills, free perks and gear. The same call drives the creator's
-    /// preview and the new campaign, so what the ledger shows is what you get.
+    /// Starting equipment by homeland culture: body, helm, shield, primary hand weapon and horse.
+    /// Free companies keep the plain sellsword kit.
+    public static (string Body, string Helm, string Shield, string Weapon, string Horse) RealmKit(string culture) => culture switch
+    {
+        "azure" => ("gambeson", "kettle_hat", "kite_shield", "arming_sword", "courser"),
+        "crimson" => ("brigandine", "sallet", "heater_shield", "arming_sword", "courser"),
+        "northern" => ("fur_gambeson", "spangenhelm", "iron_round", "war_axe", "courser"),
+        "southern" => ("qadiri_jubbah", "litham", "dhal", "scimitar", "courser"),
+        "steppe" => ("kaftan", "steppe_helm", "kalkan", "scimitar", "steppe_horse"),
+        "league" => ("arsenal_buffcoat", "morion", "pavise", "arming_sword", "courser"),
+        "order" => ("tarn_habit", "bucket", "kite_shield", "mace", "courser"),
+        _ => ("gambeson", "kettle_hat", "round_shield", "arming_sword", "courser"),
+    };
+
+    /// Shape the captain from a making: the face, the homeland kit, the road, skills, free perks and gear. The same call
+    /// drives the creator's preview and the new campaign, so what the ledger shows is what you get.
     public static void Shape(CaptainState c, CaptainMaking m)
     {
         c.Birth = m.Birth;
@@ -92,6 +106,15 @@ public static class Origins
         c.Visage = m.Visage;
         c.Likeness = m.Look;
         c.Arms = m.Arms;
+        if (!m.FreeStart)
+        {
+            var (body, helm, shield, weapon, horse) = RealmKit(Factions.CultureOf(m.Realm));
+            foreach (var id in new[] { body, helm, shield, weapon, horse })
+            {
+                Campaign.Own(c, id);
+                Wear(c.Kit, Gear.Get(id));
+            }
+        }
         Campaign.TakeRoad(c, m.Road);
         foreach (var o in Chosen(m))
         {

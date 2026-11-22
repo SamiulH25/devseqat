@@ -197,22 +197,23 @@ public static partial class SelfTest
     /// does what it says; the realm's dice do not draw them.
     static void CampEvents()
     {
-        Check(!Campaign.ValidateEvents().Any(), "events.json is valid: " + string.Join("; ", Campaign.ValidateEvents().Take(3)));
-        Check(Campaign.Events.Count(e => Campaign.MenTriggers.Contains(e.Trigger)) >= 15, "the camp has its events");
+        Check(!Campaign.ValidateEvents().Any(), "the events are valid: " + string.Join("; ", Campaign.ValidateEvents().Take(3)));
+        Check(Campaign.Events.Count(e => e.Moments.Contains("camp") && e.Cast.ContainsKey("man")) >= 15, "the camp has its events");
         var c = Campaign.New(35);
         var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
         co.Roll.Clear();
         var a = c.NameMan(co, "Stood firm.")!; var b = c.NameMan(co, "Held the ford.")!;
         a.Ties.Clear(); b.Ties.Clear();
         a.Ties.Add(new SoldierTie { Other = b.Id, Kind = "Rivals" }); b.Ties.Add(new SoldierTie { Other = a.Id, Kind = "Rivals" });
-        var pe = c.FindMen("men_rivals");
-        Check(pe != null && (pe.Soldier == a.Id && pe.Other == b.Id || pe.Soldier == b.Id && pe.Other == a.Id), "two rivals are found as a pair");
+        var blows = Campaign.EventOf("men_blows")!;
+        var pe = new PendingEvent { Id = "men_blows" };
+        Check(c.BindCast(blows, pe) && (pe.Soldier == a.Id && pe.Other == b.Id || pe.Soldier == b.Id && pe.Other == a.Id), "two rivals are found as a pair");
         ulong main = c.S.Rng;
-        for (int i = 0; i < 20; i++) c.FindMen("men_named");
-        Check(c.S.Rng == main, "the camp's events draw on the roll's dice, not the realm's");
+        for (int i = 0; i < 20; i++) c.BindCast(Campaign.EventOf("men_dice")!, new PendingEvent { Id = "men_dice" });
+        Check(c.S.Rng == main, "the events draw on their own dice, not the realm's");
 
         // Words: {man}, {other} and {company} come out as the men's names.
-        Check(c.RaiseMenEvent("men_blows") != null && c.S.Event != null, "a camp event comes up");
+        Check(c.RaiseEvent("men_blows") != null && c.S.Event != null, "a camp event comes up");
         string text = c.Fill(Campaign.EventOf("men_blows")!.Text, c.S.Event!);
         Check(text.Contains(a.Name) && text.Contains(b.Name) && text.Contains(co.Name), $"the event names the two men and their company: {text}");
         // tie: rivals made brothers.
@@ -221,14 +222,14 @@ public static partial class SelfTest
         // man_deed and man_hurt.
         a.Ties.Clear(); b.Ties.Clear();
         a.Ties.Add(new SoldierTie { Other = b.Id, Kind = "Rivals" }); b.Ties.Add(new SoldierTie { Other = a.Id, Kind = "Rivals" });
-        c.RaiseMenEvent("men_blows");
+        c.RaiseEvent("men_blows");
         var man = c.LivingMan(c.S.Event!.Soldier)!;
         int deeds = man.Deeds.Count, wounded = co.Stacks.Sum(s => s.Wounded);
         c.Choose(1);
         Check(man.Hurt && man.Deeds[^1].StartsWith("Fought") && co.Stacks.Sum(s => s.Wounded) == wounded + 1, "letting them finish it hurts one, and he remembers it");
         Check(Campaign.AtFire(co).Hurt.Contains(man), "the hurt man goes to the surgeon's");
         // A hurt man is found by men_hurt and no longer by men_named.
-        for (int i = 0; i < 10; i++) Check(c.FindMen("men_named")?.Soldier != man.Id, "a hurt man is not at the fire");
+        for (int i = 0; i < 10; i++) { var dice = new PendingEvent { Id = "men_dice" }; c.BindCast(Campaign.EventOf("men_dice")!, dice); Check(dice.Soldier != man.Id, "a hurt man is not at the fire"); }
         // mention.
         var fit = a == man ? b : a;
         c.S.Event = new PendingEvent { Id = "men_watch", Soldier = fit.Id, Company = co.Id };
@@ -240,8 +241,11 @@ public static partial class SelfTest
         c.Choose(1);
         Check(!co.Roll.Contains(fit) && c.S.Fallen.Any(m => m.Id == fit.Id && m.Fate == "left") && co.Men == men - 1, "a man who goes home leaves the roll, and his stack");
         for (int i = 0; i < 10; i++)
-            foreach (var t in Campaign.MenTriggers)
-                if (c.FindMen(t) is PendingEvent f) Check(c.LivingMan(f.Soldier) != null && (f.Other < 0 || c.LivingMan(f.Other) != null), $"{t} names only living men");
+            foreach (var e in Campaign.Events.Where(e => e.Cast.ContainsKey("man") && !e.Cast["man"].Where.Contains("hurt")))
+            {
+                var f = new PendingEvent { Id = e.Id };
+                if (c.BindCast(e, f)) Check(c.LivingMan(f.Soldier) != null && (f.Other < 0 || c.LivingMan(f.Other) != null), $"{e.Id} names only living men");
+            }
         // A man gone before you answer: the event leaves him alone.
         c.S.Event = new PendingEvent { Id = "men_first_charge", Soldier = fit.Id, Company = co.Id };
         int before = fit.Deeds.Count;

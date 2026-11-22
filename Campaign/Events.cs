@@ -1,456 +1,373 @@
 using System.Text.Json;
-using Microsoft.Xna.Framework;
+using System.Text.RegularExpressions;
 
 namespace Ironfield;
 
-/// One event as Data/events.json describes it (CAMPAIGN_OVERHAUL.md 8).
+/// One event, a storylet (docs/pre-demo/EVENTS.md): read from Data/events/*.json. It comes at one of its moments when every
+/// condition in `When` holds and its cast can be found, or when the code raises it by id; it offers two to four choices.
 public sealed class EventDef
 {
-    public string Id = "", Trigger = "", Title = "", Text = "";
-    /// The picture (S6): "camp", "town", "court", "burning" or "site_<kind>"; empty = chosen from the id.
+    public string Id = "", Title = "", Text = "";
+    /// The picture at the head of the page: "camp", "road", "ford", "town", "court", "village", "burning", "shrine", "field",
+    /// "sea", "flame", "site_<kind>"... (MapScreen.Event.cs); empty = the camp, or the site's own.
     public string Scene = "";
+    /// When it may be drawn (Campaign.Moments); none = only ever raised by the code or followed from another event.
+    public List<string> Moments = new();
+    /// Conditions that must all hold (Campaign/EventConditions.cs).
+    public List<string> When = new();
+    /// Who and what it is about: role (lord, companion, man, other, settlement, site, band, company) -> how to find one.
+    public Dictionary<string, CastDef> Cast = new();
+    /// Odds against the others that fit the same moment; days before it may come again; once in a campaign; a weighty one
+    /// buys a longer quiet after it.
+    public float Weight = 1;
     public int Cooldown = 30;
+    public bool Once, Heavy;
     public List<ChoiceDef> Choices = new();
+    /// The file it came from (road, camp, court...): the director spreads its draws across themes.
+    public string Theme = "";
 }
 
+/// How a role of the cast is found: conditions on the candidate (Campaign/EventCast.cs). An optional role may stay empty,
+/// and the choices that name it are then not offered.
+public sealed class CastDef
+{
+    public List<string> Where = new();
+    public bool Optional;
+}
+
+/// One choice: what it needs (shown struck through with the reason when it fails), what it costs (paid on choosing, shown),
+/// and either one outcome or a check with an outcome for each side of it.
 public sealed class ChoiceDef
 {
-    public string Label = "", Need = "";
-    /// What goes on the man's record when a camp event's `man_deed` applies (C5): "Fought {other} by the fire and shook his hand after."
-    public string Deed = "";
-    public List<string> Effects = new();
+    public string Label = "", Hint = "", Why = "";
+    public List<string> Needs = new(), Cost = new();
+    public CheckDef? Check;
+    public OutcomeDef? Outcome, Pass, Fail, Great, Awful;
 }
 
-/// An event waiting for your answer, with who and where it is about (ids; -1 = none).
+/// A test of the captain's skill or trait, or of a man of the cast, against a difficulty (EV2). The odds shown are the odds rolled.
+public sealed class CheckDef
+{
+    /// The captain's skill (an id from Skills.All), or a role ("man", "other", "companion") whose worth is tested, or neither.
+    public string Skill = "", Man = "";
+    /// A captain's trait that helps (+EventTraitEdge) or, written "!Trait", hinders; a man's nature that helps him.
+    public string Trait = "", Nature = "";
+    public float Against = 50;
+}
+
+/// What happens: the words on the outcome page, the effects, a deed on the man's record, and a follow-up later.
+public sealed class OutcomeDef
+{
+    public string Text = "", Deed = "";
+    public List<string> Do = new();
+    public FollowDef? Then;
+}
+
+/// An event that follows this one some days later, about the same cast, if its conditions hold by then.
+public sealed class FollowDef
+{
+    public string Id = "";
+    public List<float> Days = new() { 5, 10 };
+    public List<string> When = new();
+}
+
+/// An event waiting for your answer, with its cast (ids; -1 = none).
 public sealed class PendingEvent
 {
     public string Id = "";
-    public int Settlement = -1, Lord = -1, Party = -1, Company = -1, Grave = -1, Site = -1, Soldier = -1;
+    public int Settlement = -1, Lord = -1, Party = -1, Company = -1, Grave = -1, Site = -1, Soldier = -1, Companion = -1;
     /// A camp event's second man (C5: {other}), a soldier id.
     public int Other = -1;
     /// C7: the cairn a visit is to, and for the year's day the battle and the men who fell in it ({field}, {dead}).
     public int Cairn = -1;
     public string Field = "";
     public List<int>? Dead;
+
+    public PendingEvent Copy(string id) => new()
+    {
+        Id = id, Settlement = Settlement, Lord = Lord, Party = Party, Company = Company, Grave = Grave, Site = Site, Soldier = Soldier,
+        Companion = Companion, Other = Other, Cairn = Cairn, Field = Field, Dead = Dead?.ToList(),
+    };
 }
 
-/// Events, lord quests and named threats (step F8).
+/// An event in the queue: raised by the world while another waited (priority 2), or a follow-up due later (priority 1).
+public sealed class QueuedEvent
+{
+    public PendingEvent Event = new();
+    public int Priority;
+    /// Not before this hour; dropped after `Until` (0 = never).
+    public float At, Until;
+    /// A follow-up's conditions, checked when it is due.
+    public List<string> When = new();
+}
+
+/// What you chose in an event (the `chose:` and `seen:` conditions read it).
+public sealed class EventMemory
+{
+    public string Id = "", Result = "";
+    public int Choice;
+    public float At;
+}
+
+/// One line of an outcome or a choice's cost: an icon, the words, and whether it is good (1), bad (-1) or neither.
+public readonly record struct EventLine(string Icon, string Text, int Sign);
+
+/// The outcome page: shown once you choose, until you go on (not saved; the effects are already applied).
+public sealed class EventResult
+{
+    public string Id = "", Title = "", Choice = "", Text = "", Result = "", Scene = "";
+    public float Odds = -1;
+    public bool More;
+    public PendingEvent Event = new();
+    public List<EventLine> Lines = new();
+}
+
+/// The events (docs/pre-demo/EVENTS.md): the data, its checks, the words, and answering an event.
 public sealed partial class Campaign
 {
-    public const string EventsFile = "Data/events.json";
-    public const int BrigandKingMen = 40, EventGapMin = 3, EventGapMax = 6;
-
-    /// Triggers the data may name: each finds what the event is about, or fails.
-    public static readonly string[] Triggers =
+    public const string EventsDir = "Data/events";
+    /// The moments the director draws at (Campaign/EventDirector.cs); "site" is a site reached, raised by Sites.cs.
+    public static readonly string[] Moments = { "road", "camp", "arrive", "town", "battle", "province", "week", "site" };
+    /// Events the code raises by id; each must be in the data.
+    public static readonly string[] CodeRaised =
     {
-        "fief_unrest", "fief_poor", "fief_rich", "lord_friend", "lord_hates_liege", "big_band", "veterans", "hungry_winter",
-        "unpaid", "prisoners", "war_weary", "in_town", "brigand_king", "pretender", "graves",
-        "peace_offer", "site_ruin", "site_shrine", "site_stones", "site_battlefield", "site_mine", "site_hermit", "site_watchtower", "site_spring", "site_mill",
-        "start", "crown", "fallen", "spring", "summer", "autumn", "winter", "forest", "hills", "river", "near_site", "after_battle", "companion", "culture", "night", "dark_omens",
-        "aura_vigil", "aura_grief", // raised by Campaign/Aura.cs only, never drawn at random (K5)
-        "flame_bargain", "flame_end", // raised by Campaign/BlackFlame.cs only (K7)
-        "cairn", // raised by Campaign/Remembered.cs only, riding by a cairn of yours (C7)
+        "start_road", "aura_vigil", "aura_grief", "flame_bargain", "flame_end", "flame_rival", "rival_meet", "bury_named", "bury_dead",
+        "peace_offer", "brigand_king", "pretender", "free_crown", "cairn_visit", "men_day_fell",
     };
-    /// Days after a "flag:name" effect before the "flag:name" event follows.
-    public const int FlagDays = 7;
-    /// Flags the code sets itself (not an event's choice): swearing to an order starts the rival's chain (K6).
-    static readonly string[] CodeFlags = { "rival_meet", "rival_fallen" };
-    /// Triggers that only fire when the world forces them (a brigand king rises, a pretender appears).
-    internal static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" or "peace_offer" or "start" or "crown" or "fallen" or "cairn" || trigger.StartsWith("site_");
-    static readonly string[] Verbs =
-    {
-        "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
-        "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury",
-        "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man", "farsight", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown", "calm",
-        "vigil", "breakthrough", "corrupt", "rival", "rival_bout", "rival_fate", "pact", "hollow_crown", "burn_out",
-        "man_deed", "man_hurt", "man_leaves", "tie", "mention", // the camp's (C5, Campaign/CampEvents.cs)
-    };
-    static readonly string[] NoNumber = { "man_deed", "man_hurt", "man_leaves", "tie", "mention", "vigil", "breakthrough", "rival_bout", "rival_fate", "pact", "hollow_crown", "burn_out", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown" };
-    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion", "man", "rival", "other", "home", "field", "dead" };
+    static readonly string[] Roles = { "lord", "companion", "man", "other", "settlement", "site", "band", "company" };
+    /// Words in the text that are not roles: filled from the captain, the man, the place and the moment.
+    static readonly string[] FreeHoles = { "realm", "liege", "rival", "home", "field", "dead", "here", "province", "season", "fallen" };
 
     static List<EventDef>? events;
-    public static IReadOnlyList<EventDef> Events
+    public static IReadOnlyList<EventDef> Events => events ??= LoadEvents();
+
+    static List<EventDef> LoadEvents()
     {
-        get
+        var all = new List<EventDef>();
+        foreach (var root in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
         {
-            if (events != null) return events;
-            foreach (var dir in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
+            var dir = Path.Combine(root, EventsDir);
+            if (!Directory.Exists(dir)) continue;
+            var opts = new JsonSerializerOptions { IncludeFields = true, PropertyNameCaseInsensitive = true, ReadCommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
+            foreach (var file in Directory.GetFiles(dir, "*.json").OrderBy(f => f, StringComparer.Ordinal))
             {
-                var p = Path.Combine(dir, EventsFile);
-                if (!File.Exists(p)) continue;
-                var opts = new JsonSerializerOptions { IncludeFields = true, PropertyNameCaseInsensitive = true, ReadCommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
-                using var doc = JsonDocument.Parse(File.ReadAllText(p), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
-                return events = JsonSerializer.Deserialize<List<EventDef>>(doc.RootElement.GetProperty("events").GetRawText(), opts)!;
+                using var doc = JsonDocument.Parse(File.ReadAllText(file), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+                var list = JsonSerializer.Deserialize<List<EventDef>>(doc.RootElement.GetProperty("events").GetRawText(), opts)!;
+                foreach (var e in list) e.Theme = Path.GetFileNameWithoutExtension(file);
+                all.AddRange(list);
             }
-            return events = new List<EventDef>();
+            return all;
         }
+        return all;
     }
 
     public static EventDef? EventOf(string id) => Events.FirstOrDefault(e => e.Id == id);
 
-    /// Data checks (11, F8): known triggers and verbs, numbers where a verb needs one, two or three choices, known placeholders.
+    /// The outcomes a choice can have, with their keys ("" for a plain one).
+    public static IEnumerable<(string Key, OutcomeDef O)> OutcomesOf(ChoiceDef c)
+    {
+        if (c.Outcome != null) yield return ("", c.Outcome);
+        if (c.Pass != null) yield return ("pass", c.Pass);
+        if (c.Fail != null) yield return ("fail", c.Fail);
+        if (c.Great != null) yield return ("great", c.Great);
+        if (c.Awful != null) yield return ("awful", c.Awful);
+    }
+
+    /// Every text of an event that may hold {holes}.
+    static IEnumerable<string> TextsOf(EventDef e) =>
+        new[] { e.Title, e.Text }.Concat(e.Choices.SelectMany(c => new[] { c.Label, c.Hint }.Concat(OutcomesOf(c).Select(o => o.O.Text))));
+
+    /// Data checks: moments, conditions, cast, holes, checks, costs, verbs and follow-ups, as the engine reads them.
     public static IEnumerable<string> ValidateEvents()
     {
         if (Events.Count == 0) yield return "no events loaded";
+        foreach (var id in CodeRaised) if (EventOf(id) == null) yield return $"the code raises {id}, which is not in the data";
+        var followed = Events.SelectMany(e => e.Choices).SelectMany(c => OutcomesOf(c)).Select(o => o.O.Then?.Id).OfType<string>().ToHashSet();
         foreach (var e in Events)
         {
-            if (Events.Count(x => x.Id == e.Id) > 1) yield return $"{e.Id}: duplicate id";
-            if (!Triggers.Contains(e.Trigger) && !MenTriggers.Contains(e.Trigger) && !e.Trigger.StartsWith("flag:") && !(e.Trigger.StartsWith("trait:") && EarnedTraits.Contains(e.Trigger[6..]))
-                && !(e.Trigger.StartsWith("origin:") && Origins.Births.Concat(Origins.Pasts).Any(o => o.Id == e.Trigger[7..])))
-                yield return $"{e.Id}: unknown trigger {e.Trigger}";
-            if (e.Trigger.StartsWith("flag:") && !CodeFlags.Contains(e.Trigger[5..]) && !Events.Any(x => x.Choices.Any(c => c.Effects.Contains(e.Trigger)))) yield return $"{e.Id}: nothing sets {e.Trigger}";
-            if (e.Choices.Count is < 2 or > 3) yield return $"{e.Id}: needs two or three choices";
-            foreach (var text in new[] { e.Title, e.Text }.Concat(e.Choices.Select(c => c.Label)))
-                foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(text, @"\{(\w+)\}"))
-                    if (!Holes.Contains(m.Groups[1].Value)) yield return $"{e.Id}: unknown placeholder {m.Value}";
-            if (!MenTrigger(e.Trigger) && System.Text.RegularExpressions.Regex.IsMatch(e.Title + e.Text + string.Concat(e.Choices.Select(c => c.Label)), @"\{(other|home)\}")) yield return $"{e.Id}: {{other}} and {{home}} are for the camp's events";
-            foreach (var c in e.Choices)
+            string at = $"{e.Theme}/{e.Id}";
+            if (Events.Count(x => x.Id == e.Id) > 1) yield return $"{at}: duplicate id";
+            if (e.Title == "" || e.Text == "") yield return $"{at}: needs a title and a text";
+            foreach (var m in e.Moments) if (!Moments.Contains(m)) yield return $"{at}: unknown moment {m}";
+            if (e.Moments.Count == 0 && !CodeRaised.Contains(e.Id) && !followed.Contains(e.Id)) yield return $"{at}: no moment, and nothing raises it";
+            if (e.Choices.Count is < 2 or > 4) yield return $"{at}: needs two to four choices";
+            if (e.Weight <= 0) yield return $"{at}: weight must be above 0";
+            foreach (var w in e.When) if (CondProblem(w, null) is string p) yield return $"{at}: {p}";
+            foreach (var (role, cast) in e.Cast)
             {
-                if (c.Effects.Contains("man_deed") != (c.Deed != "")) yield return $"{e.Id}: a deed and man_deed go together";
-                if (c.Effects.Any(fx => fx is "man_deed" or "man_hurt" or "man_leaves" or "tie" or "mention") && !MenTrigger(e.Trigger)) yield return $"{e.Id}: the man's verbs are for the camp's events";
-                if (c.Effects.Contains("tie") && e.Trigger is not ("men_rivals" or "men_brothers" or "men_lad")) yield return $"{e.Id}: tie needs two men";
-                foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(c.Deed, @"\{(\w+)\}"))
-                    if (m.Groups[1].Value is not ("man" or "other" or "company" or "home" or "foe")) yield return $"{e.Id}: unknown placeholder {m.Value} in a deed";
-                if (c.Need != "" && !(c.Need.StartsWith("gold:") && float.TryParse(c.Need[5..], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _)))
-                    yield return $"{e.Id}: bad need {c.Need}";
-                foreach (var fx in c.Effects)
+                if (!Roles.Contains(role)) { yield return $"{at}: unknown role {role}"; continue; }
+                foreach (var w in cast.Where) if (CondProblem(w, role) is string p) yield return $"{at}: {role}: {p}";
+            }
+            if (e.Cast.ContainsKey("other") && !e.Cast.ContainsKey("man")) yield return $"{at}: other needs a man";
+            foreach (var text in TextsOf(e))
+                foreach (Match m in Regex.Matches(text, @"\{(\w+)\}"))
                 {
-                    var (verb, n, ok) = ParseEffect(fx);
-                    if (!Verbs.Contains(verb)) yield return $"{e.Id}: unknown effect {fx}";
-                    else if (!ok) yield return $"{e.Id}: effect {fx} needs a number";
-                    else if (verb == "flag" && !Events.Any(x => x.Trigger == fx)) yield return $"{e.Id}: no event follows {fx}";
+                    string h = m.Groups[1].Value;
+                    if (Roles.Contains(h) ? !e.Cast.ContainsKey(h) && !(h == "company" && e.Cast.ContainsKey("man")) && !(h == "site" && e.Moments.Contains("site")) && !(h == "settlement" && e.Moments.Contains("site")) : !FreeHoles.Contains(h)) yield return $"{at}: {{{h}}} is not in its cast";
+                    if (h == "home" && !e.Cast.ContainsKey("man")) yield return $"{at}: {{home}} needs a man";
+                }
+            if (e.Choices.Count > 0 && e.Choices.All(c => c.Needs.Any(n => n.StartsWith("cast:")))) yield return $"{at}: every choice hangs on a role; one must always be open";
+            for (int i = 0; i < e.Choices.Count; i++)
+            {
+                var c = e.Choices[i];
+                string ci = $"{at} choice {i + 1}";
+                if (c.Label == "") yield return $"{ci}: no label";
+                foreach (var n in c.Needs)
+                    if (n.StartsWith("cast:")) { if (!e.Cast.ContainsKey(n[5..])) yield return $"{ci}: needs {n}, not in its cast"; }
+                    else if (CondProblem(n, null) is string p) yield return $"{ci}: {p}";
+                foreach (var fx in c.Cost)
+                {
+                    var (verb, _, n, _) = ParseEffect(fx);
+                    if (verb is not ("gold" or "food" or "horses") || n <= 0) yield return $"{ci}: a cost is gold, food or horses, more than 0 ({fx})";
+                }
+                bool plain = c.Outcome != null, check = c.Check != null;
+                if (plain == check) yield return $"{ci}: one outcome, or a check with pass and fail";
+                if (check && (c.Pass == null || c.Fail == null)) yield return $"{ci}: a check needs pass and fail";
+                if (!check && (c.Pass ?? c.Fail ?? c.Great ?? c.Awful) != null) yield return $"{ci}: pass and fail need a check";
+                if (c.Check is CheckDef k)
+                {
+                    if (k.Skill != "" && Skills.All.All(s => s.Id != k.Skill)) yield return $"{ci}: unknown skill {k.Skill}";
+                    if (k.Man != "" && (k.Man is not ("man" or "other" or "companion") || !e.Cast.ContainsKey(k.Man))) yield return $"{ci}: the check's man {k.Man} is not in its cast";
+                    if (k.Trait != "" && !EarnedTraits.Contains(k.Trait.TrimStart('!'))) yield return $"{ci}: unknown trait {k.Trait}";
+                    if (k.Nature != "" && (!Natures.Contains(k.Nature) || k.Man is not ("man" or "other"))) yield return $"{ci}: a nature needs a man ({k.Nature})";
+                    if (k.Skill == "" && k.Man == "" && k.Trait == "") yield return $"{ci}: the check tests nothing";
+                    if (c.Hint == "") yield return $"{ci}: a check needs a hint of what may go wrong";
+                }
+                foreach (var (key, o) in OutcomesOf(c))
+                {
+                    string oi = key == "" ? ci : $"{ci} {key}";
+                    if (o.Text == "") yield return $"{oi}: an outcome needs words";
+                    if (o.Do.Contains("man_deed") != (o.Deed != "")) yield return $"{oi}: a deed and man_deed go together";
+                    foreach (Match m in Regex.Matches(o.Deed, @"\{(\w+)\}"))
+                        if (m.Groups[1].Value is not ("man" or "other" or "company" or "home" or "foe")) yield return $"{oi}: unknown {m.Value} in a deed";
+                    foreach (var fx in o.Do) if (VerbProblem(fx, e) is string p) yield return $"{oi}: {p}";
+                    if (o.Then is FollowDef t)
+                    {
+                        if (EventOf(t.Id) == null) yield return $"{oi}: follows {t.Id}, not in the data";
+                        if (t.Days.Count != 2 || t.Days[0] < 0 || t.Days[1] < t.Days[0]) yield return $"{oi}: follow-up days are [min, max]";
+                        foreach (var w in t.When) if (CondProblem(w, null) is string p) yield return $"{oi}: then: {p}";
+                    }
                 }
             }
         }
-        // Every verb the code knows is used by some event, so none is left behind untested.
-        foreach (var verb in Verbs)
-            if (!Events.Any(e => e.Choices.Any(c => c.Effects.Any(fx => ParseEffect(fx).Verb == verb)))) yield return $"no event uses the effect {verb}";
+        // Every verb the engine knows is used by some event, so none is left behind untested.
+        foreach (var v in Verbs.Keys)
+            if (!Events.Any(e => e.Choices.Any(c => OutcomesOf(c).Any(o => o.O.Do.Any(fx => ParseEffect(fx).Verb == v))))) yield return $"no event uses the effect {v}";
     }
 
-    static (string Verb, float N, bool Ok) ParseEffect(string fx)
-    {
-        int i = fx.IndexOf(':');
-        string verb = i < 0 ? fx : fx[..i];
-        if (NoNumber.Contains(verb)) return (verb, 0, i < 0);
-        if (verb == "flag") return (verb, 0, i > 0 && fx.Length > i + 1);
-        bool ok = i >= 0 && float.TryParse(fx[(i + 1)..], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float n);
-        return (verb, ok ? float.Parse(fx[(i + 1)..], System.Globalization.CultureInfo.InvariantCulture) : 0, ok);
-    }
-
-    // ---------- finding what an event is about ----------
-
-    /// The subject of a trigger in the world now, or null when it does not hold.
-    internal PendingEvent? Find(string trigger)
-    {
-        var ev = new PendingEvent();
-        var seats = Fiefs.Where(t => t.Kind != SettlementKind.Village).ToList();
-        switch (trigger)
-        {
-            case "fief_unrest": return Pick(seats.Where(t => t.Unrest >= 50), t => ev.Settlement = t.Id, ev);
-            case "fief_poor": return Pick(seats.Where(t => t.Prosperity < 30), t => ev.Settlement = t.Id, ev);
-            case "fief_rich": return Pick(seats.Where(t => t.Prosperity >= 80), t => ev.Settlement = t.Id, ev);
-            case "lord_friend":
-                return Pick(S.Characters.Where(c => c.Kind == "lord" && !c.Dead && OpinionOfYou(c) >= 35 && PartyById(c.PartyId) is { Captive: false, Down: false }
-                    && !FactionsAtWar(c.Faction, Captain.Contract)), c => ev.Lord = c.Id, ev);
-            case "lord_hates_liege":
-                if (!Captain.Fealty || RulerOf(Captain.Contract) is not Character ruler) return null;
-                return Pick(S.Characters.Where(c => c.Kind == "lord" && !c.Dead && c.Faction == Captain.Contract && c != ruler && OpinionOf(c, ruler) <= -20), c => ev.Lord = c.Id, ev);
-            case "big_band":
-                return Pick(S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down && p.Men >= Scaled(35) && Vector2.Distance(p.Pos, Player.Pos) < 80 * Map.Spread), p => ev.Party = p.Id, ev);
-            case "veterans": return Pick(Player.Companies.Where(c => c.Battles >= 12 && c.Cohesion >= 18), c => ev.Company = c.Id, ev);
-            case "hungry_winter": return Winter && Player.Food < 6 ? ev : null;
-            case "unpaid": return S.UnpaidWeeks > 0 ? ev : null;
-            case "prisoners": return PrisonerCount >= Scaled(25) ? ev : null;
-            case "war_weary": return Captain.Contract >= 0 && Exhaustion(Captain.Contract) >= 40 ? ev : null;
-            case "spring" or "summer" or "autumn" or "winter": return Season.ToLowerInvariant() == trigger ? ev : null;
-            case "dark_omens": return S.Omen >= OmenEvents ? ev : null;
-            case "night": return S.Hours % 24 is >= 20 or < 5 && SettlementAt(Player.Pos) == null ? ev : null;
-            case "forest" or "hills": return SettlementAt(Player.Pos) == null && Map.ProvinceAt(Player.Pos).Kind.Equals(trigger, StringComparison.OrdinalIgnoreCase) ? ev : null;
-            case "river": return SettlementAt(Player.Pos) == null && Map.RiverDist(Player.Pos) < 6 * Map.Spread ? ev : null;
-            case "near_site": return Pick(Sites.Where(x => !SiteSeen(x) && Vector2.Distance(x.Pos, Player.Pos) < 40 * Map.Spread), x => ev.Site = x.Id, ev);
-            case "after_battle": return S.Hours - S.LastBattleAt < 24 ? Pick(Player.Companies.Where(c => c.Men > 0), c => ev.Company = c.Id, ev) : null;
-            case "companion": return Pick(Companions, c => ev.Lord = c.Id, ev);
-            case "culture":
-                return Pick(S.Settlements.Where(v => v.Kind == SettlementKind.Village && v.Culture != Me.Culture && v.Culture != "common" && !Refuses(v)
-                    && Vector2.Distance(v.Pos, Player.Pos) < 14 * Map.Spread), v => ev.Settlement = v.Id, ev);
-            case var tr when tr.StartsWith("trait:"): return Me.Traits.Contains(tr[6..]) ? ev : null;
-            // The captain's own past catches up with them (the character creator): only after the first fortnight.
-            case var o when o.StartsWith("origin:"): return S.Hours >= 14 * 24 && (Captain.Birth == o[7..] || Captain.Origin == o[7..]) ? ev : null;
-            case var f when f.StartsWith("flag:"): return S.Flags.TryGetValue(f[5..], out float set) && S.Hours - set >= FlagDays * 24 ? ev : null;
-            case "in_town": return SettlementAt(Player.Pos) is { Kind: SettlementKind.Town } town && !Refuses(town) ? (ev.Settlement = town.Id) >= 0 ? ev : null : null;
-            default: return null;
-        }
-    }
-
-    PendingEvent? Pick<T>(IEnumerable<T> list, Action<T> set, PendingEvent ev)
-    {
-        var l = list.ToList();
-        if (l.Count == 0) return null;
-        set(l[rng.Next(l.Count)]);
-        return ev;
-    }
-
-    /// Daily: when the gap has passed and nothing is waiting, one eligible event (off cooldown) comes up.
-    void EventsDaily()
-    {
-        BrigandKingsDaily();
-        if (S.Event != null || S.Hours < S.NextEvent || Sailing) return; // no roadside event finds a ship
-        var ready = new List<PendingEvent>();
-        foreach (var e in Events.Where(e => !Forced(e.Trigger) && !MenTrigger(e.Trigger))) // the camp's come on their own (MenEventsDaily)
-        {
-            if (S.EventsFired.TryGetValue(e.Id, out float at) && S.Hours - at < e.Cooldown * 24) continue;
-            if (Find(e.Trigger) is PendingEvent pe) { pe.Id = e.Id; ready.Add(pe); }
-        }
-        if (ready.Count == 0) return; // nothing fits today: try again tomorrow rather than wait out another gap
-        S.NextEvent = (float)S.Hours + rng.Range(EventGapMin, EventGapMax) * 24;
-        Raise(ready[rng.Next(ready.Count)]);
-    }
-
-    void Raise(PendingEvent pe)
-    {
-        S.Event = pe;
-        S.EventsFired[pe.Id] = (float)S.Hours;
-        EventTally[pe.Id] = EventTally.GetValueOrDefault(pe.Id) + 1;
-        if (EventOf(pe.Id)?.Trigger is string t && t.StartsWith("flag:")) S.Flags.Remove(t[5..]);
-    }
-
-    /// How often each event came up in this session (for the spread test and the balance report).
-    public readonly Dictionary<string, int> EventTally = new();
-
-    /// An event the world forces (it does not wait for the gap); dropped if another is already waiting.
-    void Force(string id, PendingEvent pe)
-    {
-        if (S.Event != null || EventOf(id) == null) return;
-        pe.Id = id;
-        Raise(pe);
-    }
+    // ---------- the words ----------
 
     /// An event's text with its names filled in.
     public string Fill(string text, PendingEvent pe)
     {
+        if (!text.Contains('{')) return text;
         string realm = Captain.Contract >= 0 ? FactionNames[Captain.Contract] : "realm";
+        var here = SettlementAt(Player.Pos);
         return text.Replace("{settlement}", pe.Settlement >= 0 ? SettlementById(pe.Settlement).Name : "the town")
             .Replace("{lord}", CharacterById(pe.Lord)?.Name ?? "a lord")
             .Replace("{band}", PartyById(pe.Party)?.Name ?? "brigands")
-            .Replace("{company}", Player.Companies.FirstOrDefault(c => c.Id == pe.Company)?.Name ?? "a company")
+            .Replace("{company}", Player.Companies.FirstOrDefault(c => c.Id == pe.Company)?.Name ?? "the company")
             .Replace("{realm}", realm)
             .Replace("{liege}", RulerOf(Captain.Contract)?.Name ?? "your liege")
             .Replace("{site}", SiteById(pe.Site)?.Name ?? "the place")
-            .Replace("{companion}", CharacterById(pe.Lord)?.Name ?? "your companion")
+            .Replace("{companion}", CharacterById(pe.Companion)?.Name ?? CharacterById(pe.Lord)?.Name ?? "your companion")
             .Replace("{rival}", CharacterById(Captain.Rival)?.Name ?? "your rival")
             .Replace("{man}", (LivingMan(pe.Soldier) ?? S.Fallen.FirstOrDefault(m => m.Id == pe.Soldier))?.Name ?? "one of your men")
+            .Replace("{fallen}", S.Fallen.FirstOrDefault(m => m.Id == pe.Soldier)?.Name ?? "one of your men")
             .Replace("{other}", LivingMan(pe.Other)?.Name ?? "his friend")
             .Replace("{field}", pe.Cairn >= 0 && S.Cairns.FirstOrDefault(c => c.Id == pe.Cairn) is Cairn fc ? fc.Field : pe.Field != "" ? pe.Field : "the field")
             .Replace("{dead}", ListNames(pe.Cairn >= 0 && S.Cairns.FirstOrDefault(c => c.Id == pe.Cairn) is Cairn dc ? CairnNames(dc).ToList() : (pe.Dead ?? new()).Select(id => S.Fallen.FirstOrDefault(m => m.Id == id)?.Name).OfType<string>().ToList()))
-            .Replace("{home}", EventMan(pe) is (Soldier hm, CompanyRecord hk) ? (hm.Home != "" ? hm.Home : hk.Home != "" ? hk.Home : "his village") : "his village");
+            .Replace("{home}", EventMan(pe) is (Soldier hm, CompanyRecord hk) ? (hm.Home != "" ? hm.Home : hk.Home != "" ? hk.Home : "his village") : "his village")
+            .Replace("{here}", here?.Name ?? Map.ProvinceAt(Player.Pos).Name)
+            .Replace("{province}", Map.ProvinceAt(Player.Pos).Name)
+            .Replace("{season}", Season.ToLowerInvariant());
     }
 
     /// "A", "A and B", "A, B and C".
     static string ListNames(List<string> names) => names.Count == 0 ? "your men" : names.Count == 1 ? names[0] : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
 
-    /// Why a choice cannot be taken now ("" = it can).
-    public string ChoiceBlocked(ChoiceDef c) =>
-        c.Need.StartsWith("gold:") && float.TryParse(c.Need[5..], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float g) && S.Gold < g ? $"NEEDS {g:0} CROWNS" : "";
+    // ---------- answering ----------
+
+    /// Is the choice offered at all? A choice that names a role the cast left empty is not.
+    public bool Offered(ChoiceDef c, PendingEvent? pe = null)
+    {
+        pe ??= S.Event;
+        return pe == null || c.Needs.Where(n => n.StartsWith("cast:")).All(n => RoleBound(n[5..], pe));
+    }
+
+    /// The choices of the waiting event that are offered, with their index in the data.
+    public List<(int Index, ChoiceDef Choice)> OfferedChoices(PendingEvent pe) =>
+        EventOf(pe.Id) is EventDef e ? e.Choices.Select((c, i) => (i, c)).Where(x => Offered(x.c, pe)).ToList() : new();
+
+    /// Why a choice cannot be taken now ("" = it can): a need that fails, or a cost you cannot pay.
+    public string ChoiceBlocked(ChoiceDef c, PendingEvent? pe = null)
+    {
+        pe ??= S.Event ?? new PendingEvent();
+        if (!Offered(c, pe)) return "NOT OPEN TO YOU";
+        foreach (var n in c.Needs.Where(n => !n.StartsWith("cast:")))
+            if (!Holds(n, pe)) return c.Why != "" ? c.Why : NeedText(n);
+        foreach (var fx in c.Cost)
+        {
+            var (verb, _, n, _) = ParseEffect(fx);
+            if (verb == "gold" && S.Gold < n) return $"NEEDS {n:0} CROWNS";
+            if (verb == "food" && Player.Food < n) return $"NEEDS {n:0} DAYS OF FOOD";
+            if (verb == "horses" && Player.Horses < n) return $"NEEDS {n:0} HORSES";
+        }
+        return "";
+    }
 
     /// The first choice of the waiting event that can be taken (for the stand-in captain).
-    public int EventOf0() => S.Event is PendingEvent pe && EventOf(pe.Id) is EventDef e ? Math.Max(0, e.Choices.FindIndex(c => ChoiceBlocked(c) == "")) : 0;
+    public int EventOf0() => S.Event is PendingEvent pe && EventOf(pe.Id) is EventDef e ? Math.Max(0, e.Choices.FindIndex(c => ChoiceBlocked(c, pe) == "")) : 0;
 
-    /// Answer the waiting event with choice i: its effects apply, and a line goes to the log.
+    /// A cost ("gold:300") as the effect that pays it ("gold:-300").
+    static string Spent(string fx) { var (verb, _, n, _) = ParseEffect(fx); return $"{verb}:{(-n).ToString(System.Globalization.CultureInfo.InvariantCulture)}"; }
+    /// A cost as a line on the page: what it takes from you.
+    public EventLine CostLine(string fx, PendingEvent pe) => Describe(Spent(fx), pe);
+
+    /// The outcome page of the last answer, until the map screen shows it and you go on.
+    public EventResult? EventOutcome;
+
+    /// Answer the waiting event with choice i: pay its cost, roll its check, apply the outcome, queue what follows, and keep
+    /// the page for the map. Returns null, or why not.
     public string? Choose(int i)
     {
         if (S.Event is not PendingEvent pe || EventOf(pe.Id) is not EventDef e) return "NO EVENT";
         if (i < 0 || i >= e.Choices.Count) return "NO SUCH CHOICE";
         var c = e.Choices[i];
-        if (ChoiceBlocked(c) is { Length: > 0 } why) return why;
+        if (ChoiceBlocked(c, pe) is { Length: > 0 } why) return why;
         S.Event = null;
-        var lines = new List<string>();
-        choiceDeed = c.Deed;
-        foreach (var fx in c.Effects) if (ApplyEffect(fx, pe) is string l) lines.Add(l);
+        var res = new EventResult { Id = e.Id, Title = Fill(e.Title, pe), Choice = Fill(c.Label, pe), Scene = e.Scene, Event = pe };
+        foreach (var fx in c.Cost) { ApplyEffect(Spent(fx), pe); res.Lines.Add(CostLine(fx, pe)); }
+        var (key, o) = Outcome(c, pe, out res.Odds);
+        res.Result = key;
+        res.Text = Fill(o.Text, pe);
+        choiceDeed = o.Deed;
+        foreach (var fx in o.Do)
+        {
+            var line = Describe(fx, pe);
+            string? said = ApplyEffect(fx, pe);
+            if (said != null && said != "") res.Lines.Add(line with { Text = said });
+            else if (line.Text != "") res.Lines.Add(line);
+        }
         choiceDeed = "";
-        Log($"{Fill(e.Title, pe).ToLowerInvariant()}: {Fill(c.Label, pe).ToLowerInvariant()}." + (lines.Count > 0 ? " " + string.Join(" ", lines) : ""));
+        if (o.Then is FollowDef t) { FollowUp(t, pe); res.More = true; }
+        S.EventHistory.Add(new EventMemory { Id = e.Id, Choice = i, Result = key, At = (float)S.Hours });
+        if (S.EventHistory.Count > 300) S.EventHistory.RemoveAt(0);
+        string first = Regex.Match(res.Text, @"^.*?[.!?](\s|$)").Value.Trim();
+        Log($"{res.Title}: {(first != "" ? first : res.Choice.ToLowerInvariant() + ".")}");
+        EventOutcome = res;
         return null;
     }
 
-    /// Apply one effect; returns a short note for the log when there is something to say.
-    string? ApplyEffect(string fx, PendingEvent pe)
+    /// The outcome a choice comes to: its one outcome, or its check rolled on the events' dice (great and awful at the edges).
+    (string Key, OutcomeDef O) Outcome(ChoiceDef c, PendingEvent pe, out float odds)
     {
-        var (verb, n, _) = ParseEffect(fx);
-        var s = pe.Settlement >= 0 ? SettlementById(pe.Settlement) : null;
-        var lord = CharacterById(pe.Lord);
-        var co = Player.Companies.FirstOrDefault(x => x.Id == pe.Company);
-        string? said = SiteEffect(verb, n, pe, out bool siteVerb);
-        if (siteVerb) return said;
-        if (MenEffect(verb, pe) is string camp) return camp == "" ? null : camp;
-        switch (verb)
-        {
-            case "breakthrough": BreakThrough(pe.Id == "aura_grief" ? "In your rage the wall gives way." : "Your mourning is done, and you rise from it."); break;
-            case "corrupt": Corrupt(n); break;
-            case "pact": return TakePact();
-            case "hollow_crown": return EndFlame(true);
-            case "burn_out": return EndFlame(false);
-            case "rival": if (CharacterById(Captain.Rival) is Character rv) Remember(rv, Me, n >= 0 ? "you were a brother to me" : "you looked down on me", n); break;
-            case "rival_bout": return RivalBout();
-            case "rival_fate": return RivalFate();
-            case "gold": S.Gold = MathF.Max(0, S.Gold + n); break;
-            case "renown": Captain.Renown = MathF.Max(0, Captain.Renown + n); break;
-            case "food": Player.Food = MathF.Max(0, Player.Food + n); break;
-            case "horses": Player.Horses = Math.Max(0, Player.Horses + (int)n); break;
-            case "opinion": if (lord != null) Remember(lord, Me, n >= 0 ? "you did right by me" : "you turned me away", n); break;
-            case "opinion_liege": if (RulerOf(Captain.Contract) is Character r) Remember(r, Me, "you warned me of a plot", n); break;
-            case "opinion_realm":
-                foreach (var l in S.Characters.Where(x => x.Kind == "lord" && !x.Dead && x.Faction == Captain.Contract))
-                    l.Opinion[S.CaptainChar] = Math.Clamp(l.Opinion.GetValueOrDefault(S.CaptainChar) + n, -100, 100);
-                break;
-            case "unrest": if (s != null) s.Unrest = Math.Clamp(s.Unrest + n, 0, 100); break;
-            case "prosperity": if (s != null) s.Prosperity = Math.Clamp(s.Prosperity + n, 0, 100); break;
-            case "tax": if (s != null) SetTax(s, (int)n); break;
-            case "cohesion": foreach (var x in co != null ? new List<CompanyRecord> { co } : Player.Companies) x.Cohesion = Math.Clamp(x.Cohesion + n, 0, 30); break;
-            case "xp": foreach (var x in co != null ? new List<CompanyRecord> { co } : Player.Companies) foreach (var st in x.Stacks) st.AddXp(st.Men * n); break;
-            case "exhaustion":
-                foreach (var w in S.Wars.Where(w => w.Active && (w.A == Captain.Contract || w.B == Captain.Contract))) AddExhaustion(w, Captain.Contract, n);
-                break;
-            case "calm": S.Omen = MathF.Max(0, S.Omen - n); break;
-            case "flag": S.Flags[fx[5..]] = (float)S.Hours; break;
-            case "farsight": S.FarSightUntil = (float)S.Hours + n * 24; return $"For {n:0} days you will see much further.";
-            case "peace": return lord != null ? AcceptPeace(lord.Faction) : null;
-            case "man": return GiftMen(1, SettlementNear(Player.Pos)) > 0 ? "He joins your company." : "You have no room for him.";
-            case "sick":
-                int ill = 0;
-                foreach (var st in Player.Companies.SelectMany(x => x.Stacks))
-                {
-                    int k = (int)MathF.Round(st.Men * n / 100);
-                    st.Men -= k; st.Wounded += k; ill += k;
-                }
-                return ill > 0 ? $"{ill} men fall sick." : null;
-            case "reveal":
-                var site = SiteById(pe.Site) is Site named && !SiteSeen(named) ? named
-                    : Sites.Where(x => !SiteSeen(x)).OrderBy(x => Vector2.Distance(x.Pos, Player.Pos)).FirstOrDefault();
-                if (site == null) return null;
-                S.SitesSeen.Add(site.Id);
-                return $"You learn the way to the {site.Name}, to the {Bearing(Player.Pos, site.Pos)}.";
-            case "lists": if (s != null) { Lists = s; return "The heralds cry your name. You ride into the lists."; } break;
-            case "gamble":
-                // A stake of n crowns at dice: the charming read the table better.
-                if (rng.Chance(0.4f + Skill("Charm") / 500f)) { S.Gold += n; return $"The dice love you tonight: you win {n:0} crowns."; }
-                S.Gold = MathF.Max(0, S.Gold - n);
-                return $"The dice go against you. {n:0} crowns gone.";
-            case "quest": return lord != null ? GiveQuest(lord) : null;
-            case "bounty": return pe.Party >= 0 ? Bounty(PartyById(pe.Party)) : s != null ? Bounty(Rebels(s)) : null;
-            case "revolt": if (s != null && Rebels(s) == null) Revolt(s); break;
-            case "prisoners_free": FreePrisoners(); break;
-            case "road_sword" or "road_lance" or "road_bow": return ChooseRoad(verb[5..]);
-            case "crown": return s != null ? ClaimCrown(s) ?? $"{s.Name} is yours, and you are its king." : null;
-            case "prisoners_recruit":
-                foreach (var g in Player.Prisoners.ToList()) RecruitPrisoners(g);
-                break;
-            case "bury": Bury(pe.Grave); CompanionsReact("bury"); break;
-            case "disband":
-                if (s != null && Rebels(s) is Party reb) { reb.Down = true; S.Parties.Remove(reb); return "The pretender takes your gold and is gone."; }
-                break;
-        }
-        return null;
+        odds = -1;
+        if (c.Check is not CheckDef k) return ("", c.Outcome!);
+        odds = Odds(k, pe);
+        float roll = EventDice.Float(), edge = B.EventCheckEdge;
+        if (roll < odds)
+            return c.Great != null && roll < odds * edge ? ("great", c.Great) : ("pass", c.Pass!);
+        return c.Awful != null && roll >= 1 - (1 - odds) * edge ? ("awful", c.Awful) : ("fail", c.Fail!);
     }
-
-    // ---------- lord quests (8) ----------
-
-    /// A lord's quest, on the contract machinery: find his father's sword (S3), hunt a lord at war with his realm, or clear the
-    /// worst band near his home.
-    /// The reward is mostly his favour.
-    string? GiveQuest(Character giver)
-    {
-        var home = PartyById(giver.PartyId) is Party gp && gp.HomeId >= 0 ? SettlementById(gp.HomeId) : null;
-        var at = home?.Pos ?? Player.Pos;
-        float deadline = (float)S.Hours + 12 * 24;
-        Contract? q = null;
-        if (rng.Chance(0.35f) && RelicQuest(giver, at) is Contract relic)
-            q = relic;
-        else if (S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && FactionsAtWar(giver.Faction, p.Faction) && Hostile(Player, p))
-                .OrderBy(p => Vector2.Distance(p.Pos, at)).FirstOrDefault() is Party rival)
-            q = new Contract { Kind = "hunt", Target = rival.Id, Reward = 150, Text = $"Defeat {rival.Name} for {giver.Name}." };
-        else if (S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down).OrderBy(p => Vector2.Distance(p.Pos, at)).FirstOrDefault() is Party band)
-            q = new Contract { Kind = "clear", Target = band.Id, Reward = 100, Text = $"Destroy the {band.Name} for {giver.Name}." };
-        if (q == null) return "He finds there is nothing you can do after all.";
-        q.Id = S.NextId++;
-        q.Faction = Captain.Contract;
-        q.Deadline = deadline;
-        q.Giver = giver.Id;
-        S.Contracts.Add(q);
-        return $"Quest: {q.Text}";
-    }
-
-    /// A price on a band's head, as a contract of your own.
-    string? Bounty(Party? band)
-    {
-        if (band == null || band.Down || S.Contracts.Any(k => k.Target == band.Id)) return null;
-        S.Contracts.Add(new Contract
-        {
-            Id = S.NextId++, Kind = "clear", Target = band.Id, Faction = Captain.Contract, Deadline = (float)S.Hours + 15 * 24,
-            Reward = 200 + Rules.PerMan(Rules.Strength(band) / 2) + (band.CharId >= 0 ? 400 : 0), Text = $"Destroy the {band.Name}.",
-        });
-        return $"A bounty is posted on the {band.Name}.";
-    }
-
-    // ---------- named threats (8) ----------
-
-    /// Daily: the largest band, grown past a size, crowns its chief a brigand king; a king grows, and burns villages near him.
-    void BrigandKingsDaily()
-    {
-        var king = S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Bandit && !p.Down && p.CharId >= 0 && CharacterById(p.CharId) is { Kind: "brigand" });
-        if (king == null && Day >= 30)
-        {
-            var big = S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down && p.HomeId < 0 && p.CharId < 0 && p.Men >= Scaled(BrigandKingMen)).OrderByDescending(p => p.Men).FirstOrDefault();
-            if (big != null) Crown(big);
-        }
-        else if (king != null)
-        {
-            if (king.Men < Scaled(150) && king.Companies.Count > 0) { var st = king.Companies[0].Stacks[0]; if (Rules.Room(king.Companies[0], st.Troop) > 0) st.Men += Math.Min(Rules.Room(king.Companies[0], st.Troop), Scaled(1)); else if (king.Companies.Count < 5) king.Companies.Add(NewCompany(st.Troop, "infantry", Scaled(6), 0)); }
-            foreach (var v in S.Settlements.Where(v => v.Kind == SettlementKind.Village && v.ThreatUntil < S.Hours && Vector2.Distance(v.Pos, king.Pos) < 15 * Map.Spread))
-            {
-                v.ThreatUntil = (float)S.Hours + 7 * 24;
-                v.Recruits = 0;
-                Raided(v);
-            }
-        }
-    }
-
-    /// A band's chief becomes a brigand king: a named character with a growing host.
-    internal void Crown(Party band)
-    {
-        var n = Names.Get();
-        var ch = NewCharacter("brigand", PersonName(Factions.Common), -1, Factions.Common, 2);
-        ch.PartyId = band.Id;
-        band.CharId = ch.Id;
-        band.Name = $"{ch.Name.Split(' ')[0]}'s Host";
-        string troop = band.Companies.FirstOrDefault()?.Troop ?? "levies";
-        band.Companies.Add(NewCompany(troop, "infantry", Scaled(16), 0));
-        Log($"{ch.Name} gathers the brigands of the land and calls himself their king.");
-        Force("brigand_king", new PendingEvent { Party = band.Id, Lord = ch.Id });
-    }
-
-    /// A brigand king or a pretender beaten in the field is gone for good.
-    void ThreatFalls(Party p, bool byYou)
-    {
-        if (CharacterOf(p) is not Character ch) return;
-        ch.Dead = true;
-        ch.PartyId = -1;
-        if (ch.Kind == "brigand") Log($"{ch.Name}, the brigand king, is dead{(byYou ? " by your hand" : "")}.");
-        if (ch.Kind == "pretender") Log($"{ch.Name} is beaten and the rising is over.");
-        if (byYou) Captain.Renown += ch.Kind == "brigand" ? 25 : 15;
-    }
-
-    /// A rising led by a pretender: a named leader, and a seat that opens its gates sooner while he is at large.
-    void RaisePretender(Settlement s, Party rebels)
-    {
-        var n = Names.Get();
-        var ch = NewCharacter("pretender", rng.Pick(n.LordsOf(s.Culture)) + " of " + s.Name, s.Faction, s.Culture, 2);
-        ch.PartyId = rebels.Id;
-        rebels.CharId = ch.Id;
-        rebels.Name = $"{ch.Name.Split(' ')[0]}'s Rising";
-        rebels.Companies.Add(NewCompany(Factions.Root(s.Culture), "infantry", 12, 0, s));
-        Log($"{ch.Name} claims {s.Name} and leads its rebels.");
-        if (s.Owner == Player.Id) Force("pretender", new PendingEvent { Settlement = s.Id, Party = rebels.Id, Lord = ch.Id });
-    }
-
-    /// While a pretender is abroad his seat goes over at 85 unrest rather than 100.
-    float DefectThreshold(Settlement s) => Rebels(s) is Party r && CharacterOf(r) is { Kind: "pretender" } ? 85 : DefectAt;
 }

@@ -56,9 +56,10 @@ sealed class CreatorStage
     public void React() { if (!Ui.Instant) react = 1.1f; }
 
     /// Advance the act by `dt` and draw it into a `w` x `h` texture. `bare` takes the helm off.
-    public void Render(int w, int h, CaptainState c, bool bare, Act next, float dt)
+    public void Render(int w, int h, CaptainState c, bool bare, Act next, float dt, int palette = 2)
     {
         if (w < 16 || h < 16) return;
+        u.Palette = palette;
         if (rt == null || rt.Width != w || rt.Height != h)
         {
             rt?.Dispose();

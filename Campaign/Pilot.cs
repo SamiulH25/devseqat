@@ -54,7 +54,7 @@ public sealed class Pilot
             c.Report = null;
             c.Beat = null;
             if (c.S.Event is { Id: "aura_vigil" }) Vigils++;
-            if (c.S.Event != null) c.Choose(c.EventOf0()); // the stand-in takes the first choice it can afford
+            if (c.S.Event != null) { c.Choose(c.EventOf0()); c.EventOutcome = null; } // the stand-in takes the first choice it can afford
             if (c.Lists is Settlement lists) c.AutoTournament(lists);
             if (c.S.Hours >= nextThink) { Think(); nextThink = (float)c.S.Hours + 2; }
             if (!StageDay.ContainsKey(c.Stage)) StageDay[c.Stage] = c.Day;

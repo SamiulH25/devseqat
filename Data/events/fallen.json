@@ -1,0 +1,33 @@
+{
+  // The company's dead (docs/archive/COMPANY.md C7): a named man's burial, a cairn you ride past, the year's day of a costly field.
+  "events": [
+    {
+      "id": "bury_named", "scene": "camp", "cast": { "company": { "optional": true } },
+      "title": "{fallen}",
+      "text": "{fallen} fell in the fight. The men have wrapped him in his cloak and are waiting to hear what you want done with him.",
+      "choices": [
+        { "label": "Bury him with honour, and say his name", "outcome": { "text": "They dig deep and set his shield over him. Every man in the company files past, and some of them say a word.", "do": ["food:-1", "cohesion:2"] } },
+        { "label": "Say the words and march", "outcome": { "text": "A short grave and a shorter prayer. The column moves off before noon.", "do": ["cohesion:1"] } },
+        { "label": "There is no time", "outcome": { "text": "You leave him under a few stones by the road. Nobody says anything, but some of them look back.", "do": ["cohesion:-1"] } }
+      ]
+    },
+    {
+      "id": "cairn_visit", "scene": "site_cairn", "cast": { "company": { "optional": true } },
+      "title": "The Cairn at {field}",
+      "text": "You ride past the stones over {dead}. Grass has grown up round them. The men of {company} have gone quiet.",
+      "choices": [
+        { "label": "Stand a while with them", "outcome": { "text": "Somebody adds a stone. Somebody else tells a story about one of the dead that nobody has heard before, and the men laugh.", "do": ["cohesion:3"] } },
+        { "label": "Ride on", "outcome": { "text": "You do not stop. The stones are still there behind you when you look back.", "do": [] } }
+      ]
+    },
+    {
+      "id": "men_day_fell", "scene": "camp", "cast": { "man": {} },
+      "title": "The Day of {field}",
+      "text": "{man} has not forgotten what day it is. A year ago {dead} fell at {field}, and he has kept their cups.",
+      "choices": [
+        { "label": "Pour the wine for them", "cost": ["gold:15"], "outcome": { "text": "Wine for every man at the fire, and a cup set out for each of the dead. Nobody drinks from those.", "do": ["cohesion:3", "mention"] } },
+        { "label": "A word for them, then to bed", "outcome": { "text": "You say their names. {man} nods, and goes back to his blanket.", "do": ["cohesion:1"] } }
+      ]
+    }
+  ]
+}

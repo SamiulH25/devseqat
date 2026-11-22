@@ -62,6 +62,7 @@ public sealed partial class Campaign
         SyncOrders();
         MigrateSkills();
         EnsureHouses();
+        if (S.Event is PendingEvent waiting && EventOf(waiting.Id) == null) S.Event = null; // an old save's event the new set lacks (EVENTS.md)
         // Saves from before F6 have no buildings: give their towns the barracks their elite lines need.
         if (S.Settlements.Count > 0 && S.Settlements.All(t => t.Buildings.Count == 0)) SeedBuildings();
         // The map's settlement models follow the save (a v1 save was generated before the Northmarch had its capital).
@@ -163,11 +164,13 @@ public sealed partial class Campaign
     void LogAll(string text) => Log(text, LogLevel.Everything);
 
     public Party? PartyById(int id) => S.Parties.FirstOrDefault(p => p.Id == id);
-    public Settlement SettlementById(int id) => S.Settlements[id];
+    public Settlement SettlementById(int id) => id >= 0 && id < S.Settlements.Count ? S.Settlements[id] : null!;
 
     // ---------- relations ----------
 
     public int SideOf(Party p) => p.Kind switch { PartyKind.Player => Captain.Contract, PartyKind.Bandit => -2, PartyKind.Monster => -3, _ => p.Faction };
+    /// The palette the captain and their kit paint with: their realm's colours when serving a faction, else gold (free company).
+    public int PlayerPalette => Captain.Contract >= 0 ? Style.PaletteOf(Captain.Contract) : 2;
     /// Brigands and monsters: parties outside any realm, with no pay, no drill and no prisoners to ransom.
     public static bool Outlaw(Party p) => p.Kind is PartyKind.Bandit or PartyKind.Monster;
 
@@ -415,6 +418,7 @@ public sealed partial class Campaign
     void Hourly()
     {
         CairnsHourly(); // riding by a cairn of yours (C7)
+        EventsHourly(); // the events' director: the queue, the moments, perhaps a draw (EventDirector.cs)
         foreach (var p in S.Parties.ToList())
         {
             if (p.Kind == PartyKind.Player) continue;
@@ -494,8 +498,7 @@ public sealed partial class Campaign
         CoreDaily();
         FlameDaily();
         CareerDaily();
-        EventsDaily();
-        MenEventsDaily(); // the camp's (C5), on the roll's dice
+        BrigandKingsDaily();
         DayFellDaily(); // the year's day of a costly battle (C7)
         // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous;
         // a share of them come up near the player, and his country is kept to BanditNearMin bands even past the cap,
@@ -527,6 +530,7 @@ public sealed partial class Campaign
 
     void Weekly()
     {
+        weekDue = true; // the week's turn is a moment for the events (EventDirector.cs)
         RelationsWeekly();
         WorkingsWeekly(); // sorcerous realms blight their enemies' fields (Workings.cs)
         BondsWeekly(); // feuding lords come to blows (LordBonds.cs)

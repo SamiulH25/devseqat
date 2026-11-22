@@ -36,6 +36,8 @@ public sealed partial class Campaign
     public static string TakeRoad(CaptainState c, string road)
     {
         var k = c.Kit;
+        var curWep = Gear.Get(k.Weapon);
+        string sidearm = !curWep.TwoHanded && !curWep.Ranged ? k.Weapon : "arming_sword";
         switch (road)
         {
             case "lance":
@@ -46,22 +48,25 @@ public sealed partial class Campaign
             case "bow":
                 c.Skills["Bowcraft"] = MathF.Max(Skills.Level(c, "Bowcraft"), 20);
                 Own(c, "hunting_bow");
-                (k.Weapon, k.Side) = ("hunting_bow", "arming_sword");
+                (k.Weapon, k.Side) = ("hunting_bow", sidearm);
                 return "You carry a hunting bow and the eye to use it.";
             case "great":
                 c.Skills["Arms"] = MathF.Max(Skills.Level(c, "Arms"), 20);
-                (k.Weapon, k.Side) = ("greatsword", "arming_sword");
+                (k.Weapon, k.Side) = ("greatsword", sidearm);
                 return "You fight with the greatsword in both hands, as you always have.";
             case "pole":
                 c.Skills["Arms"] = MathF.Max(Skills.Level(c, "Arms"), 15);
                 c.Skills["Tactics"] = MathF.Max(Skills.Level(c, "Tactics"), 15);
                 Own(c, "halberd");
-                (k.Weapon, k.Side) = ("halberd", "arming_sword");
+                (k.Weapon, k.Side) = ("halberd", sidearm);
                 return "You carry a halberd, and you learned your trade in the line.";
             default:
                 c.Skills["Arms"] = MathF.Max(Skills.Level(c, "Arms"), 20);
-                Own(c, "kite_shield");
-                k.Shield = "kite_shield";
+                if (k.Shield is "" or "round_shield" or "no_shield")
+                {
+                    Own(c, "kite_shield");
+                    k.Shield = "kite_shield";
+                }
                 return "You fight on foot behind a kite shield, as you always have.";
         }
     }

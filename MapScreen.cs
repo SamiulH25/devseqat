@@ -274,7 +274,7 @@ sealed partial class MapScreen
         // A career beat or the council's word waits for the map to be clear (F5).
         if (panel == PanelKind.None && C.Beat != null) { panel = PanelKind.Beat; speed = 0; }
         if (panel == PanelKind.None && C.S.GameOver) { panel = PanelKind.GameOver; speed = 0; }
-        if (panel == PanelKind.None && C.S.Event != null && C.Encounter == null) { panel = PanelKind.Event; speed = 0; note = ""; }
+        if (panel == PanelKind.None && (C.S.Event != null || C.EventOutcome != null) && C.Encounter == null) { panel = PanelKind.Event; speed = 0; note = ""; }
         // You entered a tournament (S5): the fight in the lists starts at once.
         if (panel == PanelKind.None && C.Lists is Settlement lists) { C.Lists = null; speed = 0; OnBattle?.Invoke(C.PrepareTournament(lists)); }
         // ...and so does a knight order's trial of entry (K4).
@@ -706,7 +706,7 @@ sealed partial class MapScreen
                 };
                 u = new Unit
                 {
-                    Type = type, Team = 1, IsPlayer = p.Kind == PartyKind.Player, Palette = Style.PaletteOf(C.SideOf(p)),
+                    Type = type, Team = 1, IsPlayer = p.Kind == PartyKind.Player, Palette = p.Kind == PartyKind.Player ? C.PlayerPalette : Style.PaletteOf(C.SideOf(p)),
                     Coat = p.Id % Style.Coats.Length, Facing = p.Facing, ViewFacing = p.Facing, Heading = p.Facing, ViewHeading = p.Facing,
                 };
                 if (type.Flying) u.Altitude = 1.2f; // a wyvern on the wing

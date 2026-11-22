@@ -1,0 +1,169 @@
+{
+  // The captain's past catches up (the character creator, Data/origins.json): once each, after the first fortnight.
+  "events": [
+    {
+      "id": "origin_sellsword", "moments": ["camp", "town"], "when": ["origin:sellsword", "day>=14"], "once": true, "scene": "camp",
+      "title": "An Old Paymaster",
+      "text": "You recognise the man at the next fire. He was paymaster of the last company you sold your sword to, and he left with its pay chest one night.",
+      "choices": [
+        { "label": "Shake the money out of him", "outcome": { "text": "He does not have all of it, but what he has, he gives you.", "do": ["gold:180", "renown:-2"] } },
+        { "label": "Take his men instead", "outcome": { "text": "He came with four hired blades. They come over to you without much argument.", "do": ["men:4"] } },
+        { "label": "Forgive the debt in front of everyone", "outcome": { "text": "Your men see a captain who keeps no grudges. He sees a man he owes for the rest of his life.", "do": ["renown:4", "cohesion:3"] } }
+      ]
+    },
+    {
+      "id": "origin_hedge_knight", "moments": ["arrive", "town"], "when": ["origin:hedge_knight", "day>=14", "in:town"], "once": true, "scene": "town",
+      "title": "A Herald Remembers",
+      "text": "A herald in a faded tabard stops in front of your horse. He blew the trumpet the day you unhorsed three better-born men in a row, and he has been telling the story ever since.",
+      "choices": [
+        { "label": "Pay him to keep telling it", "cost": ["gold:80"], "outcome": { "text": "By the end of the week every tavern in town has heard it, and it gets better with every telling.", "do": ["renown:12"] } },
+        { "label": "Ask him which lists are open", "outcome": { "text": "He knows every tourney field from here to the coast, and the shortest road to each.", "do": ["renown:3", "farsight:3"] } }
+      ]
+    },
+    {
+      "id": "origin_disinherited", "moments": ["camp", "week"], "when": ["origin:disinherited", "day>=14"], "once": true, "scene": "court",
+      "title": "Your Uncle's Letter",
+      "text": "The man who took your inheritance has written to you. He offers gold if you will sign away your claim to the hall for good. He thought to send the letter by your old nurse.",
+      "choices": [
+        { "label": "Take the gold", "outcome": { "text": "You sign. Your men saw her face when you did.", "do": ["gold:300", "cohesion:-4"] } },
+        { "label": "Burn it in front of her", "outcome": { "text": "She laughs and claps her hands. Your uncle's friends at court will hear of it.", "do": ["cohesion:5", "renown:5", "opinion_realm:-2"] } }
+      ]
+    },
+    {
+      "id": "origin_deserter", "moments": ["camp"], "when": ["origin:deserter", "day>=14"], "once": true, "scene": "camp",
+      "title": "A Face from the Old War",
+      "text": "One of the new men keeps looking at you. He stood in the same line as you on the morning you put down your spear and walked away.",
+      "choices": [
+        { "label": "Tell the men the truth yourself", "outcome": { "text": "You tell them what happened and why. Some of them have done the same. Nobody leaves.", "do": ["cohesion:4", "renown:2"] } },
+        { "label": "Pay for his silence", "cost": ["gold:60"], "outcome": { "text": "He takes the money and keeps his mouth shut. For now.", "do": ["flag:deserter_paid"] } },
+        { "label": "Send him away", "outcome": { "text": "He goes, and he talks on his way out. The rumour gets to the realm's halls before you do.", "do": ["cohesion:-2", "opinion_realm:-2"] } }
+      ]
+    },
+    {
+      "id": "origin_deserter_again", "moments": ["camp"], "when": ["chose:origin_deserter.2", "day>=40"], "once": true, "scene": "camp",
+      "title": "He Wants More",
+      "text": "The man you paid for his silence is back. The first purse is spent, and he has been thinking about what the story is worth to you.",
+      "choices": [
+        { "label": "Pay him again", "cost": ["gold:120"], "outcome": { "text": "He will come back, and you both know it.", "do": [] } },
+        { "label": "Tell the men yourself, at last", "outcome": { "text": "It costs you something to say it. It costs him the rest of his living.", "do": ["cohesion:2", "unflag:deserter_paid"] } }
+      ]
+    },
+    {
+      "id": "origin_poacher", "moments": ["road", "camp"], "when": ["origin:poacher", "day>=14", "land:Forest"], "once": true, "scene": "forest",
+      "title": "The King's Deer",
+      "text": "This is a royal forest, and you know every deer path in it. So do the foresters, but there are only four of them.",
+      "choices": [
+        { "label": "One last hunt", "outcome": { "text": "The company eats venison for a week. The steward will hear about it eventually.", "do": ["food:12", "opinion_realm:-2"] } },
+        { "label": "Teach the lads the woods", "outcome": { "text": "Snares, wind, how to walk without being heard. The company moves quieter for it.", "do": ["xp:6"] } }
+      ]
+    },
+    {
+      "id": "origin_outlaw", "moments": ["road"], "when": ["origin:outlaw", "day>=14"], "once": true, "scene": "forest",
+      "title": "Your Old Band",
+      "text": "Three of the men you used to rob the roads with step out of the trees. They kept the hoard you buried together, and they want to know whose side you are on now.",
+      "choices": [
+        { "label": "Take them and the hoard", "outcome": { "text": "Three good woodsmen and a chest of somebody else's silver.", "do": ["men:1", "gold:150", "renown:-4"] } },
+        { "label": "Take the hoard, and hang them", "outcome": { "text": "The law would call it justice. Your men call it something else when they think you cannot hear.", "do": ["gold:150", "renown:4", "cohesion:-3"] } },
+        { "label": "Send them on their way", "outcome": { "text": "They go back into the trees. You do not see them again.", "do": ["renown:1"] } }
+      ]
+    },
+    {
+      "id": "origin_surgeon", "moments": ["arrive", "road"], "when": ["origin:surgeon", "day>=14"], "once": true, "scene": "village",
+      "title": "A Fever in the Village",
+      "text": "The village by the road has a fever and nobody to treat it. Your hands still remember the work.",
+      "choices": [
+        { "label": "Treat them", "check": { "skill": "Medicine", "against": 20 }, "hint": "A fever can walk home with the surgeon.",
+          "pass": { "text": "Three days without much sleep. Nobody else dies.", "do": ["renown:6", "skill:Medicine:4"] },
+          "fail": { "text": "You save most of them. A few of your own men come down with it.", "do": ["renown:4", "sick:4"] } },
+        { "label": "March on", "outcome": { "text": "The column passes the village without stopping.", "do": ["cohesion:-1"] } }
+      ]
+    },
+    {
+      "id": "origin_drillmaster", "moments": ["camp"], "when": ["origin:drillmaster", "day>=14"], "once": true, "scene": "camp",
+      "title": "The Parade Ground Voice",
+      "text": "The new men cannot keep step. Your old voice is still there, somewhere under the captain's manners.",
+      "choices": [
+        { "label": "Drill them until they drop", "outcome": { "text": "They hate you by sunset, and they hold a line by sunset too.", "do": ["xp:10", "cohesion:-2"] } },
+        { "label": "Drill them, then buy the ale", "cost": ["gold:40"], "outcome": { "text": "They grumble through the drill and cheer you over the ale.", "do": ["xp:6", "cohesion:3"] } }
+      ]
+    },
+    {
+      "id": "origin_pilgrim", "moments": ["road"], "when": ["origin:pilgrim", "day>=14"], "once": true, "scene": "road",
+      "title": "A Fellow Walker",
+      "text": "A pilgrim on the road is wearing the same shell badge you brought back from the far shrine. When he sees yours, he takes your hand.",
+      "choices": [
+        { "label": "Kneel with him, and the men with you", "outcome": { "text": "A short prayer by the road. The men are quiet, and steadier afterwards.", "do": ["cohesion:4", "calm:2"] } },
+        { "label": "Give him alms", "cost": ["gold:30"], "outcome": { "text": "He blesses the company by name, and he will be on the road for months.", "do": ["renown:4"] } }
+      ]
+    },
+    {
+      "id": "origin_sapper", "moments": ["road"], "when": ["origin:sapper", "day>=14", "land:Hills"], "once": true, "scene": "site_mine",
+      "title": "An Old Mine",
+      "text": "There is an abandoned working in the hillside. You can see from the props that they gave up on the vein too soon.",
+      "choices": [
+        { "label": "Dig it out carefully", "check": { "skill": "Logistics", "against": 25 }, "hint": "Old props do not like being touched.",
+          "pass": { "text": "Two days of careful work, and silver at the end of it.", "do": ["gold:140", "xp:3"] },
+          "fail": { "text": "A prop gives way. You get the men out, and nothing else.", "do": ["sick:2"] } },
+        { "label": "Leave it to the dead", "outcome": { "text": "Some veins belong to the hill.", "do": ["cohesion:1"] } }
+      ]
+    },
+    {
+      "id": "origin_tourney", "moments": ["arrive", "town"], "when": ["origin:tourney", "day>=14", "in:town"], "once": true, "scene": "town",
+      "title": "A Challenge at the Gate",
+      "text": "A young knight has been waiting at the gate for you. He has heard you were a champion of the lists, and he wants to see for himself.",
+      "choices": [
+        { "label": "Tilt with him", "check": { "skill": "Riding", "against": 30 }, "hint": "You are older than you were.",
+          "pass": { "text": "He goes over his horse's tail on the first pass. The crowd loves it.", "do": ["renown:8", "cohesion:2"] },
+          "fail": { "text": "He catches you square. You stay in the saddle, just, and the crowd is kind about it.", "do": ["renown:2"] } },
+        { "label": "Take him into the company", "outcome": { "text": "He came for a fight and goes away with a contract.", "do": ["man", "renown:-1"] } },
+        { "label": "Ride past him", "outcome": { "text": "The story they tell about it is not one you would choose.", "do": ["renown:-3"] } }
+      ]
+    },
+    {
+      "id": "origin_steward", "moments": ["arrive", "town"], "when": ["origin:steward", "day>=14", "in:town"], "once": true, "scene": "town",
+      "title": "The Granary Keys",
+      "text": "The old keys are still on your belt. The new steward of your old lord's hall never changed the locks.",
+      "choices": [
+        { "label": "Empty the granary", "outcome": { "text": "Your wagons leave the town loaded. Somebody will have to answer for it.", "do": ["food:20", "opinion_realm:-2"] } },
+        { "label": "Sell the grain quietly", "outcome": { "text": "Good money from a merchant who asks no questions.", "do": ["gold:200", "renown:-2"] } },
+        { "label": "Tell the new lord his locks are bad", "outcome": { "text": "He is grateful, and he tells people.", "do": ["opinion_realm:4", "renown:3"] } }
+      ]
+    },
+    {
+      "id": "origin_highborn", "moments": ["week"], "when": ["origin:highborn", "day>=14"], "once": true, "scene": "court",
+      "title": "A Cousin at Court",
+      "text": "A cousin you have not seen since you were children writes from court. She has the king's ear, and she would like a present.",
+      "choices": [
+        { "label": "Send a gift", "cost": ["gold:100"], "outcome": { "text": "She writes back warmly, and she does not forget you.", "do": ["opinion_realm:6"] } },
+        { "label": "Write back warmly instead", "outcome": { "text": "Words cost nothing, and she knows it.", "do": ["opinion_realm:2"] } }
+      ]
+    },
+    {
+      "id": "origin_marcher", "moments": ["road", "province"], "when": ["origin:marcher", "day>=14"], "once": true, "scene": "burning",
+      "title": "Smoke on the Border",
+      "text": "There is smoke over a steading in the next valley. Raiders, the shepherds say. You grew up in country like this, and you know what happens next.",
+      "choices": [
+        { "label": "Ride them down", "outcome": { "text": "You catch them at the ford with their loot still on their backs.", "do": ["gold:90", "renown:5", "cohesion:-1"] } },
+        { "label": "Help the farmers rebuild", "outcome": { "text": "Two days of roofing and fencing. The farmers will remember the company.", "do": ["opinion_realm:3", "food:-4"] } }
+      ]
+    },
+    {
+      "id": "origin_forge", "moments": ["arrive", "town"], "when": ["origin:forge", "day>=14", "in:town"], "once": true, "scene": "town",
+      "title": "Your Father's Mark",
+      "text": "A swordsmith in the market is selling blades with your father's mark struck into them. They are bad blades, and your father never made them.",
+      "choices": [
+        { "label": "Shame him before the crowd", "outcome": { "text": "You snap one over your knee. The crowd laughs, and he pays you to stop.", "do": ["renown:4", "gold:40"] } },
+        { "label": "Buy one, and have it made right", "cost": ["gold:60"], "outcome": { "text": "Reforged at a better forge, it is a blade your father would have struck his mark on.", "do": ["item:arming_sword", "cohesion:2"] } }
+      ]
+    },
+    {
+      "id": "origin_shore", "moments": ["road", "camp"], "when": ["origin:shore", "day>=14", "sea"], "once": true, "scene": "sea",
+      "title": "A Storm Coming",
+      "text": "You can smell the weather before anyone else in the column. A bad blow is coming in off the sea, and it will be here before dark.",
+      "choices": [
+        { "label": "Make camp and dig in", "outcome": { "text": "When the storm comes, you are ready for it.", "do": ["cohesion:3", "food:-2"] } },
+        { "label": "March through it", "outcome": { "text": "Wet, cold, and a day ahead. Some of them catch a chill.", "do": ["xp:4", "sick:2"] } }
+      ]
+    }
+  ]
+}

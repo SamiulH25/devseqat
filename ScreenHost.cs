@@ -70,6 +70,10 @@ sealed class ScreenHost : Game
     /// won field, at night, at dusk after a lost one, and a man's page (`campaign-camp-*.png`, `campaign-man.png`).
     static readonly bool campOnly = Environment.GetEnvironmentVariable("IRONFIELD_CAMP_ONLY") == "1";
     int campShot;
+    /// Debug: with IRONFIELD_EVENTS_ONLY=1 a campaign shots run saves only the event book (docs/pre-demo/EVENTS.md EV3): a camp
+    /// event with two faces, a lord's, a check, a barred choice, the outcome pages, and one page for each painted scene.
+    static readonly bool eventsOnly = Environment.GetEnvironmentVariable("IRONFIELD_EVENTS_ONLY") == "1";
+    int eventShot;
     int saveShot;
     /// Debug: IRONFIELD_PLACES=1 (or a filter: a style id's part, e.g. "steppe") with IRONFIELD_CAMPAIGN_SHOTS saves only the
     /// settlements close up, one of each style and kind, labels and parties hidden (docs/archive/SETTLEMENTS.md).
@@ -599,7 +603,7 @@ sealed class ScreenHost : Game
         if (won is bool w) c.Player.Companies[0].Ledger.Add(new LedgerEntry { Day = c.Day, Won = w, Foe = "the Red Lances" });
         c.Encounter = null; c.S.Event = null; c.Beat = null;
         if (name == "book") c.StageFallen(); // C7: men lost at two fields, a cairn by you, a captain before you
-        if (name == "camp-event" && c.RaiseMenEvent("men_side_by_side") != null) map.Stage("event"); // a camp event with its two men's faces
+        if (name == "camp-event" && c.RaiseEvent("men_side_by_side") != null) map.Stage("event"); // a camp event with its two men's faces
         else if (name is "book" or "cairn" or "party") map.Stage(name);
         else if (name == "legend") // C8: honours as pennants, one taken
         {
@@ -619,6 +623,41 @@ sealed class ScreenHost : Game
         else if (name == "end") { c.S.Retired = true; c.S.EndReason = "YOU HANDED THE BANNER ON."; map.Stage("gameover"); }
         else map.Stage(man ? "campman" : "camp");
         pendingShot = "campaign-" + name; shotFrames = 0;
+    }
+
+    /// The event book's shots (IRONFIELD_EVENTS_ONLY): `campaign-event-<name>.png`.
+    void EventShots(Campaign c)
+    {
+        var lord = c.S.Characters.First(k => k.Kind == "lord" && !k.Dead && k.Faction != c.Captain.Contract);
+        var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town);
+        var steps = new (string Name, Action Raise)[]
+        {
+            ("camp", () => c.RaiseEvent("men_side_by_side")),
+            ("lord", () => c.S.Event = new PendingEvent { Id = "lord_insult", Lord = lord.Id }),
+            ("check", () => c.S.Event = new PendingEvent { Id = "pretender", Lord = lord.Id, Settlement = town.Id }),
+            ("blocked", () => { c.S.Gold = 20; c.S.Event = new PendingEvent { Id = "famine", Settlement = town.Id }; }),
+            ("outcome", () => { c.S.Gold = 500; c.S.Event = new PendingEvent { Id = "famine", Settlement = town.Id }; c.Choose(0); }),
+            ("outcome-check", () => { c.S.Event = new PendingEvent { Id = "kob_tracks" }; c.Choose(0); }),
+            ("outcome-chain", () => { c.S.Event = new PendingEvent { Id = "dying_stranger" }; c.Choose(0); }),
+            ("road", () => c.S.Event = new PendingEvent { Id = "broken_axle" }),
+            ("ford", () => c.S.Event = new PendingEvent { Id = "ford_toll" }),
+            ("forest", () => c.S.Event = new PendingEvent { Id = "weaver_road" }),
+            ("hills", () => c.S.Event = new PendingEvent { Id = "hill_shepherds" }),
+            ("sea", () => c.S.Event = new PendingEvent { Id = "coast_wreck" }),
+            ("flame", () => c.S.Event = new PendingEvent { Id = "flame_bargain" }),
+            ("village", () => c.S.Event = new PendingEvent { Id = "recruits_square" }),
+            ("field", () => c.S.Event = new PendingEvent { Id = "battle_wounded_foe" }),
+            ("shrine", () => c.S.Event = new PendingEvent { Id = "lector_blessing" }),
+            ("town", () => c.S.Event = new PendingEvent { Id = "smith_offer" }),
+        };
+        if (eventShot >= steps.Length) { Exit(); return; }
+        if (eventShot == 0) map.Stage("campmen");
+        var (name, raise) = steps[eventShot++];
+        c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 11;
+        c.Encounter = null; c.S.Event = null; c.EventOutcome = null; c.Beat = null;
+        raise();
+        map.Stage("event");
+        pendingShot = "campaign-event-" + name; shotFrames = 0;
     }
 
     void CampaignShots()
@@ -641,6 +680,7 @@ sealed class ScreenHost : Game
         if (mapOnly && cStage == 2) { Exit(); return; }
         if (savesOnly) { SaveShots(c); return; }
         if (campOnly) { CampShots(c); return; }
+        if (eventsOnly) { EventShots(c); return; }
         if ((townOnly || streetOnly) && cStage < 56) cStage = 56;
         switch (cStage)
         {

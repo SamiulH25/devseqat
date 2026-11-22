@@ -34,6 +34,7 @@ public sealed partial class Campaign
         r.Aura = 0;
         Captain.Rival = r.Id;
         S.Flags["rival_meet"] = (float)S.Hours;
+        QueueEvent("rival_meet", 7); // his chain begins a week on
     }
 
     /// A bout with your rival at the lists: your arms and aura against his.
@@ -67,6 +68,7 @@ public sealed partial class Campaign
         r.Order = "hollow";
         r.Aura = Math.Max(2, Captain.AuraTier);
         S.Flags["rival_fallen"] = (float)S.Hours;
+        QueueEvent("flame_rival", 7); // and a week on he comes back with an offer
         return $"{r.Name} has left the order in the night. They say he went looking for a faster way up. They say a black fire.";
     }
 

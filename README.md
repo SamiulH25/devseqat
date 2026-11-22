@@ -192,10 +192,13 @@ with mountain ridges you cross by road at the passes; the minimap and the realm 
   rest pick new wars. The marshal **musters hosts** of the lords who respect him, and as a vassal you are **summoned**: come within four
   days to win his favour. As king you declare war, offer peace on terms (only as far as you are ahead), and ally against a shared enemy;
   your tributaries' land counts toward victory.
-- **Events and quests:** every few days something happens that depends on your world: a petition from a restless fief, famine,
-  a fair, a lord asking a favour (a quest that wins his friendship; refusing costs it), a plot against your liege, a feast for your
-  veterans, a hard winter, a tournament. A big brigand band can crown a **brigand king** who burns villages, and a bad revolt can raise
-  a **pretender** who will take the town if you do not beat him. Events are data in `Data/events.json`.
+- **Events:** about twice a week something happens that fits where you are and what you have done: on the road (a ford's toll,
+  a broken axle, a webbed forest road), at the evening's camp (your named men quarrel, ask, bet, mourn), on reaching a place, after a
+  fight, with the week's letters (a lord's favour or plot, a fief's hunger). The map pauses and a book opens: the scene, the
+  people in it, and your choices with what they cost. Some are **checks**: your skill (or a man's battles and nature) against the
+  task, shown as odds (NEAR SURE to DESPERATE); the roll is the odds you were shown. The next page tells what came of it and what
+  changed. Some answers have a sequel days later. A big brigand band can crown a **brigand king** who burns villages, and a bad
+  revolt can raise a **pretender** who will take the town if you do not beat him. Events are data in `Data/events/*.json`.
 - **Between the towns:** ruins, shrines, standing stones, old battlefields, mines, hermits, watchtowers, springs and mills dot
   the map; ride to one to search, pray, rest or ask. Merchant caravans and pilgrims travel the roads: buy from them, ask their
   news, or rob them (their realm will not forget). Village elders ask for small jobs anyone may take (wolves, goblins, a

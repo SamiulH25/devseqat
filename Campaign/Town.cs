@@ -94,7 +94,7 @@ public sealed partial class Campaign
             all.Add(new Rumour($"A wolf pack hunts to the {Where(w.Pos)}. The shepherds will not go out alone.", w.Pos));
         foreach (var b in S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down && p.CharId >= 0 && Vector2.Distance(p.Pos, t.Pos) < far * 1.5f))
             all.Add(new Rumour($"The {b.Name} ride to the {Where(b.Pos)}, and a king leads them.", b.Pos));
-        foreach (var car in Caravans.Where(p => p.HomeId == t.Id && SettlementById(p.GoalSettlement) != t))
+        foreach (var car in Caravans.Where(p => p.HomeId == t.Id && p.GoalSettlement >= 0 && SettlementById(p.GoalSettlement) is Settlement d && d != t))
             all.Add(new Rumour($"The {car.Name} are on the road to {SettlementById(car.GoalSettlement).Name}, heavy with goods.", car.Pos));
         foreach (var site in Sites.Where(x => !SiteSeen(x) && Vector2.Distance(x.Pos, t.Pos) < far).OrderBy(x => Vector2.Distance(x.Pos, t.Pos)).Take(2))
             all.Add(new Rumour(site.Kind switch

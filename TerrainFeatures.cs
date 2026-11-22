@@ -104,19 +104,40 @@ public sealed partial class Terrain
         return Vector2.Zero;
     }
 
-    /// Is there a house (a big solid thing) at p? Trunks and boulders are left to steering.
-    public bool House(Vector2 p)
+    /// True if a foliage kind is a solid structure that companies should route around.
+    public static bool IsStructure(FoliageKind k) => k is FoliageKind.House or FoliageKind.Keep or FoliageKind.Landmark
+        or FoliageKind.Wagon or FoliageKind.Tower or FoliageKind.Hut or FoliageKind.Mill or FoliageKind.Ruin
+        or FoliageKind.Shrine or FoliageKind.Watch or FoliageKind.Well;
+
+    /// Is there a house or solid building at p? Trunks and small boulders are left to local avoidance.
+    public bool House(Vector2 p, float pad = 0.6f)
     {
-        if (Wall != null && Wall.InBuilding(p, 0.6f)) return true;
+        if (Wall != null && Wall.InBuilding(p, pad)) return true;
+        if (Foliage.Count == 0) return false;
         int bx = (int)((p.X + Half) / Cell), bz = (int)((p.Y + Half) / Cell);
         for (int z = bz - 1; z <= bz + 1; z++)
             for (int x = bx - 1; x <= bx + 1; x++)
             {
                 if (x < 0 || z < 0 || x >= bucketSide || z >= bucketSide) continue;
                 foreach (int i in buckets[z * bucketSide + x])
-                    if (Foliage[i].Kind is FoliageKind.House or FoliageKind.Keep or FoliageKind.Landmark && Vector2.Distance(Foliage[i].Pos, p) < Foliage[i].Radius + 0.6f) return true;
+                {
+                    var f = Foliage[i];
+                    if ((IsStructure(f.Kind) || f.Radius >= 1.8f) && Vector2.Distance(f.Pos, p) < f.Radius + pad) return true;
+                }
             }
         return false;
+    }
+
+    /// Does the straight segment a..b pass through any solid building or large structure?
+    public bool CrossesHouse(Vector2 a, Vector2 b, float pad = 0.6f)
+    {
+        if (Foliage.Count == 0 && Wall == null) return false;
+        float len = Vector2.Distance(a, b);
+        if (len < 0.1f) return false;
+        var dir = (b - a) / len;
+        for (float s = 0.5f; s < len; s += 2f)
+            if (House(a + dir * s, pad)) return true;
+        return House(b, pad);
     }
 
     /// Does a short step from a to b cross a feature that stops this man (stakes stop only horse; pass false for arrows)?

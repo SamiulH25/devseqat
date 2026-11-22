@@ -299,7 +299,7 @@ public partial class Campaign
             EnemyLeader = LeaderOf(enemy), // a monster host is led by one of its own, not a man (Beasts.cs)
             EnemyAura = ChampionAura(enemy), EnemyForms = ChampionFormsOf(enemy), Madness = MadnessInBattle, // an order knight leads with his aura (K6)
             Weather = WeatherFor(enemy),
-            Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
+            Palette = new[] { PlayerPalette, Style.PaletteOf(SideOf(enemy)) },
             Standing = ActiveBuffs.Concat(RelicReady ? new[] { "relic" } : Array.Empty<string>()).ToArray(), // a shrine's blessing, a feast, hunger (Buffs.cs); your relic (Rites.cs)
         }.WithCaptain(Captain);
         setup.Options.Engines = EnginesFor(setup, assault: false); // the trains (SiegeWorks.cs)

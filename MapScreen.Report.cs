@@ -155,7 +155,7 @@ partial class MapScreen
         ui.Rect(sr, Kit.Gilt * 0.12f);
         var sbox = new Rectangle(sr.X + ui.U(3), sr.Y + ui.U(1), sr.Height - ui.U(2), sr.Height - ui.U(2));
         ui.Rect(sbox, Color.Black * 0.45f);
-        ui.GearSprite(g, Kit.Inset(sbox, ui.U(1)));
+        ui.GearSprite(g, Kit.Inset(sbox, ui.U(1)), C.PlayerPalette);
         string sname = Campaign.ItemName(new GearItem { Def = g.Id, Quality = rep.SpoilMake }, g).ToUpperInvariant()
             + (rep.SpoilMark != "" && Effects.Has(rep.SpoilMark) ? " . " + Effects.Get(rep.SpoilMark).Name.ToUpperInvariant() : "");
         ui.TextFit(sname, sbox.Right + ui.U(6), sr.Y + (sr.Height - ui.U(7)) / 2, sr.Right - ui.U(64) - sbox.Right, rep.SpoilMake == ItemQuality.Plain ? Kit.Gilt : MakeColour(rep.SpoilMake), 1);

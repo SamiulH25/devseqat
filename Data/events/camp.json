@@ -1,0 +1,198 @@
+{
+  // The camp's events (docs/archive/COMPANY.md C5): the named men round the fire, at the evening's camp. The cast's "man" is a
+  // living man of the roll who fits; "other" is found from his ties. {company} is his company, {home} his village.
+  "events": [
+    {
+      "id": "men_blows", "moments": ["camp"], "cast": { "man": { "where": ["tie:Rivals"] }, "other": { "where": ["tie:Rivals"] } }, "cooldown": 45, "scene": "camp",
+      "title": "Blows at the Fire",
+      "text": "{man} and {other} have finally come to blows over who struck first at the last fight. Half of {company} is standing round them, and the other half is taking bets.",
+      "choices": [
+        { "label": "Put them on the same watch for a week", "outcome": { "text": "Seven cold nights with only each other to talk to. By the end they are sharing a blanket.", "do": ["tie", "cohesion:-1"] } },
+        { "label": "Let them finish it", "outcome": { "text": "It goes on longer than anyone expected. {man} gets up last, and he will not be fighting for a while.", "do": ["man_hurt", "man_deed", "cohesion:1"], "deed": "Fought {other} at the fire and shook his hand afterwards." } },
+        { "label": "Flog them both", "outcome": { "text": "Ten strokes each, in front of the company. The rivalry goes quiet, but it is still there.", "do": ["cohesion:-2"] } }
+      ]
+    },
+    {
+      "id": "men_wager", "moments": ["camp"], "cast": { "man": { "where": ["tie:Rivals"] }, "other": { "where": ["tie:Rivals"] } }, "cooldown": 45, "scene": "camp",
+      "title": "A Month's Pay on It",
+      "text": "{man} has bet {other} a month's pay that he will take more men down in the next fight than {other} will. The whole company has heard about it.",
+      "choices": [
+        { "label": "Let the bet stand", "outcome": { "text": "They will both fight harder for it, and probably more recklessly.", "do": ["cohesion:1", "xp:3"] } },
+        { "label": "Forbid it", "outcome": { "text": "They both sulk, and so does everyone who had a side bet.", "do": ["cohesion:-1"] } }
+      ]
+    },
+    {
+      "id": "men_side_by_side", "moments": ["camp"], "cast": { "man": { "where": ["tie:Brothers"] }, "other": { "where": ["tie:Brothers"] } }, "cooldown": 45, "scene": "camp",
+      "title": "Side by Side",
+      "text": "{man} and {other} ask to stand together in the front rank of {company} from now on. If one of them goes down, they want the other to be the one who sees it.",
+      "choices": [
+        { "label": "Grant it", "outcome": { "text": "The sergeant moves them together. The rest of the rank closes up round them.", "do": ["man_deed", "cohesion:2"], "deed": "Stood beside {other} in the front rank of {company}." } },
+        { "label": "The sergeant places the men", "outcome": { "text": "They accept it, but neither of them likes it.", "do": ["cohesion:-1"] } }
+      ]
+    },
+    {
+      "id": "men_lad_banner", "moments": ["camp"], "cast": { "man": { "where": ["tie:Lad"] }, "other": { "where": ["tie:Lad"] } }, "cooldown": 45, "scene": "camp",
+      "title": "The Lad and the Banner",
+      "text": "{other} thinks {man} is ready to carry {company}'s banner. {man} is not so sure, and he is looking at you.",
+      "choices": [
+        { "label": "Give him the banner", "outcome": { "text": "He takes the pole with both hands. {other} grins like a proud father.", "do": ["man_deed", "cohesion:2"], "deed": "Given {company}'s banner on {other}'s word." } },
+        { "label": "Test him first", "check": { "man": "man", "against": 45 }, "hint": "He is young, and the company will be watching.",
+          "pass": { "text": "He drills with the banner until sunset and never lets it dip. The company cheers him when he finishes.", "do": ["man_deed", "cohesion:3"], "deed": "Drilled with {company}'s banner until the company cheered him." },
+          "fail": { "text": "He drops it in the mud in front of everyone. {other} picks it up and says nothing.", "do": ["cohesion:-1"] } },
+        { "label": "Not yet", "outcome": { "text": "He looks relieved, and then he looks disappointed.", "do": [] } }
+      ]
+    },
+    {
+      "id": "men_old_story", "moments": ["camp"], "cast": { "man": { "where": ["veteran"] } }, "cooldown": 60, "scene": "camp",
+      "title": "The Story of the Banner",
+      "text": "{man} has the new men round him and is telling them about every field {company} has fought on. Some of it is even true.",
+      "choices": [
+        { "label": "Sit down and listen", "outcome": { "text": "He tells it better because you are there. When he gets to the part with you in it, he looks over to you.", "do": ["mention", "cohesion:2"] } },
+        { "label": "Send them to sleep", "outcome": { "text": "Early march tomorrow. They go grumbling.", "do": ["cohesion:1"] } }
+      ]
+    },
+    {
+      "id": "men_going_home", "moments": ["camp"], "cast": { "man": { "where": ["old"] } }, "cooldown": 60, "scene": "camp",
+      "title": "Time to Go Home",
+      "text": "{man} comes to your fire and asks to be let go. His knees are bad, his hands shake in the mornings, and there is a widow in {home} who would have him.",
+      "choices": [
+        { "label": "Send him home with a purse", "cost": ["gold:40"], "outcome": { "text": "The whole company sees him off at the road. He does not look back, because he does not want them to see his face.", "do": ["man_leaves", "cohesion:1"] } },
+        { "label": "Let him go as he is", "outcome": { "text": "He packs his kit and walks out before dawn.", "do": ["man_leaves"] } },
+        { "label": "Ask him for one more season", "outcome": { "text": "He stays, because you asked. He will not be happy about it.", "do": ["cohesion:-2"] } }
+      ]
+    },
+    {
+      "id": "men_father", "moments": ["camp"], "cast": { "man": { "where": ["home"] } }, "cooldown": 60, "scene": "camp",
+      "title": "News from {home}",
+      "text": "A carter brings word for {man}: his father is dying in {home}, and has asked for him.",
+      "choices": [
+        { "label": "Give him leave, and a horse", "outcome": { "text": "He rides out at dawn and comes back three weeks later, quieter than before.", "do": ["horses:-1", "man_deed", "cohesion:1"], "deed": "Rode home to {home} to bury his father, and came back." } },
+        { "label": "The march cannot wait", "outcome": { "text": "He nods. He does not argue, but he does not forgive it either.", "do": ["cohesion:-2"] } },
+        { "label": "Let him go for good", "outcome": { "text": "There is a farm to run now. He shakes your hand and goes.", "do": ["man_leaves"] } }
+      ]
+    },
+    {
+      "id": "men_wedding", "moments": ["town"], "cast": { "man": {}, "settlement": { "where": ["here"] } }, "cooldown": 90, "scene": "town",
+      "title": "A Wedding in {settlement}",
+      "text": "{man} has been seeing a girl in {settlement}, and wants to marry her before the company marches.",
+      "choices": [
+        { "label": "Give him your blessing and a purse", "cost": ["gold:20"], "outcome": { "text": "The whole company gets drunk at the wedding, and the bride's father gets the bill.", "do": ["man_deed", "cohesion:2"], "deed": "Married with the whole of {company} at the church door." } },
+        { "label": "Forbid it", "outcome": { "text": "He marches with the company. She does not wave him off.", "do": ["cohesion:-1"] } },
+        { "label": "Let him stay with her", "outcome": { "text": "He hangs his shield over her door and does not take it down again.", "do": ["man_leaves", "cohesion:1"] } }
+      ]
+    },
+    {
+      "id": "men_wont_lie_still", "moments": ["camp", "battle"], "cast": { "man": { "where": ["hurt"] } }, "cooldown": 45, "scene": "camp",
+      "title": "{man} Will Not Lie Still",
+      "text": "{man} is out of his blanket again with his arm still in its sling. The surgeon has given up shouting at him.",
+      "choices": [
+        { "label": "Let him fight", "outcome": { "text": "He takes his place in the line one-handed. The rest of {company} stand a bit straighter for it.", "do": ["man_deed", "cohesion:1"], "deed": "Took his place in the line with his arm still in a sling." } },
+        { "label": "Order him back to his blanket", "outcome": { "text": "He goes, grumbling, but he goes.", "do": [] } }
+      ]
+    },
+    {
+      "id": "men_oath", "moments": ["camp", "battle"], "cast": { "man": { "where": ["avenging"] } }, "cooldown": 45, "scene": "camp",
+      "title": "An Oath at the Fire",
+      "text": "{man} wants to swear before the company that he will take a life for the brother he lost.",
+      "choices": [
+        { "label": "Let him swear it", "outcome": { "text": "He swears on his blade. The men are quiet afterwards, and they look at him differently.", "do": ["man_deed", "cohesion:2"], "deed": "Swore on his blade at the fire to avenge his brother." } },
+        { "label": "Tell him to sleep on it", "outcome": { "text": "He goes to bed, but he does not sleep.", "do": ["cohesion:-1"] } }
+      ]
+    },
+    {
+      "id": "men_bread", "moments": ["camp"], "cast": { "man": { "where": ["nature:Sly"] } }, "cooldown": 60, "scene": "camp",
+      "title": "The Missing Bread",
+      "text": "Bread has been going missing from the stores, and the quartermaster has found crumbs in {man}'s pack. {man} says he has no idea how they got there.",
+      "choices": [
+        { "label": "Flog him", "outcome": { "text": "The bread stops going missing.", "do": ["man_hurt", "food:1"] } },
+        { "label": "Drum him out", "outcome": { "text": "The company is one thief lighter.", "do": ["man_leaves", "food:1", "cohesion:1"] } },
+        { "label": "Make him the quartermaster's clerk", "check": { "man": "man", "nature": "Sly", "against": 50 }, "hint": "A fox among hens.",
+          "pass": { "text": "Nobody steals from the stores now, because nobody knows more about stealing from them than he does.", "do": ["food:3", "man_deed"], "deed": "Kept the stores of {company} honest, which nobody expected." },
+          "fail": { "text": "The bread goes missing faster than before.", "do": ["food:-3", "cohesion:-1"] } }
+      ]
+    },
+    {
+      "id": "men_song", "moments": ["camp"], "cast": { "man": { "where": ["nature:Merry"] } }, "cooldown": 45, "scene": "camp",
+      "title": "A Song at the Fire",
+      "text": "{man} has made up a song about the company's last fight. The chorus is very rude about the enemy captain.",
+      "choices": [
+        { "label": "Let them sing", "outcome": { "text": "They sing it four times. They will be singing it on the march tomorrow.", "do": ["cohesion:2"] } },
+        { "label": "Sing the last verse yourself", "outcome": { "text": "Nobody knew you could sing. You cannot, really, but that makes it better.", "do": ["cohesion:3", "renown:1"] } }
+      ]
+    },
+    {
+      "id": "men_prayers", "moments": ["camp"], "cast": { "man": { "where": ["nature:Pious"] } }, "cooldown": 45, "scene": "camp",
+      "title": "Prayers for the Dead",
+      "text": "{man} wants a proper vigil for the men the company has lost, with candles, and the watch-prayer said all night long.",
+      "choices": [
+        { "label": "Pay for the vigil", "cost": ["gold:30"], "outcome": { "text": "Candles all night. Even the men who never pray stand at the edge of the light.", "do": ["cohesion:3", "calm:2"] } },
+        { "label": "His prayers will do", "outcome": { "text": "He prays alone, but he prays for all of them.", "do": ["cohesion:1"] } }
+      ]
+    },
+    {
+      "id": "men_soft", "moments": ["camp"], "cast": { "man": { "where": ["nature:Grim"] } }, "cooldown": 45, "scene": "camp",
+      "title": "{man} Says They Are Soft",
+      "text": "{man} says the new men are soft and will run at the first charge. He wants to drill them himself, his own way.",
+      "choices": [
+        { "label": "Let him drill them", "outcome": { "text": "They hate him by the end of the first day. By the end of the week they can hold.", "do": ["xp:10", "cohesion:-2"] } },
+        { "label": "Tell him to mind his own", "outcome": { "text": "He spits, and minds his own.", "do": [] } }
+      ]
+    },
+    {
+      "id": "men_first_charge", "moments": ["camp"], "cast": { "man": { "where": ["nature:Proud"] } }, "cooldown": 45, "scene": "camp",
+      "title": "{man} Wants the Front",
+      "text": "{man} says he has earned the place at the point of the next charge, and he wants everyone to hear you agree.",
+      "choices": [
+        { "label": "It is his", "outcome": { "text": "He swaggers off to tell the others.", "do": ["man_deed", "cohesion:1"], "deed": "Claimed the point of {company}'s charge, and was given it." } },
+        { "label": "The sergeant decides", "outcome": { "text": "His pride is hurt.", "do": ["cohesion:-1"] } }
+      ]
+    },
+    {
+      "id": "men_nights_up", "moments": ["camp", "battle"], "cast": { "man": { "where": ["nature:Gentle"] } }, "when": ["wounded>=1"], "cooldown": 45, "scene": "camp",
+      "title": "Three Nights at the Surgeon's",
+      "text": "{man} has spent three nights with the wounded, holding their hands and changing their dressings. He has hardly slept.",
+      "choices": [
+        { "label": "Let him stay with them", "outcome": { "text": "Two men who should have died do not.", "do": ["man_deed", "heal:10"], "deed": "Sat three nights with the wounded at the surgeon's fire." } },
+        { "label": "He is needed in the line", "outcome": { "text": "He goes back to his spear.", "do": [] } }
+      ]
+    },
+    {
+      "id": "men_scout", "moments": ["camp", "road"], "cast": { "man": { "where": ["nature:Bold"] } }, "cooldown": 45, "scene": "forest",
+      "title": "{man} Offers to Scout",
+      "text": "{man} wants to go out alone tonight and see what lies over the next ridge.",
+      "choices": [
+        { "label": "Send him", "check": { "man": "man", "nature": "Bold", "against": 45 }, "hint": "Alone in the dark, a bold man can find more than he went looking for.",
+          "pass": { "text": "He is back before dawn with mud up to his knees and a place for the map.", "do": ["reveal", "man_deed"], "deed": "Scouted alone past the ridge by night and came back with the way." },
+          "fail": { "text": "He comes back at noon, limping. Somebody else was out in the dark as well.", "do": ["man_hurt"] } },
+        { "label": "Not alone", "outcome": { "text": "He sulks, but he stays.", "do": [] } }
+      ]
+    },
+    {
+      "id": "men_watch", "moments": ["camp"], "cast": { "man": { "where": ["nature:Steady"] } }, "cooldown": 45, "scene": "camp",
+      "title": "Four Nights on Watch",
+      "text": "{man} has stood the night watch four nights running without a word of complaint. Nobody asked him to.",
+      "choices": [
+        { "label": "Mention him before the company", "outcome": { "text": "He goes red to the ears. The company bangs their cups for him.", "do": ["mention"] } },
+        { "label": "Give him a night's sleep", "outcome": { "text": "He sleeps through until noon.", "do": ["cohesion:1"] } }
+      ]
+    },
+    {
+      "id": "men_dice", "moments": ["camp"], "cast": { "man": {} }, "cooldown": 30, "weight": 0.7, "scene": "camp",
+      "title": "Dice at the Fire",
+      "text": "{man} is running a game of dice by the fire, and the stakes are getting high. He offers you a seat.",
+      "choices": [
+        { "label": "Play", "needs": ["gold>=20"], "outcome": { "text": "You sit down and roll.", "do": ["gamble:20", "cohesion:1"] } },
+        { "label": "Not tonight", "outcome": { "text": "They play on without you, until the fire goes out.", "do": [] } }
+      ]
+    },
+    {
+      "id": "men_companion_word", "moments": ["camp"], "cast": { "companion": { "where": ["fit"] }, "man": { "where": ["veteran"] } }, "cooldown": 60, "scene": "camp",
+      "title": "A Word for {man}",
+      "text": "{companion} has been watching {man} in the line, and thinks he deserves more than a spear and a ration. They ask you to make something of him.",
+      "choices": [
+        { "label": "Mention him before the company", "outcome": { "text": "{companion} looks pleased. So, briefly, does {man}.", "do": ["mention", "opinion_companion:5"] } },
+        { "label": "Tell {companion} to mind their own", "outcome": { "text": "They take it badly.", "do": ["opinion_companion:-6"] } }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  // On the march: the road, the weather, the country and who you meet on it. Moments road, province and camp.
+  "events": [
+    {
+      "id": "ford_toll", "moments": ["road"], "when": ["river", "!in"], "cast": { "lord": { "where": ["near", "!enemy"], "optional": true } }, "cooldown": 40, "scene": "ford",
+      "title": "The Toll at the Ford",
+      "text": "Someone has chained a boat across the ford, and there is a reeve on the far bank wanting a crown a head to let you cross. He says the ford belongs to his lord.",
+      "choices": [
+        { "label": "Pay the toll", "cost": ["gold:40"], "outcome": { "text": "He counts every coin twice and waves you across.", "do": [] } },
+        { "label": "Wade the shallows upstream", "check": { "skill": "Logistics", "against": 30 }, "hint": "The river is running high.",
+          "pass": { "text": "Wet to the waist, but over, and the reeve can only watch.", "do": ["cohesion:1"] },
+          "fail": { "text": "The current takes two horses and half a wagon of bread before you get across.", "do": ["horses:-2", "food:-2"] } },
+        { "label": "Cut the chain", "outcome": { "text": "The reeve runs off shouting about his lord. Your men are pleased with themselves.", "do": ["renown:1", "opinion_realm:-1"] } }
+      ]
+    },
+    {
+      "id": "broken_axle", "moments": ["road"], "when": ["!in", "!sea"], "cooldown": 30, "scene": "road",
+      "title": "A Broken Axle",
+      "text": "The heaviest baggage wagon drops into a rut and the axle snaps clean through. The column backs up behind it.",
+      "choices": [
+        { "label": "Mend it here", "check": { "skill": "Logistics", "against": 20 }, "hint": "If the wheelwright is no good, it will take a day.",
+          "pass": { "text": "An hour with an axe and some green oak, and the wagon is rolling again.", "do": [] },
+          "fail": { "text": "The new axle cracks before noon. You spend the day on it, and the men are footsore by evening.", "do": ["buff:footsore:3"] } },
+        { "label": "Share the load out and leave the wagon", "outcome": { "text": "Every man carries a bit more. Some of the baggage stays by the road.", "do": ["food:-2", "buff:footsore:2"] } }
+      ]
+    },
+    {
+      "id": "rain_march", "moments": ["road"], "when": ["season:autumn", "!in"], "cooldown": 30, "scene": "road",
+      "title": "Rain on the March",
+      "text": "It has been raining for three days, and the road has turned to mud. The men's feet have not been dry since the last town.",
+      "choices": [
+        { "label": "Push on", "outcome": { "text": "You keep the pace. A few men start coughing.", "do": ["sick:2", "xp:2"] } },
+        { "label": "Halt and light fires, whatever it costs", "outcome": { "text": "A day spent drying out. It helps.", "do": ["food:-2", "cohesion:2"] } }
+      ]
+    },
+    {
+      "id": "snow_pass", "moments": ["road"], "when": ["season:winter", "!in"], "cooldown": 30, "scene": "road",
+      "title": "Snow on the Road",
+      "text": "The snow came in overnight, and now the road has drifted over in places. The scouts say it is worse up ahead.",
+      "choices": [
+        { "label": "Dig through", "outcome": { "text": "Shovels and spear-butts, all morning. The men are hard at the end of it, and cold.", "do": ["xp:3", "buff:footsore:3"] } },
+        { "label": "Burn the spare wood to keep everyone warm", "outcome": { "text": "Fires at every halt. Nobody freezes.", "do": ["cohesion:2", "food:-1"] } }
+      ]
+    },
+    {
+      "id": "summer_fever", "moments": ["road", "camp"], "when": ["season:summer"], "cooldown": 40, "scene": "camp",
+      "title": "Summer Fever",
+      "text": "The heat has brought a fever into the camp. A handful of men are already shivering in their blankets, and the flies are everywhere.",
+      "choices": [
+        { "label": "Keep the sick apart, and boil the water", "check": { "skill": "Medicine", "against": 25 }, "hint": "Fevers spread faster than orders do.",
+          "pass": { "text": "It burns through the few it has, and stops there.", "do": ["sick:1"] },
+          "fail": { "text": "It spreads anyway.", "do": ["sick:4"] } },
+        { "label": "March, and let it run its course", "outcome": { "text": "The column stretches out behind the fevered men.", "do": ["sick:5", "buff:fevered:4"] } }
+      ]
+    },
+    {
+      "id": "spring_floods", "moments": ["road"], "when": ["season:spring", "river"], "cooldown": 40, "scene": "ford",
+      "title": "The River Is Up",
+      "text": "The snowmelt has the river over its banks. The bridge is under a foot of brown water, and the ferryman wants double.",
+      "choices": [
+        { "label": "Pay the ferryman", "cost": ["gold:50"], "outcome": { "text": "Six trips. The ferryman makes his year.", "do": [] } },
+        { "label": "Go round by the high road", "outcome": { "text": "Two days lost, but no men.", "do": ["food:-3", "buff:footsore:2"] } }
+      ]
+    },
+    {
+      "id": "road_peddler", "moments": ["road"], "when": ["road"], "cooldown": 30, "scene": "road",
+      "title": "A Peddler",
+      "text": "A peddler with a mule and two wicker cases falls in beside the column. He has needles, salt, relic tokens, and a sword that he swears belonged to a saint.",
+      "choices": [
+        { "label": "Buy salt and needles for the company", "cost": ["gold:25"], "outcome": { "text": "The men mend their clothes that evening.", "do": ["cohesion:1", "food:2"] } },
+        { "label": "Buy the saint's sword", "cost": ["gold:90"], "outcome": { "text": "It is an ordinary sword, but it is a good one.", "do": ["item:knightly_sword"] } },
+        { "label": "Send him on his way", "outcome": { "text": "He curses you very politely.", "do": [] } }
+      ]
+    },
+    {
+      "id": "road_deserters", "moments": ["road", "province"], "when": ["at_war"], "cooldown": 40, "scene": "road",
+      "title": "Men by the Road",
+      "text": "Six men in someone else's colours are sitting in the ditch. They walked away from a lord's army after it lost a fight, and they want to know whether you are hiring.",
+      "choices": [
+        { "label": "Take them on", "outcome": { "text": "They are thin and sullen, but they can hold a spear.", "do": ["men:2", "opinion_realm:-1"] } },
+        { "label": "Send them back to their lord", "outcome": { "text": "They swear at you, and then they go.", "do": ["opinion_realm:1"] } }
+      ]
+    },
+    {
+      "id": "province_boundary", "moments": ["province"], "when": ["contract", "!own_land", "at_war"], "cooldown": 30, "scene": "road",
+      "title": "Into {province}",
+      "text": "There is a boundary stone at the roadside, and the faces in the fields have gone hard. These people know which side your banner is on.",
+      "choices": [
+        { "label": "Forage as you go", "outcome": { "text": "The men eat well. The villages will remember the company's name.", "do": ["food:5", "renown:-1"] } },
+        { "label": "Pay for what you take", "cost": ["gold:40"], "outcome": { "text": "The farmers are surprised. Some of them even sell you bread at a fair price.", "do": ["food:3", "renown:2"] } }
+      ]
+    },
+    {
+      "id": "night_alarm", "moments": ["camp"], "when": ["night", "!in"], "cooldown": 40, "scene": "camp",
+      "title": "An Alarm in the Night",
+      "text": "A sentry shouts, and then the horse lines start screaming. By the time the torches are lit, whatever was out there has gone.",
+      "choices": [
+        { "label": "Double the watch", "outcome": { "text": "Nobody sleeps much, but nothing else happens.", "do": ["buff:footsore:2"] } },
+        { "label": "Send riders after it", "check": { "skill": "Tactics", "against": 30 }, "hint": "In the dark, a pursuit can turn round on you.",
+          "pass": { "text": "They catch three horse thieves at the stream and bring them back, along with the horses.", "do": ["horses:2", "renown:1"] },
+          "fail": { "text": "They come back empty-handed and a horse short.", "do": ["horses:-1"] } }
+      ]
+    },
+    {
+      "id": "lost_in_woods", "moments": ["road"], "when": ["land:Forest", "!in"], "cooldown": 40, "scene": "forest",
+      "title": "Lost in the Woods",
+      "text": "The road forked twice, and the guide chose wrong both times. The trees are thick on every side and there is no sun to steer by.",
+      "choices": [
+        { "label": "Retrace your steps", "outcome": { "text": "Half a day lost, but you are back on the road.", "do": ["buff:footsore:1"] } },
+        { "label": "Send a lad up the tallest tree", "outcome": { "text": "He shouts down what he can see from the top.", "do": ["reveal"] } }
+      ]
+    },
+    {
+      "id": "hill_shepherds", "moments": ["road"], "when": ["land:Hills", "!in"], "cooldown": 40, "scene": "hills",
+      "title": "Shepherds on the Hill",
+      "text": "Hill shepherds watch the column go past from the high ground. They know every path and every gully, and they have no reason to love soldiers.",
+      "choices": [
+        { "label": "Buy a few sheep, at their price", "cost": ["gold:30"], "outcome": { "text": "Mutton for the company, and the shepherds point you to a short way over the ridge.", "do": ["food:4", "cohesion:1"] } },
+        { "label": "Ask them what moves in the hills", "check": { "skill": "Charm", "against": 30 }, "hint": "They talk to people they like.",
+          "pass": { "text": "They have seen everything, and they tell you all of it.", "do": ["spy"] },
+          "fail": { "text": "They look at you and say nothing at all.", "do": [] } }
+      ]
+    },
+    {
+      "id": "dying_stranger", "moments": ["road"], "when": ["!in"], "cooldown": 9999, "once": true, "scene": "road",
+      "title": "A Dying Man",
+      "text": "There is a man by the road with an arrow in his back and very little time left. He presses a folded leather map into your hand and tries to say something.",
+      "choices": [
+        { "label": "Keep the map", "outcome": { "text": "He dies before he can finish. The map shows hills you do not recognise, and a mark.", "do": ["flag:map"], "then": { "id": "map_found", "days": [7, 10] } } },
+        { "label": "Bury him, and leave the map with him", "outcome": { "text": "Whatever he died for can stay buried with him.", "do": ["cohesion:1"] } }
+      ]
+    },
+    {
+      "id": "map_found", "scene": "hills",
+      "title": "The Dead Man's Map",
+      "text": "The hills on the map have been getting familiar for days. This morning you know where you are. The mark is half a day off the road.",
+      "choices": [
+        { "label": "Dig", "outcome": { "text": "Under a flat stone there is a box, and in the box there is somebody's fortune.", "do": ["find:300", "cohesion:1", "unflag:map"] } },
+        { "label": "Sell the map in the next town", "outcome": { "text": "Let someone else dig for it.", "do": ["gold:80", "unflag:map"] } }
+      ]
+    },
+    {
+      "id": "coast_wreck", "moments": ["road"], "when": ["sea", "!in"], "cooldown": 60, "scene": "sea",
+      "title": "A Wreck on the Shore",
+      "text": "A cog has gone up on the rocks in the night. There are barrels in the surf, and there are men in the water who are still alive.",
+      "choices": [
+        { "label": "Pull the sailors out first", "outcome": { "text": "Eleven men alive, and their captain swears to St. Gerran that he will not forget it.", "do": ["renown:3", "men:1"] } },
+        { "label": "Salvage the cargo", "outcome": { "text": "Wine, salt fish, and a chest of somebody's coin.", "do": ["find:120", "food:4", "cohesion:-1"] } }
+      ]
+    }
+  ]
+}
