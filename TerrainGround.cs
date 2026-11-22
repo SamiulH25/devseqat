@@ -63,8 +63,9 @@ public static class Grounds
         raw = JsonSerializer.Deserialize<FileDto>(File.ReadAllText(path), opts)!.Ground;
         var problems = Check(raw).ToList();
         if (problems.Count > 0) throw new InvalidDataException("ground.json: " + string.Join("; ", problems));
-        table = new GroundDef[Enum.GetValues<GroundKind>().Length];
-        foreach (var g in raw) table[(int)g.Kind] = g;
+        var t = new GroundDef[Enum.GetValues<GroundKind>().Length];
+        foreach (var g in raw) t[(int)g.Kind] = g;
+        table = t;
     }
 
     /// Data checks: every kind once, known names, values in range.

@@ -474,9 +474,16 @@ sealed partial class Puppet
         if (Detail == 0) BillRect(new(0, y + rock, 0.66f), curPal.HChest, false, -0.015f, 1.30f);
         if (Detail == 0) BillRect(new(0, y - rock, -0.60f), curPal.HRump, false, -0.015f, 1.30f);
         float neckOut = gallop * (0.14f + 0.08f * MathF.Sin(anim * MathF.Tau + 0.4f)); // stretches and pumps with each gallop stride
-        LongRect(new(0, y + rock + 0.18f, 0.62f), new(0, y + rock + 0.78f + nod - neckOut, 1.04f + neckOut), curPal.HNeck, 0, 1.30f);
-        LongRect(new(0, y + rock + 0.78f + nod - neckOut, 0.99f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.48f + neckOut * 1.4f), curPal.HHead, 0, 1.16f);
-        if (Detail == 0) BillRect(new(0, y + rock + 0.58f + nod * 1.2f - neckOut, 1.22f + neckOut), curPal.HFace, false, -0.04f, 1.16f);
+        var toCam = camPos - origin;
+        toCam.Y = 0;
+        if (toCam.LengthSquared() < 1e-4f) toCam = new Vector3(-camFwd.X, 0, -camFwd.Z);
+        float horseFacing = Vector3.Dot(fwd, Vector3.Normalize(toCam));
+        bool frontHead = horseFacing > 0.65f;
+        bool backHead = horseFacing < -0.72f;
+        bool showNeck = horseFacing <= 0.82f;
+        if (showNeck) LongRect(new(0, y + rock + 0.18f, 0.62f), new(0, y + rock + 0.78f + nod - neckOut, 1.04f + neckOut), curPal.HNeck, 0, 1.30f);
+        if (frontHead) BillRect(new(0, y + rock + 0.57f + nod * 1.2f - neckOut, 1.20f + neckOut), curPal.HFace, false, 0.05f, 1.16f);
+        else if (!backHead) LongRect(new(0, y + rock + 0.78f + nod - neckOut, 0.99f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.48f + neckOut * 1.4f), curPal.HHead, 0, 1.16f);
         float swish = MathF.Sin(Now * 2.1f + pos.X * 0.7f) * 0.08f * (1 - gait) + MathF.Sin(anim * MathF.Tau) * 0.10f * gait; // flicks at stand, streams & waves at gallop
         if (Detail == 0) AxialSrc(new(0, y + 0.20f, -0.88f), new(swish, 0.84f + bob + gait * 0.44f, -1.14f - gait * 0.44f), curPal.HTail, 1.25f);
 
@@ -489,8 +496,8 @@ sealed partial class Puppet
         {
             if (hc.Width > 0) BillRect(new(0, y + rock, 0.66f), hc, false, -0.01f, 1.30f);
             if (hr.Width > 0) BillRect(new(0, y - rock, -0.60f), hr, false, -0.01f, 1.30f);
-            if (hn.Width > 0) LongRect(new(0, y + rock + 0.18f, 0.62f), new(0, y + rock + 0.78f + nod - neckOut, 1.04f + neckOut), hn, 0.02f, 1.30f);
-            if (hh.Width > 0) LongRect(new(0, y + rock + 0.78f + nod - neckOut, 0.99f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.48f + neckOut * 1.4f), hh, 0.02f, 1.16f);
+            if (hn.Width > 0 && showNeck) LongRect(new(0, y + rock + 0.18f, 0.62f), new(0, y + rock + 0.78f + nod - neckOut, 1.04f + neckOut), hn, 0.02f, 1.30f);
+            if (hh.Width > 0 && !frontHead && !backHead) LongRect(new(0, y + rock + 0.78f + nod - neckOut, 0.99f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.48f + neckOut * 1.4f), hh, 0.02f, 1.16f);
         }
         float seatH = (Saddle + bob) * hScale;
         if (riderLegs)
