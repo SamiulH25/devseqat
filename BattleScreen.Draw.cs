@@ -12,6 +12,7 @@ partial class BattleScreen
     public void Draw()
     {
         var gd = GraphicsDevice;
+        UpdateLod();
         EaseFacings();
         bool shaded = quality != Quality.Low && shading != null;
         if (shaded)
@@ -431,9 +432,8 @@ partial class BattleScreen
         corpseTouched.Clear();
         drawQueue3D.Clear();
         float bNow = battle.Time;
-        float near3D = blend < 0.5f ? 15f : 14f;
-        float mid3D = blend < 0.5f ? 38f : 36f;
-        float near3DSq = near3D * near3D, mid3DSq = mid3D * mid3D;
+        var (near3D, mid3D, fullCap) = LodDistances(); // set by the frame rate (BattleScreen.Lod.cs)
+        float near3DSq = near3D * near3D, mid3DSq = mid3D * mid3D, alwaysFullSq = AlwaysFull * AlwaysFull;
         int d0Count = 0;
         // units3D already initialized above for 3D banners
         var allUnits = battle.Units;
@@ -466,7 +466,7 @@ partial class BattleScreen
                         float d3Sq = Vector3.DistanceSquared(new Vector3(u.Pos.X, h + 1f, u.Pos.Y), eye);
                         if (d3Sq < near3DSq)
                         {
-                            if (d0Count < 48 || d3Sq < 100f) { det = 0; d0Count++; }
+                            if (d0Count < fullCap || d3Sq < alwaysFullSq) { det = 0; d0Count++; }
                             else det = 1;
                         }
                         else det = d3Sq < mid3DSq ? 1 : 2;

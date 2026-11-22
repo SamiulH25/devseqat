@@ -2048,5 +2048,38 @@ public static partial class SelfTest
         var replayed = back.Play();
         Check(back.Matches(replayed), "a battle with divisions and orders replays exactly");
     }
+    /// The battle's detail distances follow the frame rate inside their clamps: smooth frames keep the full look, slow ones
+    /// pull it in to the floor and no further, and it climbs back slowly, not straight into the same stutter.
+    static void LodFollowsFrameRate()
+    {
+        var g = new LodGovernor();
+        for (int i = 0; i < 600; i++) g.Frame(1 / 60f);
+        Check(g.Level == 1f, "at 60 fps the detail stays at the ceiling");
+        var full = g.Distances();
+        Check(full.Near == LodGovernor.NearMax && full.Mid == LodGovernor.MidMax && full.FullCap == LodGovernor.FullCapMax, "the ceiling is the max clamp");
+
+        for (int i = 0; i < 30 * 5; i++) g.Frame(1 / 30f);
+        Check(g.Level == 0f, $"five seconds at 30 fps drop it to the floor (level {g.Level:0.00})");
+        var low = g.Distances();
+        Check(low.Near == LodGovernor.NearMin && low.Mid == LodGovernor.MidMin && low.FullCap == LodGovernor.FullCapMin, "the floor is the min clamp");
+        for (int i = 0; i < 60 * 20; i++) g.Frame(1 / 15f);
+        Check(g.Distances().Near >= LodGovernor.NearMin, "it never goes past the floor");
+
+        var h = new LodGovernor();
+        for (int i = 0; i < 20; i++) h.Frame(1 / 40f);
+        float dropped = h.Level;
+        Check(dropped < 1f && dropped > 0.5f, $"a short stutter costs a little, not everything (level {dropped:0.00})");
+        for (int i = 0; i < 60; i++) h.Frame(1 / 60f);
+        Check(h.Level <= dropped, "it waits for smooth frames before it climbs");
+        dropped = h.Level;
+        for (int i = 0; i < 60 * 30; i++) h.Frame(1 / 60f);
+        Check(h.Level > dropped && h.Level <= h.Ceiling, $"then climbs back slowly under its ceiling (level {h.Level:0.00})");
+        h.Frame(2f);
+        Check(h.Level > dropped, "a long pause (a load, a window drag) is not read as a slow frame");
+
+        var p = new LodGovernor();
+        p.Pin(0.25f);
+        Check(MathF.Abs(p.Distances().Near - (LodGovernor.NearMin + (LodGovernor.NearMax - LodGovernor.NearMin) * 0.25f)) < 1e-3f, "a pinned level sets the distances");
+    }
 }
 
