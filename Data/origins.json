@@ -27,7 +27,7 @@
     },
     {
       "id": "cloister", "name": "Raised in the Cloister", "icon": "scroll", "age": 5,
-      "text": "Left at a chapter house's gate. The brothers taught you herbs, Latin and patience before you ran off.",
+      "text": "Left at a chapter house's gate. The brothers taught you herbs, Old Cant and patience before you ran off.",
       "effects": ["skill:Medicine:15", "skill:Stewardship:5", "renown:5", "opinion_realm:3", "buff:cloister_prayers:0"],
       "line": "You still know the old prayers for the dying."
     },

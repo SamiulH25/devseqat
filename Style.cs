@@ -21,28 +21,28 @@ public static class Style
     /// under deuteranopia and protanopia. You stay gold; brigands stay grey-brown. Chosen at start-up (Settings).
     internal static Heraldry[] ColorBlind() => new Heraldry[]
     {
-        new("Azure", new(0, 96, 160), new(0, 56, 100), new(236, 228, 196), Emblem.Chevron, new(86, 180, 233)),
-        new("Crimson", new(204, 92, 0), new(120, 52, 0), new(250, 236, 200), Emblem.Saltire, new(230, 159, 0)),
+        new("Brevon", new(0, 96, 160), new(0, 56, 100), new(236, 228, 196), Emblem.Chevron, new(86, 180, 233)),
+        new("Vespra", new(204, 92, 0), new(120, 52, 0), new(250, 236, 200), Emblem.Saltire, new(230, 159, 0)),
         new("Gold", new(210, 168, 54), new(126, 88, 30), new(44, 36, 44), Emblem.Lozenge, new(240, 228, 66)),
         new("Brigands", new(112, 98, 78), new(70, 62, 52), new(160, 150, 128), Emblem.None, new(190, 170, 130)),
-        new("Northmarch", new(160, 84, 132), new(96, 46, 80), new(240, 236, 232), Emblem.Bend, new(204, 121, 167)),
-        new("Sunward", new(0, 140, 110), new(0, 80, 64), new(240, 228, 66), Emblem.Sun, new(0, 158, 115)),
-        new("Khaganate", new(70, 70, 76), new(36, 36, 40), new(230, 159, 0), Emblem.Fess, new(150, 150, 160)),
-        new("Saltmarsh", new(110, 190, 230), new(56, 110, 140), new(30, 30, 40), Emblem.Pale, new(140, 210, 245)),
-        new("Ashen Sun", new(232, 232, 226), new(150, 150, 146), new(20, 20, 24), Emblem.Cross, new(245, 245, 240)),
+        new("Skar", new(160, 84, 132), new(96, 46, 80), new(240, 236, 232), Emblem.Bend, new(204, 121, 167)),
+        new("Qadir", new(0, 140, 110), new(0, 80, 64), new(240, 228, 66), Emblem.Sun, new(0, 158, 115)),
+        new("Naryn", new(70, 70, 76), new(36, 36, 40), new(230, 159, 0), Emblem.Fess, new(150, 150, 160)),
+        new("Brinemere", new(110, 190, 230), new(56, 110, 140), new(30, 30, 40), Emblem.Pale, new(140, 210, 245)),
+        new("Tarn", new(232, 232, 226), new(150, 150, 146), new(20, 20, 24), Emblem.Cross, new(245, 245, 240)),
     };
 
     internal static Heraldry[] Standard() => new Heraldry[]
     {
-        new("Azure", new(54, 94, 176), new(30, 50, 108), new(230, 218, 178), Emblem.Chevron, new(112, 160, 255)),
-        new("Crimson", new(172, 48, 42), new(98, 26, 28), new(222, 178, 72), Emblem.Saltire, new(236, 88, 70)),
+        new("Brevon", new(54, 94, 176), new(30, 50, 108), new(230, 218, 178), Emblem.Chevron, new(112, 160, 255)),
+        new("Vespra", new(172, 48, 42), new(98, 26, 28), new(222, 178, 72), Emblem.Saltire, new(236, 88, 70)),
         new("Gold", new(210, 168, 54), new(126, 88, 30), new(44, 36, 44), Emblem.Lozenge, new(240, 200, 60)),
         new("Brigands", new(112, 98, 78), new(70, 62, 52), new(160, 150, 128), Emblem.None, new(190, 170, 130)),
-        new("Northmarch", new(46, 104, 74), new(24, 58, 42), new(226, 228, 220), Emblem.Bend, new(96, 200, 140)),
-        new("Sunward", new(206, 128, 40), new(124, 70, 20), new(246, 232, 190), Emblem.Sun, new(244, 160, 70)),
-        new("Khaganate", new(40, 130, 140), new(20, 74, 80), new(236, 214, 120), Emblem.Fess, new(80, 196, 206)),
-        new("Saltmarsh", new(110, 64, 150), new(62, 34, 90), new(216, 220, 228), Emblem.Pale, new(170, 120, 220)),
-        new("Ashen Sun", new(230, 228, 220), new(150, 146, 140), new(150, 30, 28), Emblem.Cross, new(240, 238, 230)),
+        new("Skar", new(46, 104, 74), new(24, 58, 42), new(226, 228, 220), Emblem.Bend, new(96, 200, 140)),
+        new("Qadir", new(206, 128, 40), new(124, 70, 20), new(246, 232, 190), Emblem.Sun, new(244, 160, 70)),
+        new("Naryn", new(40, 130, 140), new(20, 74, 80), new(236, 214, 120), Emblem.Fess, new(80, 196, 206)),
+        new("Brinemere", new(110, 64, 150), new(62, 34, 90), new(216, 220, 228), Emblem.Pale, new(170, 120, 220)),
+        new("Tarn", new(230, 228, 220), new(150, 146, 140), new(150, 30, 28), Emblem.Cross, new(240, 238, 230)),
     };
 
     /// The palette a campaign faction paints with (the Northmarch clans are palette 4; -1 and -2 are free captains and brigands).

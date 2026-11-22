@@ -8,7 +8,7 @@
       "id": "omen_birds", "trigger": "dark_omens", "cooldown": 14, "scene": "camp", "title": "CROWS OVER THE CAMP",
       "text": "Since the old craft was worked in your camp the crows have not left it. The men cross themselves and mutter.",
       "choices": [
-        { "label": "PAY A PRIEST TO SAY MASS", "need": "gold:60", "effects": ["gold:-60", "calm:6", "cohesion:1"] },
+        { "label": "PAY A PRIEST TO KEEP THE VIGIL", "need": "gold:60", "effects": ["gold:-60", "calm:6", "cohesion:1"] },
         { "label": "TELL THEM CROWS ARE CROWS", "effects": ["cohesion:-2", "calm:2"] }
       ]
     },
@@ -173,7 +173,7 @@
       "text": "Widows in the streets and empty fields: the {realm} grows weary. Lords ask whether the war is worth its price.",
       "choices": [
         { "label": "RALLY THEM WITH A SPEECH", "effects": ["exhaustion:-8", "renown:3"] },
-        { "label": "PAY FOR MASSES FOR THE DEAD", "need": "gold:200", "effects": ["gold:-200", "exhaustion:-15", "opinion_realm:2"] }
+        { "label": "PAY FOR VIGILS FOR THE DEAD", "need": "gold:200", "effects": ["gold:-200", "exhaustion:-15", "opinion_realm:2"] }
       ]
     },
     {
@@ -830,7 +830,7 @@
     {"id": "men_oath", "trigger": "men_avenging", "cooldown": 45, "scene": "camp", "title": "AN OATH AT THE FIRE", "text": "{man} has cut his palm and sworn before {company} to pay back the men who killed his friend.", "choices": [{"label": "LET HIM SWEAR IT", "effects": ["man_deed", "cohesion:2"], "deed": "Swore an oath of vengeance at the fire."}, {"label": "TELL HIM TO SLEEP ON IT", "effects": ["cohesion:-1"]}]},
     {"id": "men_bread", "trigger": "men_sly", "cooldown": 60, "scene": "camp", "title": "THE MISSING BREAD", "text": "The quartermaster has caught {man} selling the company's bread to a farmer for a few coins.", "choices": [{"label": "FLOG HIM", "effects": ["man_hurt", "food:1"]}, {"label": "DRUM HIM OUT", "effects": ["man_leaves", "food:1", "cohesion:1"]}, {"label": "LET IT GO", "effects": ["cohesion:-2"]}]},
     {"id": "men_song", "trigger": "men_merry", "cooldown": 45, "scene": "camp", "title": "A SONG AT THE FIRE", "text": "{man} has made up a song about the last fight, and all of {company} is singing it.", "choices": [{"label": "LET THEM SING", "effects": ["cohesion:2"]}, {"label": "SING THE LAST VERSE YOURSELF", "effects": ["cohesion:3", "renown:1"]}]},
-    {"id": "men_prayers", "trigger": "men_pious", "cooldown": 45, "scene": "camp", "title": "PRAYERS FOR THE DEAD", "text": "{man} says prayers each night for the men {company} has lost. He asks for a priest's mass at the next town.", "choices": [{"label": "PAY FOR THE MASS", "need": "gold:30", "effects": ["gold:-30", "cohesion:3"]}, {"label": "HIS PRAYERS WILL DO", "effects": ["cohesion:1"]}]},
+    {"id": "men_prayers", "trigger": "men_pious", "cooldown": 45, "scene": "camp", "title": "PRAYERS FOR THE DEAD", "text": "{man} says prayers each night for the men {company} has lost. He asks for a priest's vigil at the next town.", "choices": [{"label": "PAY FOR THE VIGIL", "need": "gold:30", "effects": ["gold:-30", "cohesion:3"]}, {"label": "HIS PRAYERS WILL DO", "effects": ["cohesion:1"]}]},
     {"id": "men_soft", "trigger": "men_grim", "cooldown": 45, "scene": "camp", "title": "{man} SAYS THEY ARE SOFT", "text": "{man} says the new men of {company} will run at the first charge, and offers to harden them.", "choices": [{"label": "LET HIM DRILL THEM", "effects": ["xp:10", "cohesion:-2"]}, {"label": "TELL HIM TO MIND HIS OWN", "effects": []}]},
     {"id": "men_first_charge", "trigger": "men_proud", "cooldown": 45, "scene": "camp", "title": "{man} WANTS THE FRONT", "text": "{man} asks to lead the first charge of {company} in the next fight. No other man, he says, has earned it.", "choices": [{"label": "IT IS HIS", "effects": ["man_deed", "cohesion:1"], "deed": "Was given the first charge of {company}."}, {"label": "THE SERGEANT DECIDES", "effects": ["cohesion:-1"]}]},
     {"id": "men_nights_up", "trigger": "men_gentle", "cooldown": 45, "scene": "camp", "title": "THREE NIGHTS AT THE SURGEON'S", "text": "{man} has sat up three nights with the wounded. The surgeon asks to keep him.", "choices": [{"label": "LET HIM STAY WITH THEM", "effects": ["man_deed", "cohesion:1"], "deed": "Sat up three nights with the wounded."}, {"label": "HE IS NEEDED IN THE LINE", "effects": []}]},

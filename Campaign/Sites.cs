@@ -11,8 +11,8 @@ public sealed class Site
     public string Kind = "", Name = "";
     public Vector2 Pos;
 
-    static readonly string[] Saints = { "Aldhelm", "Brigid", "Cuthbert", "Dunstan", "Edith", "Frideswide", "Guthlac", "Hilda", "Ia", "Kenelm",
-        "Melor", "Nectan", "Oswald", "Petroc", "Sativola", "Werburgh", "Winifred", "Wystan" };
+    static readonly string[] Saints = { "Bram", "Mireille", "Odran", "Clovis", "Ysabeau", "Gerran",
+        "Halvar", "Veren", "Alix", "Thibaut", "Orla", "Mael" };
 
     /// A site's name: ruins and old fields take a forgotten place's name; the rest are named for their province.
     public static string NameFor(string kind, string province, PlaceNamer namer, Random rng) => kind switch

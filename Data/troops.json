@@ -1124,7 +1124,7 @@
     },
     {
       "id": "valhalla_reavers",
-      "name": "Valhalla Reavers",
+      "name": "Frost-Hall Reavers",
       "class": "Infantry",
       "culture": "northern",
       "stock": "noble",
@@ -2966,7 +2966,7 @@
     },
     {
       "id": "goblin",
-      "name": "Goblins",
+      "name": "Kobs",
       "class": "Infantry",
       "culture": "wild",
       "breed": "goblin",
@@ -2999,7 +2999,7 @@
     },
     {
       "id": "goblin_archer",
-      "name": "Goblin Archers",
+      "name": "Kob Archers",
       "class": "Archer",
       "culture": "wild",
       "breed": "goblin",
@@ -3034,7 +3034,7 @@
     },
     {
       "id": "hobgoblin",
-      "name": "Hobgoblins",
+      "name": "Hobs",
       "class": "Infantry",
       "culture": "wild",
       "breed": "goblin",
@@ -3065,7 +3065,7 @@
     },
     {
       "id": "goblin_boss",
-      "name": "Goblin Boss",
+      "name": "Hob Tasker",
       "class": "Infantry",
       "culture": "wild",
       "breed": "goblin",
@@ -3133,7 +3133,7 @@
     },
     {
       "id": "dire_wolf",
-      "name": "Dire Wolf",
+      "name": "Grim-Wolf",
       "class": "Infantry",
       "culture": "wild",
       "breed": "wolf",
@@ -3167,7 +3167,7 @@
     },
     {
       "id": "goblin_wolf_rider",
-      "name": "Wolf Riders",
+      "name": "Warg-Kobs",
       "class": "Cavalry",
       "culture": "wild",
       "breed": "goblin",
@@ -3201,7 +3201,7 @@
     },
     {
       "id": "troll",
-      "name": "Trolls",
+      "name": "Stonebacks",
       "class": "Infantry",
       "culture": "wild",
       "breed": "troll",
@@ -3293,7 +3293,7 @@
     },
     {
       "id": "ogre",
-      "name": "Ogres",
+      "name": "Ettins",
       "class": "Infantry",
       "culture": "wild",
       "breed": "ogre",
@@ -3327,7 +3327,7 @@
     },
     {
       "id": "skeleton",
-      "name": "Skeletons",
+      "name": "Risen",
       "class": "Infantry",
       "culture": "wild",
       "breed": "undead",
@@ -3361,7 +3361,7 @@
     },
     {
       "id": "ghoul",
-      "name": "Ghouls",
+      "name": "Draugs",
       "class": "Infantry",
       "culture": "wild",
       "breed": "undead",
@@ -3397,7 +3397,7 @@
     },
     {
       "id": "necromancer",
-      "name": "Necromancer",
+      "name": "Bone-caller",
       "spells": [
         "dread"
       ],
@@ -3759,7 +3759,7 @@
     },
     {
       "id": "tengri_bows",
-      "name": "Tengri Bows",
+      "name": "Wide Sky Bows",
       "class": "Archer",
       "culture": "steppe",
       "tier": 5,
@@ -6558,7 +6558,7 @@
     },
     {
       "id": "goblin_warlord",
-      "name": "Goblin Warlord",
+      "name": "Hob-King",
       "class": "Infantry",
       "culture": "wild",
       "tier": 6,
@@ -6666,7 +6666,7 @@
     },
     {
       "id": "goblin_chief",
-      "name": "Goblin Chieftain",
+      "name": "Hob Chieftain",
       "class": "Infantry",
       "culture": "wild",
       "breed": "goblin",
@@ -6703,7 +6703,7 @@
     },
     {
       "id": "alpha_wolf",
-      "name": "Alpha Wolf",
+      "name": "Alpha Grim-Wolf",
       "class": "Infantry",
       "culture": "wild",
       "breed": "wolf",
@@ -6738,7 +6738,7 @@
     },
     {
       "id": "troll_elder",
-      "name": "Elder Troll",
+      "name": "Elder Stoneback",
       "class": "Infantry",
       "culture": "wild",
       "breed": "troll",
@@ -6776,7 +6776,7 @@
     },
     {
       "id": "spider",
-      "name": "Giant Spiders",
+      "name": "Weavers",
       "class": "Infantry",
       "culture": "wild",
       "breed": "spider",
@@ -6811,7 +6811,7 @@
     },
     {
       "id": "spiderling",
-      "name": "Spiderlings",
+      "name": "Spinners",
       "class": "Infantry",
       "culture": "wild",
       "breed": "spider",
@@ -6845,7 +6845,7 @@
     },
     {
       "id": "brood_mother",
-      "name": "Brood Mother",
+      "name": "Brood-Widow",
       "class": "Infantry",
       "culture": "wild",
       "breed": "spider",
@@ -6883,7 +6883,7 @@
     },
     {
       "id": "bear",
-      "name": "Cave Bears",
+      "name": "Crag-Bears",
       "class": "Infantry",
       "culture": "wild",
       "breed": "bear",
@@ -6917,7 +6917,7 @@
     },
     {
       "id": "wyvern",
-      "name": "Wyverns",
+      "name": "Crag-Wyrms",
       "class": "Infantry",
       "culture": "wild",
       "breed": "wyvern",
@@ -8795,7 +8795,7 @@
     },
     {
       "id": "rift_sailors",
-      "name": "Rift Sailors",
+      "name": "Maren Sailors",
       "class": "Infantry",
       "culture": "southern_rift",
       "tier": 2,
@@ -8839,7 +8839,7 @@
     },
     {
       "id": "rift_marines",
-      "name": "Rift Marines",
+      "name": "Maren Marines",
       "class": "Infantry",
       "culture": "southern_rift",
       "tier": 4,
@@ -8861,7 +8861,7 @@
     },
     {
       "id": "corsair_captains",
-      "name": "Rift Captains",
+      "name": "Maren Captains",
       "class": "Infantry",
       "culture": "southern_rift",
       "tier": 5,
@@ -8883,7 +8883,7 @@
     },
     {
       "id": "rift_boarders",
-      "name": "Rift Boarders",
+      "name": "Maren Boarders",
       "class": "Infantry",
       "culture": "southern_rift",
       "tier": 6,

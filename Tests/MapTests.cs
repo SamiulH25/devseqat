@@ -209,7 +209,7 @@ public static partial class SelfTest
         // Garrisons: the Saltmarsh League keeps fuller seats than the Khaganate.
         float Fill(int f) => c.S.Settlements.Where(s => s.Faction == f && s.Kind != SettlementKind.Village).SelectMany(s => s.Garrison)
             .Average(g => g.Men / (float)Rules.CapOf(g.Troop, Rules.RoleOf(g)));
-        int league = Factions.IndexOf("Saltmarsh League"), khaganate = Factions.IndexOf("Khaganate of the Grass");
+        int league = Factions.IndexOf("League of Brinemere"), khaganate = Factions.IndexOf("Naryn Khaganate");
         Console.WriteLine($"tempers: garrison fill league {Fill(league):0.00}, khaganate {Fill(khaganate):0.00}");
         Check(Fill(league) > Fill(khaganate), "the League keeps fuller garrisons than the Khaganate");
         // A lord of the Order digs out a holdout he outweighs; an Azure lord leaves it be.

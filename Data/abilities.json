@@ -49,7 +49,7 @@
       "line": "Pots of burning oil thrown into a company: a burst, then burning ground.", "range": 30, "radius": 3, "damage": 18, "maxHit": 5, "burn": 10, "dps": 8, "shock": 5, "cooldown": 18, "will": 15, "warn": 1.5, "omen": 0.5 },
     { "id": "smoke", "name": "Smoke", "icon": "rain", "tradition": "craft", "doctrine": "fire", "kind": "field", "effect": "smoke", "on": "all", "when": "shot",
       "line": "A bank of smoke over a company under arrows: no aimed shots through it.", "range": 40, "radius": 12, "duration": 30, "cooldown": 50, "will": 20, "omen": 0.5 },
-    { "id": "greek_fire", "name": "Greek fire", "icon": "fire", "tradition": "craft", "doctrine": "fire", "kind": "attack", "when": "losing", "great": true,
+    { "id": "greek_fire", "name": "Brine-oil", "icon": "fire", "tradition": "craft", "doctrine": "fire", "kind": "attack", "when": "losing", "great": true,
       "line": "Once a battle: a great burst of fire that burns on where it falls.", "range": 45, "radius": 7, "damage": 40, "maxHit": 14, "burn": 15, "dps": 10, "shock": 15, "cooldown": 300, "will": 60, "warn": 2.5, "omen": 3 },
     // Doctrines' own spells (docs/archive/ARCANA.md AR4): in no troop's line, learned only by a circle of that doctrine.
     { "id": "unweave", "name": "Unweave", "icon": "shield", "tradition": "faith", "doctrine": "vigil", "kind": "unweave", "when": "casting",

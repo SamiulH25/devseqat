@@ -35,7 +35,7 @@ public static partial class SelfTest
         f.Hit(men.Units[0], f.EnemyCaptain, 99999, false);
         Check(f.EnemyCaptain.Dead && f.BossDown[1], "the chieftain can be slain");
         Check(mob.Units.Average(u => u.Morale) < before - 30, "his fall shakes every goblin");
-        Check(f.History.Any(h => h.Text.Contains("goblin chieftain is slain")), "and the field hears it by name");
+        Check(f.History.Any(h => h.Text.Contains("hob chieftain is slain")), "and the field hears it by name");
     }
 
     /// Giant spiders: a bite poisons (the poison keeps working through armour, and can kill); a web pins the men it lands
