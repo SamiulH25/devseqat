@@ -14,7 +14,7 @@ static class SoundDump
         {
             string tag = $"cue-{c.ToString().ToLowerInvariant()}";
             if (!Match(tag)) continue;
-            var v = Synth.Cues(c);
+            var v = AudioAssets.LoadCue(c) ?? Synth.Cues(c);
             var parts = v.SelectMany(b => new[] { b, gap }).ToList();
             if (Synth.InWorld(c)) parts.AddRange(v.Select(Synth.Far).SelectMany(b => new[] { b, gap }));
             WriteMono(Path.Combine(dir, $"{tag}.wav"), parts.SelectMany(b => b).ToArray());
@@ -25,7 +25,7 @@ static class SoundDump
         {
             string tag = $"bed-{bed.ToString().ToLowerInvariant()}";
             if (!Match(tag)) continue;
-            var b = Synth.MakeBed(bed);
+            var b = AudioAssets.LoadBed(bed) ?? Synth.MakeBed(bed);
             WriteMono(Path.Combine(dir, $"{tag}.wav"), b.Concat(b).ToArray());
             wrote++;
         }

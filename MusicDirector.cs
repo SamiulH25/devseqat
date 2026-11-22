@@ -101,7 +101,7 @@ public sealed class MusicDirector
         interior = "";
         string id = resumeId;
         resumeId = "";
-        if (id != "" && interiorFor <= ResumeWithin && MusicLibrary.Get(id) is { } s && resumeAt < s.DurationSec - 10)
+        if (id != "" && interiorFor <= ResumeWithin && AudioAssets.MusicDuration(id) is > 0 and var dur && resumeAt < dur - 10)
             return Start(id, resumeAt);
         return Start(Next(pool));
     }
@@ -112,9 +112,10 @@ public sealed class MusicDirector
         for (int tries = 0; tries < pool.Length; tries++)
         {
             string id = pool[++cursor % pool.Length];
-            if (id != Playing && MusicLibrary.Has(id)) return id;
+            if (id != Playing && (AudioAssets.HasMusic(id) || MusicLibrary.Has(id))) return id;
         }
-        return MusicLibrary.Has(pool[cursor % pool.Length]) ? pool[cursor % pool.Length] : "map" + (cursor % 3);
+        string pick = pool[cursor % pool.Length];
+        return AudioAssets.HasMusic(pick) || MusicLibrary.Has(pick) ? pick : "map" + (cursor % 3);
     }
 
     Cue Start(string id, double at = 0)

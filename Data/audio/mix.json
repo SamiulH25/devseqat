@@ -1,0 +1,25 @@
+{
+  "cues": {
+    "Clash": { "gain": 0.92, "pitchSpread": 0.14 },
+    "ParrySteel": { "gain": 0.95, "pitchSpread": 0.10 },
+    "RiposteRing": { "alias": "ParrySteel", "gain": 0.95, "pitchSpread": 0.08 },
+    "SlashLight": { "gain": 0.90, "pitchSpread": 0.14 },
+    "SlashHeavy": { "gain": 0.95, "pitchSpread": 0.12 },
+    "SwingPole": { "alias": "SwingTwo", "gain": 0.90, "pitchSpread": 0.12 },
+    "ShieldSplinter": { "alias": "BlockWood", "gain": 1.0, "pitchSpread": 0.10 },
+    "Order": { "alias": "Horn", "gain": 0.95, "pitchSpread": 0.04 },
+    "Click": { "gain": 0.85, "pitchSpread": 0.03 },
+    "Hover": { "gain": 0.55, "pitchSpread": 0.04 },
+    "Page": { "gain": 0.85, "pitchSpread": 0.05 },
+    "Coin": { "gain": 0.85, "pitchSpread": 0.06 }
+  },
+  "beds": {
+    "Wind": { "gain": 1.0 },
+    "Rain": { "gain": 1.0 },
+    "Gallop": { "gain": 1.0 }
+  },
+  "music": {
+    "title_ironfield": { "gain": 1.0, "loop": true },
+    "battle_azure": { "gain": 1.0, "loop": true }
+  }
+}

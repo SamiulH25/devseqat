@@ -83,11 +83,11 @@ sealed class AudioEngine
             {
                 foreach (var c in cs)
                 {
-                    var v = Synth.Cues(c);
+                    var v = AudioAssets.LoadCue(c) ?? Synth.Cues(c);
                     cueData[c] = (v, Synth.InWorld(c) ? v.Select(Synth.Far).ToArray() : null);
                 }
             }
-            void Beds(params Bed[] bs) { foreach (var b in bs) bedData[b] = Synth.MakeBed(b); }
+            void Beds(params Bed[] bs) { foreach (var b in bs) bedData[b] = AudioAssets.LoadBed(b) ?? Synth.MakeBed(b); }
             Cues(Cue.Click, Cue.Hover, Cue.Page, Cue.Coin);
             Beds(Bed.Wind);
             _ = AudioBank.Shared;
@@ -165,7 +165,7 @@ sealed class AudioEngine
         int v = pick.Next(set.Length);
         if (v == last && set.Length > 1) v = (v + 1) % set.Length;
         lastVersion[c] = v;
-        float spread = Synth.InWorld(c) ? 0.12f : 0.04f;
+        float spread = AudioAssets.CuePitchSpread(c, Synth.InWorld(c) ? 0.12f : 0.04f);
         set[v].Play(Math.Clamp(volume * Sfx, 0, 1), (pick.NextSingle() - 0.5f) * spread, Math.Clamp(pan, -1, 1));
     }
 
@@ -246,7 +246,7 @@ sealed class AudioEngine
         {
             var mode = victory ? MusicTrack.Victory : MusicTrack.Defeat;
             string fallback = victory ? "victory" : "defeat";
-            string id = !string.IsNullOrEmpty(outcomeId) && MusicLibrary.Has(outcomeId) ? outcomeId : fallback;
+            string id = !string.IsNullOrEmpty(outcomeId) && HasPiece(outcomeId) ? outcomeId : fallback;
             if (track == mode && requestedPiece == id) return;
             track = mode;
             requestedPiece = id;
@@ -254,7 +254,7 @@ sealed class AudioEngine
             return;
         }
         SetStemWeights(s0, s1, s2, s3);
-        string target = !string.IsNullOrEmpty(suiteId) && MusicLibrary.Has(suiteId) ? suiteId : "battle";
+        string target = !string.IsNullOrEmpty(suiteId) && HasPiece(suiteId) ? suiteId : "battle";
         if (track == MusicTrack.Battle && requestedPiece == target && streamer is not { CurrentFinished: true }) return;
         track = MusicTrack.Battle;
         requestedPiece = target;
@@ -268,9 +268,9 @@ sealed class AudioEngine
         if (t == MusicTrack.Map) { director.Reset(); return; } // UpdateMapMusic starts the map's piece
         string id = t switch
         {
-            MusicTrack.Title => MusicLibrary.Has("title_ironfield") ? "title_ironfield" : "map0",
-            MusicTrack.Creator => MusicLibrary.Has("creator_hearth") ? "creator_hearth" : "map1",
-            MusicTrack.Chronicle => MusicLibrary.Has("chronicle_end") ? "chronicle_end" : "map1",
+            MusicTrack.Title => HasPiece("title_ironfield") ? "title_ironfield" : "map0",
+            MusicTrack.Creator => HasPiece("creator_hearth") ? "creator_hearth" : "map1",
+            MusicTrack.Chronicle => HasPiece("chronicle_end") ? "chronicle_end" : "map1",
             MusicTrack.Deploy => "deploy",
             MusicTrack.Battle => "battle",
             MusicTrack.Victory => "victory",
@@ -282,11 +282,13 @@ sealed class AudioEngine
         StartPiece(id);
     }
 
+    static bool HasPiece(string id) => AudioAssets.HasMusic(id) || MusicLibrary.Has(id);
+
     void StartPiece(string id, double at = 0)
     {
         if (streamer == null) return;
         if (id == "") { streamer.PlayPiece(""); return; }
-        if (MusicLibrary.Has(id))
+        if (HasPiece(id))
         {
             streamer.PlayPiece(id, startSec: at);
             return;

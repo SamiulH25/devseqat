@@ -157,7 +157,31 @@ public static partial class SelfTest
         for (int i = 0; i < partB.Length; i++) maxDiff = MathF.Max(maxDiff, MathF.Abs(whole[half * 2 + i] - partB[i]));
         Check(maxDiff < 1e-4f, $"streaming chunk boundary is seamless (max diff {maxDiff})");
 
-        Console.WriteLine($"sounds: {Enum.GetValues<Cue>().Length} cues + {Enum.GetValues<Bed>().Length} beds in {cuesMs:0} ms, {MusicLibrary.All.Count} scores checked in {watch.ElapsedMilliseconds - cuesMs:0} ms");
+        // Verify any drop-in OGG assets (SFX, beds, music) decode cleanly without NaN or clipping
+        int oggCues = 0, oggBeds = 0, oggMusic = 0;
+        foreach (Cue c in Enum.GetValues<Cue>())
+            if (AudioAssets.LoadCue(c) is { } cv)
+            {
+                oggCues++;
+                foreach (var b in cv) Check(Level(b) is { Finite: true, Peak: > 0.005f and <= 1.01f }, $"ogg cue {c} clean");
+            }
+        foreach (Bed bed in Enum.GetValues<Bed>())
+            if (AudioAssets.LoadBed(bed) is { } bv)
+            {
+                oggBeds++;
+                Check(Level(bv) is { Finite: true, Peak: > 0.005f and <= 1.01f }, $"ogg bed {bed} clean");
+            }
+        var oggChunk = new float[AudioStreamer.ChunkFrames * 2];
+        foreach (var asset in AudioAssets.AllMusic.Values)
+        {
+            oggMusic++;
+            using var st = new OggMusicStream(asset, 0);
+            Array.Clear(oggChunk);
+            st.RenderChunk(oggChunk, AudioStreamer.ChunkFrames, Synth.Rate, allStems, asset.Loop, out _);
+            Check(Level(oggChunk) is { Finite: true, Peak: <= 1.05f }, $"ogg music {asset.Id} streams cleanly");
+        }
+
+        Console.WriteLine($"sounds: {Enum.GetValues<Cue>().Length} cues ({oggCues} ogg) + {Enum.GetValues<Bed>().Length} beds ({oggBeds} ogg) in {cuesMs:0} ms, {MusicLibrary.All.Count} scores + {oggMusic} ogg music checked in {watch.ElapsedMilliseconds - cuesMs:0} ms");
     }
 
     /// Weapon, shield, ranged and lance fights emit their distinct AU1 cues without touching replay determinism.

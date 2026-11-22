@@ -13,15 +13,18 @@ sealed class AudioStreamer : IDisposable
     public const int ChunkFrames = Synth.Rate / 5; // 0.20 s = 8,820 stereo frames (35,280 bytes)
     const int MaxQueuedChunks = 4;
 
-    sealed class Slot
+    sealed class Slot : IDisposable
     {
         public MusicScore? Score;
+        public OggMusicStream? Ogg;
         public float[]? LegacyMono;
         public string Id = "";
         public double CursorSec;
         public bool Loop, Finished;
         /// The slot's gain now (0..1): rises to 1 while it is the current piece, falls to 0 once replaced.
         public float Gain;
+        public bool PreMastered => Ogg != null;
+        public void Dispose() { Ogg?.Dispose(); Ogg = null; }
     }
 
     /// Seconds a piece takes to fade in or out; the most pieces fading out at once (past that, the quietest is let go).
@@ -35,6 +38,7 @@ sealed class AudioStreamer : IDisposable
     readonly StereoHall hall = new(Synth.Rate);
 
     readonly float[] mixBuf = new float[ChunkFrames * 2];
+    readonly float[] oggMixBuf = new float[ChunkFrames * 2];
     readonly float[] prevBuf = new float[ChunkFrames * 2];
     readonly float[] stingBuf = new float[ChunkFrames * 2];
     readonly float[] stemCur = { 1f, 0f, 0f, 0f }, stemWant = { 1f, 0f, 0f, 0f };
@@ -78,11 +82,25 @@ sealed class AudioStreamer : IDisposable
             if (current is { Gain: > 0.001f })
             {
                 fading.Add(current);
-                if (fading.Count > MaxFading) fading.Remove(fading.MinBy(f => f.Gain)!);
+                if (fading.Count > MaxFading)
+                {
+                    var drop = fading.MinBy(f => f.Gain)!;
+                    fading.Remove(drop);
+                    drop.Dispose();
+                }
+            }
+            else
+            {
+                current?.Dispose();
             }
             if (string.IsNullOrEmpty(id))
             {
                 current = null;
+            }
+            else if (AudioAssets.GetMusic(id) is { } oggAsset)
+            {
+                double start = Math.Max(0, startSec);
+                current = new Slot { Id = id, Ogg = new OggMusicStream(oggAsset, start), Loop = forceLoop ?? oggAsset.Loop, CursorSec = start };
             }
             else if (MusicLibrary.Get(id) is { } score)
             {
@@ -102,11 +120,15 @@ sealed class AudioStreamer : IDisposable
 
     public void PlayStinger(string id, float gain = 0.9f)
     {
-        var score = MusicLibrary.Get(id);
-        if (score == null) return;
+        var oggAsset = AudioAssets.GetMusic(id);
+        var score = oggAsset == null ? MusicLibrary.Get(id) : null;
+        if (oggAsset == null && score == null) return;
         lock (stateLock)
         {
-            stinger = new Slot { Id = id, Score = score, Loop = false };
+            stinger?.Dispose();
+            stinger = oggAsset != null
+                ? new Slot { Id = id, Ogg = new OggMusicStream(oggAsset, 0), Loop = false }
+                : new Slot { Id = id, Score = score, Loop = false };
             stingerGain = Math.Clamp(gain, 0f, 1.2f);
         }
         wake.Set();
@@ -152,7 +174,9 @@ sealed class AudioStreamer : IDisposable
     {
         var bank = AudioBank.Shared;
         Array.Clear(mixBuf, 0, mixBuf.Length);
+        Array.Clear(oggMixBuf, 0, oggMixBuf.Length);
         float wet = 0.26f, decay = 1.8f;
+        bool hasDryScore = false;
         double chunkSec = ChunkFrames / (double)Synth.Rate;
         ReadOnlySpan<float> fullStems = stackalloc float[] { 1f, 1f, 1f, 1f };
 
@@ -170,8 +194,10 @@ sealed class AudioStreamer : IDisposable
                 if (current.Score != null) { wet = current.Score.ReverbWet; decay = current.Score.ReverbDecay; }
                 float g0 = current.Gain;
                 current.Gain = MathF.Min(1f, g0 + step);
-                RenderSlot(bank, current, mixBuf, stemCur);
-                ApplyRamp(mixBuf, g0 * duck0, current.Gain * duck);
+                var target = current.PreMastered ? oggMixBuf : mixBuf;
+                if (!current.PreMastered) hasDryScore = true;
+                RenderSlot(bank, current, target, stemCur);
+                ApplyRamp(target, g0 * duck0, current.Gain * duck);
             }
 
             foreach (var f in fading)
@@ -182,20 +208,26 @@ sealed class AudioStreamer : IDisposable
                 Array.Clear(prevBuf, 0, prevBuf.Length);
                 RenderSlot(bank, f, prevBuf, stemCur);
                 ApplyRamp(prevBuf, g0 * duck0, f.Gain * duck);
-                for (int i = 0; i < prevBuf.Length; i++) mixBuf[i] += prevBuf[i];
+                var target = f.PreMastered ? oggMixBuf : mixBuf;
+                if (!f.PreMastered) hasDryScore = true;
+                for (int i = 0; i < prevBuf.Length; i++) target[i] += prevBuf[i];
             }
-            fading.RemoveAll(f => f.Gain <= 0f || f.Finished);
+            for (int i = fading.Count - 1; i >= 0; i--)
+                if (fading[i].Gain <= 0f || fading[i].Finished) { fading[i].Dispose(); fading.RemoveAt(i); }
 
             if (stinger != null && !stinger.Finished)
             {
                 Array.Clear(stingBuf, 0, stingBuf.Length);
                 RenderSlot(bank, stinger, stingBuf, fullStems);
-                for (int i = 0; i < mixBuf.Length; i++) mixBuf[i] += stingBuf[i] * stingerGain;
-                if (stinger.Finished) stinger = null;
+                var target = stinger.PreMastered ? oggMixBuf : mixBuf;
+                if (!stinger.PreMastered) hasDryScore = true;
+                for (int i = 0; i < target.Length; i++) target[i] += stingBuf[i] * stingerGain;
+                if (stinger.Finished) { stinger.Dispose(); stinger = null; }
             }
         }
 
-        hall.ProcessInPlace(mixBuf, ChunkFrames, wet, decay);
+        if (hasDryScore) hall.ProcessInPlace(mixBuf, ChunkFrames, wet, decay);
+        for (int i = 0; i < mixBuf.Length; i++) mixBuf[i] += oggMixBuf[i];
         MusicScore.SoftLimitStereo(mixBuf, mixBuf.Length);
 
         var bytes = new byte[ChunkFrames * 4];
@@ -211,7 +243,14 @@ sealed class AudioStreamer : IDisposable
     static void RenderSlot(AudioBank bank, Slot slot, float[] dstStereo, ReadOnlySpan<float> stems)
     {
         double dt = ChunkFrames / (double)Synth.Rate;
-        if (slot.Score is { } score)
+        if (slot.Ogg is { } ogg)
+        {
+            ogg.RenderChunk(dstStereo, ChunkFrames, Synth.Rate, stems, slot.Loop, out bool done);
+            slot.CursorSec += dt;
+            if (slot.Loop && ogg.Asset.DurationSec > 0.1) slot.CursorSec %= ogg.Asset.DurationSec;
+            else if (done) slot.Finished = true;
+        }
+        else if (slot.Score is { } score)
         {
             ReadOnlySpan<float> useStems = score.Category == "battle" ? stems : stackalloc float[] { 1f, 1f, 1f, 1f };
             score.RenderStereoWindow(bank, dstStereo, ChunkFrames, Synth.Rate, slot.CursorSec, useStems);
@@ -251,6 +290,13 @@ sealed class AudioStreamer : IDisposable
         if (disposed) return;
         disposed = true;
         wake.Set();
+        lock (stateLock)
+        {
+            current?.Dispose(); current = null;
+            stinger?.Dispose(); stinger = null;
+            foreach (var f in fading) f.Dispose();
+            fading.Clear();
+        }
         try { output.Stop(); output.Dispose(); } catch { }
     }
 }
