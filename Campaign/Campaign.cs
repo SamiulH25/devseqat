@@ -221,6 +221,7 @@ public sealed partial class Campaign
     /// Advance time; stops early when something needs you (an encounter, an arrival).
     public void Tick(float hours)
     {
+        if (TutorialActive) UpdateTutorial();
         while (hours > 1e-4f && Encounter == null && Arrived == null)
         {
             float h = MathF.Min(0.25f, hours);

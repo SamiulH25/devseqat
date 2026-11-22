@@ -277,6 +277,7 @@ public sealed partial class Campaign
         string fromName = s.Type.Name;
         int done = PromoteMen(Player, c, s, to, n, cost => { if (S.Gold < cost) return false; S.Gold -= cost; return true; });
         if (done > 0) LogYours($"{done} {fromName} of {c.Name} become {Troops.Get(to).Name}.");
+        if (done > 0 && S.TutorialStep == 3) { S.TutorialUpgrades += done; UpdateTutorial(); }
         Practise("Training", Rules.PerMan(done * 0.2f));
         return done > 0 ? null : "CANNOT PROMOTE";
     }

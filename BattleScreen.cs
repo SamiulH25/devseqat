@@ -184,6 +184,8 @@ sealed partial class BattleScreen
     {
         campaignBattle = s;
         memory = keep;
+        battleTutStep = keep is { TutorialStep: 2 } && !s.Options.Duel ? 0 : -1;
+        battleTutTimer = 0;
         deployed = null;
         battle = new Battle(s.Seed, s.Player, s.Enemy, s.Options);
         groups.Clear();

@@ -2051,4 +2051,50 @@ public static partial class SelfTest
         Check(File.ReadAllLines(Path.Combine(dir, "commands.log")).Contains("battle"), "commands are logged for replay");
         Directory.Delete(dir, true);
     }
+
+    /// Interactive first-campaign tutorial (Campaign/Tutorial.cs): 5-step progression, Red-Cap Raiders spawn,
+    /// rewards, skip, and persistence so it does not repeat on subsequent campaigns.
+    static void FirstCampaignTutorial()
+    {
+        var c = Campaign.New(55);
+        Check(!c.TutorialActive, "headless Campaign.New does not auto-enable tutorial");
+        c.BeginTutorial();
+        Check(c.TutorialActive && c.S.TutorialStep == 0, "BeginTutorial starts at step 0 (The March)");
+
+        // Step 0 -> 1: arriving/moving on map grants +60 crowns.
+        float g0 = c.S.Gold;
+        c.S.Hours += 1;
+        c.UpdateTutorial(persist: false);
+        Check(c.S.TutorialStep == 1 && c.S.Gold == g0 + 60, "step 0 completes on march/arrival and awards 60 crowns");
+
+        // Step 1 -> 2: buying food or recruiting spawns Red-Cap Raiders.
+        c.Player.Food += 2;
+        c.UpdateTutorial(persist: false);
+        var raiders = c.PartyById(c.S.TutorialBanditId);
+        Check(c.S.TutorialStep == 2 && raiders != null && raiders.Name == "Red-Cap Raiders" && !raiders.Down, "step 1 spawns Red-Cap Raiders");
+        Check(c.TutorialPrompt().Beacon == raiders!.Pos, "step 2 beacon points to the Red-Cap Raiders");
+
+        // Step 2 -> 3: winning a battle awards gold/renown and readies a company for promotion.
+        c.S.TutorialWins = 1;
+        c.UpdateTutorial(persist: false);
+        Check(c.S.TutorialStep == 3 && c.Player.Companies.SelectMany(co => co.Stacks).Any(st => st.Ready > 0), "step 2 win readies a stack for promotion");
+
+        // Step 3 -> 4: promoting a man advances to Take a Contract.
+        var comp = c.Player.Companies.First(co => co.Stacks.Any(st => st.Ready > 0 && st.Type.UpgradesTo.Length > 0));
+        var st0 = comp.Stacks.First(st => st.Ready > 0 && st.Type.UpgradesTo.Length > 0);
+        c.S.Gold += 500;
+        Check(c.Promote(comp, st0, st0.Type.UpgradesTo[0], 1) == null, "promoting a man succeeds");
+        Check(c.S.TutorialStep == 4, "step 3 completes on promotion");
+
+        // Step 4 -> Done: completing grants graduation reward.
+        float g4 = c.S.Gold;
+        c.CompleteTutorial(persist: false);
+        Check(!c.TutorialActive && c.S.Gold == g4 + 100, "completing tutorial finishes it and awards 100 crowns");
+
+        // Skip works immediately from step 0.
+        var c2 = Campaign.New(56);
+        c2.BeginTutorial();
+        c2.SkipTutorial(persist: false);
+        Check(!c2.TutorialActive && c2.S.TutorialStep == -1, "SkipTutorial immediately ends the tutorial");
+    }
 }

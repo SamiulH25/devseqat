@@ -183,6 +183,7 @@ sealed class ScreenHost : Game
             loadStage = "SHAPING THE LAND AND ITS REALMS";
             var c = Campaign.New(seed, realm, making);
             if (campaignShots == null && making == null) c.OfferRoad(); // the first choice: how the captain fights (P5)
+            if (campaignShots == null && !Settings.Current.TutorialDone) c.BeginTutorial(); // first-campaign interactive tutorial
             return c;
         }
         if (campaignShots != null)

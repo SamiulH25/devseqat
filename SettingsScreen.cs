@@ -192,6 +192,7 @@ sealed class SettingsScreen
                 ui.Text("BLUE, VERMILION AND PURPLE HERALDRY THAT STAY APART WITH RED-GREEN COLOUR BLINDNESS. APPLIES ON RESTART.", body.X, y, Style.Dim, 1);
                 y += ui.U(26);
                 if (ui.Button(new Rectangle(body.X, y, ui.U(240), ui.U(26)), "SHOW TIPS AGAIN", s.TipsSeen.Count > 0)) { s.TipsSeen.Clear(); s.Save(); }
+                if (ui.Button(new Rectangle(body.X + ui.U(252), y, ui.U(240), ui.U(26)), "REPLAY TUTORIAL", s.TutorialDone)) { s.TutorialDone = false; s.Save(); }
                 break;
         }
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(44), ui.U(180), ui.U(30)), "CLOSE")) Close();

@@ -44,8 +44,9 @@ partial class BattleScreen
         {
             hud.Draw();
             if (TipsHeld) return;
-            tipUi.Begin(gd.Viewport, ms.Position, false);
+            tipUi.Begin(gd.Viewport, ms.Position, ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released);
             BeatCaption(tipUi);
+            BattleTutorialRibbon(tipUi);
             Tips.Draw(tipUi, tipUi.U(224)); // above the order panel and its key hints at the bottom right
             tipUi.End();
         }
@@ -722,6 +723,39 @@ partial class BattleScreen
         Strip(a - sa, a - sa * 0.32f, b - sb, b - sb * 0.32f, ea, ca, eb, cb);
         Strip(a - sa * 0.32f, a + sa * 0.32f, b - sb * 0.32f, b + sb * 0.32f, ca, ca, cb, cb);
         Strip(a + sa * 0.32f, a + sa, b + sb * 0.32f, b + sb, ca, ea, cb, eb);
+    }
+
+    int battleTutStep = -1;
+    float battleTutTimer;
+
+    /// Interactive 4-beat tutorial ribbon during the player's very first campaign battle (Campaign/Tutorial.cs).
+    void BattleTutorialRibbon(Ui u)
+    {
+        if (battleTutStep < 0 || battle.Winner >= 0) return;
+        battleTutTimer += 1 / 60f;
+        switch (battleTutStep)
+        {
+            case 0 when !deploying: battleTutStep = 1; battleTutTimer = 0; break;
+            case 1 when (command && arrows.Count > 0) || battleTutTimer > 16f: battleTutStep = 2; battleTutTimer = 0; break;
+            case 2 when battle.Commanded.Any(s => s.Formation != Formation.Line) || battleTutTimer > 14f: battleTutStep = 3; battleTutTimer = 0; break;
+            case 3 when (!command && battle.Player.Action != UnitAction.None) || battleTutTimer > 14f: battleTutStep = 4; battleTutTimer = 0; break;
+            case 4 when battleTutTimer > 3.5f: battleTutStep = -1; return;
+        }
+        string text = battleTutStep switch
+        {
+            0 => "DEPLOYMENT: DRAG A COMPANY TO POSITION IT, OR CLICK FIGHT TO BEGIN!",
+            1 => "COMMAND: PRESS TAB FOR COMMAND VIEW, SELECT A COMPANY (1-2), RIGHT-CLICK TO MOVE OR CHARGE.",
+            2 => "FORMATIONS: PRESS J TO CHANGE FORMATION (SHIELD WALL / OPEN RANKS).",
+            3 => "JOIN THE FIGHT: PRESS TAB FOR PERSONAL VIEW — WASD MOVE, LMB STRIKE, RMB PARRY!",
+            _ => "WELL FOUGHT, CAPTAIN! BREAK THE RAIDERS!",
+        };
+        int w = Math.Min(u.W - u.U(40), u.TW(text, 1) + u.U(90));
+        var r = new Rectangle((u.W - w) / 2, u.U(56), w, u.U(26));
+        u.Rect(r, Kit.IronDark * 0.92f);
+        u.Panel(r, Kit.Gilt);
+        u.Text(text, r.X + u.U(12), r.Y + u.U(8), Kit.Gilt, 1);
+        if (battleTutStep < 4 && u.Button(new Rectangle(r.Right - u.U(56), r.Y + u.U(4), u.U(48), u.U(18)), "SKIP"))
+            battleTutStep = -1;
     }
 
     /// The siege wall's torches light the night (none by day or without a wall): see `World.Torches`.

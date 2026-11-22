@@ -317,6 +317,7 @@ public partial class Campaign
         if (r.Winner == 1 && setup.Side0.Contains(Player)) TrainLost();
         DivisionsAfterBattle(r);
         if (setup.SiegeOf >= 0) AfterAssault(S.Settlements[setup.SiegeOf], r.Winner == 0);
+        if (r.Winner == 0 && S.TutorialStep == 2) { S.TutorialWins++; UpdateTutorial(); }
         return Report ?? report;
     }
 

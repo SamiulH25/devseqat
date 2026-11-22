@@ -83,13 +83,19 @@ sealed partial class MapScreen
         ui.TextFit(sub, tx, box.Y + ui.U(26), tw, Color.Lerp(Style.Dim, Style.Text, 0.45f), 1);
     }
 
-    /// The pinned quest's place (or the last one SHOW ME marked) as a gold marker on the map.
+    /// The pinned quest's place (or the last one SHOW ME marked, or the first-campaign tutorial beacon) as a gold marker on the map.
     void QuestMark()
     {
         Vector2? at = questMark;
+        string tag = "QUEST";
         if (C.S.Contracts.FirstOrDefault(c => c.Id == C.S.PinnedQuest) is Contract pin && C.PlaceOf(pin).Place is Vector2 p) at ??= p;
+        if (at == null && C.TutorialActive)
+        {
+            var tp = C.TutorialPrompt();
+            if (tp.Beacon is Vector2 tb) { at = tb; tag = tp.BeaconLabel != "" ? tp.BeaconLabel : "TUTORIAL"; }
+        }
         if (at is not Vector2 w || !OnScreen(w, out var sp, out _)) return;
-        // A gold ring on the ground round the place, breathing, with QUEST under it: the labels sit above a place, so below is clear.
+        // A gold ring on the ground round the place, breathing, with a gold plate under it.
         float k = 1 + 0.12f * MathF.Sin(Ui.Now * 3);
         float rx = ui.U(18) * k, ry = ui.U(8) * k;
         for (int i = 0; i < 32; i++)
@@ -99,9 +105,51 @@ sealed partial class MapScreen
             ui.Rect(new Rectangle(px - ui.U(2), py - ui.U(2), ui.U(5), ui.U(5)), Color.Black * 0.7f);
             ui.Rect(new Rectangle(px - ui.U(1), py - ui.U(1), ui.U(3), ui.U(3)), Kit.Gilt);
         }
-        var lr = new Rectangle((int)sp.X - ui.TW("QUEST", 1) / 2 - ui.U(4), (int)(sp.Y + ry + ui.U(4)), ui.TW("QUEST", 1) + ui.U(8), ui.U(12));
+        var lr = new Rectangle((int)sp.X - ui.TW(tag, 1) / 2 - ui.U(4), (int)(sp.Y + ry + ui.U(4)), ui.TW(tag, 1) + ui.U(8), ui.U(12));
         ui.Rect(new Rectangle(lr.X - ui.U(1), lr.Y - ui.U(1), lr.Width + ui.U(2), lr.Height + ui.U(2)), Color.Black * 0.8f);
         ui.Rect(lr, Kit.Gilt); // a gold plate, unlike the map's party tags
-        ui.TextC("QUEST", sp.X, lr.Y + ui.U(3), Kit.IronDark, 1);
+        ui.TextC(tag, sp.X, lr.Y + ui.U(3), Kit.IronDark, 1);
+    }
+
+    /// Interactive first-campaign tutorial banner docked top-right on the map (never blocks the world or company cards).
+    void TutorialCard()
+    {
+        if (!C.TutorialActive) return;
+        C.UpdateTutorial();
+        if (!C.TutorialActive) return;
+        var (step, title, body, hint, reward, _, _) = C.TutorialPrompt();
+        int w = ui.U(320);
+        var lines = ui.Wrap(body, w - ui.U(24));
+        int h = ui.U(62) + lines.Count * ui.U(12);
+        var r = new Rectangle(ui.W - w - ui.U(12), ui.U(52), w, h);
+        ui.Rect(r, Kit.IronDark * 0.94f);
+        ui.Panel(r, Kit.Gilt);
+        ui.Rect(new Rectangle(r.X, r.Y, ui.U(3), r.Height), Kit.Gilt);
+        ui.Text($"FIRST MARCH {step + 1}/{Campaign.TutorialSteps}: {title}", r.X + ui.U(12), r.Y + ui.U(8), Kit.Gilt, 1);
+        for (int i = 0; i < lines.Count; i++)
+            ui.Text(lines[i], r.X + ui.U(12), r.Y + ui.U(22) + i * ui.U(12), Style.Text, 1);
+        int footY = r.Bottom - ui.U(24);
+        ui.Text($"REWARD: {reward}", r.X + ui.U(12), footY + ui.U(4), Style.Ok, 1);
+        if (step == Campaign.TutorialSteps - 1)
+        {
+            if (ui.Button(new Rectangle(r.Right - ui.U(136), footY, ui.U(66), ui.U(18)), "FINISH", true)) C.CompleteTutorial();
+        }
+        if (ui.Button(new Rectangle(r.Right - ui.U(64), footY, ui.U(54), ui.U(18)), "SKIP")) C.SkipTutorial();
+    }
+
+    /// Compact 1-line tutorial reminder at top-center while inside a town or party modal.
+    void TutorialStrip()
+    {
+        if (!C.TutorialActive) return;
+        C.UpdateTutorial();
+        if (!C.TutorialActive) return;
+        var (step, title, _, hint, _, _, _) = C.TutorialPrompt();
+        string msg = $"FIRST MARCH {step + 1}/{Campaign.TutorialSteps} ({title}): {hint}";
+        int w = Math.Min(ui.W - ui.U(40), ui.TW(msg, 1) + ui.U(84));
+        var r = new Rectangle((ui.W - w) / 2, ui.U(6), w, ui.U(20));
+        ui.Rect(r, Kit.IronDark * 0.94f);
+        ui.Frame(r, Kit.Gilt, ui.U(1));
+        ui.Text(msg, r.X + ui.U(10), r.Y + ui.U(6), Kit.Gilt, 1);
+        if (ui.Button(new Rectangle(r.Right - ui.U(54), r.Y + ui.U(2), ui.U(48), ui.U(16)), "SKIP")) C.SkipTutorial();
     }
 }

@@ -38,6 +38,8 @@ public sealed class Settings
     public int BattleSize = 1500;
     public static readonly int[] BattleSizes = { 400, 800, 1500, 3000 };
     public HashSet<string> TipsSeen = new();
+    /// Set once the player completes or skips the first-campaign interactive tutorial (never shown again unless reset in Settings).
+    public bool TutorialDone;
 
     public static string Folder => Environment.GetEnvironmentVariable("IRONFIELD_SAVES") is { Length: > 0 } d ? Path.GetDirectoryName(Path.GetFullPath(d)) ?? d
         : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Ironfield");

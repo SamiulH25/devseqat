@@ -651,6 +651,9 @@ public sealed class CampaignState
     /// The quests screen (docs/archive/PLAYTEST.md PT3): finished and failed quests, oldest first; and the one pinned to the HUD (-1: none).
     public List<QuestRecord> QuestHistory = new();
     public int PinnedQuest = -1;
+    /// First-campaign interactive tutorial progress (-1 = inactive/done, 0..4 = active step; Campaign/Tutorial.cs).
+    public int TutorialStep = -1, TutorialBanditId = -1, TutorialStartMen, TutorialWins, TutorialUpgrades;
+    public float TutorialStartFood;
     /// Diplomacy (F7): alliances, gold owed under terms, the record of treaties (newest last), and the marshal's summons to you.
     public List<Pact> Pacts = new();
     public List<Payment> Payments = new();

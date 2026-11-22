@@ -44,6 +44,7 @@ partial class MapScreen
             Cards();
             Contracts();
             QuestMark();
+            TutorialCard();
         }
         if (panel == PanelKind.None) { Tooltip(); Hints(); }
         switch (panel)
@@ -77,7 +78,7 @@ partial class MapScreen
         // Tips draw last so nothing covers them; over an open panel they sit at the top, clear of its buttons. A tip that was
         // already waiting when the panel opened keeps waiting for the map (only tips about the panel itself show over it).
         if (panel == PanelKind.None) Tips.Draw(ui, ui.U(10));
-        else if (Tips.Since >= panelSince) Tips.DrawAt(ui, ui.U(6));
+        else { TutorialStrip(); if (Tips.Since >= panelSince) Tips.DrawAt(ui, ui.U(6)); }
         ui.End();
         if (panel == PanelKind.None && click && !ui.Blocks(ms.Position)) pendingClick = true; // the map gets it
     }
