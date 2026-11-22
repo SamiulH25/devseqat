@@ -1,7 +1,7 @@
 # Troops made of kit and skill (plan)
 
 The owner's brief (2026-11-21): "the units' stats are determined by their base stats plus their skills plus their equipment
-used. Equipment should matter to each troop." Phase prefix: **KT**. Nothing is built yet.
+used. Equipment should matter to each troop." Phase prefix: **KT**. KT0–KT4 built (see "As built" at the end).
 
 ## Why it is not like this today
 
@@ -98,3 +98,26 @@ demo's core is stable. Size: large; KT1 and KT3 are the bulk.
 - **Upgrades that change only the look** (same kit, new colours) would now be no better: they need more skill or a better
   piece. `WorseUpgrade` finds them.
 - **The captain's numbers** must not drift when his builder is shared: `CaptainCombat`, `CaptainKit` and `SkillBouts` stay green.
+
+## As built
+
+### KT4 (rebalance and measure), as built (2026-11-21)
+- **Tuned bases and pieces** (no individual non-wild troop overrides; captain base untouched):
+  - `Data/gear.json` `man` base anchored around tier III (Arms 40) so tier I is softer and tier II–VI scale cleanly: `hp: 52, hpPerArms: 0.0325`, `damage: 0.30, damagePerArms: 0.0125`, `block: 0.51, blockPerArms: 0.006`, `swing: 1.18, swingPerArms: -0.004`, `speed: 3.55`.
+  - `mage` base: `hp: 100, hpPerArms: 0.05` (bringing tier II `acolytes` from 210 back near 163 HP while tier IV–VI stay 238–313), matching `man` speed/damage/block/swing.
+  - Weapon polish: `flamberge` (`troop: true`) damage `46 -> 41` and `dane_axe` `windup/recover 0.55/0.65 -> 0.54/0.62` so `zweihanders -> executioners` wins 3/3 (0.41/0.00) at equal men.
+  - Wild creatures (`Data/troops.json`, typed stats): `troll` armor `16 -> 11` (beatable by 30 shieldmen by day, still routs them at night) and `wolf` damage `18 -> 16` (pack tears through bowmen and breaks on a shield line).
+  - `Campaign/CampaignState.cs`: synced `Balance.WageCurve` default to `0.6f` to match `Data/campaign.json`.
+  - Test setup fixes (none weakened): `NamedInTheFight` keeps `foe.Hp = foe.Type.MaxHp` during the 5 s `Press()` alert-cooldown loop so `hob` does not kill the enemy leader early; `WarAndPeace` checks for peace-on-terms during the 240-day loop instead of only the 20-entry tail of `S.Treaties`.
+- **Measurements after KT4:**
+  - `--tiers 3` (370 links x 3 matchups x 3 seeds, up wins / auto agrees):
+    - `I -> II`: men 100% (0.84/0.00), upkeep **67%** (auto 73%), places 100% (was 15% upkeep before KT4)
+    - `II -> III`: men 100% (0.78/0.00), upkeep **63%** (auto 66%), places 100% (was 50% after KT3, 40% in TI1)
+    - `III -> IV`: men 100% (0.80/0.01), upkeep **80%** (auto 81%), places 99%
+    - `IV -> V`: men 99% (0.69/0.00), upkeep **71%** (auto 71%), places 95%
+    - `V -> VI`: men 100% (0.68/0.01), upkeep **83%** (auto 83%), places 94%
+  - `--agree 4 3.5`: at `DrillWeight = 5.0`, higher tier wins gap 1: 50%, gap 2: 75%, gap 3: 58%, gap 4: 50%, gap 5: 0% (4 fights).
+  - `--grounds 16`: 0 unfinished across all 12 layouts, 84–120 s a battle, chooser wins 15–23/32.
+  - `--realms 8`: largest share 33%, 0 flags.
+  - `--pacing 4`: 4/4 Marshal (days 106–162), 549/562 battles won, 4/4 Vassal in target window (days 41–56, target 40–67).
+  - `tools/check.sh`: `ALL CHECKS PASSED` (322/322 self-tests, including `CaptainCombat`, `CaptainKit`, `SkillBouts`).

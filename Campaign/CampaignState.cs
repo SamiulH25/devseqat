@@ -831,7 +831,7 @@ public sealed class Balance
     public float StartGold = 300, StartRenown = 50;
     /// Wages by tier (docs/pre-demo/TIERS.md TI0, TI4): a man's wage is figured from his `cost` bent toward `WageAnchor` by
     /// `WageCurve` (1 = his cost as it is; under 1 the dear troops cost less to keep and the cheap ones more). Hire prices keep `cost`.
-    public float WageCurve = 1, WageAnchor = 36;
+    public float WageCurve = 0.6f, WageAnchor = 36;
     public float UpkeepRate = 0.1f, ContractPay = 0.85f, LootRate = 0.25f, LootCoinShare = 0.3f, RansomRate = 1, MercMarkup = 1.5f;
     public float WoundBase = 0.3f, WoundArmor = 40, WoundMin = 0.25f, WoundMax = 0.7f, CaptureChance = 0.5f, FledReturnOnDefeat = 0.7f;
     public float XpParticipation = 10, XpVictory = 1.5f, XpPerKillTier = 6;

@@ -1564,7 +1564,7 @@ public static partial class SelfTest
         var hob = b.Units.First(u => u.SoldierId == 5);
         var foe = b.SquadsOf(1).First().Units[0];
         Check(Battle.NamedOf(hob)?.Nature == "Grim" && Battle.NamedOf(b.Units.First(u => u.SoldierId == 6))?.Lad == true, "the battle knows his nature and the lad");
-        void Press() { hob.Hp = hob.Type.MaxHp * 0.3f; foe.Pos = hob.Pos + new Vector2(1, 0); hob.Target = foe; b.Player.Pos = hob.Pos + new Vector2(20, 0); }
+        void Press() { hob.Hp = hob.Type.MaxHp * 0.3f; foe.Hp = foe.Type.MaxHp; foe.Pos = hob.Pos + new Vector2(1, 0); hob.Target = foe; b.Player.Pos = hob.Pos + new Vector2(20, 0); }
         for (int i = 0; i < 40; i++) { Press(); b.Update(1 / 60f); }
         Check(b.Alerts.Count(a => a.Kind == "pressed") == 1 && b.Alerts.First(a => a.Kind == "pressed").Text == "Hob the Red is hard pressed", "a named man hard pressed raises the alert");
         for (int i = 0; i < 60 * 5; i++) { Press(); b.Update(1 / 60f); }

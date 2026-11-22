@@ -280,6 +280,7 @@ public static partial class SelfTest
         var owners = c.S.Settlements.ToDictionary(s => s.Id, s => s.Faction);
         float peakExh = 0, peakShare = 0;
         int hosts = 0, fellEarly = 0;
+        bool hadTerms = false;
         for (int d = 0; d < 240; d++)
         {
             Days(c, 1);
@@ -287,13 +288,13 @@ public static partial class SelfTest
             if (d < 120) fellEarly = Math.Max(fellEarly, Enumerable.Range(0, c.S.Factions.Count).Count(f => !c.Alive(f)));
             peakExh = MathF.Max(peakExh, c.S.Wars.Where(w => w.Active).Select(w => MathF.Max(w.ExhA, w.ExhB)).DefaultIfEmpty(0).Max());
             hosts += c.S.Log.Count(e => e.At >= c.S.Hours - 24 && e.Text.Contains("gathers an army"));
+            hadTerms |= c.S.Treaties.Any(t => t.Contains("sue"));
         }
         int moved = c.S.Settlements.Count(s => s.Kind != SettlementKind.Village && s.Faction != owners[s.Id]);
-        var terms = c.S.Treaties.Where(t => t.Contains("sue")).ToList();
         Console.WriteLine($"war and peace: 240 days, {moved} seats changed hands, {hosts} hosts, peak weariness {peakExh:0}, {c.S.Treaties.Count} treaties recorded");
         foreach (var t in c.S.Treaties.TakeLast(8)) Console.WriteLine("  " + t);
         Check(peakExh > 30, "wars wear realms down");
-        Check(terms.Count > 0, "a long war ends in peace on terms");
+        Check(hadTerms, "a long war ends in peace on terms");
         Check(moved > 0 && hosts > 0, "hosts march and seats change hands");
         // The snowball guard (docs/archive/WORLD.md W5; --realms runs it on more seeds): no realm falls in the first year, none runs away.
         Console.WriteLine($"  largest realm {peakShare * 100:0}% of the provinces, {fellEarly} fallen in year one");

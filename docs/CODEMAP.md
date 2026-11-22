@@ -1013,11 +1013,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Feature** (struct, L10): Stops:16
 - **Terrain** (class, L20): AddFeature:26, RemoveFeatureAt:42, CellX:48, FeatureLine:51, PushOutFeatures:65, GoRound:89, House:108, CrossesFeatureNear:124, CrossesFeature:151, SegmentsCross:158, BridgeTheRoad:171, RiverZ:191
 
-## TerrainGround.cs (164 lines)
+## TerrainGround.cs (165 lines)
 - **GroundKind** (enum, L7)
 - **GroundDef** (class, L11): ToString:16
-- **Grounds** (class, L20): Get:25, Name:28, Describe:35, Load:57, Validate:71, Check:73
-- **Terrain** (class, L93): CellOf:102, GroundAt:109, CoverAt:111, GroundDefAt:113, PaintGround:117, Paint:137, InWood:149, GroundHash:156
+- **Grounds** (class, L20): Get:25, Name:28, Describe:35, Load:57, Validate:72, Check:74
+- **Terrain** (class, L94): CellOf:103, GroundAt:110, CoverAt:112, GroundDefAt:114, PaintGround:118, Paint:138, InWood:150, GroundHash:157
 
 ## TerrainLayouts.cs (269 lines)
 - **FieldLayout** (enum, L7)
@@ -1039,8 +1039,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/CaptainTests.cs (179 lines)
 - **SelfTest** (class, L6): CaptainKeepsGuard:10, EnemySeesCaptain:36, EnemyHuntsCaptain:111
 
-## Tests/CareerTests.cs (423 lines)
-- **SelfTest** (class, L6): PilotTrace:9, Career:24, PilotCareer:120, FreeCrown:138, FiefLife:169, WarAndPeace:277, EventsAndQuests:358
+## Tests/CareerTests.cs (424 lines)
+- **SelfTest** (class, L6): PilotTrace:9, Career:24, PilotCareer:120, FreeCrown:138, FiefLife:169, WarAndPeace:277, EventsAndQuests:359
 
 ## Tests/CompanionTests.cs (111 lines)
 - **SelfTest** (class, L6): CompanionGrows:21, HoldTheLine:41, EnemyChampions:61, CompanionLeaves:85
