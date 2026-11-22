@@ -309,6 +309,16 @@ sealed class AudioEngine
         }
     }
 
+    /// The frame while the game is paused under an overlay (the settings panel skips `Update`): start a fresh frame's
+    /// cue counts, or the per-frame caps never clear and clicks and hover ticks stop after the first few; and keep the
+    /// music fed, or the streamer's queue runs dry and it cuts out. Beds keep their level; a new volume applies at once.
+    public void Overlay()
+    {
+        playedThisFrame.Clear();
+        familyThisFrame.Clear();
+        if (Enabled) streamer?.Pump(Mus * 0.78f * (1f - duckAmount * 0.45f));
+    }
+
     public void Update(float dt)
     {
         playedThisFrame.Clear();

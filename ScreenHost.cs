@@ -300,6 +300,7 @@ sealed class ScreenHost : Game
         {
             IsMouseVisible = true;
             SettingsPanel.Update();
+            Audio?.Overlay();
             base.Update(gameTime);
             return;
         }

@@ -12,7 +12,8 @@ public static class AudioAssets
 {
     public const string AudioRoot = "Data/audio";
 
-    public sealed class CueMix { public float Gain = 1f; public float PitchSpread = -1f; public string? Alias; }
+    /// `Layer`: mix every variant of the cue into one sound (played together each time) instead of picking one.
+    public sealed class CueMix { public float Gain = 1f; public float PitchSpread = -1f; public string? Alias; public bool Layer; }
     public sealed class BedMix { public float Gain = 1f; }
     public sealed class MusicMix { public float Gain = 1f; public bool? Loop; }
 
@@ -211,7 +212,23 @@ public static class AudioAssets
             }
             catch (Exception e) { Console.WriteLine($"audio sfx '{path}': {e.Message}"); }
         }
-        return list.Count > 0 ? list.ToArray() : null;
+        if (list.Count == 0) return null;
+        return mix?.Layer == true && list.Count > 1 ? new[] { LayerAll(list) } : list.ToArray();
+    }
+
+    /// The variants summed from their starts, scaled so the layered peak is no louder than the loudest one alone.
+    static float[] LayerAll(List<float[]> parts)
+    {
+        var sum = new float[parts.Max(p => p.Length)];
+        float peak = 0;
+        foreach (var p in parts)
+        {
+            for (int i = 0; i < p.Length; i++) sum[i] += p[i];
+            peak = MathF.Max(peak, p.Max(MathF.Abs));
+        }
+        float top = sum.Max(MathF.Abs);
+        if (top > peak && top > 0) for (int i = 0; i < sum.Length; i++) sum[i] *= peak / top;
+        return sum;
     }
 
     public static float CuePitchSpread(Cue c, float fallback) =>

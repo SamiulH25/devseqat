@@ -8,7 +8,7 @@
     "SwingPole": { "alias": "SwingTwo", "gain": 0.90, "pitchSpread": 0.12 },
     "ShieldSplinter": { "alias": "BlockWood", "gain": 1.0, "pitchSpread": 0.10 },
     "Order": { "alias": "Horn", "gain": 0.95, "pitchSpread": 0.04 },
-    "Click": { "gain": 0.85, "pitchSpread": 0.03 },
+    "Click": { "gain": 0.85, "pitchSpread": 0.03, "layer": true },
     "Hover": { "gain": 0.55, "pitchSpread": 0.04 },
     "Page": { "gain": 0.85, "pitchSpread": 0.05 },
     "Coin": { "gain": 0.85, "pitchSpread": 0.06 }
