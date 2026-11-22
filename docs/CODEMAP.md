@@ -685,11 +685,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **FactionDef** (class, L27)
 - **Factions** (class, L46): IndexOf:65, Get:66, Bind:89, Culture:90, CultureOf:91, PeopleOf:96, Open:103, Root:106, Line:109, Path:112, Load:122, Validate:138
 
-## Fighter.cs (65 lines)
+## Fighter.cs (141 lines)
 - **FighterBase** (class, L6)
 - **FighterSkills** (struct, L14)
 - **FighterKit** (record, L17): Of:22
-- **Fighter** (class, L30): SkillsFor:35, Build:47
+- **Fighter** (class, L30): SkillsFor:35, Build:47, PieceEffect:67, KitLine:91, SkillsLine:99
 
 ## Forms.cs (114 lines)
 - **FormDef** (class, L8): Clone:18
@@ -718,10 +718,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Hud.Command.cs (150 lines)
 - **Hud** (class, L8): ReserveAt:17, ToMeAt:18, AutoFillAt:19, HornAt:20, HornToggleAt:21, AddAt:22, OverCommand:23, DivisionColour:30, Movable:38, LayoutCommand:40, Tray:61, SmallButton:103, DivisionRings:113
 
-## Hud.cs (800 lines)
+## Hud.cs (803 lines)
 - **Cmd** (enum, L7)
 - **MenuItem** (enum, L14)
-- **Hud** (class, L20): StartAt:60, DeployToggleAt:64, Hud:89, U:91, Layout:105, CardAt:138, MapButtonAt:141, DeckTitleAt:143, ButtonAt:144, MenuAt:145, PauseAt:146, SpeedAt:147, ModeAt:149, CaptainAt:150, MinimapAt:151, Over:154, Rect:160, Panel:163, Frame:165, Line:173, Bar:179, Text:182, TW:187, TextC:188, TextR:189, MoraleColor:191, GradeColor:217, RanksOf:218, PlanOf:219, AvgMorale:226, AvgMorale:233, Draw:242, DrawCommand:300, DrawFight:323, Strength:341, SideArms:352, GoalLines:355, MapButtons:368, MinimapPanel:381, FormBar:428, RelicSlot:455, SpellFan:467, OrderFlash:496, EffectMarks:507, Icon:525, Portrait:529, Crosshair:566, WheelPos:615, Banners:622, Banner:661, StateOf:741, FormationName:744, SquadTooltip:747, EnemyGlass:777
+- **Hud** (class, L20): StartAt:60, DeployToggleAt:64, Hud:89, U:91, Layout:105, CardAt:138, MapButtonAt:141, DeckTitleAt:143, ButtonAt:144, MenuAt:145, PauseAt:146, SpeedAt:147, ModeAt:149, CaptainAt:150, MinimapAt:151, Over:154, Rect:160, Panel:163, Frame:165, Line:173, Bar:179, Text:182, TW:187, TextC:188, TextR:189, MoraleColor:191, GradeColor:217, RanksOf:218, PlanOf:219, AvgMorale:226, AvgMorale:233, Draw:242, DrawCommand:300, DrawFight:323, Strength:341, SideArms:352, GoalLines:355, MapButtons:368, MinimapPanel:381, FormBar:428, RelicSlot:455, SpellFan:467, OrderFlash:496, EffectMarks:507, Icon:525, Portrait:529, Crosshair:566, WheelPos:615, Banners:622, Banner:661, StateOf:741, FormationName:744, SquadTooltip:747, EnemyGlass:779
 
 ## Hud.Deck.cs (418 lines)
 - **Hud** (class, L11): OrderInfo:14, ShapeOf:45, Shoots:51, Listening:63, ButtonCentre:75, LayoutDeck:83, LayoutOrders:121, TopBar:167, CaptainPlate:234, Unlearned:276, Lit:280, OrderDeck:294, Cards:341
@@ -774,8 +774,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Atlas.cs (137 lines)
 - **MapScreen** (class, L7): AtlasIds:14, AtlasTexture:30, AtlasPanel:59, AtlasLegend:104, TideColour:136
 
-## MapScreen.Board.cs (413 lines)
-- **MapScreen** (class, L10): readonly:24, RoleColor:28, PartyPanel:30, LastFightBlock:92, BoardSummary:130, DrawLane:157, NewLane:213, Dashed:247, CompanyTile:255, CompanyDetail:294
+## MapScreen.Board.cs (414 lines)
+- **MapScreen** (class, L10): readonly:24, RoleColor:28, PartyPanel:30, LastFightBlock:92, BoardSummary:130, DrawLane:157, NewLane:213, Dashed:247, CompanyTile:255, CompanyDetail:295
 
 ## MapScreen.Camp.cs (597 lines)
 - **MapScreen** (class, L9): CampLight:30, CampLook:33, CampLayout:45, FireSpot:83, PrepareCamp:95, CampPanel:108, CampScene:141, Tent:201, Surgeon:220, Cold:255, Fire:257, CampGear:291, ManTalk:393, CampRites:415, ManBox:442, CampPlate:497, CampBar:517, ManPage:540
@@ -863,8 +863,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Townscape.Houses.cs (356 lines)
 - **MapScreen** (class, L7): Glass:41, TimberHouse:50, Openings:82, WhiteHouse:108, LogHouse:127, Yurt:140, Turf:159, Edges:175, Dome:183, HeroWall:218, TavernWindow:221, TavernDoor:233, Lantern:249, TavernSign:257
 
-## MapScreen.Upgrade.cs (293 lines)
-- **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:185, Leads:281
+## MapScreen.Upgrade.cs (348 lines)
+- **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:185, Leads:336
 
 ## Mesh3D.cs (419 lines)
 - **MeshKit3D** (class, L9): TryLoad:64, Load:74, Get:153, Resolve:155, MapLimb:276, MapHelm:284, MapWeapon:320, MapShield:347
@@ -1060,8 +1060,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/EngineTests.cs (157 lines)
 - **SelfTest** (class, L6): EnginesValidate:8, EngineShoots:16, EngineOrders:40, MannedEngine:64, EngineNeedsCrew:90, StoneSplashes:107, EngineBreaksGate:130
 
-## Tests/GearTests.cs (150 lines)
-- **SelfTest** (class, L4): GearItems:9, InventoryActions:74, GearSources:100
+## Tests/GearTests.cs (167 lines)
+- **SelfTest** (class, L4): GearItems:9, InventoryActions:74, GearSources:100, TroopKitDisplay:152
 
 ## Tests/KnightTests.cs (1142 lines)
 - **SelfTest** (class, L6): AuraBlade:9, AuraArmour:46, AuraBound:69, AuraGrows:94, Press:133, FormsWork:141, FormsLearned:227, OrdersOnMap:248, Bout:295, OrderOath:299, CreedBroken:325, OrderRankGate:366, CoreAndTrials:408, PresenceShakes:469, ChampionsUseAura:500, OrderPolitics:538, BlackFlame:606, FlameTakesYou:661, OwnOrderFounded:684, AuraPool:732, AuraField:799, CastNow:807, BlessingFeedsAura:815, CurseOnCaptain:831, BladeBreaksCast:859, RelicRaised:885, OwnFormFromStyle:901, AspectChanges:931, BreakInBattle:957, ClashRing:979, TranscendentLight:1004, AwakeningByDeeds:1044, PathsDiffer:1084

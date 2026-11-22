@@ -62,4 +62,80 @@ public static class Fighter
         t.Speed = b.Speed + k.Body.Speed + k.Helm.Speed + k.Shield.Speed;
         if (t.Mount != null) t.Mount = t.Mount with { Hp = t.Mount.Hp * (1 + s.Riding * b.HorsePerRiding) };
     }
+
+    /// Short summary of what one piece of kit gives (KT6: promotion screen, troop details).
+    public static string PieceEffect(GearDef g) => g.Slot switch
+    {
+        "weapon" when g.Ranged => $"DMG {g.Damage:0}  RNG {g.Range:0}" + (g.Pierce > 0 ? $"  PRC {g.Pierce:P0}" : ""),
+        "weapon" => $"DMG {g.Damage:0}  RCH {g.Reach:0.0}" + (g.Pierce > 0 ? $"  PRC {g.Pierce:P0}" : g.VsMounted > 1.05f ? $"  VS HORSE x{g.VsMounted:0.0}" : ""),
+        "shield" => g.Look == "none" ? "" : $"BLK {g.Block:P0}" + (g.Speed < -0.01f ? $"  SPD {g.Speed:+0.#;-0.#}" : ""),
+        _ => $"ARM {g.Armor:0.#}" + (MathF.Abs(g.Speed) > 0.01f ? $"  SPD {g.Speed:+0.##;-0.##}" : ""),
+    };
+
+    /// The pieces a soldier wears (weapon, shield if carried, body, helm if worn, plus armoured legs/feet/hands) with what each gives.
+    public static List<(string Slot, GearDef Piece, string Effect)> KitList(UnitType t)
+    {
+        var list = new List<(string, GearDef, string)>();
+        if (t.Wild || FighterKit.Of(t.Look) is not { } k) return list;
+        list.Add(("WEAPON", k.Weapon, PieceEffect(k.Weapon)));
+        if (k.Shield.Look != "none") list.Add(("SHIELD", k.Shield, PieceEffect(k.Shield)));
+        list.Add(("BODY", k.Body, PieceEffect(k.Body)));
+        if (k.Helm.Look != "none") list.Add(("HELM", k.Helm, PieceEffect(k.Helm)));
+        if (k.Legs.Armor > 0) list.Add(("LEGS", k.Legs, PieceEffect(k.Legs)));
+        if (k.Feet.Armor > 0) list.Add(("FEET", k.Feet, PieceEffect(k.Feet)));
+        if (k.Hands.Armor > 0) list.Add(("HANDS", k.Hands, PieceEffect(k.Hands)));
+        return list;
+    }
+
+    /// One-line list of a soldier's visible kit for hover cards (KT6).
+    public static string KitLine(UnitType t)
+    {
+        var parts = KitList(t).Select(x => x.Piece.Name.ToUpperInvariant()).ToList();
+        if (t.Mount != null) parts.Add(t.Mount.Name.ToUpperInvariant());
+        return string.Join(", ", parts);
+    }
+
+    /// A soldier's three skills as one line (KT6).
+    public static string SkillsLine(UnitType t) => t.Wild ? "" : $"ARMS {t.Skills.Arms:0}  RIDING {t.Skills.Riding:0}  BOW {t.Skills.Bowcraft:0}";
+
+    /// What changes in kit and mount on promotion from `from` to `to` (KT6: e.g. "+ MAIL HAUBERK: ARM +4.5").
+    public static List<(string Text, int Sign)> KitChanges(UnitType from, UnitType to)
+    {
+        var list = new List<(string, int)>();
+        if (from.Wild || to.Wild || FighterKit.Of(from.Look) is not { } a || FighterKit.Of(to.Look) is not { } b) return list;
+        if (a.Weapon.Id != b.Weapon.Id)
+        {
+            float dd = b.Weapon.Damage - a.Weapon.Damage, dr = b.Weapon.Reach - a.Weapon.Reach;
+            string d = MathF.Abs(dd) >= 0.5f ? $": DMG {dd:+0;-0}" : MathF.Abs(dr) >= 0.05f ? $": RCH {dr:+0.0;-0.0}" : "";
+            list.Add(($"+ {b.Weapon.Name.ToUpperInvariant()}{d}", dd > 0.5f ? 1 : dd < -0.5f ? -1 : 0));
+        }
+        if (a.Shield.Id != b.Shield.Id)
+        {
+            if (b.Shield.Look == "none") list.Add(($"- {a.Shield.Name.ToUpperInvariant()}", -1));
+            else
+            {
+                float db = a.Shield.Look == "none" ? b.Shield.Block : b.Shield.Block - a.Shield.Block;
+                list.Add(($"+ {b.Shield.Name.ToUpperInvariant()}: BLK {(a.Shield.Look == "none" ? "" : db >= 0 ? "+" : "")}{db * 100:0}%", db >= 0 ? 1 : -1));
+            }
+        }
+        foreach (var (pa, pb) in new[] { (a.Body, b.Body), (a.Helm, b.Helm), (a.Legs, b.Legs), (a.Feet, b.Feet), (a.Hands, b.Hands) })
+        {
+            if (pa.Id == pb.Id) continue;
+            float da = pb.Armor - pa.Armor;
+            if (pb.Look == "none") list.Add(($"- {pa.Name.ToUpperInvariant()}: ARM {da:0.#}", -1));
+            else if (MathF.Abs(da) >= 0.05f) list.Add(($"+ {pb.Name.ToUpperInvariant()}: ARM {da:+0.#;-0.#}", da > 0 ? 1 : -1));
+            else list.Add(($"+ {pb.Name.ToUpperInvariant()}", 0));
+        }
+        if (from.Mount?.Name != to.Mount?.Name)
+        {
+            if (to.Mount != null && from.Mount == null) list.Add(($"+ {to.Mount.Name.ToUpperInvariant()}", 1));
+            else if (to.Mount != null && from.Mount != null)
+            {
+                float dh = to.Mount.Hp - from.Mount.Hp;
+                list.Add(($"+ {to.Mount.Name.ToUpperInvariant()}" + (MathF.Abs(dh) >= 1 ? $": HP {dh:+0;-0}" : ""), dh >= 0 ? 1 : -1));
+            }
+            else if (from.Mount != null) list.Add(($"- {from.Mount.Name.ToUpperInvariant()}", -1));
+        }
+        return list;
+    }
 }

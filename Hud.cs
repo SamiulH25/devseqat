@@ -761,6 +761,8 @@ sealed partial class Hud
             ($"MORALE {morale}   STAMINA {stamina}" + (t.Ammo > 0 ? $"   ARROWS {act.Sum(u => u.Ammo)}" : ""), morale < 30 ? Bad : Dim),
             ($"ARMOUR {t.Armor:0}  DAMAGE {t.Damage:0}" + (t.Range > 0 ? $"  RANGE {t.Range:0} M" : ""), Dim),
         };
+        if (Ironfield.Fighter.KitLine(t) is { Length: > 0 } kl) lines.Add(("KIT: " + kl, Dim));
+        if (Ironfield.Fighter.SkillsLine(t) is { Length: > 0 } sl) lines.Add((sl, Dim));
         if (fights.TryGetValue(s, out var fight)) lines.Insert(3, (FightLine(s, fight), Standing(s, fight).Col));
         if (s.Company?.Traits is { Length: > 0 } tr) lines.Add(("OFFICER: " + string.Join(", ", tr).ToUpperInvariant(), Gold));
         // Its sergeant (OF5): what he is doing, or how long until another man steps up.
@@ -788,6 +790,7 @@ sealed partial class Hud
             (seen ? $"{StateOf(s)}   {FormationName(s.Formation)}   {heart}" : "NOT SEEN OF LATE", seen && heart != "STEADY" ? Warn : Dim),
             ($"ARMOUR {t.Armor:0}  DAMAGE {t.Damage:0}" + (t.Range > 0 ? $"  RANGE {t.Range:0} M" : ""), Dim),
         };
+        if (seen && Ironfield.Fighter.KitLine(t) is { Length: > 0 } kl) lines.Add(("KIT: " + kl, Dim));
         if (t.Style != AttackStyle.None) lines.Add(("ATTACK: " + Battle.StyleText(t.Style).name.ToUpperInvariant(), Gold));
         if (t.Passives is { Length: > 0 } ps) lines.Add(("TRAITS: " + string.Join(", ", ps.Select(p => Effects.Has(p) ? Effects.Get(p).Name : p)).ToUpperInvariant(), Gold));
         if (seen && s.Swarm) lines.Add(("A MOB", Dim)); else if (seen) lines.Add((Battle.GradeName(s.Grade).ToUpperInvariant(), GradeColor(s.Grade)));

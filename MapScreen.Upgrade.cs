@@ -89,7 +89,7 @@ partial class MapScreen
         Stat(top.Right - ui.U(130), top.Y, "coin", $"{C.S.Gold:N0}", "CROWNS", Kit.Gilt);
 
         // The tree.
-        var area = new Rectangle(mx, r.Y + ui.U(98), mw, ui.U(340));
+        var area = new Rectangle(mx, r.Y + ui.U(98), mw, ui.U(300));
         ui.Rect(new Rectangle(area.X, area.Y - ui.U(18), area.Width, area.Height + ui.U(24)), Color.Black * 0.22f);
         LayTree(nodes, root.Id, area);
         if (!nodes.ContainsKey(upPick) || upPick == root.Id) upPick = root.Kids.FirstOrDefault(k => C.Promotable(C.Player, c, st, k, 1, C.S.Gold, out _, out _) > 0) ?? root.Kids.FirstOrDefault() ?? root.Id;
@@ -132,7 +132,7 @@ partial class MapScreen
         if (hover != null && hover != root && ui.Clicked(hover.Box)) upPick = hover.Id;
 
         // The troop in focus, told in full.
-        TroopDetail(new Rectangle(mx, r.Y + ui.U(450), mw, ui.U(150)), focus, nodes, root, c, st);
+        TroopDetail(new Rectangle(mx, r.Y + ui.U(412), mw, ui.U(194)), focus, nodes, root, c, st);
         if (!c.Stacks.Contains(st)) { upStack = null; panel = PanelKind.Party; return; }
 
         // Moving and splitting the stack, and the way back.
@@ -187,10 +187,33 @@ partial class MapScreen
         var t = n.T;
         var now = st.Type;
         var d = Card(box, n == root ? Kit.Gilt : n.Locked ? Style.Bad : Style.Accent);
-        int ph = d.Height;
+        int ph = Math.Min(d.Height, ui.U(118));
         PortraitWell(t, new Rectangle(d.X, d.Y, ph, ph), 2);
         ui.Frame(new Rectangle(d.X, d.Y, ph, ph), Kit.GiltDark, ui.U(1));
-        int tx = d.X + ph + ui.U(14), colW = ui.U(250);
+        // The three skills under the portrait (KT6): Arms, Riding, Bowcraft, with gain over your men now.
+        if (!t.Wild)
+        {
+            int sky = d.Y + ph + ui.U(8);
+            void SkillRow(string label, float v, float was)
+            {
+                if (sky + ui.U(11) > d.Bottom) return;
+                ui.Text(label, d.X, sky, Style.Dim, 1);
+                string val = $"{v:0}";
+                float dv = v - was;
+                if (n != root && MathF.Abs(dv) >= 0.5f)
+                {
+                    string ds = (dv > 0 ? "+" : "") + dv.ToString("0");
+                    ui.TextR(ds, d.X + ph, sky, dv > 0 ? Style.Ok : Style.Warn, 1);
+                    ui.TextR(val, d.X + ph - ui.TW(ds, 1) - ui.U(4), sky, Style.Text, 1);
+                }
+                else ui.TextR(val, d.X + ph, sky, Style.Text, 1);
+                sky += ui.U(13);
+            }
+            SkillRow("ARMS", t.Skills.Arms, now.Skills.Arms);
+            SkillRow("RIDING", t.Skills.Riding, now.Skills.Riding);
+            SkillRow("BOWCRAFT", t.Skills.Bowcraft, now.Skills.Bowcraft);
+        }
+        int tx = d.X + ph + ui.U(12), colW = ui.U(228);
         ui.TextFit(t.Name.ToUpperInvariant(), tx, d.Y, colW, Style.Text, ui.FitScale(t.Name.ToUpperInvariant(), colW));
         for (int i = 0; i < Troops.MaxTier; i++) ui.Rect(new Rectangle(tx + i * ui.U(7), d.Y + ui.U(21), ui.U(5), ui.U(5)), i < t.Tier ? Kit.Gilt : Color.White * 0.1f);
         ui.Text($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, Troops.MaxTier)]}", tx + ui.U(47), d.Y + ui.U(20), Style.Dim, 1);
@@ -206,8 +229,40 @@ partial class MapScreen
         if (traits.Count > 0 && fy + ui.U(14) <= d.Bottom) fy = Outcome(tx, fy, colW, "shield", string.Join(", ", traits), 1);
         if (n != root && Rules.TroopRole(n.Id) != Rules.RoleOf(c) && fy + ui.U(14) <= d.Bottom) Outcome(tx, fy, colW, "flag", $"JOINS A {Rules.TroopRole(n.Id).ToUpperInvariant()} COMPANY", -1);
 
+        // Kit piece by piece, and what changes on promotion (KT6).
+        int kx = tx + colW + ui.U(14), kw = ui.U(266), ky = d.Y;
+        ui.Rect(new Rectangle(kx - ui.U(7), d.Y, ui.U(1), d.Height), Color.White * 0.08f);
+        var changes = n == root ? new List<(string Text, int Sign)>() : Fighter.KitChanges(now, t);
+        if (changes.Count > 0)
+        {
+            ui.Text("KIT CHANGES", kx, ky, Kit.Gilt, 1);
+            ky += ui.U(13);
+            foreach (var (line, sign) in changes)
+            {
+                if (ky + ui.U(11) > d.Bottom) break;
+                ui.TextFit(line, kx, ky, kw, sign > 0 ? Style.Ok : sign < 0 ? Style.Warn : Style.Text, 1);
+                ky += ui.U(12);
+            }
+            ky += ui.U(4);
+        }
+        var kit = Fighter.KitList(t);
+        if (kit.Count > 0 && ky + ui.U(22) <= d.Bottom)
+        {
+            ui.Text("KIT", kx, ky, changes.Count == 0 ? Kit.Gilt : Style.Dim, 1);
+            ky += ui.U(13);
+            foreach (var (_, piece, eff) in kit)
+            {
+                if (ky + ui.U(11) > d.Bottom) break;
+                int ew = ui.TW(eff, 1);
+                ui.TextFit(piece.Name.ToUpperInvariant(), kx, ky, Math.Max(ui.U(40), kw - ew - ui.U(6)), Style.Text, 1);
+                ui.TextR(eff, kx + kw, ky, Style.Dim, 1);
+                ky += ui.U(12);
+            }
+        }
+
         // The numbers as bars, each against the best in this tree, your men's mark on the bar.
-        int sx = tx + colW + ui.U(18), sw = d.Right - ui.U(300) - sx, sy = d.Y;
+        int sx = kx + kw + ui.U(14), sw = d.Right - ui.U(284) - sx, sy = d.Y;
+        ui.Rect(new Rectangle(sx - ui.U(7), d.Y, ui.U(1), d.Height), Color.White * 0.08f);
         var all = nodes.Values.Select(k => k.T).ToList();
         var rows = new List<(string Icon, string Label, float V, float Was, float Max, string Fmt)>
         {
@@ -223,7 +278,7 @@ partial class MapScreen
         {
             ui.Icon(icon, sx, sy + ui.U(2), Style.Dim, 1);
             ui.Text(label, sx + ui.U(12), sy + ui.U(2), Style.Dim, 1);
-            var bar = new Rectangle(sx + ui.U(64), sy + ui.U(1), sw - ui.U(150), ui.U(9));
+            var bar = new Rectangle(sx + ui.U(60), sy + ui.U(1), Math.Max(ui.U(40), sw - ui.U(132)), ui.U(9));
             float m = Math.Max(0.01f, max);
             float diff = v - was;
             ui.Rect(bar, Color.Black * 0.5f);
@@ -232,8 +287,8 @@ partial class MapScreen
             if (vw > ww) ui.Rect(new Rectangle(bar.X + ww, bar.Y, vw - ww, bar.Height), Style.Ok);
             else if (ww > vw) ui.Rect(new Rectangle(bar.X + vw, bar.Y, ww - vw, bar.Height), Kit.Mul(Style.Warn, 0.55f));
             ui.Rect(new Rectangle(bar.X + ww - px(), bar.Y - ui.U(2), Math.Max(1, ui.U(1)), bar.Height + ui.U(4)), Color.White * 0.7f); // your men now
-            ui.Text(v.ToString(fmt), bar.Right + ui.U(8), sy + ui.U(2), Style.Text, 1);
-            if (n != root && MathF.Abs(diff) >= 0.05f) ui.Text((diff > 0 ? "+" : "") + diff.ToString(fmt), bar.Right + ui.U(44), sy + ui.U(2), diff > 0 ? Style.Ok : Style.Warn, 1);
+            ui.Text(v.ToString(fmt), bar.Right + ui.U(6), sy + ui.U(2), Style.Text, 1);
+            if (n != root && MathF.Abs(diff) >= 0.05f) ui.Text((diff > 0 ? "+" : "") + diff.ToString(fmt), bar.Right + ui.U(36), sy + ui.U(2), diff > 0 ? Style.Ok : Style.Warn, 1);
             sy += step;
         }
         int px() => Math.Max(1, ui.U(1)) / 2;
@@ -274,7 +329,7 @@ partial class MapScreen
             if (ui.Hover(br)) note = k > 0 ? $"PROMOTE {k} FOR {cost} CROWNS" : reason;
             b++;
         }
-        ui.TextFit("EACH MAN PROMOTED SPENDS HIS SHARE OF THE POOL.", act.X, act.Bottom - ui.U(9), act.Width, Style.Dim, 1);
+        ui.TextFit("EACH PROMOTION SPENDS ITS SHARE OF THE POOL.", act.X, act.Bottom - ui.U(9), act.Width, Style.Dim, 1);
     }
 
     /// Does the troop `from` lead, by any number of promotions, to `to`?

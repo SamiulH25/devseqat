@@ -283,7 +283,8 @@ partial class MapScreen
         if (hover && !dragging)
         {
             Ui.Hovered(r);
-            note = $"{c.Name.ToUpperInvariant()}: {c.Men} MEN{(c.Wounded > 0 ? $", {c.Wounded} WOUNDED" : "")}, {Rules.Places(c):0} OF {Rules.Cap(role):0} PLACES, COHESION {c.Cohesion:0}.{(leads ? " ITS SERGEANT LEADS THIS DIVISION." : "")}";
+            string kit = Fighter.KitLine(c.Type);
+            note = $"{c.Name.ToUpperInvariant()}: {c.Men} MEN{(c.Wounded > 0 ? $", {c.Wounded} WOUNDED" : "")}, {Rules.Places(c):0} OF {Rules.Cap(role):0} PLACES, COHESION {c.Cohesion:0}.{(kit != "" ? $" KIT: {kit}." : "")}{(leads ? " ITS SERGEANT LEADS THIS DIVISION." : "")}";
         }
         if (ui.Clicked(r)) { musterPick = c; musterTab = 0; dragCo = c.Id; dragFrom = ui.Mouse; dragging = false; if (renaming != c) renaming = null; }
     }
@@ -367,7 +368,7 @@ partial class MapScreen
             var pb = new Rectangle(row.Right - ui.U(88), row.Y + ui.U(2), ui.U(86), row.Height - ui.U(4));
             if (ui.Button(pb, k.Ready > 0 ? $"PROMOTE {k.Ready}" : "TREE", true, "", k.Ready > 0)) { upgrading = c; upStack = k; panel = PanelKind.Upgrade; note = ""; return; }
             if (ui.Hover(pb)) note = k.Ready > 0 ? $"{k.Ready} OF THEM HAVE THE XP TO RISE. SEE THE TREE AND PROMOTE THEM." : "SEE WHAT THESE MEN CAN BECOME.";
-            else if (h) note = $"{k.Men} {k.Type.Name.ToUpperInvariant()}: POOL {k.Xp:0}/{k.PoolCap:0} XP, {k.Type.UpgradeXp} A MAN.";
+            else if (h) note = $"{k.Men} {k.Type.Name.ToUpperInvariant()}: POOL {k.Xp:0}/{k.PoolCap:0} XP.{(Fighter.KitLine(k.Type) is { Length: > 0 } kl ? $" KIT: {kl}." : "")}{(Fighter.SkillsLine(k.Type) is { Length: > 0 } sl ? $" {sl}." : "")}";
             if (ui.Clicked(row)) { musterStack = k.Troop; st = k; }
             y += rowH;
         }

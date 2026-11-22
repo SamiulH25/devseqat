@@ -1,7 +1,7 @@
 # Troops made of kit and skill (plan)
 
 The owner's brief (2026-11-21): "the units' stats are determined by their base stats plus their skills plus their equipment
-used. Equipment should matter to each troop." Phase prefix: **KT**. KT0–KT4 built (see "As built" at the end).
+used. Equipment should matter to each troop." Phase prefix: **KT**. KT0–KT4 and KT6 built (KT5 deferred post-demo; see "As built" at the end).
 
 ## Why it is not like this today
 
@@ -121,3 +121,9 @@ demo's core is stable. Size: large; KT1 and KT3 are the bulk.
   - `--realms 8`: largest share 33%, 0 flags.
   - `--pacing 4`: 4/4 Marshal (days 106–162), 549/562 battles won, 4/4 Vassal in target window (days 41–56, target 40–67).
   - `tools/check.sh`: `ALL CHECKS PASSED` (322/322 self-tests, including `CaptainCombat`, `CaptainKit`, `SkillBouts`).
+
+### KT6 (see it), as built (2026-11-21)
+- **Headless kit & skill display helpers** (`Fighter.cs`): `PieceEffect`, `KitList` (weapon, shield if carried, body, helm if worn, plus armoured legs/feet/hands), `KitLine` (one-line summary with mount for hover cards), `SkillsLine` (Arms, Riding, Bowcraft), and `KitChanges` (slot-by-slot promotion diffs such as `+ GAMBESON: ARM +3.5`, `+ KITE SHIELD: BLK +16%`).
+- **Promotion screen and troop details** (`MapScreen.Upgrade.cs` `TroopDetail`): shows the three skills (`ARMS`, `RIDING`, `BOWCRAFT`) with promotion gains under the portrait, plus a dedicated `KIT CHANGES` + `KIT` column listing what changes on promotion and every worn piece with what it gives beside the stat bars.
+- **Company card hover** (`Hud.cs` `SquadTooltip`, `EnemyGlass`; `MapScreen.Board.cs` `CompanyTile`, `CompanyDetail`): hovering a company card in battle command view shows its `KIT:` and skills (and visible `KIT:` for seen enemy companies); hovering a company tile or troop stack on the party board shows its `KIT:` (and skills on troop rows).
+- **Verification**: added `TroopKitDisplay` in `Tests/GearTests.cs`; captured and checked `upgrade-tree.png`, `party-board.png`, and battle command HUD shots (`overflow.txt` empty).

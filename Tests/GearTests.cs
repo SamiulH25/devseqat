@@ -147,4 +147,21 @@ public static partial class SelfTest
         c.S.Goods["armour"] = 5;
         Check(c.Improve(helm) == null && Campaign.ItemOf(cap, cap.Kit.Helm) is { Quality: ItemQuality.Fine }, "a plain starting helm made fine joins the baggage");
     }
+
+    /// KT6 (See it): every soldier's kit lists piece by piece with effects, skills format cleanly, and promotions report kit changes.
+    static void TroopKitDisplay()
+    {
+        var sh = Troops.Get("shieldmen");
+        var maa = Troops.Get("men_at_arms");
+        var kit = Fighter.KitList(sh);
+        Check(kit.Count >= 4 && kit.Any(x => x.Slot == "WEAPON" && x.Effect.Contains("DMG"))
+            && kit.Any(x => x.Slot == "SHIELD" && x.Effect.Contains("BLK"))
+            && kit.Any(x => x.Slot == "BODY" && x.Effect.Contains("ARM")), "shieldmen list weapon, shield and armour pieces with effects");
+        Check(Fighter.KitLine(sh).Contains("ARMING SWORD") && Fighter.KitLine(sh).Contains("GAMBESON"), "hover kit line names the worn pieces");
+        Check(Fighter.SkillsLine(maa).Contains("ARMS 40") && Fighter.SkillsLine(maa).Contains("RIDING 0") && Fighter.SkillsLine(maa).Contains("BOW 0"), "skills line shows all three skills");
+        var changes = Fighter.KitChanges(sh, maa);
+        Check(changes.Count > 0 && changes.Any(x => x.Text.Contains("ARM +") && x.Sign > 0), "promotion from shieldmen to men-at-arms lists armour gains");
+        var troll = Troops.Get("troll");
+        Check(Fighter.KitList(troll).Count == 0 && Fighter.KitLine(troll) == "" && Fighter.SkillsLine(troll) == "", "wild creatures have no kit or skills lines");
+    }
 }
