@@ -806,7 +806,17 @@
     "head.v94.b",
     "head.v95.f",
     "head.v95.s",
-    "head.v95.b"
+    "head.v95.b",
+    "goods.arms",
+    "goods.armour",
+    "goods.harness",
+    "goods.silver",
+    "goods.trinkets",
+    "goods.furs",
+    "store.food",
+    "store.horse",
+    "store.wagon",
+    "store.vault"
   ],
   "Schemes": {
     "standard": {

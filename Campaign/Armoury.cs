@@ -24,6 +24,7 @@ public sealed partial class Campaign
         foreach (var id in k.Owned) if (Gear.Find(id) != null && ItemOf(c, id) == null) Own(id);
         k.Owned.Clear();
         c.Baggage.RemoveAll(i => Gear.Find(i.Def) == null);
+        EnsureItemIds();
     }
 
     /// The road the captain came by (P5, the Free Company's reward), chosen once at the start: the sword (Arms 20 and a
@@ -155,27 +156,45 @@ public sealed partial class Campaign
         if (!Owns(id)) return "NOT YOURS";
         if (CannotUse(g) is string why) return why;
         var k = Captain.Kit;
+        var item = Captain.Baggage.Where(i => i.Def == id).OrderByDescending(i => i.Quality).ThenByDescending(i => i.Marks.Count).FirstOrDefault();
         switch (g.Slot)
         {
             case "weapon":
                 if (side)
                 {
-                    if (k.Weapon == id) { if (k.Side == "") return "IN YOUR MAIN HAND"; k.Weapon = k.Side; }
-                    k.Side = id;
+                    if (k.Weapon == id && (item == null || ItemInSlot(Captain, "weapon") == item))
+                    {
+                        if (k.Side == "") return "IN YOUR MAIN HAND";
+                        (k.Weapon, k.Side) = (k.Side, id);
+                        var prevSideId = k.WornIds.GetValueOrDefault("side");
+                        if (prevSideId > 0) k.WornIds["weapon"] = prevSideId; else k.WornIds.Remove("weapon");
+                    }
+                    else k.Side = id;
+                    if (item is { Id: > 0 }) k.WornIds["side"] = item.Id; else k.WornIds.Remove("side");
                 }
-                else { if (k.Side == id) k.Side = k.Weapon; k.Weapon = id; }
+                else
+                {
+                    if (k.Side == id && (item == null || ItemInSlot(Captain, "side") == item))
+                    {
+                        k.Side = k.Weapon;
+                        var prevWepId = k.WornIds.GetValueOrDefault("weapon");
+                        if (prevWepId > 0) k.WornIds["side"] = prevWepId; else k.WornIds.Remove("side");
+                    }
+                    k.Weapon = id;
+                    if (item is { Id: > 0 }) k.WornIds["weapon"] = item.Id; else k.WornIds.Remove("weapon");
+                }
                 break;
-            case "shield": k.Shield = id; break;
-            case "body": k.Body = id; break;
-            case "helm": k.Helm = id; break;
-            default: k.Horse = id; break;
+            case "shield": k.Shield = id; if (item is { Id: > 0 }) k.WornIds["shield"] = item.Id; else k.WornIds.Remove("shield"); break;
+            case "body": k.Body = id; if (item is { Id: > 0 }) k.WornIds["body"] = item.Id; else k.WornIds.Remove("body"); break;
+            case "helm": k.Helm = id; if (item is { Id: > 0 }) k.WornIds["helm"] = item.Id; else k.WornIds.Remove("helm"); break;
+            default: k.Horse = id; if (item is { Id: > 0 }) k.WornIds["horse"] = item.Id; else k.WornIds.Remove("horse"); break;
         }
         AudioEngine.Current?.Play(g.Slot == "weapon" ? Cue.EquipBlade : g.Slot == "horse" ? Cue.HorseTack : Cue.EquipArmor, 0.7f);
         return null;
     }
 
     /// Carry no second weapon.
-    public void ClearSide() => Captain.Kit.Side = "";
+    public void ClearSide() { Captain.Kit.Side = ""; Captain.Kit.WornIds.Remove("side"); }
 
     /// Sell a piece you own and do not wear, for part of its price.
     public string? SellGear(GearDef g)

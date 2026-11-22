@@ -9,6 +9,7 @@ public enum ItemQuality { Worn, Plain, Fine, Masterwork, Named }
 /// and what it has done.
 public sealed class GearItem
 {
+    public int Id;
     public string Def = "", Name = "", From = "";
     public ItemQuality Quality = ItemQuality.Plain;
     public List<string> Marks = new();
@@ -53,6 +54,27 @@ public sealed partial class Campaign
     /// The piece of this gear the captain holds, or null (free starting gear needs none: it is plain).
     public static GearItem? ItemOf(CaptainState c, string def) => def == "" ? null : c.Baggage.FirstOrDefault(i => i.Def == def);
 
+    /// The specific item instance worn in a kit slot, or null if wearing a free plain piece.
+    public static GearItem? ItemInSlot(CaptainState c, string slot)
+    {
+        string def = InSlot(c.Kit, slot);
+        if (def == "") return null;
+        if (c.Kit.WornIds.TryGetValue(slot, out int id) && id > 0)
+            if (c.Baggage.FirstOrDefault(i => i.Id == id && i.Def == def) is GearItem exact) return exact;
+        return ItemOf(c, def);
+    }
+
+    /// Which kit slot this exact item instance is worn in ("weapon", "side", ...), or "" if in baggage.
+    public static string WornSlotOf(CaptainState c, GearItem item)
+    {
+        foreach (var slot in KitSlots)
+            if (ItemInSlot(c, slot) == item) return slot;
+        return "";
+    }
+
+    /// Whether this exact item instance is currently equipped by the captain.
+    public static bool IsWorn(CaptainState c, GearItem item) => WornSlotOf(c, item) != "";
+
     /// A piece's name for the screens: its own name, else its make and kind ("fine arming sword").
     public static string ItemName(GearItem? i, GearDef g)
     {
@@ -63,16 +85,15 @@ public sealed partial class Campaign
     }
 
     /// The worn pieces as items (free plain pieces have none).
-    public static IEnumerable<GearItem> WornItems(CaptainState c) => c.Kit.Worn.Select(id => ItemOf(c, id)).OfType<GearItem>();
+    public static IEnumerable<GearItem> WornItems(CaptainState c) => KitSlots.Select(s => ItemInSlot(c, s)).OfType<GearItem>().Distinct();
 
     /// The marks of what the captain wears into battle; the weapon's only while it is in hand.
     public static Mods MarkMods(CaptainState c, bool side)
     {
-        var k = c.Kit;
         var m = new Mods();
-        string hand = side && k.Side != "" ? k.Side : k.Weapon;
-        foreach (var id in new[] { hand, k.Shield, k.Body, k.Helm, k.Horse })
-            if (ItemOf(c, id) is GearItem i)
+        string handSlot = side && c.Kit.Side != "" ? "side" : "weapon";
+        foreach (var slot in new[] { handSlot, "shield", "body", "helm", "horse" })
+            if (ItemInSlot(c, slot) is GearItem i)
                 foreach (var mark in i.Marks) if (Effects.Has(mark)) m.Add(Effects.Get(mark));
         return m;
     }
@@ -93,10 +114,11 @@ public sealed partial class Campaign
     public string? TakeOff(string slot)
     {
         var k = Captain.Kit;
-        if (slot == "side") { if (k.Side == "") return "NO SECOND WEAPON"; k.Side = ""; return null; }
+        if (slot == "side") { if (k.Side == "") return "NO SECOND WEAPON"; k.Side = ""; k.WornIds.Remove("side"); return null; }
         if (slot == "weapon") return "YOUR HAND HOLDS A WEAPON: WEAR ANOTHER";
         var free = Gear.InSlot(slot).First(g => g.Free).Id;
         if (InSlot(k, slot) == free) return "NOTHING TO TAKE OFF";
+        k.WornIds.Remove(slot);
         return Equip(free);
     }
 
@@ -117,24 +139,32 @@ public sealed partial class Campaign
 
     // ---------- baggage ----------
 
-    /// What the baggage can carry: a base, ten more for each spare horse you keep (to six), and a fifth more with the Quartermaster.
-    public int BaggageRoom() => (int)((B.BaggageBase + B.BaggagePerHorse * Math.Min(6, Player.Horses)) * (Has("Quartermaster") ? 1.2f : 1));
+    /// What the baggage can carry: a base, more for each spare horse (to six), each baggage wagon, and a fifth more with Quartermaster.
+    public int BaggageRoom() => (int)((B.BaggageBase + B.BaggagePerHorse * Math.Min(6, Player.Horses) + B.BaggagePerWagon * Player.Wagons) * (Has("Quartermaster") ? 1.2f : 1));
 
     /// What it carries now: each piece of gear not worn (armour 2, the rest 1; a horse walks itself) and each ten lots of goods.
     public int BaggageLoad()
     {
-        var worn = Captain.Kit.Worn.ToHashSet();
-        int gear = Captain.Baggage.Where(i => !worn.Contains(i.Def) && Gear.Find(i.Def) is GearDef g && g.Slot != "horse")
+        var (gear, goods, _, _, _) = BaggageLoadBreakdown();
+        return gear + goods;
+    }
+
+    /// Breakdown of baggage load into unworn gear, goods lots, total load, capacity room, and march speed multiplier.
+    public (int Gear, int Goods, int Total, int Room, float Drag) BaggageLoadBreakdown()
+    {
+        var worn = WornItems(Captain).ToHashSet();
+        int gear = Captain.Baggage.Where(i => !worn.Contains(i) && Gear.Find(i.Def) is GearDef g && g.Slot != "horse")
             .Sum(i => Gear.Get(i.Def).Slot == "body" ? 2 : 1);
-        return gear + (S.Goods.Values.Sum() + 9) / 10;
+        int goods = (S.Goods.Values.Sum() + 9) / 10;
+        int total = gear + goods;
+        int room = BaggageRoom();
+        int over = total - room;
+        float drag = over <= 0 ? 1 : 1 - MathF.Min(0.25f, over * 0.02f);
+        return (gear, goods, total, room, drag);
     }
 
     /// The march over the baggage's room: 2 % slower for each piece over, up to a quarter. Nothing is thrown away.
-    public float BaggageDrag()
-    {
-        int over = BaggageLoad() - BaggageRoom();
-        return over <= 0 ? 1 : 1 - MathF.Min(0.25f, over * 0.02f);
-    }
+    public float BaggageDrag() => BaggageLoadBreakdown().Drag;
 
     // ---------- a piece's story ----------
 
@@ -142,12 +172,12 @@ public sealed partial class Campaign
     void ItemsAfterBattle(BattleResult r)
     {
         foreach (var i in WornItems(Captain)) i.Battles++;
-        if (ItemOf(Captain, Captain.Kit.Weapon) is GearItem w)
+        if (ItemInSlot(Captain, "weapon") is GearItem w)
         {
             bool could = w.Kills >= NameAtKills;
             w.Kills += r.PlayerKills;
             if (!could && w.Kills >= NameAtKills && w.Name == "")
-                LogYours($"Your {Gear.Get(w.Def).Name.ToLowerInvariant()} has taken {w.Kills} lives. It has earned a name: give it one at the armourer.");
+                LogYours($"Your {Gear.Get(w.Def).Name.ToLowerInvariant()} has taken {w.Kills} lives. It has earned a name: give it one in your baggage or at the armourer.");
         }
     }
 

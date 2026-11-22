@@ -51,6 +51,7 @@ public sealed partial class SpriteSheet
         s.Bear();
         s.Wyvern();
         s.Visages();
+        s.ItemSprites();
         return s.pending;
     }
 

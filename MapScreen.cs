@@ -524,20 +524,7 @@ sealed partial class MapScreen
             || !float.IsFinite(far.X) || !float.IsFinite(far.Y) || !float.IsFinite(far.Z)
             || (far - near).LengthSquared() < 1e-8f)
             return focus;
-        var d = Vector3.Normalize(far - near);
-        float Above(Vector3 p) => p.Y - terrain.Height(new Vector2(p.X, p.Z));
-        float s = 0, step = 1;
-        for (int i = 0; i < 1200 && s < 1500; i++)
-        {
-            var p = near + d * s;
-            float h = Above(p);
-            if (h > 0) { step = MathF.Max(0.5f, h * 0.5f); s += step; continue; }
-            float lo = MathF.Max(0, s - step), hi = s;
-            for (int k = 0; k < 10; k++) { float mid = (lo + hi) / 2; if (Above(near + d * mid) > 0) lo = mid; else hi = mid; }
-            var hit = near + d * hi;
-            return float.IsFinite(hit.X) && float.IsFinite(hit.Z) ? new Vector2(hit.X, hit.Z) : focus;
-        }
-        return focus;
+        return GroundPick.March(near, far, terrain, 1200, 1500) ?? focus;
     }
 
     // ---------- drawing ----------
@@ -1009,13 +996,22 @@ sealed partial class MapScreen
             case "skills": panel = PanelKind.Skills; note = ""; break;
             case "inventory":
             {
-                // Standing in the town so its smith shows (C11); a battered helm from the last fall.
+                // Standing in the town so its smith shows (C11); a battered helm, spare gear of mixed makes, goods and a wagon.
                 var town = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));
                 C.Player.Pos = town.Pos + new Vector2(1, 0);
+                C.Player.Wagons = Math.Max(1, C.Player.Wagons);
+                C.S.Goods["arms"] = Math.Max(14, C.S.Goods.GetValueOrDefault("arms"));
+                C.S.Goods["armour"] = Math.Max(8, C.S.Goods.GetValueOrDefault("armour"));
+                C.S.Goods["silver"] = Math.Max(4, C.S.Goods.GetValueOrDefault("silver"));
+                C.S.Goods["furs"] = Math.Max(11, C.S.Goods.GetValueOrDefault("furs"));
+                if (!C.Captain.Baggage.Any(i => i.Def == "longsword")) C.AddItem("longsword", ItemQuality.Fine, "keen", "won in a tournament");
+                if (!C.Captain.Baggage.Any(i => i.Def == "kite_shield")) C.AddItem("kite_shield", ItemQuality.Masterwork, "well_tempered", "taken from a lord");
+                if (!C.Captain.Baggage.Any(i => i.Def == "war_axe")) C.AddItem("war_axe", ItemQuality.Worn, "", "taken from a brigand");
                 var helm = C.SmithItem(C.Captain.Kit.Helm);
                 helm.Battered = true;
                 if (!C.Captain.Baggage.Contains(helm)) C.Captain.Baggage.Add(helm);
-                panel = PanelKind.Inventory; invPick = helm.Def; note = ""; break;
+                C.EnsureItemIds();
+                panel = PanelKind.Inventory; invItem = helm; invPick = helm.Def; invGoods = ""; invTab = 0; invScroll = 0; note = ""; break;
             }
             case "realm": realmTab = 0; panel = PanelKind.Realm; note = ""; break;
             case "atlas": panel = PanelKind.Atlas; note = ""; break;

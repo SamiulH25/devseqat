@@ -164,4 +164,53 @@ public static partial class SelfTest
         var troll = Troops.Get("troll");
         Check(Fighter.KitList(troll).Count == 0 && Fighter.KitLine(troll) == "" && Fighter.SkillsLine(troll) == "", "wild creatures have no kit or skills lines");
     }
+
+    /// Company storage: duplicate item instances, baggage wagons, road goods jettisoning, keep vault, and baked item sprites.
+    static void CompanyStorage()
+    {
+        var c = Campaign.New(28);
+        c.S.Gold = 5000;
+        c.Captain.Skills["Arms"] = 40;
+        // Duplicate item instances: own two arming swords of different make/marks, equip one, sell the other.
+        var wornBlade = c.AddItem("arming_sword", ItemQuality.Worn, "", "taken from a brigand");
+        var fineBlade = c.AddItem("arming_sword", ItemQuality.Fine, "keen", "forged in a town");
+        Check(wornBlade.Id > 0 && fineBlade.Id > 0 && wornBlade.Id != fineBlade.Id, "each item instance gets a unique id");
+        Check(c.EquipItem(fineBlade) == null && Campaign.ItemInSlot(c.Captain, "weapon") == fineBlade, "equipping a specific instance binds that exact item");
+        Check(Campaign.IsWorn(c.Captain, fineBlade) && !Campaign.IsWorn(c.Captain, wornBlade), "only the equipped copy counts as worn");
+        Check(Campaign.MarkMods(c.Captain, false).Damage > 0, "the equipped copy's mark applies");
+        Check(c.SellGearItem(fineBlade) == "TAKE IT OFF FIRST", "cannot sell the worn copy");
+        Check(c.SellGearItem(wornBlade) == null && !c.Captain.Baggage.Contains(wornBlade) && c.Captain.Baggage.Contains(fineBlade), "can sell the unworn duplicate while wearing the other");
+
+        // Baggage wagons & load breakdown.
+        var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && !c.Refuses(s));
+        int baseRoom = c.BaggageRoom();
+        Check(c.BuyWagon(town) == null && c.Player.Wagons == 1 && c.BaggageRoom() > baseRoom, "buying a wagon expands baggage room");
+        c.S.Goods["arms"] = 25;
+        var bd = c.BaggageLoadBreakdown();
+        Check(bd.Goods == 3 && bd.Room == c.BaggageRoom(), "load breakdown counts goods lots cleanly");
+        Check(c.DropGoods("arms", 10) == null && c.S.Goods["arms"] == 15, "excess goods can be dropped on the road");
+        Check(c.SellWagon(town) == null && c.Player.Wagons == 0, "wagons can be sold back in town");
+
+        // Keep vault at an owned settlement.
+        var castle = c.S.Settlements.First(s => s.Kind == SettlementKind.Castle);
+        var spare = c.AddItem("boar_spear", ItemQuality.Masterwork, "balanced", "gift");
+        Check(c.StoreItem(castle, spare) != null, "cannot store in a castle you do not own");
+        castle.Owner = c.Player.Id;
+        c.Player.Pos = castle.Pos;
+        Check(c.VaultAt() == castle, "standing at your own castle opens its vault");
+        Check(c.StoreItem(castle, fineBlade) == "TAKE IT OFF FIRST", "cannot store a worn item");
+        Check(c.StoreItem(castle, spare) == null && castle.Vault.Contains(spare) && !c.Captain.Baggage.Contains(spare), "spare gear moves into the keep vault");
+        Check(c.StoreGoods(castle, "arms", 10) == null && castle.VaultGoods["arms"] == 10 && c.S.Goods["arms"] == 5, "goods move into the keep vault");
+        // Survives save round-trip.
+        var back = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        var backCastle = back.S.Settlements.First(s => s.Id == castle.Id);
+        Check(backCastle.Vault.Count == 1 && backCastle.Vault[0].Def == "boar_spear" && backCastle.VaultGoods["arms"] == 10, "vault gear and goods survive a save");
+        Check(back.TakeStoredItem(backCastle, backCastle.Vault[0]) == null && back.Captain.Baggage.Any(i => i.Def == "boar_spear"), "taking an item returns it to baggage");
+        Check(back.TakeStoredGoods(backCastle, "arms", 10) == null && back.S.Goods["arms"] == 15, "taking goods returns them to baggage");
+
+        // Baked item sprites exist in the atlas for every goods kind and store icon.
+        var sheet = new SpriteSheet();
+        foreach (var k in Campaign.GoodsKinds) Check(sheet.Rects.ContainsKey($"goods.{k.Id}/n"), $"goods sprite goods.{k.Id}/n exists");
+        foreach (var k in new[] { "food", "horse", "wagon", "vault" }) Check(sheet.Rects.ContainsKey($"store.{k}/n"), $"store sprite store.{k}/n exists");
+    }
 }

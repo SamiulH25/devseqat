@@ -55,16 +55,19 @@ partial class MapScreen
         var marks = owned ? item?.Marks ?? new List<string>() : mark == "" ? new List<string>() : new List<string> { mark };
         string name = owned ? Campaign.ItemName(item, g) : Campaign.ItemName(new GearItem { Def = g.Id, Quality = make }, g);
         TownRow(r);
-        string icon = g.Slot switch { "weapon" => g.Ranged ? "arrow" : "sword", "helm" => "crown", "horse" => "horse", _ => "shield" };
         var col = main || second ? Kit.Gilt : Style.Text;
-        ui.Icon(icon, r.X + ui.U(8), r.Y + ui.U(8), col, 2);
+        var sbox = new Rectangle(r.X + ui.U(4), r.Y + ui.U(3), r.Height - ui.U(6), r.Height - ui.U(6));
+        ui.Rect(sbox, Color.Black * 0.45f);
+        ui.Frame(sbox, Kit.Mul(make == ItemQuality.Plain ? col : MakeColour(make), 0.55f), ui.U(1));
+        ui.GearSprite(g, Kit.Inset(sbox, ui.U(2)));
+        int tx = sbox.Right + ui.U(6);
         string state = main ? (g.Slot == "weapon" ? " . IN HAND" : " . WORN") : second ? " . SECOND" : "";
         var makeCol = make == ItemQuality.Plain ? col : MakeColour(make);
         if (!main && !second) col = makeCol; // the make tints a piece you do not wear; gold stays for what you wear
         string title = name.ToUpperInvariant() + state;
-        ui.Text(title, r.X + ui.U(30), r.Y + ui.U(6), col, 1);
+        ui.Text(title, tx, r.Y + ui.U(6), col, 1);
         // The smith's marks after the name (C9), gold; their line in the tooltip.
-        int mx = r.X + ui.U(30) + ui.TW(title, 1) + ui.U(8);
+        int mx = tx + ui.TW(title, 1) + ui.U(8);
         foreach (var m in marks.Where(Effects.Has).Select(Effects.Get))
         {
             var mr = new Rectangle(mx, r.Y + ui.U(4), ui.TW(m.Name.ToUpperInvariant(), 1) + ui.U(8), ui.U(11));
@@ -78,17 +81,17 @@ partial class MapScreen
         var story = new Rectangle(r.X, r.Y + ui.U(16), r.Width - ui.U(112), r.Height - ui.U(16));
         if (item != null && item.From != "" && ui.Hover(story))
             ui.Tooltip(story.X + ui.U(60), story.Y - ui.U(2), name.ToUpperInvariant(), ui.Wrap((item.From + "." + (item.Battles > 0 ? $" {item.Battles} BATTLES." : "")).ToUpperInvariant(), ui.U(190)).ToArray());
-        ui.Text(stats, r.X + ui.U(30), r.Y + ui.U(19), Style.Dim, 1);
+        ui.Text(stats, tx, r.Y + ui.U(19), Style.Dim, 1);
         if (item is { Kills: > 0 }) // the blade's tally, as a trophy after its stats
         {
             string kills = $"{item.Kills} KILLS";
-            int kx = r.X + ui.U(30) + ui.TW(stats, 1) + ui.U(8);
+            int kx = tx + ui.TW(stats, 1) + ui.U(8);
             ui.Icon("skull", kx, r.Y + ui.U(18), Kit.Gilt, 1);
             ui.Text(kills, kx + ui.U(10), r.Y + ui.U(19), Kit.Gilt, 1);
             stats += "   " + kills + "  ";
         }
         // Against what you wear now (P7): better in green, worse in red.
-        int cx = r.X + ui.U(30) + ui.TW(stats, 1) + ui.U(8);
+        int cx = tx + ui.TW(stats, 1) + ui.U(8);
         if (!main && !second)
             foreach (var (text, good) in Compare(g))
             {

@@ -608,20 +608,32 @@ partial class MapScreen
         var c = Well(new Rectangle(body.X, y, half, body.Height), "THE STABLES", Kit.Gilt);
         var row = new Rectangle(c.X, c.Y, c.Width, ui.U(70));
         TownRow(row);
-        ui.Icon("horse", row.X + ui.U(10), row.Y + ui.U(14), Style.Text, 3);
-        ui.Text("HORSES", row.X + ui.U(48), row.Y + ui.U(10), Style.Text, 2);
-        ui.Text($"{s.Horses} FOR SALE . YOU HAVE {C.Player.Horses}", row.X + ui.U(48), row.Y + ui.U(30), Style.Dim, 1);
-        ui.Icon("coin", row.X + ui.U(48), row.Y + ui.U(44), Kit.Gilt, 1);
-        ui.Text($"{C.HorsePrice} A HORSE", row.X + ui.U(60), row.Y + ui.U(44), Kit.Gilt, 1);
+        ui.StoreSprite("horse", new Rectangle(row.X + ui.U(6), row.Y + ui.U(12), ui.U(40), ui.U(40)));
+        ui.Text("HORSES", row.X + ui.U(50), row.Y + ui.U(10), Style.Text, 2);
+        ui.Text($"{s.Horses} FOR SALE . YOU HAVE {C.Player.Horses}", row.X + ui.U(50), row.Y + ui.U(30), Style.Dim, 1);
+        ui.Icon("coin", row.X + ui.U(50), row.Y + ui.U(44), Kit.Gilt, 1);
+        ui.Text($"{C.HorsePrice} A HORSE", row.X + ui.U(62), row.Y + ui.U(44), Kit.Gilt, 1);
         if (ui.Button(new Rectangle(row.Right - ui.U(84), row.Y + ui.U(8), ui.U(78), ui.U(24)), "BUY 1", s.Horses > 0)) note = C.BuyHorses(s, 1) ?? "BOUGHT";
         if (ui.Button(new Rectangle(row.Right - ui.U(84), row.Y + ui.U(38), ui.U(78), ui.U(24)), "BUY 5", s.Horses > 0)) note = C.BuyHorses(s, 5) ?? "BOUGHT";
-        ui.Text("MEN PROMOTED INTO CAVALRY NEED A HORSE EACH,", c.X, row.Bottom + ui.U(10), Style.Dim, 1);
-        ui.Text("OR PAY FOR ONE WHEN PROMOTED.", c.X, row.Bottom + ui.U(22), Style.Dim, 1);
+
+        // Baggage wagons: expand company storage room.
+        var wrow = new Rectangle(c.X, row.Bottom + ui.U(8), c.Width, ui.U(70));
+        TownRow(wrow);
+        ui.StoreSprite("wagon", new Rectangle(wrow.X + ui.U(6), wrow.Y + ui.U(12), ui.U(40), ui.U(40)));
+        ui.Text("BAGGAGE WAGONS", wrow.X + ui.U(50), wrow.Y + ui.U(10), Style.Text, 2);
+        ui.Text($"YOU HAVE {C.Player.Wagons}/{Balance.Get().MaxWagons} . +{Balance.Get().BaggagePerWagon:0} ROOM EACH", wrow.X + ui.U(50), wrow.Y + ui.U(30), Style.Dim, 1);
+        ui.Icon("coin", wrow.X + ui.U(50), wrow.Y + ui.U(44), Kit.Gilt, 1);
+        ui.Text($"{Balance.Get().WagonPrice} A WAGON", wrow.X + ui.U(62), wrow.Y + ui.U(44), Kit.Gilt, 1);
+        string? cantW = C.CannotBuyWagon(s);
+        if (ui.Button(new Rectangle(wrow.Right - ui.U(84), wrow.Y + ui.U(8), ui.U(78), ui.U(24)), "BUY 1", cantW == null)) note = C.BuyWagon(s) ?? "BOUGHT A WAGON";
+        if (ui.Button(new Rectangle(wrow.Right - ui.U(84), wrow.Y + ui.U(38), ui.U(78), ui.U(24)), "SELL 1", C.Player.Wagons > 0)) note = C.SellWagon(s) ?? "SOLD A WAGON";
+        int below = wrow.Bottom + ui.U(10);
+        ui.Text("SPARE HORSES MOUNT CAVALRY AND CARRY BAGGAGE.", c.X, below, Style.Dim, 1);
         bool kennel = s.Owner == C.Player.Id && Campaign.Level(s, "kennel") > 0;
         if (kennel)
         {
             // Your kennel: war hounds join your company as a pack (docs/archive/CREATURES.md phase 4).
-            var k = new Rectangle(c.X, row.Bottom + ui.U(40), c.Width, ui.U(70));
+            var k = new Rectangle(c.X, below + ui.U(18), c.Width, ui.U(70));
             TownRow(k);
             PortraitWell(Troops.Get("war_hounds"), new Rectangle(k.X + ui.U(4), k.Y + ui.U(4), k.Height - ui.U(8), k.Height - ui.U(8)), 2);
             ui.Text("WAR HOUNDS", k.X + k.Height + ui.U(6), k.Y + ui.U(10), Style.Text, 2);
@@ -635,13 +647,13 @@ partial class MapScreen
         GoodsList(s, g);
     }
 
-    /// The goods from the field you carry: a line a kind, its price here, and a button to sell it; then SELL ALL.
+    /// The goods from the field you carry: a line a kind with its sprite, its price here, and a button to sell it; then SELL ALL.
     void GoodsList(Settlement s, Rectangle c)
     {
         var want = Campaign.GoodsOf(C.WantedGoods(s));
         ui.Text("GOODS FROM THE FIELD", c.X, c.Y, Kit.Gilt, 1);
         ui.TextR($"THIS TOWN PAYS MOST FOR {want.Name.ToUpperInvariant()}", c.Right, c.Y, Style.Dim, 1);
-        int y = c.Y + ui.U(14), rh = ui.U(22);
+        int y = c.Y + ui.U(16), rh = ui.U(28);
         if (C.GoodsCount == 0) { ui.Text("NONE. WIN A BATTLE AND BRING ITS GOODS HERE.", c.X, y + ui.U(4), Style.Dim, 1); return; }
         int total = 0;
         foreach (var k in Campaign.GoodsKinds)
@@ -652,12 +664,13 @@ partial class MapScreen
             if (y + rh * 2 > c.Bottom) continue;
             var row = new Rectangle(c.X, y, c.Width, rh - ui.U(2));
             TownRow(row);
-            ui.Text($"{n} {k.Name.ToUpperInvariant()}", row.X + ui.U(6), row.Y + ui.U(6), k == want ? Kit.Gilt : Style.Text, 1);
-            ui.TextR($"{price} A LOT", row.Right - ui.U(66), row.Y + ui.U(6), Kit.Gilt, 1);
-            if (ui.Button(new Rectangle(row.Right - ui.U(60), row.Y + ui.U(2), ui.U(56), row.Height - ui.U(4)), "SELL")) note = C.SellGoods(s, k.Id) ?? "SOLD";
+            ui.GoodsSprite(k.Id, new Rectangle(row.X + ui.U(4), row.Y + ui.U(2), row.Height - ui.U(4), row.Height - ui.U(4)));
+            ui.Text($"{n} {k.Name.ToUpperInvariant()}", row.X + row.Height + ui.U(4), row.Y + ui.U(9), k == want ? Kit.Gilt : Style.Text, 1);
+            ui.TextR($"{price} A LOT", row.Right - ui.U(66), row.Y + ui.U(9), Kit.Gilt, 1);
+            if (ui.Button(new Rectangle(row.Right - ui.U(60), row.Y + ui.U(3), ui.U(56), row.Height - ui.U(6)), "SELL")) note = C.SellGoods(s, k.Id) ?? "SOLD";
             y += rh;
         }
-        if (ui.Button(new Rectangle(c.X, y + ui.U(2), c.Width, ui.U(20)), $"SELL ALL FOR {total} CROWNS")) note = C.SellGoods(s) ?? "SOLD";
+        if (ui.Button(new Rectangle(c.X, y + ui.U(2), c.Width, ui.U(22)), $"SELL ALL FOR {total} CROWNS")) note = C.SellGoods(s) ?? "SOLD";
     }
 
     /// Your accepted contracts, under the overview map.

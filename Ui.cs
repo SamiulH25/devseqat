@@ -251,5 +251,68 @@ sealed class Ui
         Sb.Draw(art.Atlas, c, src, tint ?? Color.White, lay ? MathF.PI / 2 : 0, new Vector2(src.Width / 2f, src.Height / 2f), k, SpriteEffects.None, 0);
     }
 
+    /// One sprite fitted cleanly inside `box`: whole-pixel scale when smaller, smooth downscale when larger (long polearms in compact tiles).
+    public void SpriteFit(string key, Rectangle box, Color? tint = null, bool layTall = true)
+    {
+        if (!art.Has(key) || box.Width <= 0 || box.Height <= 0) return;
+        var src = art[key];
+        bool lay = layTall && src.Height > src.Width * 2 && box.Width >= box.Height;
+        int sw = lay ? src.Height : src.Width, sh = lay ? src.Width : src.Height;
+        float fit = Math.Min((float)box.Width / sw, (float)box.Height / sh);
+        float scale = fit >= 1f ? MathF.Floor(fit) : fit;
+        var c = box.Center.ToVector2();
+        Sb.Draw(art.Atlas, c, src, tint ?? Color.White, lay ? MathF.PI / 2 : 0, new Vector2(src.Width / 2f, src.Height / 2f), scale, SpriteEffects.None, 0);
+    }
+
+    /// The baked sprite for any gear piece (weapon, shield, body armour, helm, or mount) fitted inside `box`.
+    public void GearSprite(GearDef g, Rectangle box, int palette = 2)
+    {
+        if (g.Look == "none" && g.Slot != "horse") return;
+        switch (g.Slot)
+        {
+            case "weapon":
+                SpriteFit($"{g.Look}/0", box);
+                break;
+            case "shield":
+                SpriteFit($"shield.{g.Look}/{palette}", box, layTall: false);
+                break;
+            case "body":
+                SpriteFit($"torso.{g.Look}.f/{palette}", box, layTall: false);
+                break;
+            case "helm":
+                SpriteFit($"helm.{g.Look}.f/{palette}", box, layTall: false);
+                break;
+            case "horse":
+                var coat = g.Mount switch
+                {
+                    "destrier" => new Color(210, 206, 198),
+                    "warhorse" => new Color(116, 84, 60),
+                    "charger" => new Color(166, 118, 76),
+                    "steppe_pony" => new Color(192, 162, 112),
+                    _ => new Color(Style.Coats[0]),
+                };
+                if (g.Mount is "destrier" or "warhorse" && art.Has($"hbody.caparison/{palette}"))
+                    SpriteFit($"hbody.caparison/{palette}", box, layTall: false);
+                else
+                    SpriteFit("hhead/n", box, coat, layTall: false);
+                break;
+            case "legs":
+                SpriteFit($"leg.{g.Look}/{palette}", box, layTall: false);
+                break;
+            case "feet":
+                SpriteFit($"boot.{g.Look}.f/{palette}", box, layTall: false);
+                break;
+            case "hands":
+                SpriteFit($"hand.{g.Look}/{palette}", box, layTall: false);
+                break;
+        }
+    }
+
+    /// The baked sprite for a looted goods kind (`arms`, `armour`, `harness`, `silver`, `trinkets`, `furs`).
+    public void GoodsSprite(string kind, Rectangle box) => SpriteFit($"goods.{kind}/n", box, layTall: false);
+
+    /// The baked sprite for a company store icon (`food`, `horse`, `wagon`, `vault`).
+    public void StoreSprite(string kind, Rectangle box) => SpriteFit($"store.{kind}/n", box, layTall: false);
+
     public void Portrait(UnitType t, Rectangle box, int k = 0, float top = 1.92f, int palette = 0) => Hud.Portrait(Sb, art, t, box, k > 0 ? k : S, top, palette);
 }

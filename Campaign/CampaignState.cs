@@ -255,7 +255,7 @@ public sealed class LordArmy
 
 public sealed class Party
 {
-    public int Id, Faction = -1, HomeId = -1, ChaseId = -1, GoalSettlement = -1, PatrolProvince = -1, Horses, Tier = 1;
+    public int Id, Faction = -1, HomeId = -1, ChaseId = -1, GoalSettlement = -1, PatrolProvince = -1, Horses, Wagons, Tier = 1;
     /// The lord's Character (F3); -1 for parties without one.
     public int CharId = -1;
     public string Name = "", Task = "patrol";
@@ -347,6 +347,9 @@ public sealed class Settlement
     public int Size => Kind == SettlementKind.Castle ? (Rank == 0 ? 2 : Rank) : 0;
     /// What it is, in the words the UI shows: TOWN, VILLAGE, or a castle by its size (TOWER HOUSE, CASTLE, GREAT CASTLE).
     public string KindWord => Kind switch { SettlementKind.Town => "TOWN", SettlementKind.Village => "VILLAGE", _ => Size switch { 1 => "TOWER HOUSE", 3 => "GREAT CASTLE", _ => "CASTLE" } };
+    /// The keep vault at your own town or castle: gear and goods stored off the road (Campaign/Storage.cs).
+    public List<GearItem> Vault = new();
+    public SortedDictionary<string, int> VaultGoods = new();
 }
 
 /// A siege work (docs/archive/SIEGECRAFT.md A3): which engine, and the hour it is ready.
@@ -554,6 +557,8 @@ public sealed class CaptainKit
     public string Weapon = "arming_sword", Side = "greatsword", Shield = "round_shield", Body = "gambeson", Helm = "kettle_hat", Horse = "courser";
     /// Old saves only: the gear ids owned before pieces were things; `Campaign.MigrateGear` moves them into `CaptainState.Baggage`.
     public List<string> Owned = new();
+    /// Specific item instance ids worn per slot (optional; falls back to first matching Def in Baggage for old saves).
+    public Dictionary<string, int> WornIds = new();
     public IEnumerable<string> Worn => new[] { Weapon, Side, Shield, Body, Helm, Horse }.Where(id => id != "");
 }
 
@@ -627,6 +632,8 @@ public sealed class CampaignState
     public float Gold, LastWeekBalance;
     /// Goods from the field you carry to sell (kind id -> lots; Campaign/Goods.cs).
     public SortedDictionary<string, int> Goods = new();
+    /// Monotonic id for GearItem instances in baggage and keep vaults (Campaign/Storage.cs).
+    public int NextItemId = 1;
     public bool Ironman, GameOver;
     /// The campaign's save folder (Campaign/Saves.cs), given on its first save and set from the folder on load.
     public string CampaignId = "";
@@ -843,7 +850,8 @@ public sealed class Balance
     public float XpParticipation = 10, XpVictory = 1.5f, XpPerKillTier = 6;
     public float RenownPerVictory = 5, RenownStrengthDivisor = 50;
     /// What the captain's baggage carries (docs/archive/COMPANY.md C9): a base, and more for each spare horse (to six).
-    public float BaggageBase = 20, BaggagePerHorse = 5;
+    public float BaggageBase = 20, BaggagePerHorse = 5, BaggagePerWagon = 25;
+    public int WagonPrice = 350, MaxWagons = 4;
     /// Your hand on the roll (C4): the purse for a man you mention, and a pension for a man you send home.
     public int MentionPurse = 20, PensionCost = 40;
     /// What a company's senior named man's nature adds to its might in auto-resolve (docs/archive/COMPANY.md C2).

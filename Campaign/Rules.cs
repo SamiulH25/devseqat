@@ -188,7 +188,12 @@ public static class Rules
         // Base + skills + kit, as every soldier (docs/pre-demo/KIT.md). His legs, feet and hands come with his body piece and share
         // how well it is made; how well each piece is made (C9) scales its own numbers.
         var kit = new FighterKit(w, shield, body, helm, Gear.Piece("legs", body.Legs), Gear.Piece("feet", body.Feet), Gear.Piece("hands", t.Look.Hands));
-        float Q(GearDef g) => Campaign.QualityScale(Campaign.ItemOf(c, (g.Troop ? body : g).Id)?.CountsAs() ?? ItemQuality.Plain);
+        string wepSlot = side && c.Kit.Side != "" ? "side" : "weapon";
+        float Q(GearDef g)
+        {
+            string slot = g.Troop ? "body" : g.Slot == "weapon" ? wepSlot : g.Slot;
+            return Campaign.QualityScale(Campaign.ItemInSlot(c, slot)?.CountsAs() ?? ItemQuality.Plain);
+        }
         var cb = Gear.Base("captain");
         t.Skills = new(Skills.Level(c, "Arms"), Skills.Level(c, "Riding"), Skills.Level(c, "Bowcraft"));
         Fighter.Build(t, cb, t.Skills, kit, Q);
@@ -209,7 +214,7 @@ public static class Rules
     public static Mount CaptainMount(CaptainState c)
     {
         var m = Troops.Mount(Gear.Get(c.Kit.Horse).Mount);
-        float q = Campaign.QualityScale(Campaign.ItemOf(c, c.Kit.Horse)?.CountsAs() ?? ItemQuality.Plain); // a better bred horse (C9)
+        float q = Campaign.QualityScale(Campaign.ItemInSlot(c, "horse")?.CountsAs() ?? ItemQuality.Plain); // a better bred horse (C9)
         m = m with { Hp = m.Hp * q * (1 + Skills.Level(c, "Riding") / 400f + (c.Perks.Contains("MountedLord") ? 0.3f : 0)) };
         return c.Perks.Contains("SaddleFast") ? m with { Gallop = m.Gallop * 1.1f } : m;
     }
