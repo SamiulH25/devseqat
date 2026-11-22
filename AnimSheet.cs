@@ -156,11 +156,28 @@ sealed class AnimSheet
         new("Spike Turban", "lamellar", "mail", "spike_turban", 5),
     };
 
+    static readonly ShowcaseItem[] LoreShowcase =
+    {
+        new("Silver Lily", "plate_lily", "plate", "lily_armet", 0, Shield: "heater_quartered", Weapon: "longsword"),
+        new("Red Rose", "plate_vespran", "plate", "rose_sallet", 1, Weapon: "greatsword", Cape: true),
+        new("Knights of Tarn", "plate_tarn", "plate", "tarn_cowl", 8, Shield: "tarn_kite", Weapon: "longsword"),
+        new("Hollow Crown", "plate_hollow", "plate", "hollow_crown", 1, Weapon: "greatsword", Cape: true),
+        new("Wolfsworn", "jarl_scale", "mail", "wolfsworn", 4, Weapon: "daneaxe", Cape: true),
+        new("Burning Falcon", "mirror_qadir", "mail", "falcon_kulah", 5, Shield: "sun_kalkan", Weapon: "scimitar"),
+        new("Eternal Sky", "lamellar_khan", "splint", "sky_mask", 6, Weapon: "bow"),
+        new("Lantern Co.", "plate_lantern", "splint", "lantern_burgonet", 7, Shield: "lantern_pavise", Weapon: "pike"),
+        new("Qadiri Jubbah", "jubbah", "cloth", "litham", 5, Shield: "dhal", Weapon: "scimitar"),
+        new("Tarn Habit", "tarn_habit", "mail", "tarn_cowl", 8, Shield: "tarn_kite", Weapon: "mace"),
+        new("Arsenal Buffcoat", "buffcoat", "cloth", "morion", 7, Shield: "lantern_pavise", Weapon: "crossbow"),
+    };
+
     public static void WriteArmorShowcase(GraphicsDevice gd, Art art, Shading? sh, string dir)
     {
         Directory.CreateDirectory(dir);
         Sky.Set(new Weather(13, 0, 0));
         var sheet = new AnimSheet(gd, art, sh);
+        sheet.RenderGrid(LoreShowcase, cols: 4, halfW: 120, halfH: 140, camYaw: 0.24f, dist: 3.45f, targetY: 0.96f, eyeLift: 0.40f, Path.Combine(dir, "lore_3d_front.png"));
+        sheet.RenderGrid(LoreShowcase, cols: 4, halfW: 120, halfH: 140, camYaw: 0.85f, dist: 3.45f, targetY: 0.96f, eyeLift: 0.40f, Path.Combine(dir, "lore_3d_3q.png"));
         sheet.RenderGrid(PlateShowcase, cols: 5, halfW: 112, halfH: 132, camYaw: 0.24f, dist: 3.55f, targetY: 0.95f, eyeLift: 0.42f, Path.Combine(dir, "plate_front_raw.png"));
         sheet.RenderGrid(PlateShowcase, cols: 5, halfW: 112, halfH: 132, camYaw: 0.85f, dist: 3.55f, targetY: 0.95f, eyeLift: 0.42f, Path.Combine(dir, "plate_3q_raw.png"));
         sheet.RenderGrid(Armors, cols: 6, halfW: 100, halfH: 122, camYaw: 0.18f, dist: 3.85f, targetY: 0.96f, eyeLift: 0.45f, Path.Combine(dir, "body_armor_front_raw.png"));

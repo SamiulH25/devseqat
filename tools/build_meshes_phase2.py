@@ -162,9 +162,9 @@ def build_phase2_helms(PartBuilder):
     su.add_loft([(0, 0.13, 0, 0.182, 0.186, segs), (0, 0.25, 0, 0.138, 0.142, segs), (0, 0.33, 0, 0.042, 0.042, segs)], mat_id=4, ao_y=(0.13, 0.34, 0.82, 1.14))
     su.add_cone((0, 0.31, 0), (0, 0.45, 0), 0.046, 0.008, segs=5, mat_id=6)  # tall gleaming brass spire
     su.add_loft([(0, 0.025, 0, 0.220, 0.226, segs), (0, 0.092, 0, 0.238, 0.242, segs), (0, 0.155, 0, 0.196, 0.200, segs)], mat_id=0, shade=(0.96, 0.94, 0.88), ao_y=(0.02, 0.16, 0.80, 1.06))
-    su.add_box((0, 0.098, 0.205), (0.25, 0.055, 0.072), mat_id=0, shade=(0.98, 0.96, 0.92), rot_euler=(0, 0, 0.24))
-    su.add_box((0, 0.098, 0.208), (0.25, 0.055, 0.072), mat_id=0, shade=(0.91, 0.89, 0.84), rot_euler=(0, 0, -0.24))
-    su.add_box((0, 0.110, 0.242), (0.062, 0.062, 0.028), mat_id=6)  # front gilded jewel clasp
+    su.add_box((0, 0.098, 0.208), (0.25, 0.055, 0.064), mat_id=0, shade=(0.98, 0.96, 0.92), rot_euler=(0, 0, 0.24))
+    su.add_box((0, 0.098, 0.224), (0.25, 0.055, 0.064), mat_id=0, shade=(0.91, 0.89, 0.84), rot_euler=(0, 0, -0.24))
+    su.add_box((0, 0.110, 0.262), (0.062, 0.062, 0.024), mat_id=6)  # front gilded jewel clasp
     parts.append(su)
 
     # 11. Wide-brimmed brigand / ranger hat with contrast band & jaunty side feather!
@@ -228,7 +228,7 @@ def build_phase2_helms(PartBuilder):
     dr.add_cone((0, 0.32, -0.14), (0, 0.24, -0.32), 0.045, 0.010, segs=4, mat_id=6)  # dragon crest tail
     parts.append(dr)
 
-    # 14. Armet (NEW — sleek rounded late-medieval closed knight helm with pointed bellows visor!)
+    # 14. Armet (sleek rounded late-medieval closed knight helm with pointed bellows visor, zero visor clipping!)
     am = PartBuilder("helm_armet")
     am.add_loft([
         (0, -0.16, -0.01, 0.162, 0.168, segs),
@@ -237,27 +237,27 @@ def build_phase2_helms(PartBuilder):
         (0, 0.20, 0.00, 0.166, 0.176, segs),
         (0, 0.275, 0.00, 0.052, 0.058, segs),
     ], mat_id=4, ao_y=(-0.16, 0.28, 0.78, 1.12))
-    # Angular protruding pointed visor prow + crisp dark eye-slit + high crown comb
-    am.add_cone((0, 0.015, 0.15), (0, 0.035, 0.275), 0.115, 0.024, segs=4, mat_id=4, smooth=False, shade=(1.04, 1.06, 1.10))
-    am.add_box((0, 0.080, 0.196), (0.175, 0.028, 0.028), mat_id=0, shade=(0.05, 0.05, 0.07))
+    # Angular protruding pointed visor prow + crisp recessed ocular slit sitting cleanly in front
+    am.add_cone((0, 0.010, 0.155), (0, 0.025, 0.270), 0.105, 0.022, segs=4, mat_id=4, smooth=False, shade=(1.04, 1.06, 1.10))
+    am.add_box((0, 0.088, 0.212), (0.175, 0.026, 0.022), mat_id=0, shade=(0.05, 0.05, 0.07))
     am.add_box((0, 0.235, -0.01), (0.034, 0.11, 0.24), mat_id=4, shade=(1.10, 1.10, 1.14))
-    am.add_box((0, 0.080, 0.214), (0.032, 0.15, 0.020), mat_id=6)  # subtle gilt visor trim
+    am.add_box((0, 0.118, 0.216), (0.16, 0.020, 0.018), mat_id=6)  # subtle gilt brow trim above ocular slit
     parts.append(am)
 
-    # 15. Houndskull Bascinet (NEW — tall pointed skull + sharp pig-face visor snout + mail aventail!)
+    # 15. Houndskull Bascinet (tall pointed skull + sharp pig-face visor snout + mail aventail, zero visor clipping!)
     bs = PartBuilder("helm_bascinet")
     add_mail_coif(bs, mat_id=5)
     bs.add_loft([
         (0, -0.08, -0.01, 0.176, 0.184, segs),
         (0, 0.08, 0.00, 0.180, 0.190, segs),
         (0, 0.21, -0.01, 0.145, 0.155, segs),
-        (0, 0.315, -0.02, 0.032, 0.035, segs),  # iconic pointed bascinet apex
+        (0, 0.315, -0.02, 0.032, 0.035, segs),
     ], mat_id=4, ao_y=(-0.08, 0.32, 0.78, 1.12))
-    bs.add_cone((0, 0.01, 0.14), (0, 0.02, 0.305), 0.110, 0.022, segs=4, mat_id=4, smooth=False, shade=(1.05, 1.07, 1.12))
-    bs.add_box((0, 0.076, 0.194), (0.165, 0.026, 0.026), mat_id=0, shade=(0.05, 0.05, 0.07))
+    bs.add_cone((0, 0.005, 0.145), (0, 0.015, 0.300), 0.102, 0.022, segs=4, mat_id=4, smooth=False, shade=(1.05, 1.07, 1.12))
+    bs.add_box((0, 0.084, 0.208), (0.165, 0.024, 0.022), mat_id=0, shade=(0.05, 0.05, 0.07))
     parts.append(bs)
 
-    # 16. Spiked Iron Skullcap (NEW — 16 spike troops: domed iron helm + brass socket + tall top spike!)
+    # 16. Spiked Iron Skullcap (domed iron helm + brass socket + tall top spike!)
     sp = PartBuilder("helm_spike")
     sp.add_loft([
         (0, 0.035, -0.02, 0.215, 0.225, segs),
@@ -266,13 +266,13 @@ def build_phase2_helms(PartBuilder):
         (0, 0.265, 0.0, 0.055, 0.055, segs),
     ], mat_id=5, ao_y=(0.03, 0.27, 0.78, 1.10))
     sp.add_loft([(0, 0.075, 0, 0.194, 0.198, segs), (0, 0.108, 0, 0.190, 0.195, segs)], mat_id=6)
-    sp.add_cone((0, 0.255, 0), (0, 0.425, 0), 0.044, 0.008, segs=5, mat_id=4, shade=(1.08, 1.10, 1.14))  # bold iron spike!
+    sp.add_cone((0, 0.255, 0), (0, 0.425, 0), 0.044, 0.008, segs=5, mat_id=4, shade=(1.08, 1.10, 1.14))
     parts.append(sp)
 
-    # 17. Chainmail Coif (NEW — snug riveted iron mail hood framing face!)
+    # 17. Chainmail Coif (enlarged cleanly over forehead/crown so hair never pokes through!)
     cf = PartBuilder("helm_coif")
     add_mail_coif(cf, mat_id=5)
-    cf.add_sphere((0, 0.06, -0.025), (0.180, 0.182, 0.172), segs=7, rings=5, mat_id=5, ao_y=(-0.10, 0.24, 0.78, 1.08))
+    cf.add_sphere((0, 0.075, -0.022), (0.198, 0.204, 0.192), segs=7, rings=5, mat_id=5, ao_y=(-0.10, 0.27, 0.78, 1.08))
     parts.append(cf)
 
     return parts

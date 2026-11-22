@@ -875,11 +875,11 @@ sealed partial class Puppet3D
             {
                 (float ey, float ez, float sx, float sy) = lm.ShieldKind switch
                 {
-                    "shield_pavise" => (-0.02f, 0.080f, 1.15f, 1.55f),
+                    "shield_pavise" or "shield_lantern_pavise" => (-0.02f, 0.080f, 1.15f, 1.55f),
                     "shield_tower" => (0.14f, 0.082f, 0.92f, 1.05f),
-                    "shield_kite" => (0.04f, 0.070f, 0.86f, 1.05f),
+                    "shield_kite" or "shield_tarn_kite" => (0.04f, 0.070f, 0.86f, 1.05f),
                     "shield_round" => (0.00f, 0.068f, 0.85f, 0.85f),
-                    "shield_kalkan" => (0.00f, 0.095f, 0.72f, 0.72f),
+                    "shield_kalkan" or "shield_sun_kalkan" => (0.00f, 0.095f, 0.72f, 0.72f),
                     _ => (0.02f, 0.070f, 0.94f, 0.94f), // heater
                 };
                 Vector3 ePos = pos + sU * ey + sF * ez;

@@ -8,8 +8,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **AbilityDef** (class, L8)
 - **Abilities** (class, L41): Get:47, Has:48, readonly:52, Load:66, Validate:83
 
-## AnimSheet.cs (428 lines)
-- **AnimSheet** (class, L10): AnimSheet:23, Clip:35, Swing:37, ShowcaseItem:79, WriteArmorShowcase:159, WriteFaceShowcase:180, RenderGrid:211, Write:274, Render:285, MakeUnit:332, Cell3D:358, Cell2D:389, Ground:410
+## AnimSheet.cs (445 lines)
+- **AnimSheet** (class, L10): AnimSheet:23, Clip:35, Swing:37, ShowcaseItem:79, WriteArmorShowcase:174, WriteFaceShowcase:197, RenderGrid:228, Write:291, Render:302, MakeUnit:349, Cell3D:375, Cell2D:406, Ground:427
 
 ## Architecture.cs (128 lines)
 - **HouseKind** (enum, L6): windows:9, roof:10, roof:12, roof:13, eaves:14, street:15, posts:16, tent:17, tent:18
@@ -893,9 +893,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Upgrade.cs (348 lines)
 - **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:185, Leads:336
 
-## Mesh3D.cs (419 lines)
-- **MeshKit3D** (class, L9): TryLoad:64, Load:74, Get:153, Resolve:155, MapLimb:276, MapHelm:284, MapWeapon:320, MapShield:347
-- **UnitMatTable** (struct, L359): Fill:372, FillBeast:410
+## Mesh3D.cs (441 lines)
+- **MeshKit3D** (class, L9): TryLoad:64, Load:74, Get:153, Resolve:155, MapLimb:287, MapHelm:295, MapWeapon:339, MapShield:366
+- **UnitMatTable** (struct, L381): Fill:394, FillBeast:432
 
 ## MusicDirector.cs (129 lines)
 - **MusicDirector** (class, L12): Cue:17, MusicDirector:28, Pool:36, Reset:51, Adopt:59, Update:68, BackToMap:99, Next:109, Start:121
@@ -947,8 +947,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Program.cs (151 lines)
 
-## Puppet.cs (1100 lines)
-- **Puppet** (class, L13): PalOf:31, SetPal:114, GetLook:120, Puppet:126, Begin:128, Rad:137, W:138, Awed:164, Lean:181, Frame:188, View:198, Draw:218, Crossbow:355, Bow:379, HorseScale:407, Horse:415, sp_breathe:520, static:522, Beast:530, WolfBody:542, Warg:572, BeastCorpse:590, DrawLooseHorse:605, DrawDeadHorse:615, RotY:646, Shoulder:657, Arm:661, ArmTo:668, Elbow:680, Sink:707, Leg:716, SpanRect:728, Fallen:737, SpiritAscent:805, Corpse:846, Haze:886, Particle:898, Banner:913, Decal:972, Quad:985, PlumeY:999, HelmTop:1002, HeadBill:1016, BillRect:1019, Missile:1030, AxialSrc:1050, LongRect:1061, PlaneRect:1073, FlatRect:1083, FlatRot:1092
+## Puppet.cs (1102 lines)
+- **Puppet** (class, L13): PalOf:31, SetPal:114, GetLook:120, Puppet:126, Begin:128, Rad:137, W:138, Awed:164, Lean:181, Frame:188, View:198, Draw:218, Crossbow:355, Bow:379, HorseScale:407, Horse:415, sp_breathe:520, static:522, Beast:530, WolfBody:542, Warg:572, BeastCorpse:590, DrawLooseHorse:605, DrawDeadHorse:615, RotY:646, Shoulder:657, Arm:661, ArmTo:668, Elbow:680, Sink:707, Leg:716, SpanRect:728, Fallen:737, SpiritAscent:805, Corpse:846, Haze:886, Particle:898, Banner:913, Decal:972, Quad:985, PlumeY:999, HelmTop:1002, HeadBill:1018, BillRect:1021, Missile:1032, AxialSrc:1052, LongRect:1063, PlaneRect:1075, FlatRect:1085, FlatRot:1094
 
 ## Puppet3D.Beasts.cs (237 lines)
 - **Puppet3D** (class, L7): BeastRearing:9, DrawBeast3D:13, DrawWolfUnit3D:24, DrawWolfRig:42, DrawWarg3D:86, DrawBear3D:94, DrawSpider3D:139, DrawWyvern3D:175
@@ -1006,8 +1006,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SpriteDump.cs (113 lines)
 - **SpriteDump** (class, L9): Run:13, Portraits:45, Png:80, Crc:107
 
-## SpriteSheet.cs (2218 lines)
-- **SpriteSheet** (class, L14): Part:22, SpriteSheet:35, SpriteSheet:41, Paint:44, Add:58, Pack:63, Side:86, InEl:143, Head:145, Visages:148, Head:162, GoblinHead:213, TrollHead:243, SkullHead:273, GhoulHead:299, Helm:324, Torso:697, PlateTorso:901, PixelMap:904, Ribs:920, Tabard:935, Emblem:952, Cape:992, Sleeve:1008, Leg:1050, Boot:1091, Hand:1113, Shield:1121, Weapon:1224, PaintGrid:1437, ArmingSword:1461, Longsword:1497, Greatsword:1542, Scimitar:1603, Falchion:1638, Polearm:1672, Bow:1687, Arrow:1701, Quiver:1710, Plume:1719, Flag:1727, Blood:1736, Splat:1745, Horse:1758, Wolf:1899, Spider:1938, Bear:1992, Wyvern:2027, HorseNeckTop:2100, HorseNeckBottom:2101, BodyShape:2103, HorseGear:2106, Saddle:2206
+## SpriteSheet.cs (2222 lines)
+- **SpriteSheet** (class, L14): Part:22, SpriteSheet:35, SpriteSheet:41, Paint:44, Add:58, Pack:63, Side:86, InEl:143, Head:145, Visages:148, Head:162, GoblinHead:213, TrollHead:243, SkullHead:273, GhoulHead:299, Helm:324, Torso:698, PlateTorso:903, PixelMap:906, Ribs:922, Tabard:937, Emblem:954, Cape:994, Sleeve:1010, Leg:1053, Boot:1094, Hand:1116, Shield:1124, Weapon:1228, PaintGrid:1441, ArmingSword:1465, Longsword:1501, Greatsword:1546, Scimitar:1607, Falchion:1642, Polearm:1676, Bow:1691, Arrow:1705, Quiver:1714, Plume:1723, Flag:1731, Blood:1740, Splat:1749, Horse:1762, Wolf:1903, Spider:1942, Bear:1996, Wyvern:2031, HorseNeckTop:2104, HorseNeckBottom:2105, BodyShape:2107, HorseGear:2110, Saddle:2210
 
 ## SpriteSheet.Items.cs (163 lines)
 - **SpriteSheet** (class, L6): ItemSprites:8

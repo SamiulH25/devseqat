@@ -1009,6 +1009,8 @@ sealed partial class Puppet
         "greathelm_horns" or "greathelm_wings" or "greathelm_crown" or "greathelm_sun" => 13.83f,
         "galea" => 13f, "ibex" => 15f, "dragon" => 16.5f, "bearhead" or "whitebear" => 14f, "spike_turban" => 17.5f, "corsair" => 10.5f,
         "tug" => 21.5f, "lion" => 10.83f, "chapel" => 10f, "winged_sallet" => 15.5f,
+        "lily_armet" => 11.5f, "rose_sallet" => 12.5f, "tarn_cowl" => 9.5f, "hollow_crown" => 13.5f,
+        "wolfsworn" => 12.5f, "falcon_kulah" => 13.5f, "sky_mask" => 14.5f, "lantern_burgonet" => 12.5f,
         _ => 6.83f,
     } * Art.Px;
 

@@ -323,6 +323,7 @@ public sealed partial class SpriteSheet
 
     Canvas Helm(string kind, string v)
     {
+        if (LoreHelm(kind, v) is { } loreH) return loreH;
         if (PeopleHelm(kind, v) is { } own) return own;
         switch (kind)
         {
@@ -702,6 +703,7 @@ public sealed partial class SpriteSheet
         var m = body switch { "gambeson" or "gambeson_fur" => quilt, "mail" or "mail_hauberk" or "mail_fur" => mail, "plate" or "plate_fluted" or "plate_surcoat" or "plate_gilded" or "plate_fur" or "breastplate" => plate, "fur" => clothDk, "rags" => rag, "shroud" => shroud, "robe" => robe,
             "lamellar" or "lamellar_gilded" or "scale" or "scale_iron" => plate, "deel" or "deel_fur" => cloth, "brigandine" or "brigandine_gilded" or "coatofplates" => felt, "leather" => leather, _ => cloth };
         if (body == "bones") return Ribs(c, span, side);
+        if (LoreTorso(body, v) is { } loreT) return loreT;
         if (PeopleTorso(body, v) is { } own) return own;
         if (body is "plate" or "plate_fluted" or "plate_surcoat" or "plate_gilded" or "plate_fur")
         {
@@ -1007,6 +1009,7 @@ public sealed partial class SpriteSheet
 
     Canvas Sleeve(string body)
     {
+        if (LoreSleeve(body) is { } loreS) return loreS;
         if (PeopleSleeve(body) is { } own) return own;
         var c = new Canvas(8, 20);
         switch (body)
@@ -1120,6 +1123,7 @@ public sealed partial class SpriteSheet
 
     Canvas Shield(string kind)
     {
+        if (LoreShield(kind) is { } loreSh) return loreSh;
         if (kind == "pavise")
         {
             // A tall board a crossbowman stands behind: the side's cloth, a raised spine and the charge high on it.

@@ -172,10 +172,10 @@ sealed class MeshKit3D
         string shieldKey = look.Shield != "none" ? MapShield(look.Shield) : "";
         static byte LayerPat(string k) => k switch
         {
-            "chest_mail" or "shld_mail_aventail" or "skirt_mail" => PatMail,
-            "chest_lamellar" or "chest_scale" or "shld_lamellar" or "shld_scale" or "skirt_lamellar" or "skirt_scale" => PatScale,
-            "chest_tunic" or "chest_surcoat" or "chest_brigandine" or "chest_robe" or "shld_collar_cloth" or "shld_cowl_cloth" or "skirt_tunic" or "skirt_deel" or "skirt_kaftan" or "skirt_tabard" => PatQuilt,
-            "chest_plate" or "chest_plate_fluted" or "chest_plate_dark" or "chest_plate_gilded" or "chest_breastplate" or "chest_mirror" or "shld_gorget_steel" or "shld_pauldrons_steel" or "shld_pauldrons_gilded" or "shld_pauldrons_fluted" or "shld_pauldrons_dark" or "shld_pauldrons_lance" or "skirt_fauld_steel" or "skirt_fauld_gilded" or "skirt_fauld_dark" or "skirt_fauld_long" => PatBrushed,
+            "chest_mail" or "chest_tarn_habit" or "shld_mail_aventail" or "skirt_mail" => PatMail,
+            "chest_lamellar" or "chest_scale" or "chest_jarl_scale" or "chest_lamellar_khan" or "shld_lamellar" or "shld_scale" or "skirt_lamellar" or "skirt_scale" => PatScale,
+            "chest_tunic" or "chest_surcoat" or "chest_brigandine" or "chest_robe" or "chest_jubbah" or "chest_buffcoat" or "shld_collar_cloth" or "shld_cowl_cloth" or "shld_tarn_mantle" or "skirt_tunic" or "skirt_deel" or "skirt_kaftan" or "skirt_tabard" => PatQuilt,
+            "chest_plate" or "chest_plate_fluted" or "chest_plate_dark" or "chest_plate_gilded" or "chest_breastplate" or "chest_mirror" or "chest_plate_lily" or "chest_plate_vespran" or "chest_plate_tarn" or "chest_plate_hollow" or "chest_mirror_qadir" or "chest_plate_lantern" or "shld_gorget_steel" or "shld_pauldrons_steel" or "shld_pauldrons_gilded" or "shld_pauldrons_fluted" or "shld_pauldrons_dark" or "shld_pauldrons_lance" or "shld_pauldrons_hollow" or "skirt_fauld_steel" or "skirt_fauld_gilded" or "skirt_fauld_dark" or "skirt_fauld_long" or "skirt_tarn_scapular" or "skirt_fauld_hollow" => PatBrushed,
             _ => PatSmooth,
         };
         byte LimbPatOf(string tag) => tag switch { "mail" => PatMail, "plate" => PatBrushed, "cloth" => PatQuilt, _ => PatSmooth };
@@ -195,7 +195,7 @@ sealed class MeshKit3D
             Shin = Get($"shin_{legTag}"),
             Weapon = weaponKey.Length > 0 ? Get(weaponKey) : Array.Empty<Vert>(),
             Shield = shieldKey.Length > 0 ? Get(shieldKey) : Array.Empty<Vert>(),
-            FullEnclosedHelm = helmKey is "helm_greathelm" or "helm_greathelm_wings" or "helm_greathelm_sun" or "helm_greathelm_horns" or "helm_dragon" or "helm_armet" or "helm_bascinet",
+            FullEnclosedHelm = helmKey is "helm_greathelm" or "helm_greathelm_wings" or "helm_greathelm_sun" or "helm_greathelm_horns" or "helm_dragon" or "helm_armet" or "helm_bascinet" or "helm_lily_armet" or "helm_rose_sallet" or "helm_tarn_cowl" or "helm_hollow_crown" or "helm_sky_mask",
             HasCape = look.Cape,
             HasPlume = look.Plume,
             HasShield = look.Shield != "none",
@@ -240,6 +240,17 @@ sealed class MeshKit3D
         "bones"             => ("chest_bones", "", "", "", false, 0, 0),
         "robe"              => ("chest_robe", "shld_cowl_cloth", "belt_stole", "", false, 0, 0),
         "shroud"            => ("chest_robe", "shld_linen_shawl", "belt_sash_dark", "", false, 0, 0),
+        "plate_lily"        => ("chest_plate_lily", "shld_pauldrons_fluted", "belt_gilded", "skirt_fauld_long", false, 0, 0),
+        "plate_vespran"     => ("chest_plate_vespran", "shld_pauldrons_dark", "belt_gilded", "skirt_fauld_dark", false, 0, 0),
+        "plate_tarn"        => ("chest_plate_tarn", "shld_tarn_mantle", "belt_leather", "skirt_tarn_scapular", false, 0, 0),
+        "plate_hollow"      => ("chest_plate_hollow", "shld_pauldrons_hollow", "belt_plate", "skirt_fauld_hollow", false, 0, 0),
+        "jarl_scale"        => ("chest_jarl_scale", "shld_wolf_mantle", "belt_cross_straps", "skirt_scale", false, 0, 0),
+        "mirror_qadir"      => ("chest_mirror_qadir", "shld_lamellar", "belt_sash_trim", "skirt_mail", false, 0, 0),
+        "lamellar_khan"     => ("chest_lamellar_khan", "shld_lamellar", "belt_sash_dark", "skirt_lamellar", false, 0, 0),
+        "plate_lantern"     => ("chest_plate_lantern", "shld_pauldrons_gilded", "belt_plate", "skirt_fauld_long", false, 0, 0),
+        "jubbah"            => ("chest_jubbah", "shld_linen_shawl", "belt_sash_trim", "skirt_kaftan", false, 0, 0),
+        "tarn_habit"        => ("chest_tarn_habit", "shld_tarn_mantle", "belt_leather", "skirt_mail", false, 0, 0),
+        "buffcoat"          => ("chest_buffcoat", "shld_gorget_steel", "belt_pouch", "skirt_tunic", false, 1, 0),
         "plate_gilded"      => ("chest_plate_gilded", "shld_pauldrons_gilded", "belt_gilded", "skirt_fauld_gilded", true, 0, 0),
         "plate_fluted"      => ("chest_plate_fluted", "shld_pauldrons_fluted", "belt_plate", "skirt_fauld_long", false, 2, 0),
         "plate_dark"        => ("chest_plate_dark", "shld_pauldrons_dark", "belt_plate", "skirt_fauld_dark", false, 2, 0),
@@ -276,8 +287,8 @@ sealed class MeshKit3D
     static string MapLimb(string gear) => gear switch
     {
         "bones" => "bones",
-        "plate" or "plate_fluted" or "plate_surcoat" or "plate_gilded" or "plate_fur" or "plate_dark" or "plate_lance" or "breastplate" or "splint" or "mirror" => "plate",
-        "mail" or "mail_hauberk" or "coatofplates" or "brigandine" or "brigandine_gilded" or "mail_fur" or "lamellar" or "scale" or "scale_iron" or "lamellar_gilded" or "lamellar_dark" => "mail",
+        "plate" or "plate_fluted" or "plate_surcoat" or "plate_gilded" or "plate_fur" or "plate_dark" or "plate_lance" or "breastplate" or "splint" or "mirror" or "plate_lily" or "plate_vespran" or "plate_tarn" or "plate_hollow" or "plate_lantern" => "plate",
+        "mail" or "mail_hauberk" or "coatofplates" or "brigandine" or "brigandine_gilded" or "mail_fur" or "lamellar" or "scale" or "scale_iron" or "lamellar_gilded" or "lamellar_dark" or "jarl_scale" or "mirror_qadir" or "lamellar_khan" or "tarn_habit" => "mail",
         _ => "cloth",
     };
 
@@ -287,6 +298,14 @@ sealed class MeshKit3D
         string h = SpriteSheet.HelmBase(head);
         return h switch
         {
+            "lily_armet" => "helm_lily_armet",
+            "rose_sallet" => "helm_rose_sallet",
+            "tarn_cowl" => "helm_tarn_cowl",
+            "hollow_crown" => "helm_hollow_crown",
+            "wolfsworn" => "helm_wolfsworn",
+            "falcon_kulah" => "helm_falcon_kulah",
+            "sky_mask" => "helm_sky_mask",
+            "lantern_burgonet" => "helm_lantern_burgonet",
             "greathelm_wings" or "winged_sallet" => "helm_greathelm_wings",
             "greathelm_sun" or "greathelm_crown" => "helm_greathelm_sun",
             "greathelm_horns" or "ibex" => "helm_greathelm_horns",
@@ -346,6 +365,9 @@ sealed class MeshKit3D
 
     static string MapShield(string sh) => sh switch
     {
+        "lantern_pavise" => "shield_lantern_pavise",
+        "tarn_kite" => "shield_tarn_kite",
+        "sun_kalkan" => "shield_sun_kalkan",
         "pavise" => "shield_pavise",
         "tower" => "shield_tower",
         "kalkan" or "dhal" => "shield_kalkan",

@@ -647,10 +647,10 @@ def build_helm(kind):
             (0, 0.090, 0.0, 0.228, 0.232, segs),
             (0, 0.152, 0.0, 0.188, 0.192, segs),
         ], mat_id=0, shade=(0.95, 0.93, 0.88), ao_y=(0.02, 0.16, 0.80, 1.06))
-        # Diagonal criss-cross turban cloth folds + brass front clasp
-        p.add_box((0, 0.095, 0.195), (0.24, 0.052, 0.070), mat_id=0, shade=(0.98, 0.96, 0.92), rot_euler=(0, 0, 0.24))
-        p.add_box((0, 0.095, 0.198), (0.24, 0.052, 0.070), mat_id=0, shade=(0.91, 0.89, 0.84), rot_euler=(0, 0, -0.24))
-        p.add_box((0, 0.105, 0.232), (0.048, 0.048, 0.024), mat_id=6)
+        # Diagonal criss-cross turban cloth folds (separated cleanly in Z to prevent Z-fighting) + brass front clasp
+        p.add_box((0, 0.095, 0.200), (0.24, 0.052, 0.062), mat_id=0, shade=(0.98, 0.96, 0.92), rot_euler=(0, 0, 0.24))
+        p.add_box((0, 0.095, 0.214), (0.24, 0.052, 0.062), mat_id=0, shade=(0.91, 0.89, 0.84), rot_euler=(0, 0, -0.24))
+        p.add_box((0, 0.105, 0.250), (0.048, 0.048, 0.022), mat_id=6)
 
     elif kind == "hood":
         # Draped medieval hood framing face with folded shoulder cowl & drooping liripipe tail
@@ -1063,6 +1063,8 @@ def main():
     all_parts.extend(build_lods())
     import build_meshes_phase2
     all_parts.extend(build_meshes_phase2.build_all(PartBuilder))
+    import build_meshes_lore
+    all_parts.extend(build_meshes_lore.build_lore_all(PartBuilder))
 
     export_bin(all_parts)
     save_blend(all_parts)

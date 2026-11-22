@@ -120,29 +120,29 @@ def build_modular_armors(PartBuilder):
     cpf = PartBuilder("chest_plate_fluted")
     build_cuirass_base(cpf, mat_id=4, hi=(1.08, 1.10, 1.14), lo=(0.92, 0.95, 1.00))
     for fx, ang in [(-0.115, -0.22), (-0.058, -0.10), (0.0, 0.0), (0.058, 0.10), (0.115, 0.22)]:
-        fz = 0.172 + (0.024 if abs(fx) < 0.02 else (0.016 if abs(fx) < 0.08 else 0.002))
-        cpf.add_box((fx, 1.13, fz), (0.024, 0.25, 0.026), mat_id=4, shade=(1.12, 1.14, 1.18), rot_euler=(-0.06, 0.0, ang))
-    cpf.add_box((0, 0.99, 0.194), (0.22, 0.026, 0.024), mat_id=6)  # brass plackart chevron trim
+        fz = 0.188 + (0.032 if abs(fx) < 0.02 else (0.022 if abs(fx) < 0.08 else 0.004))
+        cpf.add_box((fx, 1.15, fz), (0.022, 0.21, 0.022), mat_id=4, shade=(1.12, 1.14, 1.18), rot_euler=(-0.06, 0.0, ang))
+    cpf.add_box((0, 1.00, 0.214), (0.21, 0.026, 0.022), mat_id=6)  # brass plackart chevron trim
     parts.append(cpf)
 
     # 6c. Blackened / Tempered Dark-Iron Knight Plate (dramatic gunmetal steel cuirass with bright silver bevels & brass rivets!)
     cpd = PartBuilder("chest_plate_dark")
     build_cuirass_base(cpd, mat_id=5, hi=(0.86, 0.90, 0.96), lo=(0.74, 0.78, 0.84))
-    cpd.add_box((0, 1.14, 0.198), (0.032, 0.28, 0.022), mat_id=4, shade=(1.08, 1.10, 1.14))  # bright steel keel highlight
+    cpd.add_box((0, 1.14, 0.216), (0.030, 0.26, 0.022), mat_id=4, shade=(1.08, 1.10, 1.14))  # bright steel keel highlight
     for sx in (-1, 1):
-        cpd.add_box((sx * 0.11, 1.20, 0.176), (0.036, 0.036, 0.022), mat_id=6)  # gilded chest studs
-    cpd.add_box((0, 1.01, 0.196), (0.052, 0.052, 0.022), mat_id=6)
+        cpd.add_box((sx * 0.11, 1.20, 0.194), (0.036, 0.036, 0.022), mat_id=6)  # gilded chest studs
+    cpd.add_box((0, 1.01, 0.214), (0.050, 0.050, 0.022), mat_id=6)
     parts.append(cpd)
 
     # 6d. Royal Gilded Plate Cuirass (sculpted steel cuirass + ornate gilded V-plackart trim, sun-bar & brass gorget!)
     cpg = PartBuilder("chest_plate_gilded")
     build_cuirass_base(cpg, mat_id=4, hi=(1.08, 1.10, 1.14), lo=(0.94, 0.96, 1.02))
-    cpg.add_box((0, 1.17, 0.196), (0.26, 0.044, 0.024), mat_id=6)
-    cpg.add_box((-0.075, 1.03, 0.194), (0.14, 0.034, 0.024), mat_id=6, rot_euler=(0, 0, -0.38))
-    cpg.add_box((0.075, 1.03, 0.194), (0.14, 0.034, 0.024), mat_id=6, rot_euler=(0, 0, 0.38))
+    cpg.add_box((0, 1.17, 0.216), (0.25, 0.042, 0.024), mat_id=6)
+    cpg.add_box((-0.075, 1.03, 0.214), (0.14, 0.034, 0.022), mat_id=6, rot_euler=(0, 0, -0.38))
+    cpg.add_box((0.075, 1.03, 0.214), (0.14, 0.034, 0.022), mat_id=6, rot_euler=(0, 0, 0.38))
     parts.append(cpg)
 
-    # 6e. Half-Plate / Milanese Breastplate (classic smooth globose steel cuirass + dark steel shoulder straps!)
+    # 6e. Half-Plate / Milanese Breastplate (classic smooth globose steel cuirass + clean leather shoulder straps!)
     cph = PartBuilder("chest_breastplate")
     cph.add_loft([
         (0, 0.80, 0.008, 0.194, 0.148, segs),
@@ -151,8 +151,8 @@ def build_modular_armors(PartBuilder):
         (0, 1.37, 0.000, 0.120, 0.110, segs),
     ], mat_id=4, smooth=False, cap_bot=False, ao_y=(0.80, 1.37, 0.80, 1.12))
     for sx in (-1, 1):
-        cph.add_box((sx * 0.115, 1.26, 0.135), (0.048, 0.14, 0.085), mat_id=7, rot_euler=(0.35, 0, 0))  # leather shoulder straps
-    cph.add_box((0, 1.15, 0.192), (0.052, 0.052, 0.022), mat_id=6)
+        cph.add_box((sx * 0.115, 1.27, 0.158), (0.046, 0.12, 0.055), mat_id=7, rot_euler=(0.38, 0, 0))  # flush leather shoulder straps
+    cph.add_box((0, 1.15, 0.204), (0.052, 0.052, 0.022), mat_id=6)
     parts.append(cph)
 
     # 7. Mirror armor (Eastern / Persian char-aina: gleaming circular steel mirror disc strapped over faction mail!)
@@ -213,21 +213,21 @@ def build_modular_armors(PartBuilder):
 
     # ===================== LAYER 2: SHOULDERS, COLLARS & MANTLES =====================
 
-    # 1. Padded standing gambeson collar
+    # 1. Padded standing gambeson collar (clean radial clearance over upper chest)
     s_cc = PartBuilder("shld_collar_cloth")
-    s_cc.add_loft([(0, 1.30, 0, 0.162, 0.144, segs), (0, 1.40, 0, 0.132, 0.120, segs)], mat_id=2, cap_bot=False, ao_y=(1.30, 1.40, 0.84, 1.08))
+    s_cc.add_loft([(0, 1.29, 0.006, 0.198, 0.172, segs), (0, 1.405, 0.0, 0.146, 0.134, segs)], mat_id=2, cap_bot=False, ao_y=(1.29, 1.405, 0.84, 1.08))
     parts.append(s_cc)
 
-    # 2. Exposed gleaming chainmail aventail yoke & collar mantle!
+    # 2. Exposed gleaming chainmail aventail yoke & collar mantle (sits cleanly outside every chest!)
     s_ma = PartBuilder("shld_mail_aventail")
-    s_ma.add_loft([(0, 1.19, 0.0, 0.252, 0.174, segs), (0, 1.40, 0.0, 0.128, 0.118, segs)], mat_id=5, cap_bot=False, ao_y=(1.19, 1.40, 0.82, 1.12))
+    s_ma.add_loft([(0, 1.19, 0.008, 0.272, 0.208, segs), (0, 1.31, 0.004, 0.244, 0.182, segs), (0, 1.405, 0.0, 0.146, 0.136, segs)], mat_id=5, cap_bot=False, ao_y=(1.19, 1.405, 0.82, 1.12))
     parts.append(s_ma)
 
-    # 3. Beveled steel gorget + compact steel spaulder flanges (foot soldiers / breastplates!)
+    # 3. Beveled steel gorget + compact steel spaulder flanges (clean clearance over chest!)
     s_gs = PartBuilder("shld_gorget_steel")
-    s_gs.add_loft([(0, 1.30, 0, 0.162, 0.142, segs), (0, 1.40, 0, 0.124, 0.114, segs)], mat_id=4, cap_bot=False, ao_y=(1.30, 1.40, 0.84, 1.10))
+    s_gs.add_loft([(0, 1.29, 0.006, 0.198, 0.172, segs), (0, 1.405, 0.0, 0.144, 0.134, segs)], mat_id=4, cap_bot=False, ao_y=(1.29, 1.405, 0.84, 1.10))
     for sx in (-1, 1):
-        s_gs.add_box((sx * 0.225, 1.25, 0.01), (0.105, 0.105, 0.185), mat_id=4, rot_euler=(0, 0, -sx * 0.26), shade=(1.04, 1.06, 1.10))
+        s_gs.add_box((sx * 0.238, 1.25, 0.01), (0.105, 0.105, 0.190), mat_id=4, rot_euler=(0, 0, -sx * 0.26), shade=(1.04, 1.06, 1.10))
     parts.append(s_gs)
 
     # 4. Layered 3-lame Gothic steel pauldrons + armpit besagew rondels + beveled steel gorget!
@@ -297,98 +297,98 @@ def build_modular_armors(PartBuilder):
         s_sc.add_box((sx * 0.238, 1.22, 0.008), (0.12, 0.15, 0.195), mat_id=5, rot_euler=(0, 0, -sx * 0.28))
     parts.append(s_sc)
 
-    # 9. Heavy shaggy Northern fur pelt mantle over both shoulders & back!
+    # 9. Heavy shaggy Northern fur pelt mantle over both shoulders & back (full clearance over plate keel!)
     s_fm = PartBuilder("shld_fur_mantle")
     s_fm.add_loft([
-        (0, 1.12, -0.025, 0.295, 0.208, segs),
-        (0, 1.27, -0.015, 0.316, 0.220, segs),
-        (0, 1.39, 0.000, 0.194, 0.158, segs),
-    ], mat_id=7, shade=(0.76, 0.68, 0.58), cap_bot=False, ao_y=(1.12, 1.39, 0.80, 1.12))
+        (0, 1.14, 0.004, 0.305, 0.232, segs),
+        (0, 1.27, 0.002, 0.318, 0.235, segs),
+        (0, 1.395, 0.000, 0.196, 0.164, segs),
+    ], mat_id=7, shade=(0.76, 0.68, 0.58), cap_bot=False, ao_y=(1.14, 1.395, 0.80, 1.12))
     for sx in (-1, 1):
-        s_fm.add_sphere((sx * 0.26, 1.22, -0.02), (0.105, 0.125, 0.135), segs=5, rings=3, mat_id=7, shade=(0.70, 0.62, 0.52))
+        s_fm.add_sphere((sx * 0.268, 1.22, -0.01), (0.108, 0.125, 0.140), segs=5, rings=3, mat_id=7, shade=(0.70, 0.62, 0.52))
     parts.append(s_fm)
 
     # 10. Steppe plush fur collar + diagonal fur V-lapel across chest!
     s_fc = PartBuilder("shld_fur_collar")
-    s_fc.add_loft([(0, 1.25, 0, 0.222, 0.170, segs), (0, 1.39, 0, 0.152, 0.138, segs)], mat_id=7, shade=(0.86, 0.78, 0.66), cap_bot=False, ao_y=(1.25, 1.39, 0.82, 1.10))
-    s_fc.add_box((0.03, 1.08, 0.168), (0.068, 0.40, 0.028), mat_id=7, shade=(0.86, 0.78, 0.66), rot_euler=(0, 0, 0.34))
+    s_fc.add_loft([(0, 1.24, 0.006, 0.255, 0.202, segs), (0, 1.395, 0, 0.158, 0.144, segs)], mat_id=7, shade=(0.86, 0.78, 0.66), cap_bot=False, ao_y=(1.24, 1.395, 0.82, 1.10))
+    s_fc.add_box((0.03, 1.08, 0.194), (0.068, 0.38, 0.026), mat_id=7, shade=(0.86, 0.78, 0.66), rot_euler=(0, 0, 0.34))
     parts.append(s_fc)
 
     # 11. Flowing desert linen shawl / caster cowl mantle!
     s_ls = PartBuilder("shld_linen_shawl")
-    s_ls.add_loft([(0, 1.22, -0.005, 0.252, 0.180, segs), (0, 1.39, 0.0, 0.142, 0.128, segs)], mat_id=0, shade=(0.95, 0.93, 0.88), cap_bot=False, ao_y=(1.22, 1.39, 0.84, 1.08))
+    s_ls.add_loft([(0, 1.22, 0.006, 0.272, 0.208, segs), (0, 1.395, 0.0, 0.152, 0.138, segs)], mat_id=0, shade=(0.95, 0.93, 0.88), cap_bot=False, ao_y=(1.22, 1.395, 0.84, 1.08))
     parts.append(s_ls)
 
     # 12. Caster cloth cowl mantle (faction primary cloth + brass clasp!)
     s_cm = PartBuilder("shld_cowl_cloth")
-    s_cm.add_loft([(0, 1.14, -0.01, 0.268, 0.188, segs), (0, 1.28, -0.01, 0.256, 0.178, segs), (0, 1.39, 0, 0.145, 0.130, segs)], mat_id=1, cap_bot=False, ao_y=(1.14, 1.39, 0.80, 1.08))
-    s_cm.add_box((0, 1.24, 0.168), (0.074, 0.058, 0.026), mat_id=6)
+    s_cm.add_loft([(0, 1.14, 0.004, 0.278, 0.212, segs), (0, 1.28, 0.002, 0.264, 0.198, segs), (0, 1.395, 0, 0.154, 0.140, segs)], mat_id=1, cap_bot=False, ao_y=(1.14, 1.395, 0.80, 1.08))
+    s_cm.add_box((0, 1.24, 0.206), (0.074, 0.058, 0.024), mat_id=6)
     parts.append(s_cm)
 
     # ===================== LAYER 3: BELTS, SASHES & CHEST HARNESSES =====================
 
-    # 1. Classic leather sword-belt + brass buckle
+    # 1. Classic leather sword-belt + brass buckle (wraps cleanly outside every waist!)
     b_l = PartBuilder("belt_leather")
-    b_l.add_box((0, 0.84, 0.004), (0.422, 0.062, 0.342), mat_id=7)
-    b_l.add_box((0, 0.84, 0.180), (0.074, 0.066, 0.024), mat_id=6)
+    b_l.add_box((0, 0.835, 0.004), (0.448, 0.068, 0.364), mat_id=7)
+    b_l.add_box((0, 0.835, 0.194), (0.076, 0.070, 0.026), mat_id=6)
     parts.append(b_l)
 
     # 2. Leather belt + hip pouch + small belt dagger/satchel
     b_p = PartBuilder("belt_pouch")
-    b_p.add_box((0, 0.84, 0.004), (0.422, 0.062, 0.342), mat_id=7)
-    b_p.add_box((0, 0.84, 0.180), (0.072, 0.064, 0.024), mat_id=6)
-    b_p.add_box((-0.195, 0.76, 0.065), (0.076, 0.115, 0.095), mat_id=7, shade=(0.84, 0.80, 0.76))
-    b_p.add_box((0.185, 0.75, 0.040), (0.050, 0.14, 0.055), mat_id=13)  # hip scabbard/pouch
+    b_p.add_box((0, 0.835, 0.004), (0.448, 0.068, 0.364), mat_id=7)
+    b_p.add_box((0, 0.835, 0.194), (0.074, 0.068, 0.026), mat_id=6)
+    b_p.add_box((-0.208, 0.76, 0.068), (0.076, 0.115, 0.095), mat_id=7, shade=(0.84, 0.80, 0.76))
+    b_p.add_box((0.198, 0.75, 0.042), (0.050, 0.14, 0.055), mat_id=13)
     parts.append(b_p)
 
-    # 3. Ornate gilded knightly belt + gilded chest trim bar!
+    # 3. Ornate gilded knightly belt (no floating chest bar that collides with plate keels!)
     b_g = PartBuilder("belt_gilded")
-    b_g.add_box((0, 0.845, 0.005), (0.432, 0.068, 0.352), mat_id=6)
-    b_g.add_box((0, 1.15, 0.184), (0.25, 0.052, 0.022), mat_id=6)
+    b_g.add_box((0, 0.838, 0.005), (0.456, 0.072, 0.370), mat_id=6)
+    b_g.add_box((0, 0.838, 0.198), (0.082, 0.076, 0.026), mat_id=4, shade=(1.14, 1.16, 1.20))
     parts.append(b_g)
 
     # 4. Wide bright faction-trim waist sash + brass buckle!
     b_st = PartBuilder("belt_sash_trim")
-    b_st.add_box((0, 0.84, 0.004), (0.430, 0.080, 0.345), mat_id=3)
-    b_st.add_box((0, 0.84, 0.182), (0.074, 0.070, 0.026), mat_id=6)
+    b_st.add_box((0, 0.835, 0.004), (0.452, 0.084, 0.368), mat_id=3)
+    b_st.add_box((0, 0.835, 0.196), (0.076, 0.072, 0.026), mat_id=6)
     parts.append(b_st)
 
     # 5. Wide dark contrast waist sash + gleaming brass medallion clasp!
     b_sd = PartBuilder("belt_sash_dark")
-    b_sd.add_box((0, 0.84, 0.004), (0.440, 0.072, 0.352), mat_id=2)
-    b_sd.add_box((0, 0.84, 0.184), (0.078, 0.074, 0.026), mat_id=6)
+    b_sd.add_box((0, 0.835, 0.004), (0.458, 0.076, 0.372), mat_id=2)
+    b_sd.add_box((0, 0.835, 0.198), (0.080, 0.076, 0.026), mat_id=6)
     parts.append(b_sd)
 
-    # 6. Diagonal cross-chest leather baldric strap + iron/brass buckle + sword-belt!
+    # 6. Diagonal cross-chest leather baldric strap (clears chest keel cleanly!) + sword-belt
     b_bd = PartBuilder("belt_baldric")
-    b_bd.add_box((0, 0.84, 0.004), (0.425, 0.062, 0.342), mat_id=7)
-    b_bd.add_box((0, 0.84, 0.180), (0.072, 0.064, 0.024), mat_id=6)
-    b_bd.add_box((0, 1.07, 0.184), (0.076, 0.45, 0.028), mat_id=7, shade=(0.74, 0.62, 0.50), rot_euler=(0, 0, 0.54))
-    b_bd.add_box((0, 1.07, -0.162), (0.076, 0.45, 0.028), mat_id=7, shade=(0.74, 0.62, 0.50), rot_euler=(0, 0, -0.54))
-    b_bd.add_box((-0.05, 1.13, 0.198), (0.064, 0.056, 0.020), mat_id=6)
+    b_bd.add_box((0, 0.835, 0.004), (0.448, 0.068, 0.364), mat_id=7)
+    b_bd.add_box((0, 0.835, 0.194), (0.074, 0.068, 0.026), mat_id=6)
+    b_bd.add_box((0, 1.07, 0.214), (0.072, 0.43, 0.024), mat_id=7, shade=(0.74, 0.62, 0.50), rot_euler=(0, 0, 0.54))
+    b_bd.add_box((0, 1.07, -0.184), (0.072, 0.43, 0.024), mat_id=7, shade=(0.74, 0.62, 0.50), rot_euler=(0, 0, -0.54))
+    b_bd.add_box((-0.05, 1.13, 0.228), (0.062, 0.054, 0.018), mat_id=6)
     parts.append(b_bd)
 
-    # 7. Crossed Northern X-harness chest straps + iron chest boss + war-belt!
+    # 7. Crossed Northern X-harness chest straps (separated in Z to prevent self Z-fighting, clearing plate keel!)
     b_cx = PartBuilder("belt_cross_straps")
-    b_cx.add_box((0, 0.84, 0.004), (0.425, 0.068, 0.342), mat_id=7)
-    b_cx.add_box((0, 0.84, 0.180), (0.074, 0.066, 0.024), mat_id=6)
-    b_cx.add_box((0, 1.05, 0.184), (0.068, 0.42, 0.028), mat_id=7, shade=(0.68, 0.54, 0.42), rot_euler=(0, 0, 0.52))
-    b_cx.add_box((0, 1.05, 0.186), (0.068, 0.42, 0.028), mat_id=7, shade=(0.68, 0.54, 0.42), rot_euler=(0, 0, -0.52))
-    b_cx.add_box((0, 1.05, 0.200), (0.074, 0.074, 0.026), mat_id=4)
+    b_cx.add_box((0, 0.835, 0.004), (0.448, 0.072, 0.364), mat_id=7)
+    b_cx.add_box((0, 0.835, 0.194), (0.076, 0.070, 0.026), mat_id=6)
+    b_cx.add_box((0, 1.04, 0.212), (0.064, 0.38, 0.022), mat_id=7, shade=(0.68, 0.54, 0.42), rot_euler=(0, 0, 0.52))
+    b_cx.add_box((0, 1.04, 0.220), (0.064, 0.38, 0.022), mat_id=7, shade=(0.64, 0.50, 0.38), rot_euler=(0, 0, -0.52))
+    b_cx.add_box((0, 1.04, 0.234), (0.072, 0.072, 0.022), mat_id=4)
     parts.append(b_cx)
 
-    # 8. Ornate caster/order stole + cinched trim waist cord!
+    # 8. Ornate caster/order stole + cinched trim waist cord (clears chest_robe front cleanly!)
     b_sl = PartBuilder("belt_stole")
-    b_sl.add_box((0, 0.85, 0.004), (0.420, 0.062, 0.330), mat_id=3)
-    b_sl.add_box((0, 0.88, 0.162), (0.095, 0.68, 0.024), mat_id=3)
+    b_sl.add_box((0, 0.845, 0.004), (0.442, 0.066, 0.354), mat_id=3)
+    b_sl.add_box((0, 0.84, 0.192), (0.092, 0.64, 0.024), mat_id=3)
     parts.append(b_sl)
 
     # 9. Armored steel waist-lame belt with riveted brass buckle & steel hip rondels!
     b_pl = PartBuilder("belt_plate")
-    b_pl.add_box((0, 0.845, 0.005), (0.436, 0.068, 0.354), mat_id=5, shade=(0.76, 0.80, 0.86))
-    b_pl.add_box((0, 0.845, 0.186), (0.082, 0.072, 0.028), mat_id=6)
+    b_pl.add_box((0, 0.838, 0.005), (0.456, 0.072, 0.372), mat_id=5, shade=(0.76, 0.80, 0.86))
+    b_pl.add_box((0, 0.838, 0.200), (0.082, 0.074, 0.028), mat_id=6)
     for sx in (-1, 1):
-        b_pl.add_box((sx * 0.215, 0.845, 0.085), (0.050, 0.088, 0.088), mat_id=4, shade=(1.08, 1.10, 1.14))
+        b_pl.add_box((sx * 0.228, 0.838, 0.088), (0.050, 0.088, 0.088), mat_id=4, shade=(1.08, 1.10, 1.14))
     parts.append(b_pl)
 
     # ===================== LAYER 4: SKIRTS, FAULDS, TASSETS & TABARDS =====================
@@ -442,10 +442,10 @@ def build_modular_armors(PartBuilder):
         k_fl.add_box((sx * 0.180, 0.52, 0.115), (0.142, 0.17, 0.050), mat_id=4, rot_euler=(-0.06, sx * 0.32, sx * 0.06), shade=(0.96, 0.98, 1.04))
     parts.append(k_fl)
 
-    # 5. Flowing faction surcoat tabard panels (front & back, layers cleanly over ANY skirt/fauld!)
+    # 5. Flowing faction surcoat tabard panels (hangs cleanly below the belt over any skirt/fauld, never colliding with chest keel!)
     k_tb = PartBuilder("skirt_tabard")
-    k_tb.add_box((0, 0.80, 0.170), (0.220, 0.52, 0.026), mat_id=1, ao_y=(0.54, 1.08, 0.78, 1.06))
-    k_tb.add_box((0, 0.80, -0.156), (0.220, 0.52, 0.026), mat_id=1, ao_y=(0.54, 1.08, 0.74, 1.02))
+    k_tb.add_box((0, 0.63, 0.194), (0.205, 0.38, 0.022), mat_id=1, ao_y=(0.44, 0.82, 0.78, 1.06))
+    k_tb.add_box((0, 0.63, -0.182), (0.205, 0.38, 0.022), mat_id=1, ao_y=(0.44, 0.82, 0.74, 1.02))
     parts.append(k_tb)
 
     # 6. Tiered golden-brass lamellar hip tassets over flowing faction under-skirt!
@@ -466,10 +466,10 @@ def build_modular_armors(PartBuilder):
     k_dl.add_loft([(0, 0.40, 0, 0.274, 0.210, segs), (0, 0.46, 0, 0.268, 0.205, segs)], mat_id=7, shade=(0.84, 0.76, 0.64), cap_bot=False, cap_top=False)
     parts.append(k_dl)
 
-    # 9. Flowing desert kaftan skirt + crisp white linen inner front panel!
+    # 9. Flowing desert kaftan skirt + crisp white linen inner front panel (clears skirt/chest cleanly!)
     k_kf = PartBuilder("skirt_kaftan")
-    k_kf.add_loft([(0, 0.38, 0, 0.272, 0.212, segs), (0, 0.83, 0, 0.200, 0.156, segs)], mat_id=1, cap_top=False, ao_y=(0.38, 0.83, 0.76, 1.06))
-    k_kf.add_box((0, 0.88, 0.166), (0.135, 0.66, 0.026), mat_id=0, shade=(0.95, 0.93, 0.88))
+    k_kf.add_loft([(0, 0.38, 0, 0.272, 0.212, segs), (0, 0.81, 0, 0.198, 0.154, segs)], mat_id=1, cap_top=False, ao_y=(0.38, 0.81, 0.76, 1.06))
+    k_kf.add_box((0, 0.60, 0.196), (0.125, 0.42, 0.022), mat_id=0, shade=(0.95, 0.93, 0.88))
     parts.append(k_kf)
 
     return parts
