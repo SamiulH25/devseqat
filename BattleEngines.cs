@@ -82,12 +82,18 @@ public sealed partial class Battle
         string n = e.Def.Name.ToLowerInvariant();
         if (foe != null) { e.Crew.Target = foe; Log($"The {n}: shoot at {foe.Name}!"); return; }
         if (at is not Vector2 p) { Log($"The {n}: shoot as you see fit."); return; }
-        if (Wall != null && MathF.Abs(p.Y - SiegeWall.Outer) < 8) p = new Vector2(p.X, SiegeWall.Outer - 0.5f);
+        if (Wall is Fortress fort)
+        {
+            var g = fort.NearestGate(p);
+            if (g != null && Vector2.Distance(p, g.Pos) < 8f) p = g.Pos + g.Out * 0.5f;
+            else if (fort.NearestSegment(p, 8f) is WallSegment seg) p = seg.Mid + seg.Out * 0.5f;
+        }
         float r = Vector2.Distance(e.Pos, p);
         if (r > e.Def.Range) { Log($"The {n} cannot reach that far ({e.Def.Range:0} m)."); return; }
         if (r < e.Def.MinRange) { Log($"That is too close for the {n} ({e.Def.MinRange:0} m at least)."); return; }
         e.Mark = p;
-        Log(Wall != null && p.Y > SiegeWall.Outer - 1 ? $"The {n}: shoot at the wall!" : $"The {n}: shoot there!");
+        Log(Wall != null && (Wall.NearestSegment(p, 4f) != null || (Wall.NearestGate(p) is { } ng && Vector2.Distance(p, ng.Pos) < 5f))
+            ? $"The {n}: shoot at the wall!" : $"The {n}: shoot there!");
     }
 
     /// Set up an engine at `at` facing `front`, worked by `crew` (who form up just behind it and hold there; the AI general
@@ -96,7 +102,19 @@ public sealed partial class Battle
     {
         var def = Ironfield.Engines.Get(id);
         var e = new Engine { Def = def, Team = team, Index = Engines.Count, Pos = at, Front = Vector2.Normalize(front), Crew = crew, Hp = def.Hp, Aim = at, Goal = at };
-        if (def.Rolls && Wall != null) e.Goal = new Vector2(def.Shot == "ram" ? SiegeWall.GateX : at.X, SiegeWall.Outer - 1.6f);
+        if (def.Rolls && Wall is Fortress fw)
+        {
+            if (def.Shot == "ram") e.Goal = fw.MainGate.Pos + fw.MainGate.Out * 1.6f;
+            else
+            {
+                var seg = fw.NearestSegment(at, ring: 0);
+                if (seg != null)
+                {
+                    float t = Math.Clamp(Vector2.Dot(at - seg.A, seg.Along), 2f, MathF.Max(2f, seg.Length - 2f));
+                    e.Goal = seg.A + seg.Along * t + seg.Out * 1.6f;
+                }
+            }
+        }
         Engines.Add(e);
         crew.Works = e;
         crew.Order = Order.Hold;
@@ -113,12 +131,14 @@ public sealed partial class Battle
     /// defenders' are on it already (MountWallEngines). Breached sections start down.
     void DeployEngines()
     {
-        if (Wall != null)
-            for (int k = 0; k < Options.Breaches; k++)
-            {
-                int i = Wall.SectionAt(k % 2 == 0 ? -35 - 20 * (k / 2) : 35 + 20 * (k / 2));
-                if (i >= 0) Wall.SectionHp[i] = 0;
-            }
+        if (Wall is Fortress fort)
+        {
+            var southSegs = fort.Segments.Where(s => s.Ring == 0 && !s.IsGate && s.Out.Y < -0.2f && Vector2.Distance(s.Mid, fort.MainGate.Pos) > 10f)
+                .OrderBy(s => Vector2.Distance(s.Mid, fort.MainGate.Pos)).ToList();
+            for (int k = 0; k < Options.Breaches && k < southSegs.Count; k++)
+                southSegs[k].Hp = 0;
+            if (Options.Breaches > 0) InvalidatePath();
+        }
         var placed = new int[2];
         foreach (var spec in Options.Engines)
         {
@@ -131,14 +151,19 @@ public sealed partial class Battle
             if (from == null) continue;
             int k = placed[spec.Team]++;
             float f = spec.Team == 0 ? 1 : -1, side = k % 2 == 0 ? -1 : 1;
-            Vector2 at = Wall == null
-                ? new Vector2(side * (10 + 16 * (k / 2)), -(rearLine[spec.Team] + 4)) * f // behind the line, where the archers stand
-                : def.Shot switch
+            Vector2 at;
+            if (Wall == null)
+                at = new Vector2(side * (10 + 16 * (k / 2)), -(rearLine[spec.Team] + 4)) * f; // behind the line, where the archers stand
+            else
+            {
+                var mg = Wall.MainGate;
+                at = def.Shot switch
                 {
-                    "ram" => new Vector2(SiegeWall.GateX + 6, SiegeWall.Outer - 32),
-                    "tower" => new Vector2(side * (55 + 18 * (k / 2)), SiegeWall.Outer - 40),
-                    _ => new Vector2(side * (30 + 20 * (k / 2)), SiegeWall.Outer - MathF.Min(def.Range * 0.7f, 100)),
+                    "ram" => mg.Pos + mg.Out * 32f + mg.Along * 6f,
+                    "tower" => mg.Pos + mg.Out * 40f + mg.Along * (side * (24 + 14 * (k / 2))),
+                    _ => mg.Pos + mg.Out * MathF.Min(def.Range * 0.7f, 95) + mg.Along * (side * (24 + 16 * (k / 2))),
                 };
+            }
             var crew = SplitNow(from, def.Crew, quiet: true);
             crew.Division?.Squads.Remove(crew);
             crew.Division = null;
@@ -222,7 +247,7 @@ public sealed partial class Battle
         Log(e.Team == 0 ? $"Your {e.Def.Name.ToLowerInvariant()} is wrecked!" : $"The enemy {e.Def.Name.ToLowerInvariant()} is wrecked!");
         if (Manned == e) Man(null);
         e.Crew.Works = null; // the crew is a company again
-        if (e.Docked && Wall != null) { Wall.Ramps.Remove(e.Pos.X); e.Docked = false; WallVersion++; } // the tower's way up is gone
+        if (e.Docked && Wall != null) { Wall.Ramps.RemoveAll(r => r.Tower == e); e.Docked = false; WallVersion++; InvalidatePath(); } // the tower's way up is gone
     }
 
     /// A ram or a tower: its crew push it toward its goal at their pace (a short crew, slower); a ram at the gate beats on it,
@@ -244,19 +269,28 @@ public sealed partial class Battle
         if (w == null) return;
         if (e.Def.Shot == "tower" && !e.Docked)
         {
-            e.Docked = true;
-            w.Ramps.Add(e.Pos.X);
-            WallVersion++;
-            Log(e.Team == 0 ? "Our siege tower is at the wall!" : "A siege tower reaches the wall!");
-            Sound(Cue.LadderHook, e.Pos, priority: true);
+            var seg = w.NearestSegment(e.Pos, 8f, ring: 0);
+            if (seg != null)
+            {
+                e.Docked = true;
+                w.AddRamp(seg, e.Pos, e);
+                WallVersion++;
+                InvalidatePath();
+                Log(e.Team == 0 ? "Our siege tower is at the wall!" : "A siege tower reaches the wall!");
+                Sound(Cue.LadderHook, e.Pos, priority: true);
+            }
         }
-        if (e.Def.Shot == "ram" && !w.GateOpen && w.AtGate(e.Pos.X))
+        if (e.Def.Shot == "ram")
         {
-            float before = w.GateHp;
-            w.GateHp = MathF.Max(0, w.GateHp - e.Def.Damage * k * dt);
-            e.GateDamage += before - w.GateHp;
-            if ((e.Reload -= dt) <= 0) { e.Reload = 1.4f; Sound(Cue.Ram, e.Pos); }
-            if (w.GateOpen) GateGivesWay();
+            var g = w.NearestGate(e.Pos);
+            if (g != null && !g.Open && Vector2.Distance(e.Pos, g.Pos) < g.HalfWidth + 3.5f)
+            {
+                float before = g.Hp;
+                g.Hp = MathF.Max(0, g.Hp - e.Def.Damage * k * dt);
+                e.GateDamage += before - g.Hp;
+                if ((e.Reload -= dt) <= 0) { e.Reload = 1.4f; Sound(Cue.Ram, e.Pos); }
+                if (g.Open) GateGivesWay(g);
+            }
         }
     }
 
@@ -275,18 +309,23 @@ public sealed partial class Battle
         var d = e.Def;
         bool InReach(Vector2 p) { float r = Vector2.Distance(e.Pos, p); return r >= d.MinRange && r <= d.Range; }
         if (e.Mark is Vector2 spot && InReach(spot)) return spot; // the player's chosen spot (A5)
-        if (Wall is SiegeWall w && e.Team == 0 && d.Shot == "stone" && d.WallDamage >= 20 && !w.Breaches.Any())
+        if (Wall is Fortress w && e.Team == 0 && d.Shot == "stone" && d.WallDamage >= 20 && !w.AnyBreach)
         {
-            // A great engine (or any, once the gate is down) makes a breach in the section before it; a lesser one hits the gate.
-            var gate = new Vector2(SiegeWall.GateX, SiegeWall.Outer - 0.5f);
-            if (!w.GateOpen && d.WallDamage < 100 && InReach(gate)) return gate;
-            if (w.GateOpen || d.WallDamage >= 100)
+            // A great engine (or any, once the gate is down) makes a breach in the nearest outer segment; a lesser one hits the gate.
+            var mg = w.MainGate;
+            var gate = mg.Pos - mg.Out * 0.6f;
+            if (!mg.Open && d.WallDamage < 100 && InReach(gate)) return gate;
+            if (mg.Open || d.WallDamage >= 100)
             {
-                int best = -1;
-                for (int i = 0; i < SiegeWall.SectionCount; i++)
-                    if (w.SectionAt(SiegeWall.SectionX(i)) == i && InReach(new Vector2(SiegeWall.SectionX(i), SiegeWall.Outer))
-                        && (best < 0 || MathF.Abs(SiegeWall.SectionX(i) - e.Pos.X) < MathF.Abs(SiegeWall.SectionX(best) - e.Pos.X))) best = i;
-                if (best >= 0) return new Vector2(SiegeWall.SectionX(best), SiegeWall.Outer - 0.5f);
+                WallSegment? best = null;
+                float bd = float.MaxValue;
+                foreach (var seg in w.Segments)
+                {
+                    if (seg.Ring != 0 || seg.IsGate || seg.Breached || !InReach(seg.Mid)) continue;
+                    float dist = Vector2.Distance(e.Pos, seg.Mid);
+                    if (dist < bd) { bd = dist; best = seg; }
+                }
+                if (best != null) return best.Mid + best.Out * 0.5f;
             }
         }
         Squad? Fit(Squad? s) => s is { Alive: > 0 } && s.Team != e.Team && Visible(s, e.Team) && InReach(s.Center) ? s : null;
@@ -411,21 +450,28 @@ public sealed partial class Battle
         }
         foreach (var e in Engines)
             if (e != s.From && !e.Wrecked && Vector2.Distance(e.Pos, at) < d.Splash + 1.5f) Damage(e, s.Damage * 0.8f);
-        if (Wall is SiegeWall w && d.WallDamage > 0 && MathF.Abs(at.Y - SiegeWall.Outer) < 2.5f)
+        if (Wall is Fortress w && d.WallDamage > 0)
         {
-            if (!w.GateOpen && w.AtGate(at.X))
+            var g = w.NearestGate(at);
+            if (g != null && !g.Open && Vector2.Distance(at, g.Pos) < g.HalfWidth + 2.5f)
             {
-                float before = w.GateHp;
-                w.GateHp = MathF.Max(0, w.GateHp - d.WallDamage);
-                s.From.GateDamage += before - w.GateHp;
+                float before = g.Hp;
+                g.Hp = MathF.Max(0, g.Hp - d.WallDamage);
+                s.From.GateDamage += before - g.Hp;
                 Sound(Cue.Ram, at);
-                if (w.GateOpen) GateGivesWay();
+                if (g.Open) GateGivesWay(g);
             }
-            else if (w.SectionAt(at.X) is int i and >= 0 && !w.Breached(i))
+            else if (w.NearestTower(at, 4.5f) is { Silenced: false } tw)
             {
-                w.SectionHp[i] -= d.WallDamage;
+                tw.Hp = MathF.Max(0, tw.Hp - d.WallDamage);
                 s.From.WallDamage += d.WallDamage;
-                if (w.Breached(i)) WallBreached(i);
+                if (tw.Silenced) { WallVersion++; Log("A tower falls silent!"); Sound(Cue.WallFall, tw.Pos); }
+            }
+            else if (w.NearestSegment(at, 4.0f) is { Breached: false } seg)
+            {
+                seg.Hp = MathF.Max(0, seg.Hp - d.WallDamage);
+                s.From.WallDamage += d.WallDamage;
+                if (seg.Breached) WallBreached(seg);
             }
         }
     }

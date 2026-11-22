@@ -139,12 +139,13 @@ public static partial class SelfTest
             Engine? e = null;
             if (engine)
             {
-                var crew = b.AddSquad(0, Troops.Get("levies"), 8, new Vector2(SiegeWall.GateX + 20, SiegeWall.Outer - 72), 4, Vector2.UnitY);
-                e = b.AddEngine(0, "mangonel", new Vector2(SiegeWall.GateX + 20, SiegeWall.Outer - 70), Vector2.UnitY, crew);
+                var mg = b.Wall!.MainGate;
+                var crew = b.AddSquad(0, Troops.Get("levies"), 8, mg.Pos + mg.Out * 72f + mg.Along * 20f, 4, Vector2.UnitY);
+                e = b.AddEngine(0, "mangonel", mg.Pos + mg.Out * 70f + mg.Along * 20f, Vector2.UnitY, crew);
             }
-            for (int i = 0; i < 60 * 60 && b.Winner < 0 && b.Wall!.GateHp > 0; i++) b.Update(1 / 60f);
-            float at = b.Wall!.GateHp > 0 ? 60 + b.Wall.GateHp : b.Time;
-            Console.WriteLine($"gate: {(e != null ? $"mangonel {e.Shots} stones, {e.GateDamage:0} off the gate" : "no engine")}, gate {b.Wall.GateHp:0}, score {at:0.0}");
+            for (int i = 0; i < 60 * 60 && b.Winner < 0 && b.Wall!.MainGate.Hp > 0; i++) b.Update(1 / 60f);
+            float at = b.Wall!.MainGate.Hp > 0 ? 60 + b.Wall.MainGate.Hp : b.Time;
+            Console.WriteLine($"gate: {(e != null ? $"mangonel {e.Shots} stones, {e.GateDamage:0} off the gate" : "no engine")}, gate {b.Wall.MainGate.Hp:0}, score {at:0.0}");
             if (e != null) Check(e.GateDamage > 0, "the mangonel's stones strike the gate");
             return at;
         }

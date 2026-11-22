@@ -107,6 +107,7 @@ public sealed partial class Terrain
     /// Is there a house (a big solid thing) at p? Trunks and boulders are left to steering.
     public bool House(Vector2 p)
     {
+        if (Wall != null && Wall.InBuilding(p, 0.6f)) return true;
         int bx = (int)((p.X + Half) / Cell), bz = (int)((p.Y + Half) / Cell);
         for (int z = bz - 1; z <= bz + 1; z++)
             for (int x = bx - 1; x <= bx + 1; x++)

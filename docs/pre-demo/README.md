@@ -5,7 +5,6 @@ ships, its "As built" note goes at its end and it moves to `docs/archive/`. Idea
 
 | Plan | What it covers |
 |---|---|
-| [`NOBILITY.md`](NOBILITY.md) | Common and noble troop trees, esquires, knighting a named man (N1-N5) |
-| [`SIEGES.md`](SIEGES.md) | The siege overhaul: the real place as the field, capture points, layered defence, sallies, relief and terms (SE1-SE10) |
-| [`KIT.md`](KIT.md) | Troops made of kit and skill: base man + Arms, Riding, Bowcraft + the gear they wear, for every troop (KT0-KT7) |
-| [`TIERS.md`](TIERS.md) | Tiers that matter: what each tier can do, seen in battle and on the map, and why the campaign wants good troops (TI0-TI6) |
+| [`NOBILITY.md`](NOBILITY.md) | Common and noble troop trees, esquires, knighting a named man (N1-N5; N1-N2 built, N3-N5 open) |
+| [`SIEGES.md`](SIEGES.md) | The siege overhaul: the real place as the field, capture points, layered defence, sallies, relief and terms (SE1-SE10; nothing built) |
+| [`KIT.md`](KIT.md) | Troops made of kit and skill: base man + Arms, Riding, Bowcraft + the gear they wear, for every troop (KT0-KT7; KT0-KT4 and KT6 built, KT5 and KT7 deferred until after the demo) |

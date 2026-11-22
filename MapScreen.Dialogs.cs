@@ -202,9 +202,24 @@ partial class MapScreen
             float wait = C.LaddersIn(s);
             ui.Text(wait > 0 ? $"LADDERS AND A RAM IN {wait:0} HOURS. ASSAULTING NOW MEANS THE GATE ALONE." : "LADDERS ARE BUILT AND THE RAM IS READY.", x, y, wait > 0 ? Style.Warn : Style.Ok, 1);
             y += ui.U(14);
-            ui.Text("STARVING THEM OUT: EACH DAY COSTS THEM A DAY OF SUPPLIES, THEN MEN.", x, y, Style.Dim, 1);
-            y += ui.U(22);
+            bool tight = C.TightEncirclement(s);
+            int days = Math.Max(0, (int)((C.S.Hours - s.SiegeSince) / 24));
+            ui.Text(tight ? $"TIGHT ENCIRCLEMENT (DAY {days}) — STORES FALLING DAILY." : $"LOOSE ENCIRCLEMENT (DAY {days}) — HALF SUPPLIES TRICKLE IN.", x, y, tight ? Style.Dim : Style.Warn, 1);
+            y += ui.U(20);
             SiegeWorksRows(s, r, x, y);
+            int sy = r.Bottom - ui.U(76);
+            int sw = ui.U(156);
+            string sapLabel = C.SapReady(s) ? "SAP READY" : s.SapReadyAt > 0 ? $"SAP ({MathF.Ceiling(s.SapReadyAt - (float)C.S.Hours)}H)" : "MINE SAP (180C)";
+            if (ui.Button(new Rectangle(x, sy, sw, ui.U(26)), sapLabel, s.SapReadyAt <= 0 && C.S.Gold >= 180)) { note = C.MineSap(s) ?? ""; }
+            if (Campaign.Level(s, "walls") >= 2)
+            {
+                string ditchLabel = s.DitchFilled ? "DITCH FILLED" : "FILL DITCH (80C)";
+                if (ui.Button(new Rectangle(x + sw + ui.U(8), sy, sw, ui.U(26)), ditchLabel, !s.DitchFilled && C.S.Gold >= 80)) { note = C.FillDitch(s) ?? ""; }
+            }
+            bool canTerms = C.CanOfferTerms(s, out string termsWhy);
+            var termsRect = new Rectangle(r.Right - ui.U(24) - sw, sy, sw, ui.U(26));
+            if (ui.Button(termsRect, "OFFER TERMS", canTerms)) { C.OfferTerms(s); panel = PanelKind.None; return; }
+            if (!canTerms && ui.Hover(termsRect)) note = termsWhy;
         }
         else ui.Text("YOUR MEN WILL NEED A NIGHT TO BUILD LADDERS AND A RAM.", x, y, Style.Dim, 1);
         Note(r);

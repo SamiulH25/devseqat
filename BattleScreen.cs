@@ -539,7 +539,7 @@ sealed partial class BattleScreen
             s0 = 0.9f;
             s1 = Math.Clamp(battle.Arrows.Count > 0 || closestEnemyDist < 65f ? 0.35f + 0.65f * MathF.Min(1f, field / 40f + battle.Arrows.Count / 12f) : 0f, 0f, 1f);
             s2 = men == 0 ? 0f : Math.Clamp(3f * field / men, 0f, 1f);
-            s3 = battle.ClashOn || battle.BrokeThrough || Sky.OmenDark > 0.2f || battle.Wall is { GateOpen: true }
+            s3 = battle.ClashOn || battle.BrokeThrough || Sky.OmenDark > 0.2f || battle.Wall is { AnyGateOpen: true }
                 ? 1f
                 : Math.Clamp((casualtyRatio - 0.32f) * 2.5f, 0f, 1f);
         }

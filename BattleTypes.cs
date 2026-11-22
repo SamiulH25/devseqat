@@ -73,7 +73,7 @@ public sealed class BattleOptions
     public int[] Palette = { 0, 1 };
     /// Difficulty: the enemy's blows are multiplied by this.
     public float EnemyDamage = 1;
-    /// An assault on a walled town (roadmap B1): team 1 holds the wall; ladders built and the gate's strength.
+    /// An assault on a walled town or castle (docs/pre-demo/SIEGES.md): team 1 holds the fortress; ladders built and the gate's strength.
     public bool Siege;
     public int Ladders = 2;
     public float GateHp = 500;
@@ -82,6 +82,11 @@ public sealed class BattleOptions
     public int WallEngines;
     /// Sections of the wall already down when the assault begins (a battered wall, docs/archive/SIEGECRAFT.md A3).
     public int Breaches;
+    /// The fortress plan for an assault (SE1): built from the settlement's PlacePlan in campaign, or generated from FortressKind.
+    public FortressSpec? Fortress;
+    public FortressKind FortressKind = FortressKind.Town;
+    public int WallsLevel = 1;
+    public int SiegeSupplies = 30;
     /// Engines each side brings (a siege camp's works, a company's train: docs/archive/SIEGECRAFT.md A3, A4); each is crewed by men
     /// detached from one of its side's foot companies (Battle.DeployEngines).
     public List<EngineSpec> Engines = new();

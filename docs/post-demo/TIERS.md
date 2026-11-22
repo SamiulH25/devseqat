@@ -4,9 +4,9 @@ The owner's brief (2026-11-21): "upgrading from levies to swordsmen makes a visu
 gameplay change it makes. Why should I care that it's upgraded, why should the user care? Why would a player want to get high
 tier soldiers?" This plan answers that from three sides: what a tier does, how the player sees it, and why it pays.
 
-Phase prefix: **TI**. TI0 and TI1 built (see "As built" at the end).
+Phase prefix: **TI**. TI0 and TI1 are built (2026-11-21); **TI2–TI6 are deferred until after the demo** (moved from `docs/pre-demo/` 2026-11-21). See "As built" at the end.
 
-## Where things stand (2026-11-21)
+## Where things stand (2026-11-21, before TI1; the built numbers are in "As built")
 
 A tier already does a lot, but almost all of it is hidden.
 
@@ -40,7 +40,7 @@ The problems:
   contracts, renown and fame. They also become the named veterans the company's legacy is built on (docs/archive/LEGACY.md).
 - **It is a choice.** Many cheap men or few good ones is a real trade at every stage. Neither is always right.
 
-## TI0. Measure
+## TI0. Measure (built)
 
 - A tier matrix run (`--tiers`, beside `TierSurvey`), for each line and each step. It fights three matchups:
   - the same number of men against each other
@@ -54,7 +54,7 @@ The problems:
   - equal places: the higher tier wins
 - The flat steps found here (levies to shieldmen first) are what TI1 fixes.
 
-## TI1. A ladder of things each tier can do
+## TI1. A ladder of things each tier can do (built)
 
 Every line shares one ladder, so a player learns it once:
 
@@ -72,7 +72,7 @@ Every line shares one ladder, so a player learns it once:
   learning the shield wall is then the moment you feel the upgrade.
 - Stats keep rising, and the first steps get a bigger jump, set by TI0's numbers.
 
-## TI2. You can see it in battle
+## TI2. You can see it in battle (open)
 
 - **Drill on the body:**
   - Rabble stand ragged, out of step, at odd angles and with shields low.
@@ -94,7 +94,7 @@ Every line shares one ladder, so a player learns it once:
 - **The battle report:** losses and kills by tier ("your men-at-arms lost 4 and killed 31"), so a player sees which men earned
   their pay.
 
-## TI3. You can see it on the map
+## TI3. You can see it on the map (open)
 
 - **The promotion screen** (`MapScreen.Upgrade.cs` `TroopDetail`) leads with what changes, as pictured cards:
   - "+ SHIELD WALL"
@@ -111,7 +111,7 @@ Every line shares one ladder, so a player learns it once:
 - **The party board** (`MapScreen.Board.cs`): each company tile shows its grade plate and a strength figure that weighs drill,
   so a small good company shows as strong.
 
-## TI4. Why it pays: the campaign wants good troops
+## TI4. Why it pays: the campaign wants good troops (open)
 
 - **Strength per mouth:** food and wages are per man, but strength rises faster than cost from tier III up. A smaller, better
   army eats less, marches faster (rabble is already slow, `PaceOf`), and fits more strength into the command cap and company
@@ -130,7 +130,7 @@ Every line shares one ladder, so a player learns it once:
 - **The trade stays real:** cheap levies still win by weight of numbers in auto-resolve, in sieges and against brigands. Many
   cheap men stays a good choice early on and a poor one later.
 
-## TI5. Lines that feel different
+## TI5. Lines that feel different (open)
 
 - Branches at the same tier must have different jobs, not the same soldier with other stats:
   - **pikes** stop horse and are slow
@@ -142,7 +142,7 @@ Every line shares one ladder, so a player learns it once:
   Merge them or give them a job.
 - Tier VI is each line's legend: a name worth knowing, a look that stands out, a signature only it has.
 
-## TI6. Check and tune
+## TI6. Check and tune (open)
 
 - `--tiers` against the TI0 targets; `--balance`, `--agree` and `--realms` to check the AI's armies and auto-resolve still match
   played battles.

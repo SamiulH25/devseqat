@@ -656,7 +656,7 @@ The visuals pass (`docs/archive/VISUALS.md`) changed nothing in the simulation: 
 - **Drill by tier:** every company has a grade, shown on its card (RAB / TRN / VET / ELT), its tooltip and the muster roll.
   Tier I troops are Rabble, II-III Trained, IV-V Veteran, VI Elite; cohesion (up to +0.1), a Veteran officer and a companion at its
   head raise it, a Hothead lowers it.
-- **What each tier can do** (docs/pre-demo/TIERS.md): levies hold, charge, follow, open their ranks and brace their spears against
+- **What each tier can do** (docs/post-demo/TIERS.md): levies hold, charge, follow, open their ranks and brace their spears against
   horse, but cannot lock shields; tier II forms the shield wall and rallies once after breaking (levies never come back); tier III
   can relieve the line and be split; tier IV forms square and wedge; tier V shrugs off monsters' fear and rallies twice; a tier VI
   man steadies the men around him. A formation a company has not learned is greyed on the order deck with the tier it needs.

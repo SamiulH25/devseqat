@@ -611,6 +611,17 @@ partial class BattleScreen
         }
     }
 
+    void FortressPointRings()
+    {
+        if (battle.Wall is not Fortress fort) return;
+        Color Col(int owner, float cap) => owner == 0 ? Gold * 0.85f : cap < 0.99f ? Color.Lerp(Gold, Foe, cap) * 0.85f : Foe * 0.65f;
+        // The heart: a bold ring around the square / keep door.
+        Ring(fort.Heart, fort.HeartRadius, Col(fort.HeartOwner, fort.HeartCapture), 32, 1.4f);
+        // Gatehouses: smaller ring just inside each gate.
+        foreach (var g in fort.Gates)
+            Ring(g.Pos - g.Out * 3.5f, 4.5f, Col(g.Owner, g.Capture), 16, 1.0f);
+    }
+
     void Ring(Vector2 p, float r, Color c, int seg = 12, float width = 1)
     {
         seg = Math.Max(seg, Math.Min(64, (int)(r * 3))); // a wide ring stays round
@@ -716,9 +727,10 @@ partial class BattleScreen
     /// The siege wall's torches light the night (none by day or without a wall): see `World.Torches`.
     Vector4 TorchRow()
     {
-        if (battle.Terrain.Wall == null || Sky.Night <= 0.05f) return Vector4.Zero;
-        float top = battle.Terrain.Height(new Vector2(World.TorchSpacing, 15.25f)) + 0.7f;
-        return new Vector4(SiegeWall.Outer - 0.5f, top, Math.Clamp(Sky.Night * 1.8f, 0, 1), World.TorchSpacing);
+        if (battle.Terrain.Wall is not Fortress f || Sky.Night <= 0.05f) return Vector4.Zero;
+        var g = f.MainGate.Pos;
+        float top = battle.Terrain.Height(g - f.MainGate.Out * 2.5f) + 0.7f;
+        return new Vector4(g.Y - 0.5f, top, Math.Clamp(Sky.Night * 1.8f, 0, 1), World.TorchSpacing);
     }
 
     /// Rain streaks (or snowflakes) in a box around the camera, falling on a fixed pattern so nothing is stored. From the high
@@ -932,6 +944,7 @@ partial class BattleScreen
                 foreach (var k in goneSelected) selectedAt.Remove(k);
             }
             OrderArrowLines();
+            FortressPointRings();
             HoldMarker(); // the fight view's hold-there marker (BattleScreen.Fight.cs)
             if (command)
             {

@@ -412,9 +412,10 @@ public static partial class SelfTest
         def = def with { Companies = def.Companies.Where(c => Armies.RoleOf(c) != "horse").Select(c => c with { Count = c.Count * 2 / 3 }).ToList() };
         var b = new Battle(77, att, def, new BattleOptions { AutoPlayer = true, PlayerWounded = true, Siege = true, Ladders = 2, GateHp = 300 });
         var w = b.Wall!;
-        Check(b.Terrain.Height(new Vector2(30, 15)) > b.Terrain.Height(new Vector2(30, 8)) + 3, "the wall stands above the field");
-        Check(b.Units.Where(u => u.Team == 1 && u.Ammo > 0).All(u => SiegeWall.Inside(u.Pos)), "defending archers start on the wall");
-        var was = b.Units.ToDictionary(u => u, u => SiegeWall.Inside(u.Pos));
+        var southSeg = w.Segments.First(s => s.Ring == 0 && !s.IsGate && s.Out.Y < -0.2f);
+        Check(b.Terrain.Height(southSeg.Mid - southSeg.Out * 2f) > b.Terrain.Height(southSeg.Mid + southSeg.Out * 4f) + 3, "the wall stands above the field");
+        Check(b.Units.Where(u => u.Team == 1 && u.Ammo > 0).All(u => w.Inside(u.Pos)), "defending archers start on the wall");
+        var prevPos = b.Units.ToDictionary(u => u, u => u.Pos);
         int illegal = 0;
         for (int step = 0; b.Winner < 0 && step < 60 * 900; step++)
         {
@@ -424,21 +425,20 @@ public static partial class SelfTest
                     Console.WriteLine($"  t{b.Time:0} team{sq.Team} {sq.Name} {sq.Order} alive {sq.Alive} at {sq.Centroid().X:0},{sq.Centroid().Y:0} anchor {sq.Anchor.X:0},{sq.Anchor.Y:0} morale {sq.Units.Where(u => u.Active).Select(u => u.Morale).DefaultIfEmpty(0).Average():0}");
             foreach (var u in b.Units)
             {
-                bool inside = SiegeWall.Inside(u.Pos);
-                if (!was.TryGetValue(u, out bool before)) { was[u] = inside; continue; }
-                if (u.Active && inside != before && !(w.GateOpen && w.AtGate(u.Pos.X)) && !(u.Team == 0 && w.AtLadder(u.Pos.X))) illegal++;
-                was[u] = inside;
+                if (!prevPos.TryGetValue(u, out var before)) { prevPos[u] = u.Pos; continue; }
+                prevPos[u] = u.Pos;
+                if (u.Active && !w.MayCross(u, before, u.Pos, out _)) illegal++;
             }
         }
-        Console.WriteLine($"siege: team {b.Winner} won after {b.Time:0}s, gate {(w.GateOpen ? "broken" : $"{w.GateHp:0} hp")}, {b.Units.Count(u => u.Team == 0 && u.Active && SiegeWall.Inside(u.Pos))} attackers inside");
+        Console.WriteLine($"siege: team {b.Winner} won after {b.Time:0}s, gate {(w.MainGate.Open ? "broken" : $"{w.MainGate.Hp:0} hp")}, {b.Units.Count(u => u.Team == 0 && u.Active && w.Inside(u.Pos))} attackers inside");
         Check(illegal == 0, $"nobody walks through the wall ({illegal})");
         Check(b.Winner >= 0, "an assault resolves within 15 minutes");
-        Check(w.GateOpen || b.Units.Any(u => u.Team == 0 && SiegeWall.Inside(u.Pos)), "the attackers got in somewhere");
+        Check(w.AnyGateOpen || b.Units.Any(u => u.Team == 0 && w.Inside(u.Pos)), "the attackers got in somewhere");
         // Without ladders the only way in is the gate: the attackers batter it down.
         var g = new Battle(78, att, def, new BattleOptions { AutoPlayer = true, PlayerWounded = true, Siege = true, Ladders = 0, GateHp = 200 });
-        for (int step = 0; g.Winner < 0 && !g.Wall!.GateOpen && step < 60 * 300; step++) g.Update(1 / 60f);
-        Console.WriteLine($"siege without ladders: gate {(g.Wall!.GateOpen ? $"broken at {g.Time:0}s" : $"{g.Wall.GateHp:0} hp")}");
-        Check(g.Wall.GateOpen, "a ram breaks the gate");
+        for (int step = 0; g.Winner < 0 && !g.Wall!.AnyGateOpen && step < 60 * 300; step++) g.Update(1 / 60f);
+        Console.WriteLine($"siege without ladders: gate {(g.Wall!.AnyGateOpen ? $"broken at {g.Time:0}s" : $"{g.Wall.MainGate.Hp:0} hp")}");
+        Check(g.Wall.AnyGateOpen, "a ram breaks the gate");
     }
 
     /// Three realms: pairwise wars, sieges and captures, contracts, prisoners, food; 200 days, nothing breaks.

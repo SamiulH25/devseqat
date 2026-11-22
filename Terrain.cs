@@ -184,54 +184,6 @@ public readonly record struct FieldPlot(Vector2 Center, Vector2 Axis, Vector2 Ha
     }
 }
 
-/// A town wall across the field for an assault (roadmap B1). It runs the whole width at z = 14..16.5 (a walkway on raised
-/// ground, faced in stone toward the attackers, with an earth bank behind it), has a gate near x = 0 that attackers break
-/// down, and ladders where men on foot can climb. The heights are part of the terrain, so units stand on the walkway and
-/// arrows strike the wall's face; the face itself is a barrier in Battle.Move.
-public sealed class SiegeWall
-{
-    public const float Outer = 11.5f, Top0 = 14, Top1 = 16.5f, Inner = 19, Height = 4.5f, LadderHalf = 1.3f;
-    public const float GateX = 0.25f, GateHalf = 2.75f;
-    public readonly float[] Ladders;
-    public float GateHp, GateMax;
-    public bool GateOpen => GateHp <= 0;
-
-    /// The wall's face in sections an engine can break (docs/archive/SIEGECRAFT.md A2): `SectionCount` of `SectionWidth` metres from
-    /// `SectionsFrom`, all but the two by the gatehouse. A broken section is a breach: a slope of rubble men on foot climb
-    /// (the bank behind it stands, so the ground does not change). Siege towers that reach the face are `Ramps`.
-    public const float SectionWidth = 10, SectionsFrom = -100, BreachHalf = 4, RampHalf = 1.8f;
-    public const int SectionCount = 20;
-    public readonly float[] SectionHp;
-    public readonly float SectionMax;
-    public readonly List<float> Ramps = new();
-
-    public SiegeWall(int ladders, float gateHp, float sectionHp = 0)
-    {
-        Ladders = ladders switch { <= 0 => Array.Empty<float>(), 1 => new[] { -22f }, 2 => new[] { -24f, 22f }, _ => new[] { -36f, -16f, 18f, 38f } };
-        GateHp = GateMax = gateHp;
-        SectionMax = sectionHp > 0 ? sectionHp : gateHp * 1.5f;
-        SectionHp = Enumerable.Repeat(SectionMax, SectionCount).ToArray();
-    }
-
-    public bool AtGate(float x) => MathF.Abs(x - GateX) < GateHalf;
-    public bool AtLadder(float x) => Ladders.Any(l => MathF.Abs(x - l) < LadderHalf);
-    /// The section of the face at x (-1: by the gatehouse or past the sections).
-    public int SectionAt(float x)
-    {
-        int i = (int)MathF.Floor((x - SectionsFrom) / SectionWidth);
-        return i < 0 || i >= SectionCount || MathF.Abs(SectionX(i) - GateX) < 9 ? -1 : i;
-    }
-    public static float SectionX(int i) => SectionsFrom + (i + 0.5f) * SectionWidth;
-    public bool Breached(int i) => i >= 0 && SectionHp[i] <= 0;
-    public bool AtBreach(float x) { int i = SectionAt(x); return Breached(i) && MathF.Abs(x - SectionX(i)) < BreachHalf; }
-    public IEnumerable<float> Breaches => Enumerable.Range(0, SectionCount).Where(Breached).Select(SectionX);
-    public bool AtRamp(float x) => Ramps.Any(r => MathF.Abs(x - r) < RampHalf);
-    /// Inside the walls (on the walkway or in the town).
-    public static bool Inside(Vector2 p) => p.Y >= Outer;
-    /// Height the wall adds at a terrain vertex (vertices sit every 2.5 m; 14 and 16.5 are raised).
-    public float Raise(float x, float z) => z > 13 && z < 17.5f && !AtGate(x) ? Height : 0;
-}
-
 /// One piece of foliage (or, on the campaign map, a settlement). Radius > 0 = a solid obstacle (tree trunk, boulder).
 /// `Dry` (0-1) draws the map's small cover from green toward straw and thorn (docs/archive/WORLD_DRESS.md).
 public readonly record struct Foliage(FoliageKind Kind, Vector2 Pos, float Scale, float Radius, int Seed, float Dry = 0);
@@ -342,8 +294,8 @@ public sealed partial class Terrain
     /// How many metres one minimap texel covers (the renderer sizes the image from this).
     public const float MinimapMetresPerTexel = 2f;
 
-    /// The town wall in an assault (null in field battles).
-    public readonly SiegeWall? Wall;
+    /// The siege fortress in an assault (docs/pre-demo/SIEGES.md SE1; null in field battles).
+    public readonly Fortress? Wall;
     /// Rivers on this ground (a battlefield has at most one; the campaign map has a few).
     public readonly List<River> Rivers = new();
 
@@ -358,7 +310,7 @@ public sealed partial class Terrain
 
     public static Terrain Flat() => new(0, true, TerrainParams.Meadow);
     public Terrain(int seed) : this(seed, false, TerrainParams.Meadow) { }
-    public Terrain(int seed, TerrainParams p, SiegeWall? wall = null) : this(seed, false, p, wall) { }
+    public Terrain(int seed, TerrainParams p, Fortress? wall = null) : this(seed, false, p, wall) { }
 
     /// A campaign map: heights, roads, foliage and settlements all given; no grass, overview covers everything.
     /// `extent` is half the side of the ground (WorldMap.Extent); `step` its vertex spacing.
@@ -387,7 +339,7 @@ public sealed partial class Terrain
         foreach (var f in foliage) Add(f);
     }
 
-    Terrain(int seed, bool flat, TerrainParams p, SiegeWall? wall = null)
+    Terrain(int seed, bool flat, TerrainParams p, Fortress? wall = null)
     {
         Seed = seed;
         IsFlat = flat;
@@ -456,7 +408,12 @@ public sealed partial class Terrain
         if (Layout == FieldLayout.Shore) h = ShoreHeight(x, z, h);
         if (Wall != null)
         {
-            h = MathHelper.Lerp(h, 0.4f * h, SmoothStep(40, 0, MathF.Abs(z - 15))); // level ground along the wall
+            var pt = new Vector2(x, z);
+            float dFort = Vector2.Distance(pt, Wall.Center);
+            // Flatten ground inside the fortress and its immediate approach; push the outer valley rim clear of the walls.
+            float calm = SmoothStep(Wall.Radius + 65, Wall.Radius + 15, dFort);
+            h = MathHelper.Lerp(h, 0.15f * h, calm);
+            if (Wall.InDitch(pt)) h -= 1.4f;
             h += Wall.Raise(x, z);
         }
         return h;
@@ -533,6 +490,7 @@ public sealed partial class Terrain
     public bool PushOut(ref Vector2 p, float r, bool mounted = true)
     {
         bool hit = PushOutFeatures(ref p, r, mounted);
+        if (Wall != null && Wall.PushOutBuildings(ref p, r)) hit = true;
         if (IsFlat) return hit;
         int bx = (int)((p.X + Half) / Cell), bz = (int)((p.Y + Half) / Cell);
         for (int z = bz - 1; z <= bz + 1; z++)
@@ -561,8 +519,7 @@ public sealed partial class Terrain
     void PlaceFoliage(Random rng)
     {
         bool Ok(Vector2 p, float space) => !Core(p) && RoadDist(p) > 4 && WaterDepth(p) == 0 && Rivers.All(r => r.Dist(p) > r.Width / 2 + 2) && MathF.Abs(p.X) < Half - 8 && MathF.Abs(p.Y) < Half - 8 && !Blocked(p, space)
-            && (Wall == null || p.Y < SiegeWall.Outer - 6 || p.Y > 70);
-        if (Wall != null) PlaceTown(rng);
+            && (Wall == null || (Vector2.Distance(p, Wall.Center) > Wall.Radius + 24 && !(p.Y > -120 && p.Y < Wall.Center.Y && MathF.Abs(p.X) < 105)));
         if (Layout == FieldLayout.Village) PlaceVillage(new Random(Seed + 19));
         void Wood(Vector2 c, float r)
         {
@@ -630,38 +587,6 @@ public sealed partial class Terrain
             float s = 0.9f + rng.NextSingle() * 1.1f;
             if (!Ok(p, s)) continue;
             Add(new Foliage(FoliageKind.Rock, p, s, 0.75f * s, rng.Next()));
-        }
-    }
-
-    /// The wall's stones, towers, gate and ladders, and the houses of the town behind it.
-    void PlaceTown(Random rng)
-    {
-        var w = Wall!;
-        for (float x = -250; x < 250; x += 5)
-            if (!w.AtGate(x + 2.5f) && !w.AtGate(x) && !w.AtGate(x + 5)) Add(new Foliage(FoliageKind.Wall, new Vector2(x + 2.5f, 15.25f), 5, 0, rng.Next()));
-        // The wall either side of the gate stops at the gatehouse towers.
-        Add(new Foliage(FoliageKind.Wall, new Vector2(SiegeWall.GateX - 4.6f, 15.25f), 3.7f, 0, rng.Next()));
-        Add(new Foliage(FoliageKind.Wall, new Vector2(SiegeWall.GateX + 4.6f, 15.25f), 3.7f, 0, rng.Next()));
-        foreach (float x in new[] { SiegeWall.GateX - 5.2f, SiegeWall.GateX + 5.2f, -60, -30, 30, 60, -95, 95 })
-            Add(new Foliage(FoliageKind.Tower, new Vector2(x, 15.25f), 1, 0, rng.Next()));
-        if (Params is { Style: not null, Castle: true }) // a castle's curtain: towers close along it (SM6), clear of the torches every 10 m
-            foreach (float x in new[] { -75f, -45, -17, 17, 45, 75 })
-                Add(new Foliage(FoliageKind.Tower, new Vector2(x, 15.25f), 1, 0, Seed ^ (int)(x * 97)));
-        Add(new Foliage(FoliageKind.Gate, new Vector2(SiegeWall.GateX, SiegeWall.Outer + 0.6f), 1, 0, rng.Next()));
-        foreach (float x in w.Ladders) Add(new Foliage(FoliageKind.Ladder, new Vector2(x, SiegeWall.Outer), 1, 0, rng.Next()));
-        // A people's field (SM6): a castle's keep, or a town's landmark, stands behind the wall to one side of the gate; a
-        // castle's bailey holds a few buildings, not a town.
-        bool styled = Params.Style != null, castle = styled && Params.Castle;
-        float side = (Seed & 1) == 0 ? 1 : -1;
-        if (styled) Add(castle ? new Foliage(FoliageKind.Keep, new Vector2(SiegeWall.GateX + 24 * side, 44), 1, 6.5f, Seed ^ 0x4b33)
-            : new Foliage(FoliageKind.Landmark, new Vector2(SiegeWall.GateX - 26 * side, 52), 1, 6, Seed ^ 0x1a2d));
-        for (int i = 0, built = 0; i < 40; i++)
-        {
-            var p = new Vector2(rng.NextSingle() * 150 - 75, 34 + rng.NextSingle() * 40);
-            if (MathF.Abs(p.X - SiegeWall.GateX) < 9 || Blocked(p, 5)) continue;
-            if (castle && (built >= 7 || MathF.Abs(p.X) > 48 || p.Y > 62)) continue;
-            Add(new Foliage(FoliageKind.House, p, 1 + rng.NextSingle() * 0.4f, 2.6f, rng.Next()));
-            built++;
         }
     }
 

@@ -10,7 +10,7 @@ public enum Grade { Rabble, Trained, Veteran, Elite }
 public partial class Battle
 {
     /// Drill by troop tier 1-6.
-    /// Drill by tier (docs/pre-demo/TIERS.md TI1): the grade follows the ladder: I Rabble, II-III Trained, IV-V Veteran, VI Elite.
+    /// Drill by tier (docs/post-demo/TIERS.md TI1): the grade follows the ladder: I Rabble, II-III Trained, IV-V Veteran, VI Elite.
     static readonly float[] TierDrill = { 0.10f, 0.10f, 0.34f, 0.46f, 0.60f, 0.72f, 0.88f };
 
     /// A tier as the game writes it.

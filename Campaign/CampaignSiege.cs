@@ -149,6 +149,19 @@ public sealed partial class Campaign
         setup.Options.Breaches = BreachesOf(s);
         setup.Options.Engines = EnginesFor(setup, assault: true);
         setup.Options.Palette[1] = Style.PaletteOf(s.Faction);
+        // The fortress field built from the place's own plan (docs/pre-demo/SIEGES.md SE1).
+        setup.Options.WallsLevel = Level(s, "walls");
+        setup.Options.SiegeSupplies = (int)MathF.Round(s.Supplies);
+        setup.Options.FortressKind = s.Kind switch
+        {
+            SettlementKind.Village => FortressKind.WalledVillage,
+            SettlementKind.Town => FortressKind.Town,
+            _ => s.Size switch { 1 => FortressKind.TowerHouse, 3 => FortressKind.GreatCastle, _ => FortressKind.Castle },
+        };
+        setup.Options.Fortress = Map.Plans.TryGetValue(s.Id, out var plan)
+            ? FortressSpec.FromPlan(plan, s, setup.Options.WallsLevel)
+            : FortressSpec.Procedural(s.Id * 31 + S.Seed, setup.Options.FortressKind, setup.Options.WallsLevel, setup.Options.SiegeSupplies);
+        if (s.DitchFilled) setup.Options.Fortress.HasDitch = false;
         // The wall, the towers and the houses behind them as its people build them (docs/archive/SETTLEMENTS.md SM6).
         setup.Options.Ground = Map.BattleGround(s.Pos) with { Road = false, Style = s.Culture is "" ? null : s.Culture, Castle = s.Kind != SettlementKind.Town, Banner = setup.Options.Palette[1] };
         return setup;
@@ -161,16 +174,91 @@ public sealed partial class Campaign
         return FinishBattle(r, setup);
     }
 
+    /// What you do with a place after storming it (docs/pre-demo/SIEGES.md SE6, owner decision 2026-11-21).
+    public enum StormAction { Occupy, Ransom, Sack }
+    /// Settlement id just stormed by the player, waiting for Occupy / Ransom / Sack choice (-1 = none).
+    public int PendingStorm = -1;
+    int pendingStormOldFaction = -1;
+
+    /// True when the besieging force is large enough to seal the place completely (SE6).
+    public bool TightEncirclement(Settlement s)
+    {
+        int besiegers = S.Parties.Where(p => p.SiegeTarget == s.Id && !p.Down).Sum(p => p.Men);
+        return besiegers >= Scaled(30) || besiegers >= GarrisonMen(s) * 0.5f;
+    }
+
+    /// Can you offer honourable surrender terms to a besieged garrison? (SE6)
+    public bool CanOfferTerms(Settlement s, out string why)
+    {
+        int besiegers = S.Parties.Where(p => p.SiegeTarget == s.Id && !p.Down).Sum(p => p.Men);
+        int gar = GarrisonMen(s);
+        bool starving = s.Supplies <= 8;
+        bool hopeless = besiegers >= gar * 2.5f && (s.Supplies <= 18 || s.Battered >= 0.75f || SapReady(s));
+        why = Besieging != s ? "BESIEGE IT FIRST"
+            : !(starving || hopeless) ? "THEY WILL NOT YIELD WHILE WELL SUPPLIED AND STRONG"
+            : "";
+        return why == "";
+    }
+
+    /// Offer terms of honourable surrender: the garrison marches out with their arms, no storm casualties, good opinion (SE6).
+    public string? OfferTerms(Settlement s)
+    {
+        if (!CanOfferTerms(s, out string why)) return why;
+        s.Garrison.Clear();
+        Capture(s, Captain.Contract, Player.Id, S.CaptainChar);
+        Captain.Renown += 5;
+        LogYours($"{s.Name} yields on honourable terms. The garrison marches out under safe conduct.");
+        return null;
+    }
+
+    /// Apply the player's post-storm choice: occupy cleanly, ransom the town, or sack it (SE6).
+    public void StormChoice(Settlement s, StormAction action)
+    {
+        PendingStorm = -1;
+        pendingStormOldFaction = -1;
+        switch (action)
+        {
+            case StormAction.Ransom:
+                int ransom = s.Kind == SettlementKind.Town ? 350 : 180;
+                S.Gold += ransom;
+                s.Prosperity = MathF.Max(10, s.Prosperity - 8);
+                LogYours($"You ransom {s.Name} for {ransom} crowns.");
+                break;
+            case StormAction.Sack:
+                int loot = s.Kind == SettlementKind.Town ? 650 : 320;
+                S.Gold += loot;
+                s.Prosperity = MathF.Max(5, s.Prosperity - 25);
+                s.Unrest = MathF.Min(90, s.Unrest + 25);
+                foreach (var c in Player.Companies) c.Cohesion = MathF.Min(100, c.Cohesion + 10);
+                LogYours($"Your men sack {s.Name}! +{loot} crowns and high spirits, at the cost of unrest and bitter enmity.");
+                break;
+            default:
+                LogYours($"You occupy {s.Name} in good order.");
+                break;
+        }
+    }
+
+    /// Sally out from a besieged fief against the besiegers' camp (SE6).
+    public BattleSetup? PrepareSally(Settlement s)
+    {
+        var foe = S.Parties.FirstOrDefault(p => p.SiegeTarget == s.Id && !p.Down);
+        if (foe == null) return null;
+        return PrepareBattle(foe);
+    }
+
     /// After an assault (played or on paper): a win takes the place; a defeat ends your siege.
     internal void AfterAssault(Settlement s, bool won)
     {
         if (won)
         {
+            int oldFaction = s.Faction;
             int taken = s.Garrison.Sum(c => c.Men + c.Wounded);
             foreach (var c in s.Garrison) TakePrisoners(c.Troop, (c.Men + c.Wounded) / 2);
             s.Garrison.Clear();
             Capture(s, Captain.Contract, Player.Id, S.CaptainChar);
             Captain.Renown += s.Kind == SettlementKind.Town ? 25 : 15;
+            PendingStorm = s.Id;
+            pendingStormOldFaction = oldFaction;
             if (CannotClaimCrown(s) == null) Force("free_crown", new PendingEvent { Settlement = s.Id }); // keep it for yourself? (P5)
             if (taken > 0) Log($"{taken / 2} of the garrison are your prisoners.");
         }
@@ -195,6 +283,8 @@ public sealed partial class Campaign
         SeatTaken(s, oldOwner, owner); // its old holder remembers (LD2)
         s.Besieged = false;
         s.Supplies = 15;
+        s.SapReadyAt = 0;
+        s.DitchFilled = false;
         s.Offers.Clear();
         s.Mercenaries.Clear();
         // A drawn province can hold several seats (docs/archive/WORLDMAP.md WM4): the seat takes the villages it is the seat of, and the
@@ -259,16 +349,38 @@ public sealed partial class Campaign
         foreach (var s in S.Settlements.Where(s => s.Besieged))
         {
             var besiegers = S.Parties.Where(p => p.SiegeTarget == s.Id && !p.Down).ToList();
-            if (besiegers.Count == 0) { s.Besieged = false; continue; }
-            s.Supplies -= 1;
+            if (besiegers.Count == 0) { s.Besieged = false; s.SapReadyAt = 0; s.DitchFilled = false; continue; }
+            // Encirclement (SE6): a tight ring cuts supplies off; a loose one lets half trickle through.
+            s.Supplies -= TightEncirclement(s) ? 1f : 0.5f;
             if (s.Supplies <= 0)
             {
                 s.Supplies = 0;
                 foreach (var c in s.Garrison) { c.RemoveFit((int)MathF.Ceiling(c.Men * 0.1f), true); c.Prune(); }
                 s.Garrison.RemoveAll(c => c.Men + c.Wounded <= 0);
             }
+            // Camp sickness in long sieges (past 14 days, SE6).
+            if (S.Hours - s.SiegeSince > 14 * 24)
+            {
+                foreach (var b in besiegers)
+                    foreach (var c in b.Companies)
+                        if (c.Men > 4 && rng.Chance(0.25f)) c.RemoveFit(1, false);
+            }
             int f = besiegers[0] == Player ? Captain.Contract : besiegers[0].Faction;
             if (GarrisonMen(s) == 0 && f >= 0) { Log($"{s.Name}'s garrison is starved out."); if (besiegers.Contains(Player)) AfterAssault(s, true); else Capture(s, f, -1, besiegers[0].CharId); continue; }
+            // AI garrison sally when odds favour them and stores run low (SE6).
+            if (!besiegers.Contains(Player) && s.Supplies < 12 && GarrisonMen(s) >= besiegers.Sum(p => p.Men) * 0.85f && rng.Chance(0.35f))
+            {
+                var gar = new List<Party> { GarrisonParty(s) };
+                var sr = Rules.AutoResolve(gar, besiegers, rng);
+                Apply(sr, gar, besiegers, "");
+                if (sr.Winner == 0)
+                {
+                    foreach (var bp in besiegers) { bp.SiegeTarget = -1; bp.TaskUntil = 0; }
+                    s.Besieged = false;
+                    Log($"The garrison of {s.Name} sallied and broke the siege!");
+                    continue;
+                }
+            }
             var lords = besiegers.Where(p => p.Kind == PartyKind.Lord).ToList();
             if (lords.Count == 0 || S.Hours - s.SiegeSince < 48 || !rng.Chance(0.5f)) continue;
             var defenders = new List<Party> { GarrisonParty(s) };

@@ -7,11 +7,16 @@ public sealed class FlowField
 {
     public readonly Vector2 Goal;
     public readonly bool Horse;
+    /// Movement mode: 0 = attacker foot (may climb ladders), 1 = defender foot, 2 = horse.
+    public readonly byte Mode;
     readonly float[] cost;
     readonly ushort[] bars;
     readonly Terrain t;
 
-    internal FlowField(Terrain t, Vector2 goal, bool horse, float[] cost, ushort[] bars) { this.t = t; Goal = goal; Horse = horse; this.cost = cost; this.bars = bars; }
+    internal FlowField(Terrain t, Vector2 goal, byte mode, float[] cost, ushort[] bars)
+    {
+        this.t = t; Goal = goal; Mode = mode; Horse = mode == 2; this.cost = cost; this.bars = bars;
+    }
 
     /// The way to go from p: toward the cheapest of the eight neighbouring cells (zero at the goal or where nothing leads there).
     public Vector2 Dir(Vector2 p)
@@ -59,8 +64,8 @@ public sealed class FlowField
 /// until its men are close. Fields are built on the terrain's 2.5 m cells and kept in a small cache.
 public partial class Battle
 {
-    float[]?[] stepCost = new float[]?[2]; // per cell, for foot and horse: the cost of crossing it (infinite = blocked)
-    ushort[]?[] edgeBlock = new ushort[]?[2]; // per cell, for foot and horse: the steps to its eight neighbours a hedge or fence bars (EdgeBlocks)
+    float[]?[] stepCost = new float[]?[3]; // per cell, by mode (0 attacker foot, 1 defender foot, 2 horse)
+    ushort[]?[] edgeBlock = new ushort[]?[3]; // per cell, by mode: steps to eight neighbours barred by hedges, fences or fortress walls
     readonly List<FlowField> flowCache = new();
     const int FlowCacheSize = 48;
     /// Within this of its destination a man stops following the field and goes straight.
@@ -70,26 +75,39 @@ public partial class Battle
     public int FlowBuilds { get; private set; }
     internal int FlowCached => flowCache.Count;
 
+    static byte PathMode(bool horse, int team) => horse ? (byte)2 : team == 0 ? (byte)0 : (byte)1;
+
+    /// Clear cached flow fields and edge blocks when a fortress wall changes (gate opens, breach, ladder, ramp).
+    internal void InvalidatePath()
+    {
+        Array.Clear(stepCost);
+        Array.Clear(edgeBlock);
+        flowCache.Clear();
+        previewFlow = null;
+        foreach (var s in Squads) { s.Path = null; s.PathTimer = 0; }
+    }
+
     /// Refresh a company's route every half second: a field when the way is blocked, none when it is clear.
     void UpdatePath(Squad s, float dt)
     {
-        if (scripted && Terrain.Features.Count == 0 && Terrain.Rivers.Count == 0) return;
-        if (Wall != null || (s.PathTimer -= dt) > 0) return;
+        if (scripted && Wall == null && Terrain.Features.Count == 0 && Terrain.Rivers.Count == 0) return;
+        if ((s.PathTimer -= dt) > 0) return;
         s.PathTimer = 0.5f;
         if (s.Alive == 0) { s.Path = null; return; }
         var goal = s.Order == Order.Charge ? (s.Target?.Alive > 0 ? s.Target.Center : NearestSquadCenter(s)) : s.Anchor;
         if (goal is not Vector2 g) { s.Path = null; return; }
+        byte mode = PathMode(s.Cavalry, s.Team);
         if (!AnyBlocked(s, g))
         {
             if (++s.PathClear >= 4) s.Path = null; // clear four times running (different men each time): drop the route
             return;
         }
         s.PathClear = 0;
-        if (s.Path != null && s.Path.Horse == s.Cavalry && Vector2.DistanceSquared(s.Path.Goal, g) < 25) return; // still good
-        if (Cached(g, s.Cavalry) is { } hit) { s.Path = hit; return; }
+        if (s.Path != null && s.Path.Mode == mode && Vector2.DistanceSquared(s.Path.Goal, g) < 25) return; // still good
+        if (Cached(g, mode) is { } hit) { s.Path = hit; return; }
         if (builtTick == tick) { s.PathTimer = 0; return; } // one new field a tick (each is a few ms): ask again next tick
         builtTick = tick;
-        s.Path = Flow(g, s.Cavalry);
+        s.Path = Flow(g, mode);
     }
 
     /// Where a charge with no target makes for: the nearest enemy company, or once none is left the enemy's captain.
@@ -115,7 +133,9 @@ public partial class Battle
     {
         // Near the goal men walk straight, unless a fence or hedge stands in the way (a company could stand pressed to one
         // with its places a few metres beyond, and never settle to shoot or fight).
-        bool Far(Vector2 p) => Vector2.DistanceSquared(p, g) > PathNear * PathNear || Terrain.Features.Count > 0 && Terrain.CrossesFeatureNear(p, g, s.Cavalry, Clearance(s.Cavalry));
+        bool Far(Vector2 p) => Vector2.DistanceSquared(p, g) > PathNear * PathNear
+            || (Wall != null && Wall.CrossesWall(p, g, out _))
+            || (Terrain.Features.Count > 0 && Terrain.CrossesFeatureNear(p, g, s.Cavalry, Clearance(s.Cavalry)));
         if (Far(s.Center) && WayBlocked(s.Center, g, s.Cavalry)) return true;
         int n = s.Units.Count;
         for (int k = 0; k < 4; k++)
@@ -134,8 +154,9 @@ public partial class Battle
     {
         if (s.Alive == 0 || !WayBlocked(s.Center, dest, s.Cavalry)) return null;
         var key = FlowKey(dest);
-        if (previewFlow == null || previewFlow.Goal != key || previewFlow.Horse != s.Cavalry)
-            previewFlow = BuildFlow(key, s.Cavalry);
+        byte mode = PathMode(s.Cavalry, s.Team);
+        if (previewFlow == null || previewFlow.Goal != key || previewFlow.Mode != mode)
+            previewFlow = BuildFlow(key, mode);
         if (float.IsPositiveInfinity(previewFlow.CostFrom(s.Center))) return null;
         var list = new List<Vector2>();
         var p = s.Center;
@@ -150,9 +171,10 @@ public partial class Battle
         return list;
     }
 
-    /// Is the straight way from a to b barred: deep water, a hedge or fence, a house; for horse also thick wood?
+    /// Is the straight way from a to b barred: deep water, a hedge or fence, a fortress wall, a house; for horse also thick wood?
     internal bool WayBlocked(Vector2 a, Vector2 b, bool horse)
     {
+        if (Wall != null && Wall.CrossesWall(a, b, out _)) return true;
         if (Terrain.Features.Count > 0 && Terrain.CrossesFeature(a, b, horse)) return true;
         float len = Vector2.Distance(a, b);
         var dir = (b - a) / MathF.Max(len, 0.01f);
@@ -169,8 +191,11 @@ public partial class Battle
     Vector2 PathVia(Unit u, Vector2 dest)
     {
         var f = u.Squad?.Path;
-        if (f == null || u.Routing || f.Horse != u.Mounted || Vector2.DistanceSquared(dest, f.Goal) > 30 * 30) return dest;
-        if (Vector2.DistanceSquared(u.Pos, dest) < PathNear * PathNear && !Terrain.CrossesFeatureNear(u.Pos, dest, u.Mounted, Clearance(u.Mounted))) return dest; // near and nothing between (nor a fence's end at his elbow)
+        byte mode = PathMode(u.Mounted, u.Team);
+        if (f == null || u.Routing || f.Mode != mode || Vector2.DistanceSquared(dest, f.Goal) > 30 * 30) return dest;
+        if (Vector2.DistanceSquared(u.Pos, dest) < PathNear * PathNear
+            && (Wall == null || !Wall.CrossesWall(u.Pos, dest, out _))
+            && !Terrain.CrossesFeatureNear(u.Pos, dest, u.Mounted, Clearance(u.Mounted))) return dest; // near and nothing between
         var d = f.Dir(u.Pos);
         return d == Vector2.Zero ? dest : u.Pos + d * 3;
     }
@@ -180,11 +205,11 @@ public partial class Battle
     static Vector2 FlowKey(Vector2 goal) => new(MathF.Round(goal.X / 5) * 5, MathF.Round(goal.Y / 5) * 5);
 
     /// A field already built for this goal (the 5 m square it falls in), moved to the back of the cache; null if none.
-    FlowField? Cached(Vector2 goal, bool horse)
+    FlowField? Cached(Vector2 goal, byte mode)
     {
         var key = FlowKey(goal);
         for (int i = 0; i < flowCache.Count; i++)
-            if (flowCache[i].Horse == horse && flowCache[i].Goal == key)
+            if (flowCache[i].Mode == mode && flowCache[i].Goal == key)
             {
                 var hit = flowCache[i];
                 flowCache.RemoveAt(i);
@@ -195,27 +220,29 @@ public partial class Battle
     }
 
     /// The flow field to a goal: from the cache, else built (the oldest field makes room).
-    FlowField Flow(Vector2 goal, bool horse)
+    FlowField Flow(Vector2 goal, byte mode)
     {
-        if (Cached(goal, horse) is { } hit) return hit;
-        var f = BuildFlow(FlowKey(goal), horse);
+        if (Cached(goal, mode) is { } hit) return hit;
+        var f = BuildFlow(FlowKey(goal), mode);
         if (flowCache.Count >= FlowCacheSize) flowCache.RemoveAt(0);
         flowCache.Add(f);
         return f;
     }
 
-    FlowField BuildFlow(Vector2 goal, bool horse)
+    FlowField BuildFlow(Vector2 goal, byte mode)
     {
         FlowBuilds++;
-
-        var step = stepCost[horse ? 1 : 0] ??= StepCosts(horse);
-        var bars = edgeBlock[horse ? 1 : 0] ??= EdgeBlocks(horse);
+        bool horse = mode == 2;
+        int team = mode == 0 ? 0 : 1;
+        var step = stepCost[mode] ??= StepCosts(horse);
+        var bars = edgeBlock[mode] ??= EdgeBlocks(horse, team);
         int n = Terrain.N;
         var cost = new float[n * n];
         Array.Fill(cost, float.PositiveInfinity);
         int gx = Math.Clamp((int)MathF.Round((goal.X + Terrain.Half) / Terrain.Step), 0, n - 1), gz = Math.Clamp((int)MathF.Round((goal.Y + Terrain.Half) / Terrain.Step), 0, n - 1);
-        // Only the part of the field the battle uses (a margin past the flight radius) is searched.
-        int lim = (int)MathF.Min(n / 2, (MapRadius + 40) / Terrain.Step), lo = n / 2 - lim, hi = n / 2 + lim;
+        // Only the part of the field the battle uses (a margin past the flight radius or fortress) is searched.
+        float reach = Wall != null ? MathF.Max(MapRadius + 40, Wall.Center.Length() + Wall.Radius + 40) : MapRadius + 40;
+        int lim = (int)MathF.Min(n / 2, reach / Terrain.Step), lo = n / 2 - lim, hi = n / 2 + lim;
         var open = new PriorityQueue<int, float>();
         cost[gz * n + gx] = 0;
         open.Enqueue(gz * n + gx, 0);
@@ -236,7 +263,7 @@ public partial class Battle
                     if (nc < cost[k]) { cost[k] = nc; open.Enqueue(k, nc); }
                 }
         }
-        return new FlowField(Terrain, goal, horse, cost, bars);
+        return new FlowField(Terrain, goal, mode, cost, bars);
     }
 
     /// What crossing each cell costs: the inverse of the ground's speed, deep water up to ten times dearer still (go to the ford),
@@ -254,6 +281,7 @@ public partial class Battle
                 var def = Grounds.Get(g);
                 float w = 1 / (horse ? def.HorseSpeed : def.FootSpeed);
                 if (g == GroundKind.Water) w *= 2 + 8 * MathF.Min(1, Terrain.WaterDepth(p)); // deep water much dearer: men go to the ford
+                if (Wall != null && Wall.InDitch(p)) w *= 2.4f;
                 step[z * n + x] = Terrain.House(p) ? float.PositiveInfinity : w;
             }
         float clear = Clearance(horse);
@@ -293,7 +321,7 @@ public partial class Battle
     /// fence touched shut every gap under about 5 m on the 2.5 m cells (men walked into a garden and the field had no way out);
     /// StepCosts now closes only the cells within a man's width of it, and this bars the steps over its line between them.
     /// Each feature is taken longer by its thickness and the clearance, so a gap too narrow to pass stays shut.
-    ushort[] EdgeBlocks(bool horse)
+    ushort[] EdgeBlocks(bool horse, int team)
     {
         int n = Terrain.N;
         float st = Terrain.Step, h = Terrain.Half;
@@ -315,6 +343,31 @@ public partial class Battle
                             if ((dx | dz) == 0 || nx < 0 || nz < 0 || nx >= n || nz >= n) continue;
                             if (Terrain.SegmentsCross(Centre(x, z), Centre(nx, nz), a, b)) bars[z * n + x] |= StepBit(dx, dz);
                         }
+        }
+        // Fortress walls (SE2): bar steps crossing any wall segment unless an open gate, breach, ramp or (attacker foot) ladder lets them pass.
+        if (Wall is Fortress fort)
+        {
+            foreach (var seg in fort.Segments)
+            {
+                if (seg.Breached) continue;
+                if (seg.IsGate && fort.Gates[seg.GateIndex].Open) continue;
+                var (x0, x1, z0, z1) = CellBox(seg.A, seg.B, 1.5f);
+                for (int z = z0; z <= z1; z++)
+                    for (int x = x0; x <= x1; x++)
+                    {
+                        var c0 = Centre(x, z);
+                        for (int dz = -1; dz <= 1; dz++)
+                            for (int dx = -1; dx <= 1; dx++)
+                            {
+                                int nx = x + dx, nz = z + dz;
+                                if ((dx | dz) == 0 || nx < 0 || nz < 0 || nx >= n || nz >= n) continue;
+                                var c1 = Centre(nx, nz);
+                                if (!Terrain.SegmentsCross(c0, c1, seg.A, seg.B)) continue;
+                                if (!fort.CanPassSegment(seg, (c0 + c1) * 0.5f, horse, team, out _))
+                                    bars[z * n + x] |= StepBit(dx, dz);
+                            }
+                    }
+            }
         }
         return bars;
     }

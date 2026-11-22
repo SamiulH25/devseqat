@@ -1,11 +1,13 @@
 # Backlog: everything left to build
 
-The one list of open work, gathered 2026-11-19 after the `sprite-improvements` merge (`02576fc`). Every plan that still
-has open phases is linked; open plans are in `docs/pre-demo/`, finished plans in `docs/archive/` (index in `docs/archive/README.md`), and what waits for
-after the demo in `docs/post-demo/` (not listed here). When an item ships,
-delete it here and write its "As built" note in its plan. When a plan's last phase ships, move the plan to `docs/archive/`.
+The one list of open work, gathered 2026-11-19 after the `sprite-improvements` merge (`02576fc`) and refreshed 2026-11-21
+after the KIT work (KT0–KT4, KT6). Every plan that still has open phases is linked; open plans are in `docs/pre-demo/`, finished
+plans in `docs/archive/` (index in `docs/archive/README.md`), and what waits for after the demo in `docs/post-demo/` (not listed
+here). When an item ships, delete it here and write its "As built" note in its plan. When a plan's last phase ships, move the
+plan to `docs/archive/`.
 
-State at the time of writing: `tools/check.sh --quick` passes and the full `--selftest` ends `selftest ok` (every test green).
+State at the time of writing: `main` builds, and the last full `--selftest` recorded in a plan ended `selftest ok` (KIT KT4:
+322/322). Run `tools/check.sh` before starting work.
 
 "Judged N/10" in older plans meant a visual judge. The owner dropped the judge on 2026-11-19: render the shots and look at
 them yourself (CLAUDE.md step 4); the scores in old notes are history only.
@@ -15,9 +17,8 @@ them yourself (CLAUDE.md step 4); the scores in old notes are history only.
 | Plan | Open | Size | Notes |
 |---|---|---|---|
 | [`pre-demo/SIEGES.md`](pre-demo/SIEGES.md) | SE1-SE10: the siege overhaul: the field built from the place's plan, a fortress to move through, capture points and the heart, layered defence, equipment and assault plans, sieges on the map (sallies, relief, terms, sack), every kind of place | large | Owner's brief 2026-11-21. Nothing built. Four open questions for the owner at the end of the plan |
-| [`pre-demo/KIT.md`](pre-demo/KIT.md) | KT0-KT7: troop numbers built from the base man + skills (Arms, Riding, Bowcraft) + the kit they wear; kit table for all 109 worn parts; price from kit; re-equipping companies last | large | Owner's brief 2026-11-21; decisions recorded in the plan. Nothing built |
-| [`pre-demo/TIERS.md`](pre-demo/TIERS.md) | TI2-TI6 (TI0, TI1 built): tiers that matter: measure each step, a ladder of things each tier can do, drill you can see, promotion that says what changes, reasons in the campaign to want good troops, lines with jobs | large | Owner's brief 2026-11-21. TI0 built; the owner answered the four questions 2026-11-21 |
-| [`pre-demo/NOBILITY.md`](pre-demo/NOBILITY.md) | N3 knighting a named man; N4 AI lords' noble retinues and UI badge; N5 balance | medium | Gap: northern, southern, steppe and league have no non-order noble T4 |
+| [`pre-demo/NOBILITY.md`](pre-demo/NOBILITY.md) | N3 knighting a named man; N4 AI lords' noble retinues and UI badge; N5 balance | medium | N1 and N2 built. Gap: northern, southern, steppe and league have no non-order noble T4 |
+| [`pre-demo/KIT.md`](pre-demo/KIT.md) | KT5 (price from kit) and KT7 (re-equip companies) only, both deferred until after the demo | — | **Not pre-demo work.** KT0–KT4 and KT6 built 2026-11-21 (`7cb10df`, `53b056e`, `471c168`); every man's numbers come from base + skills + worn kit |
 
 ## Left out of finished plans (pick up or drop)
 

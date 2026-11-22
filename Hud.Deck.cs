@@ -205,17 +205,34 @@ sealed partial class Hud
             if (new Rectangle(tb.X, tb.Y - U(4), tb.Width, tb.Height + U(8)).Contains(Mouse))
                 hint = $"THE TIDE {B.Tide:0} OF {B.TideCap:0}{(B.Options.TideTradition != "" ? $": A WELL OF THE {B.Options.TideTradition.ToUpperInvariant()}" : "")}";
         }
-        if (B.Wall is SiegeWall w && !Deploying)
+        if (B.Wall is Fortress w && !Deploying)
         {
-            // The gate's strength under the bar, while it stands.
-            var g = new Rectangle(x + bw / 4, topBar.Y - U(20), bw / 2, U(16));
+            // Siege status strip (SE3): time left, gate status, and heart capture/hold bar.
+            var g = new Rectangle(x + bw / 6, topBar.Y - U(22), bw * 2 / 3, U(18));
             Panel(g);
-            if (w.GateOpen || w.Breaches.Any()) TextC(w.GateOpen ? "THE GATE IS BROKEN" : "THE WALL IS BREACHED", g.Center.X, g.Y + U(5), Gold, 1);
+            int mins = (int)(B.SiegeTimeLeft / 60), secs = (int)(B.SiegeTimeLeft % 60);
+            Text($"{mins:00}:{secs:00}", g.X + U(6), g.Y + U(5), B.SiegeTimeLeft < 180 ? Warn : Dim, 1);
+
+            if (w.HeartOwner == 0)
+            {
+                Text("HEART", g.X + U(46), g.Y + U(5), Gold, 1);
+                kit.Gauge(new Rectangle(g.X + U(84), g.Y + U(6), g.Width - U(124), U(6)), w.HeartHoldTimer / 60f, Gold);
+                Text($"{(int)MathF.Ceiling(60f - w.HeartHoldTimer)}S", g.Right - U(34), g.Y + U(5), Gold, 1);
+            }
+            else if (w.AnyGateOpen || w.AnyBreach)
+            {
+                string msg = w.AnyGateOpen ? "GATE OPEN" : "WALL BREACHED";
+                TextC(msg, g.Center.X, g.Y + U(5), Gold, 1);
+                // Heart shield on the right.
+                kit.Icon("crown", g.Right - U(18), g.Y + U(4), w.HeartCapture < 0.99f ? Warn : Style.Sides[B.Options.Palette[1]].Cloth, 1);
+            }
             else
             {
-                kit.Icon("tower", g.X + U(6), g.Y + U(5), Color.White, 1);
-                Text("GATE", g.X + U(18), g.Y + U(5), Color.White, 1);
-                kit.Gauge(new Rectangle(g.X + U(48), g.Y + U(5), g.Width - U(54), U(6)), w.GateHp / w.GateMax, Style.HorseBar);
+                kit.Icon("tower", g.X + U(46), g.Y + U(5), Color.White, 1);
+                Text("GATE", g.X + U(58), g.Y + U(5), Color.White, 1);
+                var mg = w.MainGate;
+                kit.Gauge(new Rectangle(g.X + U(88), g.Y + U(6), g.Width - U(114), U(6)), mg.MaxHp > 0 ? mg.Hp / mg.MaxHp : 0, Style.HorseBar);
+                kit.Icon("crown", g.Right - U(18), g.Y + U(4), Style.Sides[B.Options.Palette[1]].Cloth, 1);
             }
         }
         if (hint != null)

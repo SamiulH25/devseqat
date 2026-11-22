@@ -22,7 +22,15 @@ partial class MapScreen
         ReportCompanies(rep, new Rectangle(r.X + pad, top + h1 + gap, lw, h2));
         Progress(rep, new Rectangle(tally.Right + gap, top + h1 + gap, rw, h2));
         MentionRow(new Rectangle(r.X + pad, r.Bottom - ui.U(40), r.Width / 2 - ui.U(110) - pad - gap, ui.U(30)));
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(40), ui.U(220), ui.U(30)), "CONTINUE", active: true))
+        if (C.PendingStorm >= 0 && C.SettlementById(C.PendingStorm) is Settlement stormed)
+        {
+            int bw = ui.U(140), bgap = ui.U(8), by = r.Bottom - ui.U(40), bx = r.X + r.Width / 2 - (3 * bw + 2 * bgap) / 2;
+            void Choose(Campaign.StormAction act) { C.StormChoice(stormed, act); panel = C.S.GameOver ? PanelKind.GameOver : PanelKind.None; C.Report = null; }
+            if (ui.Button(new Rectangle(bx, by, bw, ui.U(30)), "OCCUPY", active: true)) Choose(Campaign.StormAction.Occupy);
+            if (ui.Button(new Rectangle(bx + bw + bgap, by, bw, ui.U(30)), "RANSOM", active: true)) Choose(Campaign.StormAction.Ransom);
+            if (ui.Button(new Rectangle(bx + 2 * (bw + bgap), by, bw, ui.U(30)), "SACK", active: true)) Choose(Campaign.StormAction.Sack);
+        }
+        else if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(40), ui.U(220), ui.U(30)), "CONTINUE", active: true))
         { panel = C.S.GameOver ? PanelKind.GameOver : PanelKind.None; C.Report = null; }
     }
 

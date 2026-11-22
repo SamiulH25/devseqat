@@ -67,20 +67,51 @@ public sealed partial class Campaign
         }
     }
 
-    /// The defenders' edge in an assault on paper: ladders or the gate alone, the walls' level, less what the battering has
-    /// done and what the camp rolls up to the wall (a ram, towers) and keeps throwing (stone engines).
+    /// The defenders' edge in an assault on paper (SE8): ladders or the gate alone, walls level, supplies,
+    /// less what battering, saps, ditch-filling and camp engines have done.
     public float WallFactor(Settlement s, bool ladders, IEnumerable<string> works)
     {
         var w = works.ToList();
         float f = (ladders ? 1.4f : 1.7f) + 0.1f * Level(s, "walls") - 0.3f * s.Battered;
+        if (s.Supplies < 10) f -= 0.12f * (1f - s.Supplies / 10f); // starving garrison loses nerve
+        if (s.DitchFilled) f -= 0.05f;
+        if (SapReady(s)) f -= 0.15f;
         if (w.Contains("ram")) f -= 0.08f;
         f -= 0.08f * Math.Min(2, w.Count(x => x == "tower"));
         f -= 0.04f * Math.Min(3, w.Count(x => x is "mangonel" or "trebuchet"));
         return MathF.Max(1.05f, f);
     }
 
-    /// Sections already down when an assault begins: a wall battered through has one breach.
-    public static int BreachesOf(Settlement s) => s.Battered >= 1 ? 1 : 0;
+    /// True if a sap mined under this place's wall is ready to spring a breach (SE6).
+    public bool SapReady(Settlement s) => s.SapReadyAt > 0 && s.SapReadyAt <= S.Hours;
+
+    /// Start mining a sap under the wall (3 days, 1.5 with Siegecraft; 180 crowns) to open a breach (SE6).
+    public string? MineSap(Settlement s)
+    {
+        if (Besieging != s) return "BESIEGE IT FIRST";
+        if (s.SapReadyAt > 0) return SapReady(s) ? "THE SAP IS READY" : "ALREADY MINING A SAP";
+        if (S.Gold < 180) return "NEED 180 CROWNS";
+        S.Gold -= 180;
+        s.SapReadyAt = (float)S.Hours + (Has("Siegecraft") ? 36f : 72f);
+        LogYours($"Your sappers begin a mine under the walls of {s.Name}.");
+        return null;
+    }
+
+    /// Fill the ditch outside the wall (1 day's labour, 80 crowns) so attackers cross smoothly (SE6).
+    public string? FillDitch(Settlement s)
+    {
+        if (Besieging != s) return "BESIEGE IT FIRST";
+        if (Level(s, "walls") < 2) return "NO DITCH TO FILL";
+        if (s.DitchFilled) return "THE DITCH IS ALREADY FILLED";
+        if (S.Gold < 80) return "NEED 80 CROWNS";
+        S.Gold -= 80;
+        s.DitchFilled = true;
+        LogYours($"Your men fill the ditch before {s.Name} with fascines.");
+        return null;
+    }
+
+    /// Sections already down when an assault begins: a battered wall and a finished sap each open a breach.
+    public int BreachesOf(Settlement s) => (s.Battered >= 1 ? 1 : 0) + (SapReady(s) ? 1 : 0);
 
     // ---------- the train (A4) ----------
 

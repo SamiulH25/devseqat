@@ -235,7 +235,8 @@ public sealed partial class Battle
         rng = new Random(seed);
         this.scripted = scripted;
         Options = options ?? new BattleOptions();
-        Terrain = scripted ? Terrain.Flat() : new Terrain(seed, (Options.Ground ?? TerrainParams.Meadow) with { Scale = scale }, Options.Siege ? new SiegeWall(Options.Ladders, Options.GateHp, Options.WallHp) : null);
+        Terrain = scripted ? Terrain.Flat() : new Terrain(seed, (Options.Ground ?? TerrainParams.Meadow) with { Scale = scale },
+            Options.Siege ? new Fortress(Options.Fortress ?? FortressSpec.Procedural(seed, Options.FortressKind, Options.WallsLevel, Options.SiegeSupplies), Options.Ladders, Options.GateHp, Options.WallHp, seed) : null);
         Player = Spawn(Options.PlayerType ?? UnitType.Captain, 0, null, new Vector2(0, scripted ? -80 : -34 - Back));
         Player.IsPlayer = Player.IsLeader = true;
         SetupCaptain();
@@ -258,7 +259,7 @@ public sealed partial class Battle
 
     public Squad AddSquad(int team, UnitType type, int n, Vector2 anchor, int cols, Vector2 front, Company? company = null)
     {
-        var s = new Squad(type.Name, team) { Anchor = anchor, Columns = cols, Front = front, StartCount = n, Cavalry = type.Mount != null && !Options.Siege, Company = company,
+        var s = new Squad(type.Name, team) { Anchor = anchor, Columns = cols, Front = front, StartCount = n, Cavalry = type.Mount != null, Company = company,
             AiControlled = company?.Allied == true && team == 0, LastSeen = anchor, PathTimer = Squads.Count % 8 * 0.06f }; // squads look for routes on different ticks
         // A mixed company spawns each stack in turn, largest first; a one-off squad is n men of `type`.
         var types = company?.Mix is { Length: > 1 } ? company.Stacks.SelectMany(x => Enumerable.Repeat(Troops.Get(x.Troop), x.Count)).Take(n).ToList() : null;
@@ -303,7 +304,7 @@ public sealed partial class Battle
     {
         var u = new Unit { Type = t, Index = Units.Count, Team = team, Squad = s, Home = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length),
             Palette = Options.Palette[Math.Clamp(team, 0, 1)], Grit = GritOf(Units.Count), Mods = t.Mods };
-        if (t.Mount != null && !Options.Siege) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; } // assaults are fought on foot
+        if (t.Mount != null) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; } // horse stay in sieges (SE2)
         anyAura |= t.HasAura;
         if (t.Flying) { flyers = true; u.Altitude = FlyHigh; } // a wyvern takes the field on the wing
         if (t.Wild && t.Has("web")) u.Spit = 1.5f + Units.Count % 5 * 0.5f; // spiders find their range before they spit
@@ -350,6 +351,7 @@ public sealed partial class Battle
         UpdateEffects();
         UpdateAbilities(dt);
         Batter(dt);
+        UpdateSiege(dt);
         if ((reinforceTimer -= dt) <= 0) { reinforceTimer = 1; Reinforce(); }
         RaiseDead(dt);
         UpdateBrood(dt);
@@ -579,6 +581,7 @@ public sealed partial class Battle
     void CheckEnd()
     {
         if (Winner >= 0) return;
+        if (CheckSiegeEnd()) return;
         for (int t = 0; t < 2; t++)
         {
             if (Units.Any(u => u.Team == t && u.Active && !u.Routing) || reserves[t].Count > 0 && Units.Any(u => u.Team == t && u.Active && u.Routing)) continue;

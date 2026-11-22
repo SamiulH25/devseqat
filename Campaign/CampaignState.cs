@@ -326,6 +326,9 @@ public sealed class Settlement
     public float SiegeSince;                       // when the siege began (ladders take 12 hours)
     /// How far engines have battered its walls (0-1, docs/archive/SIEGECRAFT.md A3); mended a little each day it is not besieged.
     public float Battered;
+    /// Siege works against this place (docs/pre-demo/SIEGES.md SE6): hour a sap/mine finishes (> 0), and whether its ditch is filled.
+    public float SapReadyAt;
+    public bool DitchFilled;
     /// When it was last raided (game hours; villages): its model shows burnt houses and smoke for some days (docs/archive/SETTLEMENTS.md SM5).
     public float RaidedAt = -1e6f;
     /// Fiefs (F6): prosperity scales income and recruits; unrest above 70 raises rebels and at 100 the place defects.
@@ -829,7 +832,7 @@ public sealed class Balance
     /// Ships (docs/archive/WORLDMAP.md WM7): map units an hour under sail, the master's fee, and the fare a man for each hundred units.
     public float ShipSpeed = 14, ShipFare = 10, ShipFareMan = 0.3f;
     public float StartGold = 300, StartRenown = 50;
-    /// Wages by tier (docs/pre-demo/TIERS.md TI0, TI4): a man's wage is figured from his `cost` bent toward `WageAnchor` by
+    /// Wages by tier (docs/post-demo/TIERS.md TI0, TI4): a man's wage is figured from his `cost` bent toward `WageAnchor` by
     /// `WageCurve` (1 = his cost as it is; under 1 the dear troops cost less to keep and the cheap ones more). Hire prices keep `cost`.
     public float WageCurve = 0.6f, WageAnchor = 36;
     public float UpkeepRate = 0.1f, ContractPay = 0.85f, LootRate = 0.25f, LootCoinShare = 0.3f, RansomRate = 1, MercMarkup = 1.5f;

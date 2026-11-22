@@ -4,7 +4,7 @@ The owner's brief (2026-11-21): a complete overhaul of how every siege works, so
 "attack the wall simulator". This replaces how assaults are fought and how sieges run on the map. Engines, works and breaches
 (docs/archive/SIEGECRAFT.md) and the people's building styles (docs/archive/SETTLEMENTS.md SM6) are kept and built on.
 
-Phase prefix: **SE**. Nothing is built yet.
+Phase prefix: **SE**. Core overhaul built (2026-11-21): SE1–SE8 built (fortress fields from `PlacePlan`, unified fortress flow-field pathing & horse in sieges, capture points & 60s heart hold & time limit, tower fire & gate oil & layered fallback, dynamic ladders, campaign encirclement/saps/ditch/sallies/terms/post-storm occupy-ransom-sack, auto-resolve `WallFactor`, fortress rendering & HUD). See "As built" at the end.
 
 ## Where things stand (2026-11-21)
 
@@ -204,11 +204,18 @@ SE7 is mostly data on top of SE1 once the town and castle work. SE8 to SE10 clos
 
 Size: large, the biggest battle change since the combat overhaul.
 
-## Open questions for the owner
+## Decisions (owner, 2026-11-21)
 
-1. **Time limit:** should the defender win by holding out until time runs out, as in the genre, or should a siege only end in
-   victory or defeat?
-2. **Battle size:** a town assault with every man on the field, or the garrison and the camp in waves (reinforcements come in
-   as men fall, as `Reinforce` does in field battles)?
-3. **Sack:** is sacking a place in, and how harsh should it be: gold, unrest, the realm's anger, or worse?
-4. **Ports:** a sea wall and harbour gate for the demo, or later?
+1. **Time limit:** Yes — 20 to 35 minutes by place size and supplies; the defender wins by holding out until time runs out.
+2. **Battle size:** Waves via `Reinforce` (as in field battles) so town assaults stay within the frame budget.
+3. **Sack:** Yes — after a storm, choose occupy / sack / ransom; sacking gives gold & goods and boosts troop morale, at the cost of unrest and realm opinion.
+4. **Ports:** Post-demo — ports fight as regular walled towns for the demo (sea wall and harbour gate wait for after the demo).
+
+## As built (2026-11-21)
+
+- **SE1 / SE7 (Fortress fields & kinds):** `Fortress.cs` (`FortressKind`: `WalledVillage`, `TowerHouse`, `Castle`, `GreatCastle`, `Town`; `FortressSpec.FromPlan` scales and rotates a campaign settlement's `PlacePlan` ring, gates, square, interior lots and siege camp into battle metres; `FortressSpec.Procedural` builds canonical layouts for standalone/headless runs; `GreatCastle` is concentric with two rings and gates). Drawn in `World.Fortress.cs` using each people's `Architecture` style (`FieldStyle`), banners, merlons, rubble/fallen-log breaches, gatehouses, ladders, interior houses/keep/landmark, camp tents/fires, and night wall torches. Checked visually on `place-azure_heart-town-field.png` and `place-azure_heart-castle-field.png`.
+- **SE2 (Fortress pathing & horse):** `BattlePath.cs` unified 3-mode flow fields (attacker foot, defender foot, horse) with wall-segment edge blocking, open gates, breaches, docked ramps, raised ladders, solid interior building OBBs, and ditch cost; `InvalidatePath()` refreshes routes whenever `WallVersion` changes. Cavalry keep their horses in sieges, wait outside until a gate opens or wall breaches, then ride into the streets.
+- **SE3 (Points, victory & HUD):** Capture points on every gatehouse (throws gate open/shut), tower (flips tower fire & banner), and the heart (60 s hold wins the assault); 20–35 min time limit scaled by fortress kind and supplies (`Battle.SiegeTimeLimit`); morale drops on lost gate/breach/heart; ground capture rings (`BattleScreen.Draw.cs` `FortressPointRings`) and siege HUD strip (`Hud.Deck.cs`).
+- **SE4 / SE5 (Defence & assault):** Towers shoot arrows/springald bolts; closed defender gates pour burning oil / drop stones (rams' roofs shelter crew by 75%); defenders fall back in layers (wall -> street mouth -> heart) with a reserve dispatched to the hottest threat; dynamic `RaiseLadder` (can be pushed off by defenders before locking in).
+- **SE6 / SE8 (Campaign sieges & auto-resolve):** Tight vs loose encirclement (`TightEncirclement`), camp sickness past 14 days, `MineSap` (+1 breach), `FillDitch` (clears `HasDitch`), AI garrison sallies, `OfferTerms` honourable surrender, and post-storm `StormChoice` (`Occupy` / `Ransom` / `Sack`, surfaced in `MapScreen.Report.cs` `ResultsPanel`). `WallFactor` weighs supplies, saps, and filled ditches.
+- **Tests:** `SectionsAndBreaches`, `TrebuchetBreaches`, `RamAtGate`, `TowerDocks`, `WallEnginesShoot`, `SiegeCaptureAndTimeout`, `SiegeCampaignWorks`, `SiegeBattle`, `EngineBreaksGate`, `FieldsStyled`, `ReplayExact`.

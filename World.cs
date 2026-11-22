@@ -509,7 +509,7 @@ sealed partial class World : IDisposable
         Water(m);
         Mark("water", m.V.Count);
         Features(m);
-        if (t.Wall != null) Torches(m, t);
+        if (t.Wall != null) BuildFortress(m);
         if (!t.Grass) Skirt(m);
         else if (t.Wall == null) Outskirts(m); // a farmstead out past the fighting (World.Land.cs, WL6)
         if (m.V.Count == 0) m.Tri(Vector3.Zero, Vector3.Zero, Vector3.Zero, Color.Black, Vector3.Down); // keep the buffer valid on a bare field
@@ -551,16 +551,6 @@ sealed partial class World : IDisposable
                 case FoliageKind.Castle when f.Dry == 1: TowerHouse(m, b, f.Scale, rng); break; // hold sizes (docs/archive/HOLDS.md HD5)
                 case FoliageKind.Castle when f.Dry == 3: GreatCastle(m, b, f.Scale, rng); break;
                 case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;
-                case FoliageKind.Wall when t.Wall?.AtBreach(f.Pos.X) == true && FieldStyle is PlaceStyle fs: FieldBreach(m, fs, f.Pos, rng); break; // a people's field (World.SiegeField.cs, SM6)
-                case FoliageKind.Wall when t.Wall?.AtBreach(f.Pos.X) == true: // a breach (docs/archive/SIEGECRAFT.md A2): the face lies in rubble at its foot
-                    for (int i = 0; i < 4; i++) { var at = new Vector2(f.Pos.X - 1.8f + i * 1.2f, SiegeWall.Outer - 0.6f + (i % 2) * 0.9f); Rock(m, new Vector3(at.X, t.Height(at), at.Y), 1.1f + 0.3f * (i % 3), rng); }
-                    break;
-                case FoliageKind.Wall when FieldStyle is PlaceStyle fs: FieldWall(m, fs, b, f.Scale, rng); break;
-                case FoliageKind.Wall: WallStones(m, b, f.Scale, rng); break;
-                case FoliageKind.Tower when FieldStyle is PlaceStyle fs: FieldTower(m, fs, b, rng, MathF.Abs(f.Pos.X - SiegeWall.GateX) < 6); break;
-                case FoliageKind.Tower: Tower(m, b, rng); break;
-                case FoliageKind.Gate: GateDoor(m, b, t.Wall?.GateOpen == true, rng, FieldStyle); break;
-                case FoliageKind.Ladder: Ladder(m, b); break;
                 case FoliageKind.House when FieldStyle is PlaceStyle fs: FieldHouse(m, fs, f, rng, t.Wall == null); break;
                 case FoliageKind.House: TownHouse(m, b, f.Scale, rng); break;
                 case FoliageKind.Keep: FieldKeep(m, FieldStyle ?? Architecture.Of("azure_heart"), f, rng); break;
@@ -891,109 +881,13 @@ sealed partial class World : IDisposable
         }
     }
 
-    // ---------- a besieged town (Terrain.SiegeWall) ----------
+    // ---------- a besieged town (Fortress, World.Fortress.cs) ----------
 
     static readonly Color WallStone = new(150, 146, 136), Timber = new(104, 72, 44), Footing = new(112, 110, 100);
     /// Foliage UV tags the world shader reads (leafiness below zero): dressed stone (courses drawn in the shader) and
     /// flames (unlit, flickering).
     static readonly Vector2 MasonryTag = new(0, -1), FlameTag = new(0, -2);
-
-    /// A length of wall: its top is the walkway (the terrain carries the units), faced in stone, with merlons on the outer edge
-    /// and a darker battered footing where the rain splashes and the moss grows.
-    static void WallStones(Mesh m, Vector3 b, float len, Random r)
-    {
-        m.Tag = MasonryTag;
-        const float h = SiegeWall.Height, d = SiegeWall.Top1 - SiegeWall.Outer;
-        var c = new Vector3(b.X, b.Y - h - 2, SiegeWall.Outer + d / 2);
-        m.Box(c, len + 0.05f, d, h + 2.04f, 0, Jitter(WallStone, r, 0.05f));
-        m.Box(c - Vector3.UnitZ * 0.25f, len + 0.06f, d + 0.5f, 3.1f, 0, Jitter(Footing, r, 0.04f));
-        for (float x = -len / 2 + 0.5f; x < len / 2; x += 1.6f)
-            m.Box(new Vector3(b.X + x, b.Y, SiegeWall.Outer + 0.3f), 0.8f, 0.6f, 0.75f, 0, Jitter(WallStone, r, 0.06f));
-        m.Tag = Vector2.Zero;
-    }
-
-    static void Tower(Mesh m, Vector3 b, Random r)
-    {
-        m.Tag = MasonryTag;
-        var foot = new Vector3(b.X, b.Y - SiegeWall.Height - 2, SiegeWall.Outer + 1.5f);
-        m.Box(foot, 4.2f, 5.4f, SiegeWall.Height + 5.5f, 0, Jitter(WallStone, r, 0.04f));
-        m.Box(foot, 4.7f, 5.9f, 3.2f, 0, Jitter(Footing, r, 0.04f));
-        for (int i = 0; i < 4; i++)
-        {
-            float x = (i % 2 * 2 - 1) * 1.7f, z = (i / 2 * 2 - 1) * 2.3f;
-            m.Box(foot + new Vector3(x, SiegeWall.Height + 5.5f, z), 0.8f, 0.8f, 0.8f, 0, WallStone);
-        }
-        m.Tag = Vector2.Zero;
-    }
-
-    /// Torches every `TorchSpacing` m along the outer face of the wall (and over the gate). The world and sprite shaders
-    /// light the wall, the ground and the men from the same fixed row (`Shading.Torch`), so no light list is needed.
     public const float TorchSpacing = 10;
-    static readonly float[] TowerXs = { SiegeWall.GateX - 5.2f, SiegeWall.GateX + 5.2f, -60, -30, 30, 60, -95, 95 };
-
-    static void Torches(Mesh m, Terrain t)
-    {
-        var rng = new Random(5);
-        for (float x = -240; x <= 240; x += TorchSpacing)
-        {
-            bool gate = t.Wall!.AtGate(x), tower = TowerXs.Any(tx => MathF.Abs(tx - x) < 2.4f);
-            float top = t.Height(new Vector2(gate ? x + TorchSpacing : x, 15.25f));
-            float z = tower ? SiegeWall.Outer - 1.25f : gate ? SiegeWall.Outer + 0.25f : SiegeWall.Outer - 0.02f;
-            var a = new Vector3(x, top - 1.3f, z);
-            var head = new Vector3(x, top + 0.35f, z - 0.45f);
-            m.Tag = Vector2.Zero;
-            m.Frustum(a, head, 0.05f, 0.06f, 4, Timber, rng);
-            m.Box(head - Vector3.Up * 0.12f, 0.2f, 0.2f, 0.16f, 0, new Color(50, 46, 44)); // the iron cup
-            m.Tag = FlameTag;
-            m.Frustum(head + Vector3.Up * 0.02f, head + Vector3.Up * 0.62f, 0.15f, 0, 5, new Color(255, 170, 60), rng);
-            m.Frustum(head + Vector3.Up * 0.02f, head + Vector3.Up * 0.38f, 0.09f, 0, 4, new Color(255, 236, 150), rng);
-        }
-        m.Tag = Vector2.Zero;
-    }
-
-    void GateDoor(Mesh m, Vector3 b, bool broken, Random r, PlaceStyle? st = null)
-    {
-        m.Tag = Vector2.Zero;
-        if (!broken)
-        {
-            // Planks of slightly different wood, iron bands and studs across them.
-            float w = SiegeWall.GateHalf * 2 + 0.6f;
-            m.Box(b, w, 0.5f, SiegeWall.Height - 0.4f, 0, new Color(Timber.ToVector3() * 0.7f));
-            int planks = 9;
-            for (int i = 0; i < planks; i++)
-                m.Box(b + new Vector3(-w / 2 + (i + 0.5f) * w / planks, 0, -0.27f), w / planks - 0.06f, 0.06f, SiegeWall.Height - 0.45f - r.NextSingle() * 0.15f, 0, Jitter(Timber, r, 0.1f));
-            for (int i = 0; i < 3; i++)
-            {
-                var band = b + new Vector3(0, 0.8f + i * 1.3f, -0.33f);
-                m.Box(band, SiegeWall.GateHalf * 2 + 0.4f, 0.08f, 0.2f, 0, new Color(70, 72, 80));
-                for (float x = -w / 2 + 0.4f; x < w / 2; x += 0.65f) m.Box(band + new Vector3(x, 0.05f, -0.05f), 0.08f, 0.06f, 0.1f, 0, new Color(96, 98, 104));
-            }
-        }
-        else
-            for (int i = 0; i < 5; i++) // splintered planks on the ground
-                m.Box(b + new Vector3(r.NextSingle() * 5 - 2.5f, 0, 1 + r.NextSingle() * 3), 1.6f, 0.3f, 0.12f, r.NextSingle() * MathF.Tau, Timber);
-        if (st?.Defence == Defence.Palisade) // a timber lintel over the gap
-            m.Box(b + new Vector3(0, SiegeWall.Height - 0.4f, 0.9f), SiegeWall.GateHalf * 2 + 2, 1.2f, 1.1f, 0, Weathered(st, r));
-        else
-        {
-            m.Tag = st == null || Coursed(st) ? MasonryTag : Vector2.Zero;
-            m.Box(b + new Vector3(0, SiegeWall.Height - 0.4f, 0.9f), SiegeWall.GateHalf * 2 + 2, 2.4f, 1.2f, 0, st == null ? WallStone : WallColour(st, r)); // the arch over the way
-        }
-        m.Tag = Vector2.Zero;
-    }
-
-    /// Two rails leaning from the ground to the wall top, with rungs.
-    static void Ladder(Mesh m, Vector3 b)
-    {
-        m.Tag = Vector2.Zero;
-        var foot = new Vector3(b.X, b.Y, SiegeWall.Outer - 2.2f);
-        var top = new Vector3(b.X, b.Y + SiegeWall.Height + 0.6f, SiegeWall.Outer + 0.05f);
-        var rng = new Random(1);
-        foreach (float side in new[] { -0.4f, 0.4f })
-            m.Frustum(foot + Vector3.UnitX * side, top + Vector3.UnitX * side, 0.06f, 0.06f, 4, Timber, rng);
-        for (float k = 0.08f; k < 1; k += 0.09f)
-            m.Box(Vector3.Lerp(foot, top, k), 0.8f, 0.07f, 0.07f, 0, Timber);
-    }
 
     /// An upright spoked wooden wheel with an iron tire, centred at `c` (axle along `yaw`'s cross axis).
     internal static void Wheel(Mesh m, Vector3 c, float r, float w, float yaw, Color wood, Color iron)

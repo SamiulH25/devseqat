@@ -622,21 +622,18 @@ public static partial class SelfTest
     /// every people's field builds.
     static void FieldsStyled()
     {
-        SiegeWall Wall() => new(2, 500);
-        int Count(Terrain t, FoliageKind k) => t.Foliage.Count(f => f.Kind == k);
-        var plain = new Terrain(5, TerrainParams.Meadow, Wall());
-        var town = new Terrain(5, TerrainParams.Meadow with { Style = "azure_heart" }, Wall());
-        var castle = new Terrain(5, TerrainParams.Meadow with { Style = "azure_heart", Castle = true }, Wall());
-        Check(Count(plain, FoliageKind.Keep) + Count(plain, FoliageKind.Landmark) == 0 && Count(plain, FoliageKind.Tower) == 8, "an unstyled field keeps its old wall");
-        Check(Count(town, FoliageKind.Landmark) == 1 && Count(town, FoliageKind.Keep) == 0, "a town has its landmark behind the wall");
-        Check(Count(castle, FoliageKind.Keep) == 1 && Count(castle, FoliageKind.Tower) > Count(town, FoliageKind.Tower)
-            && Count(castle, FoliageKind.House) < Count(town, FoliageKind.House), "a castle has a keep, a close-towered curtain and few houses");
-        Check(castle.House(castle.Foliage.First(f => f.Kind == FoliageKind.Keep).Pos), "the keep is solid");
+        Fortress MakeFort(FortressKind k, int seed = 5) => new(FortressSpec.Procedural(seed, k), 2, 500, 0, seed);
+        var town = new Terrain(5, TerrainParams.Meadow with { Style = "azure_heart" }, MakeFort(FortressKind.Town));
+        var castle = new Terrain(5, TerrainParams.Meadow with { Style = "azure_heart", Castle = true }, MakeFort(FortressKind.Castle));
+        Check(town.Wall!.Buildings.Any(b => b.Use == LotUse.Landmark) && town.Wall.Buildings.Count(b => b.Use == LotUse.House) > 6, "a town has its landmark and street houses inside the wall");
+        Check(castle.Wall!.Buildings.Any(b => b.Use == LotUse.Landmark) && castle.Wall.Buildings.Count(b => b.Use == LotUse.House) < town.Wall.Buildings.Count(b => b.Use == LotUse.House), "a castle has a keep and fewer houses than a town");
+        Check(castle.House(castle.Wall.Buildings.First(b => b.Use == LotUse.Landmark).Pos), "the keep is solid");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         int i = 0;
         foreach (var st in Architecture.All)
         {
-            var w = new World(new Terrain(5 + i, TerrainParams.Meadow with { Style = st.Id, Castle = i % 2 == 0, Banner = 1 }, Wall()));
+            var kind = i % 2 == 0 ? FortressKind.Castle : FortressKind.Town;
+            var w = new World(new Terrain(5 + i, TerrainParams.Meadow with { Style = st.Id, Castle = i % 2 == 0, Banner = 1 }, MakeFort(kind, 5 + i)));
             if (i++ % 3 == 0) _ = new World(new Terrain(9, TerrainParams.Farmland with { Style = st.Id, Layouts = new[] { FieldLayout.Village } }));
         }
         Console.WriteLine($"styled fields: {Architecture.All.Count} assaults and some villages built in {sw.ElapsedMilliseconds} ms");

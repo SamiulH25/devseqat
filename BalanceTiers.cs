@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// `--tiers [seeds] [filter]` (docs/pre-demo/TIERS.md TI0): every upgrade link that keeps its role fought against its parent
+/// `--tiers [seeds] [filter]` (docs/post-demo/TIERS.md TI0): every upgrade link that keeps its role fought against its parent
 /// three ways: the same men, the same upkeep (wages are per man, `Rules.WageCost`) and the same company places
 /// (`Rules.TierWeight`); wins, men left and time to break, and whether auto-resolve (`Rules.Might`) calls the same winner.
 /// A filter is an id fragment, a culture or a matchup. Writes balance/tiers.csv and prints a table by tier step against TI0's targets.

@@ -198,7 +198,7 @@ public partial class Battle
             var d = t.Pos - p.Pos;
             float l = d.Length();
             if (l < 1 || l > f.Range || Vector2.Dot(d / l, p.Dir) < 0.75f) continue;
-            if (Wall != null && SiegeWall.Inside(t.Pos) != SiegeWall.Inside(p.Pos)) continue; // no leaping the wall
+            if (Wall != null && Wall.Inside(t.Pos) != Wall.Inside(p.Pos)) continue; // no leaping the wall
             float s = l * (2 - Vector2.Dot(d / l, p.Dir));
             if (s < bs) { bs = s; best = t; }
         }

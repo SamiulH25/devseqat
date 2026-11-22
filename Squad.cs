@@ -181,7 +181,7 @@ public sealed class Squad
         : new[] { Formation.Line, Formation.Square, Formation.Wedge, Formation.Loose };
 
     /// The formations this company can take now, in the order J cycles them: its kit's, as far as its tier has learned
-    /// (docs/pre-demo/TIERS.md TI1).
+    /// (docs/post-demo/TIERS.md TI1).
     public Formation[] Choices(bool shields) => Shapes(shields).Where(f => CannotForm(f) == null).ToArray();
 
     /// The company's tier for the ladder (TI1): the tier most of its men stand at (the lower on a tie).
