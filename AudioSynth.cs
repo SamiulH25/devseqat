@@ -88,13 +88,23 @@ static partial class Synth
         return o;
     }
 
-    /// The same sound from far off: the highs soaked up by distance and more of it heard as echo.
+    /// The same sound from far off: the highs soaked up by distance and more of it heard as echo, at the same loudness
+    /// (distance is the mix's job in `PlayAt`; muffling a sound must not also silence it).
     public static float[] Far(float[] b)
     {
         var o = new float[b.Length];
         float lp = 0, lp2 = 0, k1 = Pole(0.16f), k2 = Pole(0.22f);
         for (int i = 0; i < b.Length; i++) { lp += (b[i] - lp) * k1; lp2 += (lp - lp2) * k2; o[i] = lp2 * 1.6f; }
-        return Space(o, 0.55f, 1.4f, 0.6f);
+        var wet = Space(o, 0.55f, 1.4f, 0.6f);
+        float nearPeak = 0, farPeak = 0;
+        foreach (float v in b) nearPeak = MathF.Max(nearPeak, MathF.Abs(v));
+        foreach (float v in wet) farPeak = MathF.Max(farPeak, MathF.Abs(v));
+        if (nearPeak > 1e-4f && farPeak > 1e-4f)
+        {
+            float g = nearPeak * 0.95f / farPeak;
+            for (int i = 0; i < wet.Length; i++) wet[i] *= g;
+        }
+        return wet;
     }
 
     /// Crossfade the last `seconds` into the start so a noise bed loops with no click.

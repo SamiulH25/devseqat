@@ -175,7 +175,7 @@ sealed class AudioEngine
         float dist = d.Length(), x = dist / range;
         if (x >= 1f) return;
         float v = MathF.Max(0, 1 - x);
-        Play(c, v * v * 1.2f, dist > 0.1f ? Vector3.Dot(d / dist, right) * 0.8f : 0, x > 0.33f, priority);
+        Play(c, v * v * 1.2f, dist > 0.1f ? Vector3.Dot(d / dist, right) * 0.8f : 0, x > 0.5f, priority);
     }
 
     // ---------- beds ----------

@@ -87,7 +87,11 @@ public static partial class SelfTest
             {
                 var (p, rms, ok) = Level(b);
                 Check(ok && p > 0.1f && p <= 1f && rms > 0.004f, $"{c} is audible and does not clip (peak {p:0.00}, rms {rms:0.000})");
-                if (Synth.InWorld(c)) Check(Level(Synth.Far(b)) is { Finite: true, Peak: > 0.01f }, $"{c} has a far version");
+                if (Synth.InWorld(c))
+                {
+                    var (fp, _, fok) = Level(Synth.Far(b));
+                    Check(fok && fp >= p * 0.85f && fp <= p * 1.1f, $"{c} far version keeps its loudness (peak {fp:0.00} vs {p:0.00})");
+                }
             }
             Check(!v[0].AsSpan().SequenceEqual(v[1]), $"{c}'s versions differ");
         }
@@ -228,6 +232,7 @@ public static partial class SelfTest
         Check(seen.Contains(Cue.WyvernScreech) || seen.Contains(Cue.WyvernFlap), "wyverns emit WyvernScreech/WyvernFlap");
         Check(seen.Contains(Cue.BoneHit) && seen.Contains(Cue.BoneCollapse), "skeletons rattle on hit and collapse on death");
     }
+
 
     /// Battle ambience holds its level: the field asks for its beds ten times a second (BattleScreen.Soundscape),
     /// and a bed no longer asked for still fades out (AudioEngine.Update / BedStep).

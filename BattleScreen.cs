@@ -513,11 +513,11 @@ sealed partial class BattleScreen
             {
                 float range = cue switch
                 {
-                    Cue.Shout or Cue.Horn or Cue.Rout or Cue.Cheer or Cue.HornRetreat or Cue.TrollRoar or Cue.WolfHowl or Cue.WyvernScreech or Cue.AuraBreakthrough => 160,
-                    Cue.Crash or Cue.CrowSwarm or Cue.WallFall => 200,
-                    Cue.Ram or Cue.RamSwing or Cue.EngineRelease or Cue.EngineWinch or Cue.RaiseDead or Cue.ChampionClash or Cue.BearRoar => 120,
-                    Cue.Volley => 90,
-                    _ => 70,
+                    Cue.Shout or Cue.Horn or Cue.Rout or Cue.Cheer or Cue.HornRetreat or Cue.TrollRoar or Cue.WolfHowl or Cue.WyvernScreech or Cue.AuraBreakthrough => 220,
+                    Cue.Crash or Cue.CrowSwarm or Cue.WallFall => 260,
+                    Cue.Ram or Cue.RamSwing or Cue.EngineRelease or Cue.EngineWinch or Cue.RaiseDead or Cue.ChampionClash or Cue.BearRoar => 180,
+                    Cue.Volley => 150,
+                    _ => 120,
                 } * zoomScale;
                 bool nearPlayer = battle.Player.Active && Vector2.DistanceSquared(p, battle.Player.Pos) < 9f;
                 audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), listener, right, range, priority: nearPlayer);
