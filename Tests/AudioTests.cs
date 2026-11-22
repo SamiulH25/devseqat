@@ -228,4 +228,24 @@ public static partial class SelfTest
         Check(seen.Contains(Cue.WyvernScreech) || seen.Contains(Cue.WyvernFlap), "wyverns emit WyvernScreech/WyvernFlap");
         Check(seen.Contains(Cue.BoneHit) && seen.Contains(Cue.BoneCollapse), "skeletons rattle on hit and collapse on death");
     }
+
+    /// Battle ambience holds its level: the field asks for its beds ten times a second (BattleScreen.Soundscape),
+    /// and a bed no longer asked for still fades out (AudioEngine.Update / BedStep).
+    static void BedFollows()
+    {
+        float level = 0, want = 0;
+        const float dt = 1 / 60f;
+        for (int frame = 0; frame < 60 * 2; frame++)
+        {
+            want = frame % 6 == 0 ? 1f : MathF.Max(0, want - dt); // SetBed 10x a second, then the frame's decay
+            level = AudioEngine.BedStep(level, want, dt);
+        }
+        Check(level > 0.85f, $"a battle bed at 10 Hz lands near its target ({level:0.00})");
+        for (int frame = 0; frame < 60 * 2; frame++)
+        {
+            want = MathF.Max(0, want - dt);
+            level = AudioEngine.BedStep(level, want, dt);
+        }
+        Check(level < 0.15f, $"a bed no longer asked for fades out ({level:0.00})");
+    }
 }

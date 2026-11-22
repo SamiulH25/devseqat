@@ -190,8 +190,12 @@ sealed class AudioEngine
             i.IsLooped = true; i.Volume = 0; i.Play();
             beds[b] = e = (i, 0, 0);
         }
-        beds[b] = (e.I, e.Level, MathF.Max(e.Want, Math.Clamp(level, 0, 1)));
+        beds[b] = (e.I, e.Level, Math.Clamp(level, 0, 1));
     }
+
+    /// One frame of a bed's level: eased toward the level asked for, so a bed asked for ten times a second (the battle)
+    /// holds its level, and one no longer asked for fades out over about a second.
+    public static float BedStep(float level, float want, float dt) => level + (want - level) * MathF.Min(1, dt * 2.5f);
 
     static float BedGain(Bed b) => b switch
     {
@@ -335,9 +339,10 @@ sealed class AudioEngine
         foreach (var b in beds.Keys.ToList())
         {
             var (i, level, want) = beds[b];
-            level += (want - level) * MathF.Min(1, dt * 2.5f);
+            want = MathF.Max(0, want - dt); // asked again by the screen every 0.1 s in battle, else fade over ~1 s
+            level = BedStep(level, want, dt);
             i.Volume = Math.Clamp(level * BedGain(b) * Amb * bedDuck, 0, 1);
-            beds[b] = (i, level, 0);
+            beds[b] = (i, level, want);
         }
     }
 
