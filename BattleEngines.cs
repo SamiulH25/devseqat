@@ -119,8 +119,11 @@ public sealed partial class Battle
         crew.Works = e;
         crew.Order = Order.Hold;
         crew.Target = null;
+        crew.Formation = Formation.Line;
+        crew.Columns = def.Shot == "ram" ? 2 : 3;
+        crew.Loose = false;
         crew.Front = e.Front;
-        crew.Anchor = at - e.Front * 2.5f;
+        crew.Anchor = at - e.Front * (def.Shot == "ram" ? 0.5f : 2.1f);
         foreach (var l in roles[team].Values) l.Remove(crew); // the general does not send the crew into the line
         return e;
     }
@@ -167,7 +170,8 @@ public sealed partial class Battle
             var crew = SplitNow(from, def.Crew, quiet: true);
             crew.Division?.Squads.Remove(crew);
             crew.Division = null;
-            for (int i = 0; i < crew.Units.Count; i++) crew.Units[i].Pos = at + new Vector2((i % 4 - 1.5f) * 1.1f, -2 - i / 4 * 0.9f) * f; // they stand at it from the first
+            int cols = def.Shot == "ram" ? 2 : 3;
+            for (int i = 0; i < crew.Units.Count; i++) crew.Units[i].Pos = at + new Vector2((i % cols - (cols - 1) * 0.5f) * 0.8f, -(def.Shot == "ram" ? 0.5f : 2.1f) - i / cols * 0.8f) * f; // tucked tightly behind/under the engine
             AddEngine(spec.Team, def.Id, at, new Vector2(0, f), crew);
         }
     }
@@ -262,7 +266,11 @@ public sealed partial class Battle
         {
             e.Front = to / d;
             e.Pos += e.Front * MathF.Min(d, e.Def.Move * k * dt);
-            e.Crew.Anchor = e.Pos - e.Front * (e.Def.Shot == "ram" ? 1.5f : 2.5f);
+            e.Crew.Order = Order.Hold;
+            e.Crew.Formation = Formation.Line;
+            e.Crew.Columns = e.Def.Shot == "ram" ? 2 : 3;
+            e.Crew.Loose = false;
+            e.Crew.Anchor = e.Pos - e.Front * (e.Def.Shot == "ram" ? 0.5f : 2.1f);
             e.Crew.Front = e.Front;
             return;
         }
@@ -276,6 +284,9 @@ public sealed partial class Battle
                 w.AddRamp(seg, e.Pos, e);
                 WallVersion++;
                 InvalidatePath();
+                e.Crew.Works = null;
+                e.Crew.Columns = 4;
+                e.Crew.Order = Order.Charge; // the tower is docked: its crew storms onto the wall
                 Log(e.Team == 0 ? "Our siege tower is at the wall!" : "A siege tower reaches the wall!");
                 Sound(Cue.LadderHook, e.Pos, priority: true);
             }
@@ -298,7 +309,7 @@ public sealed partial class Battle
     bool Sheltered(Unit t)
     {
         foreach (var e in Engines)
-            if (e.Team == t.Team && e.Def.Rolls && !e.Wrecked && Vector2.DistanceSquared(e.Pos, t.Pos) < 9) return true;
+            if (e.Team == t.Team && e.Def.Rolls && !e.Wrecked && Vector2.DistanceSquared(e.Pos, t.Pos) < (e.Def.Shot == "tower" ? 18f : 12.25f)) return true;
         return false;
     }
 

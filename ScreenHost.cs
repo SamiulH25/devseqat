@@ -167,6 +167,7 @@ sealed class ScreenHost : Game
         battle.Load();
         battle.OnCampaignBattleOver = FinishCampaignBattle;
         battle.OnTitle = () => mode = Mode.Title;
+        battle.OnQuickSetup = OpenQuickBattle;
         map = new MapScreen(GraphicsDevice, Sb, Art, Font, Shading, MeshKit, Ctl) { OnBattle = StartCampaignBattle, OnTitle = () => mode = Mode.Title, OnSettings = OpenSettings };
         map.OnLoadSave = LoadSave;
         title = new TitleScreen(this);
@@ -270,6 +271,18 @@ sealed class ScreenHost : Game
         battle.NewBattle();
         battle.StartDeployment();
         mode = Mode.Battle;
+    }
+
+    public void QuickBattle(QuickBattleConfig cfg)
+    {
+        battle.BeginQuickBattle(cfg);
+        mode = Mode.Battle;
+    }
+
+    public void OpenQuickBattle(QuickBattleConfig? cfg = null)
+    {
+        mode = Mode.Title;
+        title.OpenQuickBattle(cfg);
     }
 
     void StartCampaignBattle(BattleSetup s)

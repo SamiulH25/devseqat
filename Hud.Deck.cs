@@ -334,11 +334,54 @@ sealed partial class Hud
         _ => ShapeOf(c) is Formation f && who.All(s => s.Formation == f),
     };
 
-    /// Bottom right: who listens, then the picture buttons. The one under the mouse says what it does on a card above.
+    /// Dedicated siege engine status and control panel when one or more engine crews are selected.
+    void EngineDeck(List<Squad> crews)
+    {
+        var e = crews[0].Works!;
+        int x = deck.X + U(8), y = deck.Y + U(8), w = deck.Width - U(16);
+        string title = crews.Count == 1 ? e.Def.Name.ToUpperInvariant() : $"{crews.Count} SIEGE ENGINES";
+        string crewTxt = $"CREW {B.CrewAt(e)}/{e.Def.Crew}";
+        bool titleHover = DeckTitleAt(Mouse);
+        Text("< " + title, x, y, titleHover ? Color.White : Gold, 1);
+        TextR(crewTxt, deck.Right - U(8), y, B.CrewAt(e) >= e.Def.Crew ? Ok : Warn, 1);
+        y += U(14);
+        kit.Gauge(new Rectangle(x, y, w, U(5)), Math.Clamp(e.Hp / e.Def.Hp, 0, 1), Ok);
+        y += U(10);
+
+        if (e.Def.Rolls)
+        {
+            float dist = Vector2.Distance(e.Pos, e.Goal);
+            string status = e.Docked ? "DOCKED: RAMP OPEN TO WALLS"
+                : dist < 1f && e.Def.Shot == "ram" ? "BATTERING THE GATE"
+                : $"ROLLING TO TARGET ({dist:0} M)";
+            Text(status, x, y, e.Docked ? Ok : Gold, 1); y += U(13);
+            Text("AUTO-PUSHES TO GATE OR WALL WHILE CREWED.", x, y, Style.Text, 1); y += U(11);
+            Text("CREW IS SHELTERED UNDER IT (-75% ARROW DMG).", x, y, Dim, 1); y += U(11);
+            Text("ESCORT WITH FOOT TO GUARD AGAINST SALLIES.", x, y, Dim, 1);
+        }
+        else
+        {
+            float ready = e.Reload <= 0 ? 1 : 1 - Math.Clamp(e.Reload / e.Def.Reload, 0, 1);
+            string tgt = e.Mark != null ? "WALL / GROUND MARK" : e.Crew.Target is { Alive: > 0 } t ? t.Name.ToUpperInvariant() : "AUTO-TARGETING";
+            Text($"TARGET: {kit.Fit(tgt, w - U(48))}", x, y, e.Mark != null || e.Crew.Target != null ? Gold : Style.Text, 1); y += U(12);
+            Text(ready >= 1 ? "READY TO FIRE" : $"RELOADING {ready * 100:0}%", x, y, ready >= 1 ? Ok : Dim, 1); y += U(10);
+            kit.Gauge(new Rectangle(x, y, w, U(4)), ready, ready >= 1 ? Gold : Friendly); y += U(10);
+            Text("RIGHT-CLICK WALL, GATE OR FOE TO AIM.", x, y, Style.Text, 1); y += U(11);
+            Text($"IN FIGHT VIEW: WALK UP + [{Ctl.Name(Act.Interact)}] TO MAN.", x, y, Dim, 1);
+        }
+    }
+
+    /// Bottom right: who listens, then the picture buttons (or clear siege engine controls when engine crews are selected).
     void OrderDeck()
     {
         if (deck.IsEmpty) return;
         Panel(deck);
+        var crews = Selected.Where(s => s.Alive > 0 && s.Works is { Wrecked: false }).ToList();
+        if (Selected.Count > 0 && crews.Count == Selected.Count)
+        {
+            EngineDeck(crews);
+            return;
+        }
         var who = Listening();
         string head = Selected.Count == 0 ? "ALL COMPANIES" : who.Count == 1 ? (who[0].Company?.Name is { Length: > 0 } cn ? cn : who[0].Name).ToUpperInvariant() : $"{who.Count} COMPANIES";
         string men = $"{who.Sum(s => s.Alive)} MEN";

@@ -11,7 +11,7 @@ public enum Cmd
     Stakes, Cast, ShapeLine, ShapeWall, ShapeSquare, ShapeWedge, ShapeLoose,
 }
 
-public enum MenuItem { Resume, Controls, NewBattle, Quit, Withdraw, Continue, Title, Settings }
+public enum MenuItem { Resume, Controls, NewBattle, BattleSetup, Quit, Withdraw, Continue, Title, Settings }
 
 /// All 2D interface of a battle. It is two HUDs that never show together (docs/archive/PLAYTEST.md PT4, "As rebuilt"):
 /// the command view (Hud.Deck.cs: top bar with the clock and speeds, minimap, company cards, the captain's plate, the order
@@ -123,8 +123,8 @@ sealed partial class Hud
         LayoutDivisions();
         if (Command && Div != null) LayoutGoals();
 
-        var items = ShowResult ? (InCampaign ? new[] { MenuItem.Continue } : new[] { MenuItem.NewBattle, MenuItem.Title })
-            : MenuOpen ? (InCampaign ? new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Settings, MenuItem.Withdraw } : new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Settings, MenuItem.NewBattle, MenuItem.Title })
+        var items = ShowResult ? (InCampaign ? new[] { MenuItem.Continue } : new[] { MenuItem.NewBattle, MenuItem.BattleSetup, MenuItem.Title })
+            : MenuOpen ? (InCampaign ? new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Settings, MenuItem.Withdraw } : new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Settings, MenuItem.BattleSetup, MenuItem.NewBattle, MenuItem.Title })
             : Array.Empty<MenuItem>();
         start = Deploying ? new Rectangle(W / 2 - U(130), U(96) + Drop, U(260), U(30)) : Rectangle.Empty;
         deployToggle = Deploying && DeployLast != null ? new Rectangle(W / 2 - U(130), U(138) + Drop, U(260), U(20)) : Rectangle.Empty;

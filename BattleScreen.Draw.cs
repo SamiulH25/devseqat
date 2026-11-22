@@ -548,6 +548,7 @@ partial class BattleScreen
         puppet.SparseCorpse = false;
         puppet.Rear = 0;
         if (!forSun) DrawMissiles(do3D); // real arrows near the camera (BattleScreen.Arrows.cs)
+        if (do3D) DrawEngines3D(); // solid lit 3D siege engines (BattleScreen.Engines3D.cs)
         foreach (var h in battle.LooseHorses) { float hh = t.Height(h.Pos); if (Seen(h.Pos, hh, 2.5f)) { if (do3D && h.Mount.Barding != "wolf") puppet3D!.DrawLooseHorse(h, hh); else puppet.DrawLooseHorse(h, hh); } }
         foreach (var h in battle.DeadHorses) { if (battle.Time > 0 && battle.Time - h.At > (forSun ? 0.75f : 3.2f)) continue; float hh = t.Height(h.Pos); if (Seen(h.Pos, hh + 1.5f, 4f)) puppet.DrawDeadHorse(h, hh); }
         puppet.Detail = 0;

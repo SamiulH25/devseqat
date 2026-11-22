@@ -132,6 +132,8 @@ sealed partial class BattleScreen
     /// Called when a campaign battle is over and its result should go back to the map.
     public Action<BattleResult>? OnCampaignBattleOver;
     public Action? OnTitle;
+    public Action<QuickBattleConfig?>? OnQuickSetup;
+    QuickBattleConfig? lastQuickConfig;
     public Battle Battle => battle;
     public bool InCampaign => campaignBattle != null;
     public string? PendingShot { get => pendingShot; set => pendingShot = value; }
@@ -296,6 +298,34 @@ sealed partial class BattleScreen
         campaignBattle = null;
         deploying = false;
         OnCampaignBattleOver?.Invoke(r);
+    }
+
+    /// Launch a battle configured in the Battle Lab / Quick Battle tool.
+    public void BeginQuickBattle(QuickBattleConfig cfg)
+    {
+        lastQuickConfig = cfg;
+        campaignBattle = null;
+        memory = null;
+        battleTutStep = -1;
+        deployed = null;
+        var (seed, pArmy, eArmy, opts) = cfg.Build();
+        battle = new Battle(seed, pArmy, eArmy, opts);
+        battle.StartRecording(seed);
+        replaySaved = false;
+        SetWorld();
+        battle.Log($"Battle Lab ({cfg.Preset}): {pArmy.Name} vs {eArmy.Name}, {(opts.Ground?.Name ?? "open").ToLowerInvariant()} ground, {opts.Weather.Describe}.");
+        foreach (var p in ctl.Problems) battle.Log(p);
+        selected.Clear();
+        yaw = MathHelper.PiOver2;
+        pitch = 0.3f;
+        blend = 0;
+        paused = menuOpen = helpOpen = wheelOpen = false;
+        SetCommand(false);
+        kb = pkb = Keyboard.GetState();
+        ms = pms = Mouse.GetState();
+        if (cfg.Mode == QuickBattleMode.Duel || cfg.SkipDeploy) { deploying = false; SetCommand(cfg.AutoPlayer); }
+        else StartDeployment();
+        UpdateCamera();
     }
 
     public void NewBattle()
@@ -679,7 +709,11 @@ sealed partial class BattleScreen
         {
             case MenuItem.Resume: menuOpen = false; skipMouse = true; break;
             case MenuItem.Controls: helpOpen = true; break;
-            case MenuItem.NewBattle: NewBattle(); break;
+            case MenuItem.NewBattle:
+                if (lastQuickConfig != null) BeginQuickBattle(lastQuickConfig);
+                else NewBattle();
+                break;
+            case MenuItem.BattleSetup: menuOpen = false; OnQuickSetup?.Invoke(lastQuickConfig); break;
             case MenuItem.Quit: Exit(); break;
             case MenuItem.Withdraw: battle.Withdraw(); menuOpen = false; break;
             case MenuItem.Settings: host.OpenSettings(); break;

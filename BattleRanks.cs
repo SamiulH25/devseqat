@@ -101,7 +101,7 @@ public partial class Battle
     /// nearest man, turning to face him, never more than a few metres ahead of where the front rank is. In contact it holds.
     void Close(Squad s, float dt)
     {
-        if (s.Order != Order.Charge || !Ranked(s) || s.Reckless || s.Alive == 0) { s.Foe = null; return; }
+        if (s.Works != null || s.Order != Order.Charge || !Ranked(s) || s.Reckless || s.Alive == 0) { s.Foe = null; return; }
         s.Foe = s.Target is { Alive: > 0 } t ? t : NearestFoe(s);
         if (s.Foe == null) return;
         var f = s.FrontPos;

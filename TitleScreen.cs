@@ -13,14 +13,17 @@ sealed partial class TitleScreen
     KeyboardState kb, pkb;
     bool click;
     readonly CreatorScreen creator;
+    readonly QuickBattleScreen quickBattle;
     // Debug: IRONFIELD_CREATOR_SHOTS=/dir saves a PNG of each creator step, IRONFIELD_TITLE_SHOTS=/dir one of the title; then quits.
     static readonly string? creatorShots = Environment.GetEnvironmentVariable("IRONFIELD_CREATOR_SHOTS") is { Length: > 0 } d ? d : null;
     static readonly string? titleShots = Environment.GetEnvironmentVariable("IRONFIELD_TITLE_SHOTS") is { Length: > 0 } d ? d : null;
-    public readonly string? ShotsDir = creatorShots ?? titleShots;
+    static readonly string? qbShots = Environment.GetEnvironmentVariable("IRONFIELD_QB_SHOTS") is { Length: > 0 } d ? d : null;
+    public readonly string? ShotsDir = creatorShots ?? titleShots ?? qbShots;
     public string? PendingShot;
     int shotStep = -1, shotFrames;
     float time;
     public bool InCreator => creator.Open;
+    public void OpenQuickBattle(QuickBattleConfig? cfg = null) => quickBattle.Show(cfg);
     public string CreatorCulture => creator.CurrentCulture;
     /// LOAD: every campaign and its saves.
     readonly SaveScreen saves = new();
@@ -31,7 +34,9 @@ sealed partial class TitleScreen
         ui = new Ui(host.Sb, host.Art, host.Font);
         saves.OnLoad = p => { if (host.LoadSave(p) is string why) host.TitleNote = why; };
         creator = new CreatorScreen(ui, m => host.StartCampaign(Environment.TickCount & 0xFFFF, m.Realm, m), new CreatorStage(host.GraphicsDevice, host.Art, host.Shading, host.MeshKit, () => host.Quality));
+        quickBattle = new QuickBattleScreen(ui, host.QuickBattle);
         if (creatorShots != null || Environment.GetEnvironmentVariable("IRONFIELD_TITLE_PICK") != null) creator.Show();
+        if (qbShots != null) quickBattle.Show();
     }
 
     float lastDt = 1 / 60f;
@@ -50,7 +55,7 @@ sealed partial class TitleScreen
         bool Hit(Keys k) => kb.IsKeyDown(k) && !pkb.IsKeyDown(k);
         if (Hit(Keys.F3) && !saves.Open) host.OpenLab();
         if (saves.Open) { if (Hit(Keys.Escape)) saves.Close(); }
-        else if (!creator.Open)
+        else if (!creator.Open && !quickBattle.Open)
         {
             if (Hit(Keys.Down) || Hit(Keys.S)) nav++;
             if (Hit(Keys.Up) || Hit(Keys.W)) nav--;
@@ -85,6 +90,14 @@ sealed partial class TitleScreen
             creator.Draw(kb, pkb, time);
             ui.End();
             if (creatorShots != null) Shots();
+            return;
+        }
+        if (quickBattle.Open)
+        {
+            nav = 0; go = false;
+            quickBattle.Draw(kb, pkb, ms.ScrollWheelValue - pms.ScrollWheelValue);
+            ui.End();
+            if (qbShots != null) QbShots();
             return;
         }
 
@@ -217,7 +230,7 @@ sealed partial class TitleScreen
             case 0: creator.Show(); break;
             case 1: host.ContinueCampaign(); break;
             case 2: saves.Show(SaveScreen.Use.Load, null); break;
-            case 3: host.QuickBattle(); break;
+            case 3: quickBattle.Show(); break;
             case 4: host.OpenSettings(); break;
             default: host.Exit(); break;
         }
@@ -247,6 +260,19 @@ sealed partial class TitleScreen
         if (shotFrames == 24) { BeginLoading("A NEW CAMPAIGN"); loadBar = 0.62f; }
         if (shotFrames == 34) PendingShot = "loading";
         if (shotFrames > 36 && PendingShot == null) host.Exit();
+    }
+
+    void QbShots()
+    {
+        if (PendingShot != null) return;
+        shotFrames++;
+        if (shotStep < 0) { quickBattle.C = QuickBattleConfig.FromPreset("OPEN FIELD"); shotStep = 0; shotFrames = 0; }
+        if (shotStep == 0 && shotFrames == 4) { PendingShot = "qb-field"; shotStep = 1; shotFrames = 0; }
+        else if (shotStep == 1 && shotFrames == 1) quickBattle.C = QuickBattleConfig.FromPreset("TOWN SIEGE");
+        else if (shotStep == 1 && shotFrames == 4) { PendingShot = "qb-siege"; shotStep = 2; shotFrames = 0; }
+        else if (shotStep == 2 && shotFrames == 1) { quickBattle.C = QuickBattleConfig.FromPreset("ARCANA"); quickBattle.C.Player.Custom = true; }
+        else if (shotStep == 2 && shotFrames == 4) { PendingShot = "qb-custom"; shotStep = 3; shotFrames = 0; }
+        else if (shotStep >= 3) host.Exit();
     }
 
     /// The creator's steps one by one as PNGs (IRONFIELD_CREATOR_SHOTS), with a made-up captain, then quit.

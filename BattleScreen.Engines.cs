@@ -29,11 +29,15 @@ sealed partial class BattleScreen
     void EngineLines()
     {
         if (battle.Engines.Count == 0 && battle.EngineShots.Count == 0) return;
-        var eye2 = new Vector2(eye.X, eye.Z);
-        foreach (var e in battle.Engines)
+        bool do3D = shading != null && puppet3D != null && Settings.Current.EffectivePixelArt && host.Quality != Quality.Low;
+        if (!do3D)
         {
-            if (Vector2.DistanceSquared(e.Pos, eye2) > 320 * 320) continue;
-            DrawEngine(e);
+            var eye2 = new Vector2(eye.X, eye.Z);
+            foreach (var e in battle.Engines)
+            {
+                if (Vector2.DistanceSquared(e.Pos, eye2) > 320 * 320) continue;
+                DrawEngine(e);
+            }
         }
         foreach (var s in battle.EngineShots)
         {

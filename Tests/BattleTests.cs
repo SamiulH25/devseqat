@@ -2126,5 +2126,20 @@ public static partial class SelfTest
         }
         Check(cavReached, $"charging cavalry curve around a house to reach the enemy behind it (center {cav.Center})");
     }
+
+    /// Every Battle Lab / Quick Battle preset builds a valid battle and ticks cleanly (field, village, river, sieges, sergeants, arcana, monsters, duel).
+    static void BattleLabPresets()
+    {
+        foreach (var name in QuickBattleConfig.PresetNames)
+        {
+            var cfg = QuickBattleConfig.FromPreset(name, 777);
+            var (seed, pArmy, eArmy, opts) = cfg.Build();
+            var b = new Battle(seed, pArmy, eArmy, opts);
+            for (int i = 0; i < 30; i++) b.Update(1 / 60f);
+            Check(b.Units.Count > 0, $"preset {name} spawned units");
+            if (name == "SERGEANTS") Check(b.Divisions.Count >= 2, $"SERGEANTS preset created divisions ({b.Divisions.Count})");
+            if (name.Contains("SIEGE") || name == "GREAT CASTLE") Check(b.Wall != null, $"{name} preset built a fortress");
+        }
+    }
 }
 

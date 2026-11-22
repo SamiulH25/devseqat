@@ -91,6 +91,23 @@ public partial class Battle
             return;
         }
 
+        // Engine crews stay tucked tightly at their siege engine (only swinging if an enemy reaches them directly).
+        if (s.Works is { Wrecked: false })
+        {
+            if (enemy != null && d <= reach + 0.6f)
+            {
+                u.Face(enemy.Pos - u.Pos);
+                if (d <= reach && u.Cooldown <= 0) StartSwing(u, enemy);
+            }
+            else if (toSlot > 0.35f)
+            {
+                var to = Via(u, u.Slot) - u.Pos;
+                u.Wish = to / MathF.Max(0.01f, to.Length()) * MathF.Min(u.Type.Speed, s.MarchSpeed);
+                u.Face(to);
+            }
+            else u.Face(s.Front);
+            return;
+        }
         // A company in the field fights from its ranks (BattleRanks.cs); leaders, heroes, pursuers, mobs, broken ranks, a
         // charge with no company left to hit (it goes for the captain) and one swarming a beast or a handful fight free.
         if (Ranked(s) && !free && !s.Broken && !(charge && (s.Foe == null || Overwhelms(s))) && !u.IsLeader && !u.Hero && !(s.Pursue && charge)) { FightFromRanks(u, s, enemy, d, dt); return; }

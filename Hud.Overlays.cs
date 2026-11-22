@@ -31,7 +31,7 @@ sealed partial class Hud
     void MenuButtons()
     {
         foreach (var (r, m) in menu)
-            kit.Gilded(r, m switch { MenuItem.Resume => "RESUME", MenuItem.Controls => "CONTROLS", MenuItem.NewBattle => "NEW BATTLE", MenuItem.Withdraw => "WITHDRAW",
+            kit.Gilded(r, m switch { MenuItem.Resume => "RESUME", MenuItem.Controls => "CONTROLS", MenuItem.NewBattle => "REMATCH", MenuItem.BattleSetup => "BATTLE LAB", MenuItem.Withdraw => "WITHDRAW",
                 MenuItem.Continue => "CONTINUE", MenuItem.Title => "QUIT TO TITLE", MenuItem.Settings => "SETTINGS", _ => "QUIT" }, tone: m is MenuItem.Continue or MenuItem.Resume ? Ok : null);
     }
 
