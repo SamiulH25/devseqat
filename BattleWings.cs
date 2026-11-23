@@ -4,8 +4,9 @@ namespace Ironfield;
 
 /// Battle: horse and bows by grade (docs/archive/MELEE.md D6). Rabble horse bog down; veteran horse rally as a body behind their
 /// own side before charging again, and take a fighting company in the flank; elite horse ride a lane round to a foe's
-/// open side and go for archers left open. Veteran bows fall back behind their own foot when foot come at them and hold
-/// fire into a melee their own men are in; elite bows shoot wavering companies and the enemy's archers first.
+/// open side and go for archers left open. Veteran bows fall back behind their own foot when foot come at them; trained bows
+/// and better hold fire into a melee their own men are in; elite bows shoot wavering companies and the enemy's archers first.
+/// Your horse sent at a company rein in once it breaks (`HorseReinIn`).
 public partial class Battle
 {
     /// How long a bogged rider hacks before breaking off: rabble stay stuck longer.
@@ -26,13 +27,36 @@ public partial class Battle
         return at;
     }
 
+    /// A company is broken: as many of its men running as standing, or under a quarter of it still standing.
+    static bool Broke(Squad s)
+    {
+        int running = 0;
+        foreach (var u in s.Units) if (u.Active && u.Routing) running++;
+        return running > 0 && running >= s.Alive || s.Alive * 4 < s.StartCount;
+    }
+
+    /// Your horse sent at a company that breaks rein in and ride back to their rally point on Hold, for your next order:
+    /// a charge was won, and riding on into whatever enemy was nearest only fed them to the rest of his army (horse that
+    /// broke a company of bowmen in 20 s were all lost in the next ten). Not horse archers; the AI general picks his own
+    /// horse's next prey. True if it reined in.
+    bool HorseReinIn(Squad s)
+    {
+        if (s.Team != 0 || s.AiControlled || !s.Cavalry || s.Order != Order.Charge || s.Alive == 0 || s.Units[0].Type.Ammo > 0) return false;
+        var toE = centroid[1] - centroid[0];
+        s.Order = Order.Hold;
+        s.Anchor = RallyPoint(s);
+        if (toE.LengthSquared() > 1) s.Front = Vector2.Normalize(toE);
+        Log($"The {s.Name} have broken their foe and ride back.");
+        return true;
+    }
+
     /// A withdrawing rider of a rallying company: make for the rally point and wait there, facing the enemy.
     void RideToRally(Unit u, Squad s)
     {
         if (!s.Rallying) { s.Rallying = true; s.RallySince = Time; s.RallyAt = RallyPoint(s); }
         u.Couched = false;
         float far = Vector2.Distance(u.Pos, s.RallyAt);
-        if (far > 6) { Ride(u, Via(u, s.RallyAt), far > 15 ? u.Horse!.Gallop : u.Horse!.Trot); return; }
+        if (far > 6) { Ride(u, Via(u, s.RallyAt), far > 15 ? u.Horse!.Gallop : u.Horse!.Trot, s.RallyAt); return; }
         u.Wish = Vector2.Zero;
         var toE = centroid[1 - s.Team] - u.Pos;
         if (toE.LengthSquared() > 1) u.Face(toE);
@@ -89,8 +113,9 @@ public partial class Battle
         return ts.Center + perp * sign * (ts.Radius + 12) - ts.Front * ts.Radius * 0.5f;
     }
 
-    /// Bows of a veteran company and better hold their shot at a man fighting their own side (too near their friends).
-    static bool HoldsFire(Squad s, Unit enemy) => s.Grade >= Grade.Veteran && enemy.EnemyDist < 2.5f;
+    /// Bows of a trained company and better hold their shot at a man fighting their own side (too near their friends); only
+    /// rabble loose into a melee. (Veterans only, once: trained bows then shot horse fighting their own archers at no risk.)
+    static bool HoldsFire(Squad s, Unit enemy) => s.Grade >= Grade.Trained && enemy.EnemyDist < 2.5f;
 
     /// Veteran bows and better, holding with enemy foot coming within 20 m: fall back behind the nearest friendly foot
     /// company, rather than meet it with knives.

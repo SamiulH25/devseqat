@@ -238,6 +238,25 @@ public static partial class SelfTest
         Console.WriteLine($"knights into a shield wall lose {wall:0} horse hp, into loose ranks {open:0}");
         Check(wall > open, $"a set shield wall hurts the horse more than loose ranks ({wall:0} vs {open:0})");
 
+        // Horse standing to receive foot (no charge of their own) still fight: they rein in and hack down from the saddle.
+        var st = Battle.Empty(7);
+        var riders = st.AddSquad(0, Troops.Get("light_horse"), 30, new(0, -1.5f), 10, Vector2.UnitY);
+        var come = st.AddSquad(1, Troops.Get("shieldmen"), 30, new(0, 1.5f), 10, -Vector2.UnitY);
+        riders.Order = Order.Hold; come.Order = Order.Charge;
+        Run(st, 25);
+        int lost = 30 - come.Alive, rode = 30 - riders.Alive;
+        Console.WriteLine($"light horse holding against shieldmen: {lost} foot down or fled, {rode} riders");
+        Check(lost >= rode, $"horse holding their ground fight foot of their tier at least evenly ({lost} foot vs {rode} riders)");
+
+        // Sent at a company of bowmen, your horse break it and then ride back on Hold, not on into the next enemy.
+        var rb = Battle.Empty(8);
+        var sent = rb.AddSquad(0, Troops.Get("lancers"), 30, new(0, -30), 10, Vector2.UnitY);
+        var bowmen = rb.AddSquad(1, Troops.Get("bowmen"), 30, new(0, 30), 10, -Vector2.UnitY);
+        sent.Order = Order.Charge; sent.Target = bowmen; bowmen.Order = Order.Hold;
+        Run(rb, 30);
+        Console.WriteLine($"lancers at bowmen: {sent.Alive} riders left, bowmen {bowmen.Alive} standing, horse {sent.Order}");
+        Check(sent.Order == Order.Hold && sent.Target == null && sent.Alive >= 20, $"horse that break their target rein in and ride back ({sent.Order}, {sent.Alive} left)");
+
         // Morale: a broken man's nerve returns once he is clear of the fight, but a man who breaks twice is done.
         var m = Battle.Empty(50);
         var squad = m.AddSquad(0, UnitType.Shieldman, 1, new(0, 0), 1, Vector2.UnitY);
@@ -1075,6 +1094,23 @@ public static partial class SelfTest
         Check(again != null, "a company plants its stakes once");
         Check(riders == 0, "horse cannot cross stakes");
         Check(men >= 4, "men on foot slip between them");
+
+        // From behind (the side that planted them) their own riders go over the stakes and break them.
+        var b = Battle.Empty(5);
+        var archers = b.AddSquad(0, bows, 10, new(0, -4), 10, Vector2.UnitY);
+        archers.Order = Order.Hold; archers.Anchor = new(0, -4); archers.Front = Vector2.UnitY;
+        Run(b, 0.1f);
+        Check(b.PlantStakes(archers) == null, "stakes planted for the ride from behind");
+        foreach (var u in archers.Units) u.Pos += new Vector2(60, 0); // out of the way
+        archers.Anchor = new(60, -4);
+        var line = b.Terrain.Features.First(f => f.Kind == FeatureKind.Stakes).A.Y;
+        var own = b.AddSquad(0, Troops.Get("lancers"), 8, new(0, -14), 8, Vector2.UnitY);
+        own.Order = Order.Hold; own.Anchor = new(0, 12); own.Front = Vector2.UnitY;
+        Run(b, 10);
+        int over = own.Units.Count(u => u.Pos.Y > line + 1);
+        int broken = b.Terrain.Features.Count(f => f.Kind == FeatureKind.Stakes && f.Broken);
+        Console.WriteLine($"stakes from behind: {over} of 8 riders over, {broken} runs broken");
+        Check(over >= 6 && broken > 0, "riders from behind ride their own stakes down");
     }
 
     /// Pathfinder: your men lose half the pace a wood costs.

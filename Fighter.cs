@@ -43,6 +43,9 @@ public static class Fighter
         };
     }
 
+    /// A shooter's sidearm (a knife or short sword) as a weapon's damage: about half an arming sword's 30.
+    public const float Sidearm = 16;
+
     /// Set `t`'s battle numbers from base, skills and kit. `quality` scales a piece's own numbers (the captain's well-made gear, C9).
     public static void Build(UnitType t, FighterBase b, FighterSkills s, FighterKit k, Func<GearDef, float>? quality = null)
     {
@@ -52,6 +55,7 @@ public static class Fighter
         float swing = b.Swing + s.Arms * b.SwingPerArms;
         t.MaxHp = b.Hp * (1 + s.Arms * b.HpPerArms);
         t.Damage = w.Damage * Q(w) * (shoots ? b.Shot + s.Bowcraft * b.ShotPerBowcraft : b.Damage + s.Arms * b.DamagePerArms);
+        t.SidearmDamage = shoots ? Sidearm * (b.Damage + s.Arms * b.DamagePerArms) : 0; // a knife or short sword, wielded with his Arms
         (t.Reach, t.Windup, t.Recover, t.Pierce, t.VsMounted) = (shoots ? w.Reach : w.Reach * b.Reach, w.Windup * swing, w.Recover * swing, w.Pierce, w.VsMounted);
         t.Ammo = w.Ammo;
         t.Range = shoots ? w.Range * (b.Range + s.Bowcraft * b.RangePerBowcraft) : w.Range;

@@ -829,7 +829,8 @@ partial class BattleScreen
 
     static readonly Color StakeWood = new(150, 118, 78);
 
-    /// Planted stakes (they come mid-battle, after the field's meshes are built): sharpened poles leaning toward the enemy.
+    /// Planted stakes (they come mid-battle, after the field's meshes are built): sharpened poles leaning toward the enemy;
+    /// a run ridden down from behind lies flat, pointing every way.
     void Stakes()
     {
         foreach (var f in battle.Terrain.Features)
@@ -838,13 +839,24 @@ partial class BattleScreen
             var d = f.B - f.A;
             float len = d.Length();
             if (len < 0.1f) continue;
-            // Toward the far army: whoever planted them stands just behind.
-            var far = Vector2.DistanceSquared(f.A, battle.Centroid(0)) > Vector2.DistanceSquared(f.A, battle.Centroid(1)) ? battle.Centroid(0) : battle.Centroid(1);
-            var lean = new Vector2(-d.Y, d.X) / len;
-            lean *= Vector2.Dot(lean, far - f.A) > 0 ? 0.55f : -0.55f;
+            var lean = f.Facing * 0.55f;
+            if (f.Facing == Vector2.Zero) // toward the far army: whoever planted them stands just behind
+            {
+                var far = Vector2.DistanceSquared(f.A, battle.Centroid(0)) > Vector2.DistanceSquared(f.A, battle.Centroid(1)) ? battle.Centroid(0) : battle.Centroid(1);
+                lean = new Vector2(-d.Y, d.X) / len;
+                lean *= Vector2.Dot(lean, far - f.A) > 0 ? 0.55f : -0.55f;
+            }
             for (float s = 0; s <= len; s += 0.6f)
             {
                 var p = f.A + d * (s / len);
+                if (f.Broken) // trampled: a snapped stump, its pole flung down beside it at its own angle
+                {
+                    float r = MathF.Abs(MathF.Sin(s * 12.99f + f.A.X * 78.2f + f.A.Y * 37.7f) * 43758f) % 1, a = r * MathF.Tau;
+                    var off = new Vector2(MathF.Cos(a), MathF.Sin(a));
+                    Line(G(p, 0), G(p + lean * 0.1f, 0.25f), StakeWood);
+                    Line(G(p + off * 0.3f, 0.04f), G(p + off * 1.0f, 0.06f), StakeWood);
+                    continue;
+                }
                 var top = G(p + lean, f.Height);
                 Line(G(p, 0), top, StakeWood);
                 Line(top, top + new Vector3(lean.X, 0.15f, lean.Y) * 0.3f, Color.LightGray); // the sharpened point

@@ -15,7 +15,7 @@ public partial class Battle
                 Strike(u);
                 if (u.IsPlayer) riposteSwing = false;
                 u.Action = UnitAction.Recover;
-                u.ActionTimer = u.IsPlayer ? 0.3f * u.Type.Recover / 0.5f : u.Type.Recover; // your weapon sets your pace (P1)
+                u.ActionTimer = u.IsPlayer ? 0.3f * u.Type.Recover / 0.5f : u.Mounted ? MathF.Min(u.Type.Recover, SaddleRecover) : u.Type.Recover; // your weapon sets your pace (P1); a rider hacks with his sidearm
                 break;
             case UnitAction.Recover:
                 u.Action = UnitAction.None;
@@ -34,12 +34,12 @@ public partial class Battle
 
     void Strike(Unit a)
     {
-        float dmg = StyleBlow(a, a.Type.Damage * a.Power);
+        float dmg = StyleBlow(a, (a.IsPlayer ? a.Type.Damage : a.Type.MeleeDamage) * a.Power); // a shooter hand to hand has only his sidearm
         if (!a.IsPlayer)
         {
             if (a.Type.Flying) { Sound(Cue.WyvernScreech, a.Pos); Climb(a); } // struck or missed, a wyvern climbs away to come again
             if (a.Target is not { Active: true } t) return;
-            float extra = t.Mounted ? 0.5f : 0;
+            float extra = (t.Mounted ? 0.5f : 0) + (a.Mounted ? 0.5f : 0); // a horse's bulk stands foes off: both ways
             // A rider's blow lands on whatever is beside the horse; a footman needs the target in front.
             float aiReach = a.Mounted ? MathF.Min(a.Type.Reach, MountedMeleeReach) : ReachOf(a);
             bool lands = a.Mounted
@@ -101,6 +101,15 @@ public partial class Battle
         return MathF.Max(0, eff - 2) * 0.05f;
     }
 
+    /// A rider in a standing fight with men on foot (not a lance charge): he strikes down from above, so his blow is
+    /// harder to guard and lands heavier, and he fights with his sidearm at its pace, not the lance's.
+    internal const float SaddleGuard = 0.75f, SaddleBlow = 1.15f, SaddleRecover = 0.6f;
+    /// How far off an archer's lead may be, as a share of how far his mark moves while the arrow flies.
+    internal const float LeadError = 0.2f;
+    /// An arrow or bolt in a horse does this share of its damage: a big beast takes many before it falls (at full damage six
+    /// longbow arrows killed a warhorse, and its rider was shot on foot).
+    internal const float HorseArrow = 0.6f;
+
     enum Side { Front, Flank, Rear }
     /// A blow from a man of a broken company (a crowd, not a line) does this much.
     const float BrokenBlow = 0.7f;
@@ -125,7 +134,7 @@ public partial class Battle
         // Arrows and spears often take the horse instead of the rider (a footman's blade rarely does).
         if (t.Mounted && rng.NextSingle() < (ranged ? 0.55f : a.Type.Class == UnitClass.Skirmisher ? 0.55f : 0.18f))
         {
-            HitHorse(t, dmg * a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1), a);
+            HitHorse(t, dmg * a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) * (ranged ? HorseArrow : 1), a); // a horse carries many arrows before it falls
             return;
         }
 
@@ -188,6 +197,7 @@ public partial class Battle
             if (Webbed(t)) chance *= 0.4f; // caught in a web, he can hardly lift his guard
             if (a.IsPlayer && !ranged && !lance) chance = riposteSwing && (t.Type.Tier <= 3 || Perk("Champion")) ? 0 : MathF.Min(0.95f, chance + 0.08f * Math.Min(Chain, 4)); // a riposte slips the guard; a rhythm is read
             if (t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield && InOrder(t)) chance = MathF.Min(0.9f, chance * (ranged ? 1.8f : 1.35f)); // locked shields
+            if (!ranged && !lance && a.Mounted && !a.IsPlayer && !t.Mounted) chance *= SaddleGuard; // a blow from the saddle comes down hard to read
             if (!ranged) chance *= RankGuard(t) * RankEdge(a); // friends at the shoulders, foes all round (docs/archive/MELEE.md D3.7)
             if (a.IsPlayer && AuraBlade && !ranged || FoeBlade(a, ranged)) chance *= BladeGuard; // aura cuts through a guard (K1; a champion's, K6)
             chance *= StyleGuard(a, t, ranged, plunge); // a crush, a bash, an arrow from above a shield (BattleStyles.cs)
@@ -224,7 +234,8 @@ public partial class Battle
         if (!ranged && a.Squad is { Broken: true, Swarm: false } && Ranked(a.Squad) && !Overwhelms(a.Squad)) officer *= BrokenBlow; // a crowd has no room to swing (round a beast it needs none)
         float fury = a.Mods.Fury > 0 && a.Squad is { StartCount: > 0 } fs ? a.Mods.Fury * (1 - fs.Alive / (float)fs.StartCount) : 0; // battle fury: the fewer, the fiercer
         float headsman = !ranged && (t.IsLeader || t.Hero || t.Sergeant) ? a.Mods.Headsman : 0;                                    // headsmen seek the officers
-        float mult = officer * (a.Avenging ? 1.1f : 1) * (t.Avenging ? 1.1f : 1) * (1 + a.Mods.Damage + fury + headsman) * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
+        float saddle = !ranged && !lance && a.Mounted && !a.IsPlayer && !t.Mounted ? SaddleBlow : 1; // struck down from horseback
+        float mult = saddle * officer * (a.Avenging ? 1.1f : 1) * (t.Avenging ? 1.1f : 1) * (1 + a.Mods.Damage + fury + headsman) * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
             * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
             * (ranged && t.Type.Has("bones") ? 0.3f : 1) // arrows pass between a skeleton's ribs
             * (a.IsPlayer && AuraBlade && !ranged || FoeBlade(a, ranged) ? BladeDamage : 1) // the aura blade (K1; a champion's, K6)
@@ -278,7 +289,9 @@ public partial class Battle
         t.HurtAt = Time;
         t.Morale -= (real * 0.16f + extraShock * 0.7f) * (1 + a.Mods.ShockDealt); // a fearsome man's blows shake more
         // Hits interrupt swings, but not a rhythm he has read: past your second chained blow he swings through it (P2).
-        if ((t.Action == UnitAction.Windup || t.Charging) && !(a.IsPlayer && Chain >= 2)) Stagger(t, 0.3f);
+        // A rider's swing is not broken by a footman's blow: he strikes down from the saddle, and three men round his horse
+        // otherwise kept every swing from landing.
+        if ((t.Action == UnitAction.Windup || t.Charging) && !(a.IsPlayer && Chain >= 2) && !(t.Mounted && !a.Mounted && t.Action == UnitAction.Windup)) Stagger(t, 0.3f);
         if (t.Hp <= 0) Kill(t, a);
         if (a.IsPlayer || t.IsPlayer) NoteBlow(t, real, !a.IsPlayer);
         return real;
@@ -402,6 +415,7 @@ public partial class Battle
         u.ActionTimer = 0.25f;
         float d = Vector2.Distance(u.Pos, at);
         var aim = at + (t?.Vel ?? Vector2.Zero) * (d / ArrowSpeed); // lead the target
+        if (t != null) aim += new Vector2(Gauss(), Gauss()) * t.Vel.Length() * (d / ArrowSpeed) * LeadError; // a fast mark is hard to lead: a galloping horse more than a walking man
         aim += new Vector2(Gauss(), Gauss()) * d * 0.035f * spread * (u.Mounted && !(u.IsPlayer && Perk("HorseArcher")) && u.Mods.Gallop <= 0 ? 1.5f : 1) * Weather.Spread; // ghost riders shoot from the gallop as if standing
         float time = MathF.Max(0.1f, Vector2.Distance(u.Pos, aim) / ArrowSpeed);
         var h = (aim - u.Pos) / time;

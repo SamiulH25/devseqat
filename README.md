@@ -423,7 +423,23 @@ the player rides a courser.
   Spearrunners also deal x1.8 damage to anything mounted. Arrows and spears often hit the horse instead of the rider.
 - **Horses die:** a slain horse throws its rider (stagger, damage). Riders whose horse dies fight on foot. A killed rider leaves a loose horse.
 - **Cycle charge (AI):** Charge → ride through the target → Withdraw (ride out ~4 s) → turn → Charge again. A rider that bogs down
-  in a crowd (slow, near the target for 1.2 s) fights in place for 5 s and then pulls out. Cavalry on Hold counter-charge enemies within 15 m.
+  in a crowd (slow, near the target for 1.2 s) fights in place for 5 s and then pulls out. Cavalry on Hold counter-charge enemies within 15 m,
+  and once a foe is in reach rein in and hack.
+- **Riders in a standing fight:** a rider strikes down either side of his horse, and the horse's bulk that keeps foot off
+  him gives him the same extra reach it gives them. Against men on foot his blow is harder to guard (x0.75) and lands
+  heavier (x1.15), a lancer fights at his sidearm's pace (recover at most 0.6 s), and a footman's blow does not break his
+  wind-up (`SaddleGuard`, `SaddleBlow`, `SaddleRecover` in BattleCombat.cs). Before this, horse that were not charging lost
+  a standing fight to foot of their tier at about ten to one.
+- **Archers hand to hand:** a shooter fights with a sidearm (a knife or short sword, `Fighter.Sidearm` 16 against an arming
+  sword's 30, scaled by his Arms: `UnitType.SidearmDamage`/`MeleeDamage`). Before, his blow did his bow's damage, so a
+  longbowman struck as hard as a man-at-arms and a company of archers could beat off a horse charge.
+- **Horse against archers:** your horse sent at a company rein in and ride back to their rally point on Hold once it
+  breaks (as many running as standing, or under a quarter still up), instead of riding on into the next enemy. Trained
+  bows and better hold fire into a melee their own men are in (only rabble loose blind into it). A galloping horse is hard
+  to lead: an arrow's aim scatters by a fifth of how far its mark moves in flight (`LeadError`), and an arrow in a horse
+  does 0.6 of its damage (`HorseArrow`). A horse pays for a slope once (in `Move`; `Steer` once charged it again, so a charge
+  up a stony rise crawled), and a rider following a route eases down only near its end (`Ride`'s `end`), not at each
+  waypoint (a ride back held to a walk). Charging up a stony slope at bows is still slow and costly, as it should be.
 - **Enemy horse:** waits wide on the far flank, then hunts the softest squad (archers first) when the lines meet or after 35 s.
 
 ## Design: troops, tiers and armies (campaign-ready)
@@ -535,7 +551,9 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   hedges and houses. It is open while you deploy. Drawing an order warns you of bad ground: horse into a wood or mud, a climb,
   or deep water on the way. Enemy flags you can no longer see are faded.
 - **Stakes:** longbowmen (the longbow line) plant a row of sharpened stakes in front of their line with **K**. A company does
-  it once, while holding with no enemy within 30 m. Horse cannot cross stakes; men on foot slip between them. The enemy's
+  it once, while holding with no enemy within 30 m. Horse cannot cross stakes from the front, where the points face;
+  riders coming from behind (your own horse riding back through the line) trample a run flat, and it stops no one after.
+  Men on foot slip between them either way. The enemy's
   longbowmen plant them too when you have horse.
 - **Folding companies:** select two or more companies of the same kind (foot, horse or archers) and press **,** (FOLD IN). The
   fullest takes in the others: their standing men walk over and fill its ranks from behind. The company folding in must have

@@ -450,7 +450,11 @@ public sealed partial class Battle
         if (s.Order != Order.Charge) s.Reckless = false; // a reckless charge ends with the charge
         s.Loosen = 1 + (1 - Terrain.GroundDefAt(s.Anchor).Order) * 0.5f; // bad ground opens the ranks (docs/archive/TERRAIN.md T2)
         UpdatePath(s, dt);
-        if (s.Target is { Alive: 0 }) s.Target = null; // target broken: fall back to the nearest enemy
+        if (s.Target is { } foe && (foe.Alive == 0 || Broke(foe)))
+        {
+            if (HorseReinIn(s)) s.Target = null; // your horse ride back once the company they were sent at breaks (BattleWings.cs)
+            else if (foe.Alive == 0) s.Target = null; // target broken: fall back to the nearest enemy
+        }
         if (s.Order == Order.Follow && Player.Active)
         {
             var toEnemy = centroid[1 - s.Team] - Player.Pos;

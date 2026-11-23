@@ -137,10 +137,11 @@ public partial class Battle
         var h = u.Horse!;
         var hd = u.HeadingDir;
 
-        // Riders strike at whatever comes into reach as they pass (not with a couched lance).
+        // Riders strike at whatever comes into reach as they pass (not with a couched lance), down either side of the horse:
+        // only a foe behind its quarters is out of his arc.
         if (enemy != null && !u.Couched && u.Cooldown <= 0
-            && d <= MathF.Min(u.Type.Reach, MountedMeleeReach) + (enemy.Mounted ? 0.5f : 0.2f) + MathF.Abs(u.Speed) * 0.08f
-            && Vector2.Dot((enemy.Pos - u.Pos) / MathF.Max(d, 0.01f), hd) > -0.3f)
+            && d <= MathF.Min(u.Type.Reach, MountedMeleeReach) + (enemy.Mounted ? 1.0f : 0.7f) + MathF.Abs(u.Speed) * 0.08f // the horse's bulk keeps foes off
+            && Vector2.Dot((enemy.Pos - u.Pos) / MathF.Max(d, 0.01f), hd) > -0.7f)
             StartSwing(u, enemy);
 
         // Horse archers loose from the saddle at anything in range, whatever their order.
@@ -167,6 +168,14 @@ public partial class Battle
             float toSlot = Vector2.Distance(u.Pos, u.Slot);
             if (enemy != null && d < 15 && toSlot < 25)
             {
+                // In reach: rein in, turn to him and hack, as a bogged charge does. Riding on into him only carried the horse
+                // through and round with its back to the foe, so holding horse lost a standing fight to the poorest foot.
+                if (d <= MountedMeleeReach + 0.7f)
+                {
+                    u.Wish = Vector2.Zero;
+                    u.Facing = MathF.Atan2(enemy.Pos.Y - u.Pos.Y, enemy.Pos.X - u.Pos.X);
+                    return;
+                }
                 // Counter-charge whatever comes close: horses standing still are easy meat for a charge.
                 var aim = Via(u, enemy.Pos);
                 var toE = aim - u.Pos;
@@ -174,7 +183,7 @@ public partial class Battle
                 if (u.Type.Class == UnitClass.Cavalry && u.Speed > 6.5f && d > 4 && u.Cooldown <= 0) u.Couched = true;
                 return;
             }
-            Ride(u, Via(u, u.Slot), toSlot > 12 ? h.Gallop * 0.8f : h.Trot);
+            Ride(u, Via(u, u.Slot), toSlot > 12 ? h.Gallop * 0.8f : h.Trot, u.Slot);
             return;
         }
 
@@ -215,7 +224,7 @@ public partial class Battle
                 {
                     // Round to its open side first: a charge lands on a flank, not on its points.
                     u.Couched = false;
-                    Ride(u, Via(u, lane), h.Gallop);
+                    Ride(u, Via(u, lane), h.Gallop, lane);
                     return;
                 }
                 var to = (t.Pos - u.Pos) / MathF.Max(td, 0.01f);
@@ -237,12 +246,14 @@ public partial class Battle
         }
     }
 
-    static void Ride(Unit u, Vector2 to, float speed)
+    /// Ride toward `to` (a waypoint on the way, or the end itself), easing down only as he nears `end` (default: `to`): a
+    /// flow field's waypoint is a few metres ahead, and slowing for it held a horse at a walk the whole way.
+    static void Ride(Unit u, Vector2 to, float speed, Vector2? end = null)
     {
         var d = to - u.Pos;
-        float l = d.Length();
-        if (l < 1.2f) { u.Wish = Vector2.Zero; u.Face(u.Squad!.Front); return; }
-        u.Wish = d / l * MathF.Min(speed, l * 0.9f + 0.5f); // slow down into the slot
+        float l = d.Length(), left = end is Vector2 e ? Vector2.Distance(u.Pos, e) : l;
+        if (left < 1.2f || l < 0.01f) { u.Wish = Vector2.Zero; u.Face(u.Squad!.Front); return; }
+        u.Wish = d / l * MathF.Min(speed, left * 0.9f + 0.5f); // slow down into the slot
     }
 
     static float Approach(float v, float target, float step) => v < target ? MathF.Min(target, v + step) : MathF.Max(target, v - step);
@@ -260,7 +271,8 @@ public partial class Battle
             u.Heading += Math.Clamp(diff, -rate * dt, rate * dt);
             float turnMin = u.Speed > h.Trot && MathF.Abs(diff) > 1.1f ? h.Trot * 0.6f / ws : 0.2f;
             ws *= MathF.Max(turnMin, MathF.Cos(MathF.Min(MathF.Abs(diff), MathHelper.PiOver2)));
-            ws *= SlopeFactor(Terrain, u.Pos, u.HeadingDir, mounted: true);
+            // No slope here: Move slows him for the slope and the ground (GroundPace). Taking it here too charged a horse
+            // twice for every rise, and a charge up a stony slope crawled at a walk under the arrows.
         }
         else if (MathF.Abs(u.Speed) < 1.5f)
             u.Heading += Math.Clamp(MathHelper.WrapAngle(u.Facing - u.Heading), -rate * 0.6f * dt, rate * 0.6f * dt); // turn on the spot

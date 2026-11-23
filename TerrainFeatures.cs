@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// A line across the field that men cannot walk through (docs/archive/TERRAIN.md 3): a hedge, a fence, a bridge's rail; or a row of
-/// sharpened stakes, which only stops horse (T6). Gaps are simply the spaces between segments.
+/// sharpened stakes, which only stops horse coming at their points (T6). Gaps are simply the spaces between segments.
 public enum FeatureKind { Hedge, Fence, Rail, Stakes }
 
 /// One straight length of a line feature, from A to B, `Half` thick either side of the line.
@@ -12,8 +12,17 @@ public readonly record struct Feature(FeatureKind Kind, Vector2 A, Vector2 B, fl
     public float Height => Kind switch { FeatureKind.Hedge => 1.7f, FeatureKind.Stakes => 1.0f, _ => 1.1f };
     /// Stakes: men on foot pass between them, horse cannot.
     public bool HorseOnly => Kind == FeatureKind.Stakes;
+    /// The way a run of stakes points (toward the enemy; zero for other features).
+    public Vector2 Facing { get; init; }
+    /// Ridden down from behind: the stakes lie flat and stop no one.
+    public bool Broken { get; init; }
     /// Does it stop this man (foot pass stakes)?
-    public bool Stops(bool mounted) => mounted || !HorseOnly;
+    public bool Stops(bool mounted) => !Broken && (mounted || !HorseOnly);
+    /// Does it stop this man coming from `from`? Stakes stop horse only from their pointed side: from behind, their own
+    /// side's riders go over them (and break them, `Terrain.PushOutFeatures`).
+    public bool Stops(bool mounted, Vector2 from) => Stops(mounted) && !Behind(from);
+    /// Is p on the stakes' blunt side (where the company that planted them stands)?
+    public bool Behind(Vector2 p) => Kind == FeatureKind.Stakes && Vector2.Dot(p - A, Facing) < 0;
 }
 
 /// Terrain: line features, kept in their own bucket grid so `PushOut` only looks at the near ones.
@@ -22,10 +31,13 @@ public sealed partial class Terrain
     public readonly List<Feature> Features = new();
     readonly Dictionary<int, List<int>> featureCells = new();
 
-    /// Lay a length of hedge, fence or rail from a to b.
-    public void AddFeature(FeatureKind kind, Vector2 a, Vector2 b)
+    /// Runs of stakes ridden down since the battle last looked (it then forgets the horse's routes).
+    public bool StakesBroke;
+
+    /// Lay a length of hedge, fence or rail from a to b (stakes: their points toward `facing`).
+    public void AddFeature(FeatureKind kind, Vector2 a, Vector2 b, Vector2 facing = default)
     {
-        var f = new Feature(kind, a, b, kind switch { FeatureKind.Hedge => 0.5f, FeatureKind.Stakes => 0.35f, _ => 0.12f });
+        var f = new Feature(kind, a, b, kind switch { FeatureKind.Hedge => 0.5f, FeatureKind.Stakes => 0.35f, _ => 0.12f }) { Facing = facing };
         Features.Add(f);
         float pad = f.Half + 1;
         int x0 = CellX(MathF.Min(a.X, b.X) - pad), x1 = CellX(MathF.Max(a.X, b.X) + pad);
@@ -62,6 +74,7 @@ public sealed partial class Terrain
     }
 
     /// Push a circle of radius r out of any feature it overlaps (stakes only for horse). Returns true if it hit one.
+    /// A horse running into stakes from behind rides them down: that run breaks and stops no one after.
     bool PushOutFeatures(ref Vector2 p, float r, bool mounted)
     {
         if (Features.Count == 0 || !featureCells.TryGetValue(CellX(p.Y) * bucketSide + CellX(p.X), out var near)) return false;
@@ -70,6 +83,13 @@ public sealed partial class Terrain
         {
             var f = Features[i];
             if (!f.Stops(mounted)) continue;
+            if (f.Behind(p))
+            {
+                var e = f.B - f.A;
+                float t = Math.Clamp(Vector2.Dot(p - f.A, e) / e.LengthSquared(), 0, 1);
+                if (Vector2.DistanceSquared(p, f.A + e * t) < Sq(r + f.Half)) { Features[i] = f with { Broken = true }; StakesBroke = true; }
+                continue;
+            }
             var ab = f.B - f.A;
             float k = Math.Clamp(Vector2.Dot(p - f.A, ab) / ab.LengthSquared(), 0, 1);
             var c = f.A + ab * k;
@@ -92,7 +112,7 @@ public sealed partial class Terrain
         foreach (int i in near)
         {
             var f = Features[i];
-            if (!f.Stops(mounted)) continue;
+            if (!f.Stops(mounted, p)) continue;
             var ab = f.B - f.A;
             float len2 = ab.LengthSquared(), k = Math.Clamp(Vector2.Dot(p - f.A, ab) / len2, 0, 1);
             var c = f.A + ab * k;
@@ -153,7 +173,7 @@ public sealed partial class Terrain
             foreach (int i in near)
             {
                 var f = Features[i];
-                if (!f.Stops(mounted)) continue;
+                if (!f.Stops(mounted, a)) continue;
                 var more = pad > 0 && f.B != f.A ? Vector2.Normalize(f.B - f.A) * (f.Half + pad) : Vector2.Zero;
                 if (SegmentsCross(a, b, f.A - more, f.B + more)) return true;
                 if (pad > 0 && ab2 > 1e-4f) // a fence end sticking into the way ahead (a V-pinch too narrow to pass)
@@ -173,7 +193,7 @@ public sealed partial class Terrain
     public bool CrossesFeature(Vector2 a, Vector2 b, bool mounted = true)
     {
         foreach (var f in Features)
-            if (f.Stops(mounted) && SegmentsCross(a, b, f.A, f.B)) return true;
+            if (f.Stops(mounted, a) && SegmentsCross(a, b, f.A, f.B)) return true;
         return false;
     }
 

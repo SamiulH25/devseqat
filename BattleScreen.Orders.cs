@@ -330,7 +330,7 @@ partial class BattleScreen
         int planted = 0;
         foreach (var s in bows) { var no = battle.PlantStakes(s); if (no == null) planted++; else why ??= no; }
         if (planted == 0 && why != null) battle.Log($"No stakes: {why.ToLowerInvariant()}.");
-        else Tips.Show("stakes", "Stakes stop horse: riders cannot cross them, but your men on foot slip between.\nEach company of longbowmen plants them once, while it holds and no enemy is within 30 m.");
+        else Tips.Show("stakes", "Stakes stop horse: riders cannot cross them from the front, but your men on foot slip between.\nYour own riders coming from behind trample them flat.\nEach company of longbowmen plants them once, while it holds and no enemy is within 30 m.");
     }
 
     /// The goal you pick next is the chosen sergeant's horn plan (docs/archive/SERGEANTS.md SG2).

@@ -421,9 +421,10 @@ public static partial class SelfTest
         }
         var vet = Bows(0.75f);
         var trained = Bows(0.45f);
-        Console.WriteLine($"melee: bows charged by foot end {vet.behind:0.0} m behind their foot (veterans), {trained.behind:0.0} m (trained); shoot into a melee: veterans {vet.shotIntoMelee}, trained {trained.shotIntoMelee}");
+        var rabble = Bows(0.2f);
+        Console.WriteLine($"melee: bows charged by foot end {vet.behind:0.0} m behind their foot (veterans), {trained.behind:0.0} m (trained); shoot into a melee: veterans {vet.shotIntoMelee}, trained {trained.shotIntoMelee}, rabble {rabble.shotIntoMelee}");
         Check(vet.behind > 3 && trained.behind < 3, "veteran bows fall back behind their foot; trained ones stand");
-        Check(!vet.shotIntoMelee && trained.shotIntoMelee, "veteran bows hold fire into a melee their men are in");
+        Check(!vet.shotIntoMelee && !trained.shotIntoMelee && rabble.shotIntoMelee, "trained bows and better hold fire into a melee their men are in; rabble loose into it");
     }
 
     /// M6: the grade the muster roll shows for a company is the one it fights at.

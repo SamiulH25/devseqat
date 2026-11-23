@@ -96,6 +96,11 @@ public sealed class UnitType
     public int Tier, Cost, UpgradeXp;
     public string[] UpgradesTo = Array.Empty<string>();
     public float MaxHp, Damage, Armor, Reach, Windup, Recover, Speed, BlockChance, Range, VsMounted = 1, Pierce, Reload = 1;
+    /// A shooter's blow hand to hand, with his sidearm (`Fighter.Build`); 0 = his weapon's `Damage` (men who do not shoot,
+    /// creatures). Once a shooter's knife hit as hard as his arrows: a longbowman as hard as a man-at-arms with a sword.
+    public float SidearmDamage;
+    /// What a blow hand to hand does: the sidearm's damage for a shooter, else the weapon's.
+    public float MeleeDamage => SidearmDamage > 0 ? SidearmDamage : Damage;
     /// A man's Arms, Riding and Bowcraft (docs/pre-demo/KIT.md); his numbers above are built from them and his kit. Zero for creatures.
     public FighterSkills Skills;
     /// Damage against creatures (wild troops), like VsMounted against riders. Above 1, a monster's fear does not reach them.

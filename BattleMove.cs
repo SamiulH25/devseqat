@@ -72,6 +72,7 @@ public partial class Battle
             }
         }
         EnforceWall(before);
+        if (Terrain.StakesBroke) { Terrain.StakesBroke = false; ForgetHorseRoutes(); } // a horse rode stakes down from behind
     }
 
     /// The ground slows men and horses (Data/ground.json): water a lot, a ford or a wood less; a road is quick.
