@@ -6,7 +6,9 @@
   "scripts": {
     "build": "node build_unit.mjs",
     "blender": "node blender_unit.mjs",
-    "render": "node render_unit.mjs"
+    "render": "node render_unit.mjs",
+    "build-parts": "node build_parts.mjs out/parts.glb",
+    "build-all": "node build_parts.mjs out/parts.glb && node export_imsh.mjs --out ../../Data/meshes/units3d.bin out/parts.glb"
   },
   "dependencies": {
     "puppeteer-core": "^25.18.1",
