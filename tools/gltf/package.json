@@ -1,0 +1,15 @@
+{
+  "name": "ironfield-gltf",
+  "private": true,
+  "type": "module",
+  "description": "Trial: unit models built in three.js and written as glTF (.glb), rendered beside the Blender pack for comparison",
+  "scripts": {
+    "build": "node build_unit.mjs",
+    "blender": "node blender_unit.mjs",
+    "render": "node render_unit.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "^25.18.1",
+    "three": "^0.187.0"
+  }
+}
