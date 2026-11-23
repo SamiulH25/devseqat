@@ -104,6 +104,24 @@ public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float D
 
     public bool AtFord(Vector2 p) => Fords.Any(f => Vector2.DistanceSquared(f, p) < FordRadius * FordRadius);
 
+    /// The water's surface at each path point (battlefields only; null on the campaign map, which cuts below the ground).
+    /// Set by `Terrain.LevelRivers` from the uncut banks, so the bed is cut below one level across the river and never
+    /// stands above the water where the field slopes across it.
+    public float[]? Levels { get; set; }
+
+    /// The water's surface near p, between the two nearest path points (needs `Levels`).
+    public float LevelAt(Vector2 p)
+    {
+        int best = 0; float bestD = float.MaxValue, bestK = 0;
+        for (int i = 0; i + 1 < Path.Length; i++)
+        {
+            var a = Path[i]; var ab = Path[i + 1] - a;
+            float k = Math.Clamp(Vector2.Dot(p - a, ab) / MathF.Max(ab.LengthSquared(), 1e-6f), 0, 1), d = Vector2.DistanceSquared(p, a + ab * k);
+            if (d < bestD) { bestD = d; best = i; bestK = k; }
+        }
+        return MathHelper.Lerp(Levels![best], Levels[best + 1], bestK);
+    }
+
     /// How far the bed is cut below the banks here (shallow at a ford).
     public float Carve(Vector2 p, float dist) => AtBridge(p) ? 0 : (AtFord(p) ? 0.35f : Depth) * Smooth(CarveReach, Width / 2 - 1 + Widen, dist);
 
@@ -370,6 +388,7 @@ public sealed partial class Terrain
         }
         BridgeTheRoad();
         ShapeLayout(new Random(seed + 18));
+        foreach (var r in Rivers) LevelRivers(r);
         for (int z = 0; z < N; z++)
             for (int x = 0; x < N; x++)
                 grid[z * N + x] = RawHeight(-Half + x * Step, -Half + z * Step);
@@ -379,7 +398,30 @@ public sealed partial class Terrain
 
     // ---------- heights ----------
 
-    float RawHeight(float x, float z)
+    /// A battlefield river's water level along its course: a little under the lower of its uncut banks, eased along the
+    /// course and never above the bank it had (World.Water.cs draws the surface at it).
+    void LevelRivers(River r)
+    {
+        int n = r.Path.Length;
+        var raw = new float[n];
+        for (int i = 0; i < n; i++)
+        {
+            var d = r.Path[Math.Min(i + 1, n - 1)] - r.Path[Math.Max(i - 1, 0)];
+            var across = Vector2.Normalize(new Vector2(-d.Y, d.X)) * (r.Width / 2 + 3.5f);
+            Vector2 a = r.Path[i] + across, b = r.Path[i] - across;
+            raw[i] = MathF.Min(RawHeight(a.X, a.Y, false), RawHeight(b.X, b.Y, false)) - 0.3f;
+        }
+        var lv = new float[n];
+        for (int i = 0; i < n; i++)
+        {
+            float sum = 0; int k = 0;
+            for (int j = Math.Max(0, i - 3); j <= Math.Min(n - 1, i + 3); j++) { sum += raw[j]; k++; }
+            lv[i] = MathF.Min(raw[i], sum / k);
+        }
+        r.Levels = lv;
+    }
+
+    float RawHeight(float x, float z, bool carve = true)
     {
         if (customHeight != null) return customHeight(x, z);
         float r = MathF.Sqrt(x * x + z * z);
@@ -403,7 +445,13 @@ public sealed partial class Terrain
         {
             var at = new Vector2(x, z);
             float d = river.Dist(at);
-            if (d < river.Width / 2 + 3) h -= river.Carve(at, d);
+            if (!carve || d >= river.Width / 2 + 3) continue;
+            if (river.Levels == null) h -= river.Carve(at, d);
+            else if (!river.AtBridge(at)) // the bed a set depth under the water, whatever the ground does across the river
+            {
+                bool ford = river.AtFord(at); // a ford's shallow bed reaches out under the water's edge, or its banks show through
+                h = MathHelper.Lerp(h, MathF.Min(h, river.LevelAt(at) - (ford ? 0.3f : river.Depth)), SmoothStep(river.CarveReach, river.Width / 2 + (ford ? 1.2f : -1), d));
+            }
         }
         if (Layout == FieldLayout.Shore) h = ShoreHeight(x, z, h);
         if (Wall != null)

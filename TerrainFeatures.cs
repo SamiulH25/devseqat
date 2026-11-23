@@ -189,7 +189,8 @@ public sealed partial class Terrain
 
     // ---------- bridges ----------
 
-    /// Where the field's road crosses its river, a timber bridge: the river is not carved there, and rails line both sides.
+    /// Where the field's road crosses its river, a timber bridge square across it: the river is not carved there, and rails
+    /// line both sides.
     void BridgeTheRoad()
     {
         if (Rivers.Count == 0 || IsFlat || !Params.Road) return;
@@ -201,7 +202,10 @@ public sealed partial class Terrain
         if (best == float.MaxValue) return;
         float bx = best + Gap(best) / (Gap(best) - Gap(best + 1));
         var at = new Vector2(bx, RoadCenter(bx));
-        var along = Vector2.Normalize(new Vector2(1, RoadCenter(bx + 0.5f) - RoadCenter(bx - 0.5f)));
+        // Square across the river, bank to bank: the road meets the river at a shallow slant (both run along X), and a deck
+        // laid along the road would lie lengthwise in the water.
+        var flow = Vector2.Normalize(new Vector2(1, RiverZ(river, bx + 0.5f) - RiverZ(river, bx - 0.5f)));
+        var along = new Vector2(-flow.Y, flow.X);
         Rivers[0] = river with { Bridges = new[] { (at, along) } };
         var side = new Vector2(-along.Y, along.X) * (River.BridgeHalf + 0.1f);
         float reach = river.Width / 2 + 3;

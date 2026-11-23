@@ -385,6 +385,11 @@ The field has three layers on top of the height map. Each 2.5 m cell has a `Grou
 kind in `Data/ground.json`: pace for foot and horse, tiring, formation order, charge, reach, cover, stumbling). Line features
 (`TerrainFeatures.cs`: hedges, fences, rails, planted stakes) block movement and give cover; `Feature.Stops(mounted)` says
 who they stop. A field's shape comes from a `FieldLayout` (`TerrainLayouts.cs`) the seed (or the campaign) picks.
+A battlefield river has one water level along its course (`River.Levels`, set by `Terrain.LevelRivers` from the uncut banks;
+`World.RiverWater` draws the surface at it), and its bed is cut a set depth under that level (`Depth`, 0.3 m at a ford), not
+under the local ground: cut below the ground, a field sloping across the river left its bed above the water in grid-sized
+grass blocks. Its bridge lies square across the river where the road crosses (`BridgeTheRoad`); the road meets it at a slant.
+The campaign map's rivers (`Levels` null) still cut `Carve` below the ground.
 
 - **Moving and fighting:** `Move` reads the cell's pace and order; `Hit` reads slope (high ground) and the kind's reach and
   charge; `Tire` reads its fatigue. Arrows look along their flight for cover (`Covered`).

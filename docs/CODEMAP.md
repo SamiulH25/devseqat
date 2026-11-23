@@ -221,8 +221,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Arrows.cs (129 lines)
 - **BattleScreen** (class, L10): Landed:13, ResetArrows:25, TrackArrows:29, Steep:51, Puff:61, DrawMissiles:78, MissileLines:103
 
-## BattleScreen.Controls.cs (392 lines)
-- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:94, CapSector:95, Sector:96, CommandControls:103, CommandCursor:300, BoxOf:318, OnScreen:320, PickSquad:327, GroundUnderMouse:341, GroundUnder:343, UpdateCamera:355
+## BattleScreen.Controls.cs (406 lines)
+- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:94, CapSector:95, Sector:96, CommandControls:103, CommandCursor:300, BoxOf:318, OnScreen:320, PickSquad:327, GroundUnderMouse:341, GroundUnder:343, UpdateCamera:369
 
 ## BattleScreen.cs (724 lines)
 - **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:130, Load:144, QuickGround:175, BeginCampaign:185, StartDeployment:222, StageCommandView:237, BenchStage:247, FinishCampaignBattle:288, BeginQuickBattle:304, NewBattle:331, WithMages:376, SetWorld:384, SetCommand:399, Pressed:411, Update:419, PlaySounds:529, PlayPlayerSounds:558, Soundscape:580, SyncHud:674, MenuChoice:706
@@ -1065,22 +1065,22 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Heraldry** (record, L8)
 - **Style** (class, L11): ColorBlind:22, Standard:35, PaletteOf:49
 
-## Terrain.cs (676 lines)
+## Terrain.cs (724 lines)
 - **FoliageKind** (enum, L5): tree:8
-- **River** (record, L17): AtBridge:29, Dist:40, SegmentDist:49, Within:59, AtFord:105, Carve:108, Smooth:110, Across:113
-- **Lake** (record, L125): Edge:128, Inside:131, Carve:140
-- **RoadLine** (struct, L152)
-- **MapBridge** (struct, L156)
-- **FieldKind** (enum, L159)
-- **FieldPlot** (struct, L163): Inside:166, At:172, Overlaps:175
-- **Foliage** (struct, L189)
-- **TerrainParams** (record, L194): Named:240
-- **Terrain** (class, L247): LayoutFor:250, WaterDepth:303, Flat:311, Terrain:312, Terrain:313, Terrain:317, Terrain:342, RawHeight:382, RoadCenter:422, RoadDist:425, Height:434, Height:446, GridHeight:447, Gradient:450, BucketOf:460, AddProp:467, Add:469, Blocked:476, AvoidObstacle:491, PushOut:544, Core:571, PlaceFoliage:573, SmoothStep:649, Hash:655, Noise:667
+- **River** (record, L17): AtBridge:29, Dist:40, SegmentDist:49, Within:59, AtFord:105, LevelAt:113, Carve:126, Smooth:128, Across:131
+- **Lake** (record, L143): Edge:146, Inside:149, Carve:158
+- **RoadLine** (struct, L170)
+- **MapBridge** (struct, L174)
+- **FieldKind** (enum, L177)
+- **FieldPlot** (struct, L181): Inside:184, At:190, Overlaps:193
+- **Foliage** (struct, L207)
+- **TerrainParams** (record, L212): Named:258
+- **Terrain** (class, L265): LayoutFor:268, WaterDepth:321, Flat:329, Terrain:330, Terrain:331, Terrain:335, Terrain:360, LevelRivers:403, RawHeight:424, RoadCenter:470, RoadDist:473, Height:482, Height:494, GridHeight:495, Gradient:498, BucketOf:508, AddProp:515, Add:517, Blocked:524, AvoidObstacle:539, PushOut:592, Core:619, PlaceFoliage:621, SmoothStep:697, Hash:703, Noise:715
 
-## TerrainFeatures.cs (219 lines)
+## TerrainFeatures.cs (223 lines)
 - **FeatureKind** (enum, L7)
 - **Feature** (struct, L10): Stops:16
-- **Terrain** (class, L20): AddFeature:26, RemoveFeatureAt:42, CellX:48, FeatureLine:51, PushOutFeatures:65, GoRound:89, IsStructure:108, House:113, CrossesHouse:132, CrossesFeatureNear:146, CrossesFeature:173, SegmentsCross:180, BridgeTheRoad:193, RiverZ:213
+- **Terrain** (class, L20): AddFeature:26, RemoveFeatureAt:42, CellX:48, FeatureLine:51, PushOutFeatures:65, GoRound:89, IsStructure:108, House:113, CrossesHouse:132, CrossesFeatureNear:146, CrossesFeature:173, SegmentsCross:180, BridgeTheRoad:194, RiverZ:217
 
 ## TerrainGround.cs (165 lines)
 - **GroundKind** (enum, L7)
@@ -1273,8 +1273,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## World.Villages.cs (79 lines)
 - **World** (class, L8): VillagePlace:12, Cottage:48, VillageHeight:56, Well:66
 
-## World.Water.cs (374 lines)
-- **World** (class, L9): NormalAt:20, Roads:53, AddTile:100, Sea:113, Water:169, Ship:183, RiverWater:201, Reeds:293, Lake:315, Bridge:349
+## World.Water.cs (375 lines)
+- **World** (class, L9): NormalAt:20, Roads:53, AddTile:100, Sea:113, Water:169, Ship:183, RiverWater:201, Reeds:294, Lake:316, Bridge:350
 
 ## World.Works.cs (169 lines)
 - **World** (class, L7): Ruined:10, Rise:13, StallsUp:16, Ruin:19, Works:36, Range:62, Barn:70, Tiltyard:86, Stables:102, Kennel:113, Watchtower:124, MarketHall:133, Rails:152

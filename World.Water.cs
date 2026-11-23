@@ -215,7 +215,8 @@ sealed partial class World
             for (int j = Math.Max(0, i - 4); j <= Math.Min(count - 1, i + 4); j++) d += smp[j].D;
             d = d.LengthSquared() > 1e-6f ? Vector2.Normalize(d) : smp[i].D;
             nrm[i] = new Vector2(-d.Y, d.X);
-            surf[i] = MathF.Min(t.Height(smp[i].P + nrm[i] * bank), t.Height(smp[i].P - nrm[i] * bank)) - 0.3f;
+            surf[i] = r.Levels != null ? r.LevelAt(smp[i].P) // a battlefield river: the level its bed was cut under
+                : MathF.Min(t.Height(smp[i].P + nrm[i] * bank), t.Height(smp[i].P - nrm[i] * bank)) - 0.3f;
         }
         // The surface eased along the course (never above the lower bank it had), so it does not step at every sample.
         var eased = new float[count];
@@ -272,7 +273,7 @@ sealed partial class World
             int k = Nearest(f);
             var d = Vector2.Normalize(path[Math.Min(k + 1, path.Length - 1)] - path[Math.Max(k - 1, 0)]);
             var across = new Vector2(-d.Y, d.X);
-            float level = MathF.Min(t.Height(f + across * (r.Width / 2 + 3.5f + 2 * r.Widen)), t.Height(f - across * (r.Width / 2 + 3.5f + 2 * r.Widen))) - 0.3f;
+            float level = r.Levels != null ? r.LevelAt(f) : MathF.Min(t.Height(f + across * (r.Width / 2 + 3.5f + 2 * r.Widen)), t.Height(f - across * (r.Width / 2 + 3.5f + 2 * r.Widen))) - 0.3f;
             for (float s = -half + 0.6f; s < half - 0.4f; s += 1.1f + rng.NextSingle() * 0.4f)
             {
                 var p = f + across * s + d * (rng.NextSingle() - 0.5f) * 1.2f;
