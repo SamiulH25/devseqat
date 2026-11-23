@@ -37,11 +37,20 @@ partial class BattleScreen
         battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + what);
     }
 
-    /// Give one company an order: at once for your retinue (and anyone before the battle starts); a company in a
-    /// division takes it on the next tick, and then follows it instead of its sergeant.
+    /// Give one company an order: at once for your retinue (and anyone before the battle starts, snapping its men onto
+    /// their new slots); a company in a division takes it on the next tick, and then follows it instead of its sergeant.
     void Send(Squad s, Action<Squad> act)
     {
-        if (deploying || s.Division == null) act(s);
+        if (deploying)
+        {
+            var oldAnchor = s.Anchor;
+            var oldFront = s.Front;
+            act(s);
+            if (s.Division is { Post: not Post.Front } && (s.Anchor != oldAnchor || s.Front != oldFront)) s.Override = true;
+            battle.SnapSquad(s);
+            return;
+        }
+        if (s.Division == null) act(s);
         else battle.Direct(s, act);
     }
 

@@ -170,12 +170,22 @@ public static partial class SelfTest
     {
         var b = Battle.Empty(73);
         var s = b.AddSquad(0, Troops.Get("shieldmen"), 30, new(0, -20), 10, Vector2.UnitX);
-        s.Formation = Formation.Square; s.Order = Order.Hold; s.Anchor = s.Center; s.Front = Vector2.UnitX;
+        s.Formation = Formation.Square; s.Order = Order.Hold; s.Anchor = new(20, -25); s.Front = Vector2.UnitX;
+        b.SnapSquad(s);
         b.AddDivision(0, "Front", new[] { s }, Temper.Steady, 5, new Goal(Post.Front, Stance.Hold));
+        b.Update(1 / 60f);
+        Check(Battle.RankError(s) < 0.05f, $"a 30-man company does not scramble on tick 1 (rank error {Battle.RankError(s):0.00})");
         for (int i = 0; i < 300; i++) b.Update(1 / 60f);
-        Console.WriteLine($"keeps deployed: {s.Formation}, front {s.Front}");
+        Console.WriteLine($"keeps deployed: {s.Formation}, front {s.Front}, anchor {s.Anchor}");
         Check(s.Formation == Formation.Square, "a deployed square stays a square");
         Check(Vector2.Dot(s.Front, Vector2.UnitX) > 0.9f, "and keeps the facing it was given");
+        Check(Vector2.Distance(s.Anchor, new(20, -25)) < 1f, "and a Front division company dragged >12 m keeps its deployed spot");
+        // A full divided army spawns its non-Front divisions already at their posts (skirmishers ahead, wings beside) with zero rank error.
+        var rng = new Random(74);
+        var divBattle = new Battle(74, Armies.Divide(Armies.Large(rng, 3, 0, 300)), Armies.Divide(Armies.Large(rng, 3, 1, 300)), new BattleOptions());
+        divBattle.Update(1 / 60f);
+        float maxErr = divBattle.SquadsOf(0).Where(q => q.Alive > 0).Max(Battle.RankError);
+        Check(maxErr < 0.1f, $"divided army starts in formation on tick 1 without scrambling (max rank error {maxErr:0.00})");
     }
 
     /// through green levies, and through that drilled line when they take it from behind.
@@ -1818,6 +1828,8 @@ public static partial class SelfTest
         var fresh = Of(b, 4).Anchor;
         Check(b.ApplyDeployment(spots) == 2, "the companies still with you are placed");
         Check(Vector2.Distance(Of(b, 1).Anchor, Of(a, 1).Anchor) < 1 && Vector2.Distance(Of(b, 3).Anchor, Of(a, 3).Anchor) < 1, "each where it stood last time");
+        Check(Of(b, 1).Units.All(u => Vector2.Distance(u.Pos, Of(b, 1).Slot(u.Place, Of(b, 1).Alive)) < 0.01f)
+            && Of(b, 3).Units.All(u => Vector2.Distance(u.Pos, Of(b, 3).Slot(u.Place, Of(b, 3).Alive)) < 0.01f), "applied deployment snaps the men onto their slots");
         Check(Of(b, 4).Anchor == fresh, "a new company keeps its usual place");
         // An enemy-side spot is kept out of the enemy's part of the field.
         var c = new Battle(93, Mine(1), theirs, new BattleOptions());

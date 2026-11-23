@@ -103,6 +103,17 @@ public sealed partial class Battle
         UpdateCentroids();
         BuildDivisions(0, player);
         BuildDivisions(1, enemy);
+        PlaceDivisions(0);
+        PlaceDivisions(1);
+        if (!Options.Siege && !Options.Duel)
+            foreach (var s in SquadsOf(0).Where(s => s.Order == Order.Follow))
+            {
+                var toEnemy = centroid[1] - Player.Pos;
+                if (toEnemy.LengthSquared() > 1) s.Front = Vector2.Normalize(toEnemy);
+                int rank = SquadsOf(0).TakeWhile(o => o != s).Count();
+                s.Anchor = Player.Pos - s.Front * (3 + rank * 5);
+                SnapSquad(s);
+            }
         DeployEngines(); // engines of war and their crews (BattleEngines.cs)
         if (Options.PlayerWounded) Player.Fled = true; // too hurt to ride: you command from the rear
         foreach (var u in Units) if (u.Team == 1 && !u.IsLeader) u.Morale = Math.Clamp(u.Morale + Options.EnemyMorale, 5, 100);
@@ -260,16 +271,20 @@ public sealed partial class Battle
     public Squad AddSquad(int team, UnitType type, int n, Vector2 anchor, int cols, Vector2 front, Company? company = null)
     {
         var s = new Squad(type.Name, team) { Anchor = anchor, Columns = cols, Front = front, StartCount = n, Cavalry = type.Mount != null, Company = company,
-            AiControlled = company?.Allied == true && team == 0, LastSeen = anchor, PathTimer = Squads.Count % 8 * 0.06f }; // squads look for routes on different ticks
+            AiControlled = company?.Allied == true && team == 0, LastSeen = anchor, PathTimer = Squads.Count % 8 * 0.06f,
+            Loosen = 1 + (1 - Terrain.GroundDefAt(anchor).Order) * 0.5f }; // squads look for routes on different ticks
+        if (type.Bound || type.Huge || type.Look.Beast) s.Formation = Formation.Loose; // goblins and beasts come on as a mob
         // A mixed company spawns each stack in turn, largest first; a one-off squad is n men of `type`.
         var types = company?.Mix is { Length: > 1 } ? company.Stacks.SelectMany(x => Enumerable.Repeat(Troops.Get(x.Troop), x.Count)).Take(n).ToList() : null;
         for (int i = 0; i < n; i++)
         {
-            var u = Spawn(types != null && i < types.Count ? types[i] : type, team, s, s.Slot(i, n));
+            var slot = s.Slot(i, n);
+            var u = Spawn(types != null && i < types.Count ? types[i] : type, team, s, slot);
+            u.Place = i;
             s.MarchSpeed = MathF.Min(s.MarchSpeed, u.Type.Speed);
             if (company != null) u.Morale = company.Morale;
             u.Face(front);
-            u.Heading = u.Facing;
+            u.Heading = u.ViewFacing = u.ViewHeading = u.Facing;
             s.Units.Add(u);
         }
         // Named men (docs/archive/LEGACY.md L2) are the first men of their troop, so they stand in its front rank.
@@ -282,7 +297,7 @@ public sealed partial class Battle
             h.Hero = true;
             h.Morale = company.Morale + 10;
             h.Face(front);
-            h.Heading = h.Facing;
+            h.Heading = h.ViewFacing = h.ViewHeading = h.Facing;
             s.Units.Add(h);
         }
         s.Drill = DrillOf(s, company);
@@ -296,7 +311,7 @@ public sealed partial class Battle
         if (s.Swarm) s.Formation = Formation.Loose; // goblins come on as a mob
         if (team == 0 && company?.Has("Household") == true) s.Order = Order.Follow; // the household guard keeps at your side (P5)
         Squads.Add(s);
-        Bounds(s);
+        SnapSquad(s);
         return s;
     }
 

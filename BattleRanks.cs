@@ -53,10 +53,14 @@ public partial class Battle
         s.FrontPos = nf > 0 ? front / nf : na > 0 ? all / na : s.Anchor;
     }
 
-    /// Places 0..n-1 in the order the men already stood (new men last).
+    /// Places 0..n-1 in the order the men already stood (new men last, ties broken stably by index).
     static void Redeal(List<Unit> men)
     {
-        men.Sort((a, b) => (a.Place < 0 ? int.MaxValue : a.Place).CompareTo(b.Place < 0 ? int.MaxValue : b.Place));
+        men.Sort((a, b) =>
+        {
+            int c = (a.Place < 0 ? int.MaxValue : a.Place).CompareTo(b.Place < 0 ? int.MaxValue : b.Place);
+            return c != 0 ? c : a.Index.CompareTo(b.Index);
+        });
         for (int i = 0; i < men.Count; i++) men[i].Place = i;
     }
 
