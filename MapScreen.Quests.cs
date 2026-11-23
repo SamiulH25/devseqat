@@ -83,20 +83,45 @@ sealed partial class MapScreen
         ui.TextFit(sub, tx, box.Y + ui.U(26), tw, Color.Lerp(Style.Dim, Style.Text, 0.45f), 1);
     }
 
+    int lastTutStep = -1;
+    float tutAnimAt = -99f;
+    string tutToast = "";
+    float tutToastAt = -99f;
+
     /// The pinned quest's place (or the last one SHOW ME marked, or the first-campaign tutorial beacon) as a gold marker on the map.
     void QuestMark()
     {
         Vector2? at = questMark;
         string tag = "QUEST";
+        bool tutBeacon = false;
         if (C.S.Contracts.FirstOrDefault(c => c.Id == C.S.PinnedQuest) is Contract pin && C.PlaceOf(pin).Place is Vector2 p) at ??= p;
         if (at == null && C.TutorialActive)
         {
             var tp = C.TutorialPrompt();
-            if (tp.Beacon is Vector2 tb) { at = tb; tag = tp.BeaconLabel != "" ? tp.BeaconLabel : "TUTORIAL"; }
+            if (tp.Beacon is Vector2 tb) { at = tb; tag = tp.BeaconLabel != "" ? tp.BeaconLabel : "TUTORIAL"; tutBeacon = true; }
         }
-        if (at is not Vector2 w || !OnScreen(w, out var sp, out _)) return;
+        if (at is not Vector2 w) return;
+        if (!OnScreen(w, out var sp, out _))
+        {
+            if (!tutBeacon) return;
+            // Off-screen tutorial beacon: pin a pulsing gilt pointer at the screen edge toward the target.
+            var dir = sp - new Vector2(ui.W * 0.5f, ui.H * 0.5f);
+            if (dir.LengthSquared() < 1) dir = Vector2.UnitX;
+            dir.Normalize();
+            float pad = ui.U(52);
+            var edge = new Vector2(
+                Math.Clamp(ui.W * 0.5f + dir.X * (ui.W * 0.45f), pad, ui.W - pad),
+                Math.Clamp(ui.H * 0.5f + dir.Y * (ui.H * 0.45f), ui.U(120), ui.H - pad));
+            float pulse = Ui.Instant ? 1f : 0.65f + 0.35f * MathF.Sin(Ui.Now * 5f);
+            int ew = ui.TW(tag, 1) + ui.U(22), eh = ui.U(18);
+            var er = new Rectangle((int)edge.X - ew / 2, (int)edge.Y - eh / 2, ew, eh);
+            ui.Rect(er, Kit.IronDark * 0.94f);
+            ui.Frame(er, Kit.Gilt * pulse, ui.U(2));
+            ui.TextC($"> {tag} <", edge.X, er.Y + ui.U(5), Kit.Gilt, 1);
+            return;
+        }
         // A gold ring on the ground round the place, breathing, with a gold plate under it.
-        float k = 1 + 0.12f * MathF.Sin(Ui.Now * 3);
+        float k = 1 + 0.14f * MathF.Sin(Ui.Now * 3.5f);
         float rx = ui.U(18) * k, ry = ui.U(8) * k;
         for (int i = 0; i < 32; i++)
         {
@@ -105,36 +130,129 @@ sealed partial class MapScreen
             ui.Rect(new Rectangle(px - ui.U(2), py - ui.U(2), ui.U(5), ui.U(5)), Color.Black * 0.7f);
             ui.Rect(new Rectangle(px - ui.U(1), py - ui.U(1), ui.U(3), ui.U(3)), Kit.Gilt);
         }
-        var lr = new Rectangle((int)sp.X - ui.TW(tag, 1) / 2 - ui.U(4), (int)(sp.Y + ry + ui.U(4)), ui.TW(tag, 1) + ui.U(8), ui.U(12));
-        ui.Rect(new Rectangle(lr.X - ui.U(1), lr.Y - ui.U(1), lr.Width + ui.U(2), lr.Height + ui.U(2)), Color.Black * 0.8f);
+        if (tutBeacon)
+        {
+            // Expanding outer ripple ring + bobbing pointer arrow above the tutorial target.
+            float rip = Ui.Instant ? 0.5f : (Ui.Now * 0.85f) % 1f;
+            float rrx = ui.U(18 + 26 * rip), rry = ui.U(8 + 12 * rip);
+            float ra = (1f - rip) * 0.85f;
+            for (int i = 0; i < 32; i++)
+            {
+                float a2 = i / 32f * MathF.Tau;
+                int px = (int)(sp.X + MathF.Cos(a2) * rrx), py = (int)(sp.Y + MathF.Sin(a2) * rry);
+                ui.Rect(new Rectangle(px - ui.U(1), py - ui.U(1), ui.U(3), ui.U(3)), Kit.Gilt * ra);
+            }
+            float bob = Ui.Instant ? 0f : MathF.Sin(Ui.Now * 5.5f) * ui.U(4);
+            int ay = (int)(sp.Y - ry - ui.U(26) + bob);
+            for (int row = 0; row < 6; row++)
+            {
+                int hw = ui.U(6 - row);
+                ui.Rect(new Rectangle((int)sp.X - hw, ay + row * ui.U(2), hw * 2 + ui.U(1), ui.U(2)), Kit.Gilt);
+            }
+        }
+        var lr = new Rectangle((int)sp.X - ui.TW(tag, 1) / 2 - ui.U(6), (int)(sp.Y + ry + ui.U(4)), ui.TW(tag, 1) + ui.U(12), ui.U(14));
+        ui.Rect(new Rectangle(lr.X - ui.U(1), lr.Y - ui.U(1), lr.Width + ui.U(2), lr.Height + ui.U(2)), Color.Black * 0.85f);
         ui.Rect(lr, Kit.Gilt); // a gold plate, unlike the map's party tags
         ui.TextC(tag, sp.X, lr.Y + ui.U(3), Kit.IronDark, 1);
     }
 
-    /// Interactive first-campaign tutorial banner docked top-right on the map (never blocks the world or company cards).
+    /// Interactive first-campaign tutorial banner docked top-center under the clock so it is always front-and-center.
     void TutorialCard()
     {
-        if (!C.TutorialActive) return;
+        int prev = C.S.TutorialStep;
+        if (!C.TutorialActive)
+        {
+            if (Ui.Now - tutToastAt < 2.6f && tutToast != "") DrawTutToast(ui.U(88));
+            return;
+        }
         C.UpdateTutorial();
-        if (!C.TutorialActive) return;
+        if (C.S.TutorialStep != prev)
+        {
+            tutAnimAt = Ui.Now;
+            if (prev >= 0)
+            {
+                tutToast = prev switch
+                {
+                    0 => "STEP 1 COMPLETE! +60 CROWNS",
+                    1 => "STEP 2 COMPLETE! +10 RENOWN, +3 FOOD",
+                    2 => "STEP 3 COMPLETE! +150 CROWNS, +15 RENOWN",
+                    3 => "STEP 4 COMPLETE! +80 CROWNS, +10 RENOWN",
+                    _ => "FIRST MARCH COMPLETE! +100 CROWNS, +15 RENOWN",
+                };
+                tutToastAt = Ui.Now;
+            }
+        }
+        if (!C.TutorialActive)
+        {
+            if (Ui.Now - tutToastAt < 2.6f && tutToast != "") DrawTutToast(ui.U(88));
+            return;
+        }
         var (step, title, body, hint, reward, _, _) = C.TutorialPrompt();
-        int w = ui.U(320);
-        var lines = ui.Wrap(body, w - ui.U(24));
-        int h = ui.U(62) + lines.Count * ui.U(12);
-        var r = new Rectangle(ui.W - w - ui.U(12), ui.U(52), w, h);
-        ui.Rect(r, Kit.IronDark * 0.94f);
-        ui.Panel(r, Kit.Gilt);
-        ui.Rect(new Rectangle(r.X, r.Y, ui.U(3), r.Height), Kit.Gilt);
-        ui.Text($"FIRST MARCH {step + 1}/{Campaign.TutorialSteps}: {title}", r.X + ui.U(12), r.Y + ui.U(8), Kit.Gilt, 1);
-        for (int i = 0; i < lines.Count; i++)
-            ui.Text(lines[i], r.X + ui.U(12), r.Y + ui.U(22) + i * ui.U(12), Style.Text, 1);
+        if (lastTutStep != step) { lastTutStep = step; tutAnimAt = Ui.Now; }
+        float age = Ui.Instant ? 99f : Ui.Now - tutAnimAt;
+        float slide = Ease.OutCubic(Math.Clamp(age / 0.35f, 0f, 1f));
+        float pulse = Ui.Instant ? 0.85f : 0.65f + 0.35f * MathF.Sin(Ui.Now * 4.2f);
+        float flash = Ui.Instant ? 0f : MathF.Max(0f, 1f - age / 0.6f);
+
+        int w = Math.Min(ui.W - ui.U(420), ui.U(520));
+        w = Math.Max(w, ui.U(360));
+        var lines = ui.Wrap(body, w - ui.U(28));
+        int h = ui.U(84) + lines.Count * ui.U(12);
+        int yOff = (int)((1f - slide) * -ui.U(18));
+        var r = new Rectangle((ui.W - w) / 2, ui.U(86) + yOff, w, h);
+
+        // Outer glow & solid backing so it stands out cleanly over the map.
+        ui.Rect(new Rectangle(r.X - ui.U(2), r.Y - ui.U(2), r.Width + ui.U(4), r.Height + ui.U(4)), Kit.Gilt * (0.28f * pulse + 0.45f * flash));
+        ui.Rect(r, Color.Lerp(Kit.IronDark, Kit.Gilt, 0.14f * flash) * 0.96f);
+        ui.Panel(r, Color.Lerp(Kit.Gilt * pulse, Color.White, 0.35f * flash), ui.U(2));
+        ui.Rect(new Rectangle(r.X, r.Y, ui.U(4), r.Height), Kit.Gilt);
+
+        // Header + 5-step progress pips.
+        ui.Icon("star", r.X + ui.U(12), r.Y + ui.U(9), Kit.Gilt, 1);
+        ui.Text($"FIRST MARCH  {step + 1}/{Campaign.TutorialSteps}:  {title}", r.X + ui.U(24), r.Y + ui.U(9), Kit.Gilt, 1);
+        int pipW = ui.U(14), pipGap = ui.U(4), pipX = r.Right - ui.U(12) - Campaign.TutorialSteps * (pipW + pipGap) + pipGap;
+        for (int i = 0; i < Campaign.TutorialSteps; i++)
+        {
+            var pr = new Rectangle(pipX + i * (pipW + pipGap), r.Y + ui.U(10), pipW, ui.U(5));
+            Color pc = i < step ? Kit.Gilt : i == step ? Color.Lerp(Kit.Gilt, Color.White, 0.4f * pulse) : Kit.Rivet * 0.55f;
+            ui.Rect(pr, pc);
+        }
+
+        // Body instructions.
+        int ty = r.Y + ui.U(26);
+        for (int i = 0; i < lines.Count; i++) { ui.Text(lines[i], r.X + ui.U(14), ty, Style.Text, 1); ty += ui.U(12); }
+
+        // Highlighted DO: action bar with animated arrow.
+        int actY = ty + ui.U(4);
+        var actR = new Rectangle(r.X + ui.U(12), actY, r.Width - ui.U(24), ui.U(18));
+        ui.Rect(actR, Kit.Gilt * (0.14f + 0.08f * pulse));
+        ui.Frame(actR, Kit.Gilt * 0.65f, ui.U(1));
+        int nudge = Ui.Instant ? 0 : (int)(MathF.Sin(Ui.Now * 6f) * ui.U(2));
+        ui.Text(">", actR.X + ui.U(7) + nudge, actR.Y + ui.U(5), Kit.Gilt, 1);
+        ui.Text($"DO: {hint}", actR.X + ui.U(18), actR.Y + ui.U(5), Color.White, 1);
+
+        // Footer: reward + FINISH (final step) + SKIP.
         int footY = r.Bottom - ui.U(24);
-        ui.Text($"REWARD: {reward}", r.X + ui.U(12), footY + ui.U(4), Style.Ok, 1);
+        ui.Text($"REWARD: {reward}", r.X + ui.U(14), footY + ui.U(4), Style.Ok, 1);
         if (step == Campaign.TutorialSteps - 1)
         {
-            if (ui.Button(new Rectangle(r.Right - ui.U(136), footY, ui.U(66), ui.U(18)), "FINISH", true)) C.CompleteTutorial();
+            var fr = new Rectangle(r.Right - ui.U(138), footY, ui.U(68), ui.U(18));
+            if (ui.Button(fr, "FINISH", true)) C.CompleteTutorial();
         }
-        if (ui.Button(new Rectangle(r.Right - ui.U(64), footY, ui.U(54), ui.U(18)), "SKIP")) C.SkipTutorial();
+        if (ui.Button(new Rectangle(r.Right - ui.U(64), footY, ui.U(52), ui.U(18)), "SKIP")) C.SkipTutorial();
+
+        if (Ui.Now - tutToastAt < 2.6f && tutToast != "") DrawTutToast(r.Bottom + ui.U(6));
+    }
+
+    void DrawTutToast(int y)
+    {
+        float age = Ui.Now - tutToastAt;
+        float a = Math.Clamp(1f - MathF.Max(0f, age - 1.8f) / 0.8f, 0f, 1f);
+        int w = ui.TW(tutToast, 1) + ui.U(28);
+        var r = new Rectangle((ui.W - w) / 2, y, w, ui.U(20));
+        ui.Rect(r, Kit.IronDark * (0.94f * a));
+        ui.Frame(r, Style.Ok * a, ui.U(1));
+        ui.TextC(tutToast, ui.W * 0.5f, r.Y + ui.U(6), Style.Ok * a, 1);
     }
 
     /// Compact 1-line tutorial reminder at top-center while inside a town or party modal.
@@ -144,12 +262,14 @@ sealed partial class MapScreen
         C.UpdateTutorial();
         if (!C.TutorialActive) return;
         var (step, title, _, hint, _, _, _) = C.TutorialPrompt();
-        string msg = $"FIRST MARCH {step + 1}/{Campaign.TutorialSteps} ({title}): {hint}";
-        int w = Math.Min(ui.W - ui.U(40), ui.TW(msg, 1) + ui.U(84));
-        var r = new Rectangle((ui.W - w) / 2, ui.U(6), w, ui.U(20));
-        ui.Rect(r, Kit.IronDark * 0.94f);
-        ui.Frame(r, Kit.Gilt, ui.U(1));
-        ui.Text(msg, r.X + ui.U(10), r.Y + ui.U(6), Kit.Gilt, 1);
-        if (ui.Button(new Rectangle(r.Right - ui.U(54), r.Y + ui.U(2), ui.U(48), ui.U(16)), "SKIP")) C.SkipTutorial();
+        float pulse = Ui.Instant ? 0.85f : 0.65f + 0.35f * MathF.Sin(Ui.Now * 4.2f);
+        string msg = $"FIRST MARCH {step + 1}/{Campaign.TutorialSteps} ({title})  •  DO: {hint}";
+        int w = Math.Min(ui.W - ui.U(40), ui.TW(msg, 1) + ui.U(92));
+        var r = new Rectangle((ui.W - w) / 2, ui.U(6), w, ui.U(22));
+        ui.Rect(r, Kit.IronDark * 0.96f);
+        ui.Frame(r, Kit.Gilt * pulse, ui.U(1));
+        ui.Rect(new Rectangle(r.X, r.Y, ui.U(3), r.Height), Kit.Gilt);
+        ui.Text(msg, r.X + ui.U(10), r.Y + ui.U(7), Kit.Gilt, 1);
+        if (ui.Button(new Rectangle(r.Right - ui.U(54), r.Y + ui.U(3), ui.U(48), ui.U(16)), "SKIP")) C.SkipTutorial();
     }
 }

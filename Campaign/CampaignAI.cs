@@ -145,7 +145,8 @@ public partial class Campaign
         var who = CharacterOf(p);
         float runAt = who?.Traits.Contains("Reckless") == true ? 1.7f : who?.Traits.Contains("Cautious") == true ? 1.1f : 1.3f;
         float preyAt = who?.Traits.Contains("Reckless") == true ? 1.25f : who?.Traits.Contains("Cautious") == true ? 0.75f : 1f;
-        var threat = hostiles.Where(q => !q.Lair && Rules.Strength(q) > side * runAt && Vector2.Distance(q.Pos, p.Pos) < 25).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault();
+        var threat = hostiles.Where(q => !q.Lair && (Rules.HasBeasts(q) ? Rules.Outweighs(q, p) > runAt : Rules.Strength(q) > side * runAt) && Vector2.Distance(q.Pos, p.Pos) < 25) // beasts weighed as a fight weighs them (Rules.MightAgainst)
+            .OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault();
         // Go home to refit when the company is thin, or to spend an upgrade it can already pay for. Refit buys what the
         // purse allows and the faction treasury covers the rest, so a lord who has lost men goes home even when it is poor.
         bool needsRefit = p.Men < Scaled(45) || p.Companies.Count < 3
@@ -177,8 +178,9 @@ public partial class Campaign
         // What a free lord hunts comes in order: beasts first for a realm that hunts them, then enemy lords, then rabble. At war he
         // leaves rabble alone unless it is on his own realm's land (or has plundered it).
         else if (hostiles.Where(q => !Rabble(q) || !AtWarWithAnyone(p.Faction) || q.HuntedBy == p.Faction || MonsterHunter(p) || Map.ProvinceAt(q.Pos).Faction == p.Faction)
+                     .Where(q => !Rabble(q) || q.HuntedBy == p.Faction || Vector2.Distance(q.Pos, p.Pos) < 28) // lords clear nearby rabble on patrol rather than chasing bands across the province
                      .Where(q => !q.Lair || (q.HuntedBy == p.Faction && S.Hours < q.HuntedUntil || MonsterHunter(p)) && Rules.Strength(q) * B.HoldoutDefence * 1.2f < me * preyAt)
-                     .Where(q => Rules.Strength(q) * (q.Breed is "troll" or "undead" or "wyvern" ? 2 : 1) < me * preyAt * (p.PatrolProvince >= 0 && S.Provinces[p.PatrolProvince].Faction != p.Faction ? 1.3f : 1f)) // a troll only with twice its weight
+                     .Where(q => (Rules.HasBeasts(q) ? Rules.Outweighs(q, p) * 1.5f * me : Rules.Strength(q) * (q.Breed is "troll" or "undead" or "wyvern" ? 2 : 1)) < me * preyAt * (p.PatrolProvince >= 0 && S.Provinces[p.PatrolProvince].Faction != p.Faction ? 1.3f : 1f)) // great beasts only when clearly outweighed as a fight weighs them; the dead with twice their weight
                      .OrderBy(q => Revenge(p, q) ? -1 : MonsterHunter(p) && q.Kind == PartyKind.Monster ? 0 : Rabble(q) ? 2 : 1).ThenBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey) // a lord on campaign takes even fights
         {
             p.Task = "hunt"; p.ChaseId = prey.Id; p.Moving = true; p.TaskUntil = (float)S.Hours + 6;
@@ -297,7 +299,7 @@ public partial class Campaign
     void BanditThink(Party p)
     {
         float me = Rules.Strength(p);
-        var near = Visible(p, 25).Where(q => Hostile(p, q)).ToList();
+        var near = Visible(p, B.Vision * 0.85f).Where(q => Hostile(p, q)).ToList();
         // Brigands are opportunists, not soldiers: they run from anything near their own weight and only fall on a
         // clearly weaker party. With many more bands on the big map they would otherwise grind the lords to nothing.
         if (near.FirstOrDefault(q => !q.Lair && Rules.Strength(q) * Dread(q) > me * 1.05f) is Party threat)
@@ -314,7 +316,7 @@ public partial class Campaign
         {
             p.ChaseId = -1;
             p.Goal = p.Pos + new Vector2(rng.Range(-25, 25), rng.Range(-25, 25)) * Map.Spread;
-            p.Moving = true; p.TaskUntil = (float)S.Hours + 8;
+            p.Moving = true; p.TaskUntil = (float)S.Hours + 2;
         }
     }
 

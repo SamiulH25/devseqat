@@ -340,6 +340,9 @@ sealed partial class MapScreen
 
     /// The map's ambience: wind, birdsong by day and crickets by night (hushed by rain), the bustle of a town as you
     /// come near one; and a page turning whenever a screen opens or closes.
+    float ambCueTimer = 7f;
+    int ambCueSeq;
+
     public void Soundscape(AudioEngine? audio, float dt = 1 / 60f)
     {
         if (audio == null) return;
@@ -351,17 +354,19 @@ sealed partial class MapScreen
         }
         float day = 1 - Sky.Night, dry = 1 - MathF.Min(1, Sky.Rain * 3);
         bool winter = C.Map.Season == 3;
-        var prov = C.Map.ProvinceAt(C.Player.Pos);
+        // Blend listener toward the camera focus when panning so you hear the coast, forest or town you're looking at.
+        var ear = follow ? C.Player.Pos : Vector2.Lerp(C.Player.Pos, focus, 0.75f);
+        var prov = C.Map.ProvinceAt(ear);
         string culture = prov.Faction >= 0 && prov.Faction < C.S.Factions.Count ? C.S.Factions[prov.Faction].Culture : "azure";
         float town = 0;
         foreach (var s in C.S.Settlements)
         {
-            float d = Vector2.Distance(s.Pos, C.Player.Pos), size = s.Kind == SettlementKind.Village ? 6 : 10;
+            float d = Vector2.Distance(s.Pos, ear), size = s.Kind == SettlementKind.Village ? 7 : 12;
             town = MathF.Max(town, 1 - d / size);
         }
-        float river = Math.Clamp(1f - C.Map.RiverDist(C.Player.Pos) / 14f, 0f, 1f);
+        float river = Math.Clamp(1f - C.Map.RiverDist(ear) / 14f, 0f, 1f);
         float graveNear = 0;
-        foreach (var g in C.S.Graves) graveNear = MathF.Max(graveNear, Math.Clamp(1f - Vector2.Distance(g.Pos, C.Player.Pos) / 14f, 0f, 1f));
+        foreach (var g in C.S.Graves) graveNear = MathF.Max(graveNear, Math.Clamp(1f - Vector2.Distance(g.Pos, ear) / 14f, 0f, 1f));
         float omen = MathF.Max(graveNear, Math.Clamp(MathF.Max(C.S.Omen - 15f, C.Captain.Corruption - 25f) / 35f, 0f, 0.85f));
         bool feastOn = C.S.Flags.TryGetValue("hall_feast", out float fh) && C.S.Hours - fh < 24;
         bool inTavern = panel == PanelKind.Settlement && tab == "TAVERN" || panel == PanelKind.Talk && feastOn;
@@ -369,7 +374,7 @@ sealed partial class MapScreen
 
         bool hostNear = false;
         foreach (var p in C.S.Parties)
-            if (p.Kind == PartyKind.Lord && p.Id != C.Player.Id && C.Hostile(C.Player, p) && Vector2.DistanceSquared(p.Pos, C.Player.Pos) < 24f * 24f) { hostNear = true; break; } // an enemy lord's host, not brigands
+            if (p.Kind == PartyKind.Lord && p.Id != C.Player.Id && C.Hostile(C.Player, p) && Vector2.DistanceSquared(p.Pos, C.Player.Pos) < 24f * 24f) { hostNear = true; break; }
 
         string? interior = panel switch
         {
@@ -385,19 +390,41 @@ sealed partial class MapScreen
         float dreadScore = C.Captain.Corruption >= 50 || C.Captain.Pact ? 0.85f : omen;
         audio.UpdateMapMusic(interior, culture, Sky.Night > 0.5f, winter, hostNear, dreadScore, dt);
 
-        audio.SetBed(Bed.Wind, winter ? 0.45f : 0.75f + 0.4f * Sky.Rain);
-        if (winter) audio.SetBed(Bed.Blizzard, 0.55f + 0.35f * Sky.Rain);
-        else audio.SetBed(Bed.Rain, MathF.Min(1, Sky.Rain * 2.5f));
-        audio.SetBed(Bed.Birds, winter ? 0 : day * dry * (1 - town * 0.5f));
-        audio.SetBed(Bed.Crickets, winter ? 0 : Sky.Night * dry);
-        audio.SetBed(Bed.Town, town * (0.4f + 0.6f * day));
-        if (river > 0.02f) audio.SetBed(Bed.River, river * 0.45f);
-        if (prov.Kind == "Marsh" || culture == "league" || prov.Kind == "Coast") audio.SetBed(Bed.Surf, prov.Kind == "Marsh" ? 0.55f : prov.Kind == "Coast" ? 0.45f : 0.35f);
-        if (prov.Kind is "Forest" or "Taiga") audio.SetBed(Bed.Forest, 0.55f * (1 - town * 0.5f));
+        // Altitude & elevation shape the soundscape: high camera zooms trade ground detail for sweeping wind.
+        float groundMix = Math.Clamp(1f - (zoom - 110f) / 360f, 0.10f, 1f) * (panel == PanelKind.None ? 1f : 0.4f);
+        float elev = terrain != null ? Math.Clamp((terrain.Height(ear) - 6f) / 14f, 0f, 0.45f) : 0f;
+        float wind = (winter ? 0.45f : 0.55f + 0.45f * Sky.Rain) + (1f - groundMix) * 0.35f + elev;
+        audio.SetBed(Bed.Wind, Math.Clamp(wind, 0f, 1f));
+        if (winter) audio.SetBed(Bed.Blizzard, (0.35f + 0.65f * Sky.Rain) * (0.5f + 0.5f * groundMix));
+        else audio.SetBed(Bed.Rain, MathF.Min(1f, Sky.Rain * 2.2f) * (panel == PanelKind.None ? 1f : 0.45f));
+        audio.SetBed(Bed.Birds, winter ? 0 : day * dry * (1 - town * 0.4f) * (1 - elev) * groundMix);
+        audio.SetBed(Bed.Crickets, winter ? 0 : Sky.Night * dry * (1 - elev) * groundMix);
+        audio.SetBed(Bed.Town, town * (0.4f + 0.6f * day) * groundMix);
+        if (river > 0.02f) audio.SetBed(Bed.River, river * 0.5f * groundMix);
+        float surf = C.Sailing || (terrain != null && terrain.WaterDepth(ear) > 0.1f) ? 0.65f
+            : prov.Kind == "Marsh" ? 0.5f : prov.Kind == "Coast" ? 0.45f : culture == "league" ? 0.3f : 0f;
+        if (surf > 0.02f) audio.SetBed(Bed.Surf, surf * groundMix);
+        if (prov.Kind is "Forest" or "Taiga") audio.SetBed(Bed.Forest, 0.6f * (1 - town * 0.4f) * groundMix);
         if (omen > 0.02f) audio.SetBed(Bed.OmenDrone, omen);
         if (inTavern) audio.SetBed(Bed.Tavern, 0.85f);
         if (inForge) audio.SetBed(Bed.Forge, 0.75f);
-        if (panel == PanelKind.None && C.Player.Moving && speed > 0) audio.SetBed(Bed.March, 0.32f);
+        if (panel == PanelKind.None && C.Player.Moving && speed > 0) audio.SetBed(Bed.March, 0.32f * Math.Clamp(1.2f - zoom / 420f, 0.35f, 1f));
+
+        // Occasional ambient world cues (distant thunder, wolf howls, crow swarms, town anvils).
+        if (panel == PanelKind.None && !bare)
+        {
+            ambCueTimer -= dt;
+            if (ambCueTimer <= 0)
+            {
+                float h = (Rng.Mix(terrain?.Seed ?? 1, ++ambCueSeq) & 0xFFFF) / 65535f;
+                ambCueTimer = 9f + h * 11f;
+                float pan = ((Rng.Mix(ambCueSeq, 3) & 0xFFFF) / 65535f - 0.5f) * 1.4f;
+                if (Sky.Rain > 0.5f && !winter) audio.Play(Cue.Thunder, 0.28f + Sky.Rain * 0.22f, pan, distant: true);
+                else if (omen > 0.35f && groundMix > 0.35f) audio.Play(Cue.CrowSwarm, 0.25f * groundMix, pan, distant: true);
+                else if (Sky.Night > 0.55f && prov.Kind is "Forest" or "Taiga" && groundMix > 0.35f) audio.Play(Cue.WolfHowl, 0.22f * groundMix, pan, distant: true);
+                else if (town > 0.45f && day > 0.4f && dry > 0.5f && groundMix > 0.45f) audio.Play(Cue.AnvilRing, 0.16f * town * groundMix, pan, distant: true);
+            }
+        }
     }
     PanelKind heardPanel;
 
@@ -534,7 +561,7 @@ sealed partial class MapScreen
         // Day and night on the map follow the campaign clock (kept readable at night); autumn and winter skies are greyer.
         // Winter tells the shaders it snows: fields, hedges, tree tops and roofs whiten and the water freezes (WL3).
         Looks.Grounded = true;
-        Sky.Set(new Weather((float)(C.S.Hours % 24), C.SeasonIndex >= 2 ? 0.25f : 0, Snow: C.SeasonIndex == 3), nightFloor: 0.6f);
+        Sky.Set(bare ? new Weather((float)(C.S.Hours % 24), C.SeasonIndex >= 2 ? 0.25f : 0, Snow: C.SeasonIndex == 3) : MapWeather(), nightFloor: 0.6f);
         var look = new Vector3(MathF.Cos(yaw) * MathF.Cos(pitch), -MathF.Sin(pitch), MathF.Sin(yaw) * MathF.Cos(pitch));
         var f3 = new Vector3(focus.X, Surface(focus), focus.Y); // at sea the view rests on the water, not the sea bed
         // The camera keeps its zoom and height at the edge of the world: only where its orbit would carry it off the ground
@@ -552,8 +579,9 @@ sealed partial class MapScreen
         FrameProf.Begin("bearersUpd");
         UpdateBearers();
         FrameProf.End("bearersUpd");
-        // Fog starts beyond the near ground in view, so a wide view is hazy at the horizon rather than cut off.
-        float fogStart = MathF.Max(200, zoom * 1.9f), fogEnd = MathF.Max(600, zoom * 5.2f);
+        // Fog starts beyond the near ground in view and tightens gently with mist, rain, and night.
+        float fogK = Math.Clamp(Sky.FogScale, 0.48f, 1f);
+        float fogStart = MathF.Max(130, zoom * 1.9f * fogK), fogEnd = MathF.Max(380, zoom * 5.2f * fogK);
         world!.SetFog(fogStart, fogEnd);
         spriteFx.FogStart = fogStart;
         spriteFx.FogEnd = fogEnd;
@@ -679,6 +707,7 @@ sealed partial class MapScreen
         }
         if (thumbFor != null) GrabThumb(); // the map is drawn and the interface not yet
         PrepareCamp(); // the camp's men, into their texture before the interface's sprites begin
+        PrepareEncounter(); // the encounter's two sides, likewise
         FrameProf.Begin("drawUi");
         long calls0 = FrameProf.On ? gd.Metrics.DrawCount : 0, sprites0 = FrameProf.On ? gd.Metrics.SpriteCount : 0;
         DrawUi();
@@ -889,12 +918,96 @@ sealed partial class MapScreen
             Ring(t, 2, pl.ChaseId >= 0 ? Style.Foe : Style.Accent);
         }
         Ring(pl.Pos, 3, Style.Accent);
+        if (!bare) DrawMapAmbience(Line);
         if (lines.N == 0) return;
         gd.BlendState = BlendState.Opaque;
         gd.DepthStencilState = DepthStencilState.Default;
         lineFx.View = view; lineFx.Projection = proj;
         lineFx.CurrentTechnique.Passes[0].Apply();
         lines.Draw(gd, PrimitiveType.LineList, lines.N / 2);
+    }
+
+    /// Deterministic, slowly shifting campaign weather (passing rain fronts, morning valley mist, winter snow flurries).
+    Weather MapWeather()
+    {
+        double h = C.S.Hours;
+        float hour = (float)(h % 24);
+        int block = (int)(h / 8.0);
+        float frac = (float)((h / 8.0) - block);
+        float s = frac * frac * (3f - 2f * frac);
+        float w0 = (Rng.Mix(terrain.Seed, block * 17 + 3) & 0xFFFF) / 65535f;
+        float w1 = (Rng.Mix(terrain.Seed, (block + 1) * 17 + 3) & 0xFFFF) / 65535f;
+        float front = MathHelper.Lerp(w0, w1, s);
+        float rain = C.SeasonIndex switch
+        {
+            0 => Math.Clamp((front - 0.52f) * 1.2f, 0f, 0.55f),
+            1 => Math.Clamp((front - 0.68f) * 1.1f, 0f, 0.4f),
+            2 => Math.Clamp((front - 0.34f) * 1.3f, 0f, 0.8f),
+            _ => Math.Clamp((front - 0.30f) * 1.15f, 0f, 0.72f),
+        };
+        float dawnMist = MathF.Exp(-MathF.Pow((hour - 6.2f) / 2.0f, 2f));
+        float fog = Math.Clamp(dawnMist * (C.SeasonIndex == 2 ? 0.5f : 0.32f) + rain * 0.25f, 0f, 0.65f);
+        return new Weather(hour, rain, fog, Snow: C.SeasonIndex == 3);
+    }
+
+    /// 3D atmospheric particles around the camera focus: rain streaks, snowflakes, wind motes, and night fireflies.
+    void DrawMapAmbience(Action<Vector3, Vector3, Color> line)
+    {
+        float t = time;
+        bool winter = C.SeasonIndex == 3;
+        float span = Math.Clamp(zoom * 0.65f, 22f, 110f);
+        float ceil = Math.Clamp(zoom * 0.42f, 14f, 68f);
+        float fade = Math.Clamp(1f - (zoom - 160f) / 260f, 0.15f, 1f);
+
+        if (Sky.Rain >= 0.08f && zoom < 380f)
+        {
+            int count = (int)((winter ? 260 : 340) * Math.Clamp(Sky.Rain, 0.15f, 1f) * fade);
+            Color col = winter ? new Color(235, 240, 248) * 0.85f
+                : Color.Lerp(new Color(148, 166, 190), new Color(72, 86, 112), Sky.Night) * (0.55f + 0.35f * Sky.Rain);
+            float fall = winter ? 2.4f : 24f;
+            for (int i = 0; i < count; i++)
+            {
+                uint h = (uint)i * 2654435761u;
+                float rx = (h & 1023) / 1023f * span * 2f - span;
+                float rz = ((h >> 10) & 1023) / 1023f * span * 2f - span;
+                float ph = ((h >> 20) & 1023) / 1023f;
+                float wx = MathF.Floor(focus.X / (span * 2f)) * (span * 2f) + rx;
+                float wz = MathF.Floor(focus.Y / (span * 2f)) * (span * 2f) + rz;
+                if (wx < focus.X - span) wx += span * 2f; else if (wx > focus.X + span) wx -= span * 2f;
+                if (wz < focus.Y - span) wz += span * 2f; else if (wz > focus.Y + span) wz -= span * 2f;
+                float yBase = terrain.Height(new Vector2(wx, wz));
+                float y = yBase + ceil - ((ph * ceil + t * fall) % ceil);
+                if (winter)
+                {
+                    float sw = MathF.Sin(t * 1.8f + i) * 0.35f;
+                    line(new Vector3(wx + sw, y, wz), new Vector3(wx + sw + 0.15f, y - 0.25f, wz + 0.1f), col);
+                }
+                else
+                {
+                    line(new Vector3(wx, y, wz), new Vector3(wx + 0.25f, y - 1.6f, wz + 0.08f), col);
+                }
+            }
+        }
+        else if (Sky.Night > 0.25f && !winter && zoom < 220f)
+        {
+            // Warm fireflies drifting over woods, meadows, and marshes at dusk and night.
+            int count = (int)(90 * Sky.Night * fade);
+            for (int i = 0; i < count; i++)
+            {
+                uint h = (uint)(i + 7919) * 2654435761u;
+                float rx = (h & 1023) / 1023f * span * 2f - span;
+                float rz = ((h >> 10) & 1023) / 1023f * span * 2f - span;
+                float ph = ((h >> 20) & 1023) / 1023f * MathF.Tau;
+                float wx = focus.X + rx + MathF.Sin(t * 0.7f + ph) * 1.4f;
+                float wz = focus.Y + rz + MathF.Cos(t * 0.6f + ph * 1.3f) * 1.4f;
+                if (terrain.WaterDepth(new Vector2(wx, wz)) > 0.2f) continue;
+                float blink = MathF.Max(0f, MathF.Sin(t * 2.4f + ph * 2f));
+                if (blink < 0.15f) continue;
+                float wy = terrain.Height(new Vector2(wx, wz)) + 0.6f + 0.7f * MathF.Sin(t * 1.3f + ph);
+                Color fc = Color.Lerp(new Color(210, 235, 110), new Color(255, 195, 85), (i % 3) * 0.45f) * (blink * 0.9f);
+                line(new Vector3(wx, wy, wz), new Vector3(wx + 0.12f, wy + 0.12f, wz), fc);
+            }
+        }
     }
 
     // ---------- debug staging (IRONFIELD_CAMPAIGN_SHOTS) ----------

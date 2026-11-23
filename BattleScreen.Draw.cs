@@ -550,7 +550,7 @@ partial class BattleScreen
         if (!forSun) DrawMissiles(do3D); // real arrows near the camera (BattleScreen.Arrows.cs)
         if (do3D) DrawEngines3D(); // solid lit 3D siege engines (BattleScreen.Engines3D.cs)
         foreach (var h in battle.LooseHorses) { float hh = t.Height(h.Pos); if (Seen(h.Pos, hh, 2.5f)) { if (do3D && h.Mount.Barding != "wolf") puppet3D!.DrawLooseHorse(h, hh); else puppet.DrawLooseHorse(h, hh); } }
-        foreach (var h in battle.DeadHorses) { if (battle.Time > 0 && battle.Time - h.At > (forSun ? 0.75f : 3.2f)) continue; float hh = t.Height(h.Pos); if (Seen(h.Pos, hh + 1.5f, 4f)) puppet.DrawDeadHorse(h, hh); }
+        foreach (var h in battle.DeadHorses) { if (battle.Time > 0 && battle.Time - h.At > (forSun ? 0.75f : 3.2f)) continue; float hh = t.Height(h.Pos); if (Seen(h.Pos, hh + 1.5f, 4f)) { if (do3D && h.Barding != "wolf" && (battle.Time <= 0 || battle.Time - h.At < 0.7f)) puppet3D!.DrawDeadHorse(h, hh); else puppet.DrawDeadHorse(h, hh); } }
         puppet.Detail = 0;
     }
 
@@ -772,20 +772,37 @@ partial class BattleScreen
             case 3 when (!command && battle.Player.Action != UnitAction.None) || battleTutTimer > 14f: battleTutStep = 4; battleTutTimer = 0; break;
             case 4 when battleTutTimer > 3.5f: battleTutStep = -1; return;
         }
-        string text = battleTutStep switch
+        var (head, body) = battleTutStep switch
         {
-            0 => "DEPLOYMENT: DRAG A COMPANY TO POSITION IT, OR CLICK FIGHT TO BEGIN!",
-            1 => "COMMAND: PRESS TAB FOR COMMAND VIEW, SELECT A COMPANY (1-2), RIGHT-CLICK TO MOVE OR CHARGE.",
-            2 => "FORMATIONS: PRESS J TO CHANGE FORMATION (SHIELD WALL / OPEN RANKS).",
-            3 => "JOIN THE FIGHT: PRESS TAB FOR PERSONAL VIEW — WASD MOVE, LMB STRIKE, RMB PARRY!",
-            _ => "WELL FOUGHT, CAPTAIN! BREAK THE RAIDERS!",
+            0 => ("BATTLE 1/4: DEPLOYMENT", "DRAG A COMPANY TO POSITION IT ON THE FIELD, THEN CLICK FIGHT AT BOTTOM-CENTER."),
+            1 => ("BATTLE 2/4: COMMAND VIEW", "PRESS TAB FOR COMMAND VIEW  •  PRESS 1-2 TO SELECT  •  RIGHT-CLICK GROUND OR FOE TO ORDER."),
+            2 => ("BATTLE 3/4: FORMATIONS", "WITH A COMPANY SELECTED, PRESS J TO CYCLE FORMATION (LINE / SHIELD WALL / OPEN RANKS)."),
+            3 => ("BATTLE 4/4: JOIN THE FIGHT", "PRESS TAB FOR PERSONAL VIEW  •  WASD MOVE  •  LMB STRIKE  •  RMB PARRY!"),
+            _ => ("FIRST BLOOD", "WELL FOUGHT, CAPTAIN! BREAK THE RAIDERS!"),
         };
-        int w = Math.Min(u.W - u.U(40), u.TW(text, 1) + u.U(90));
-        var r = new Rectangle((u.W - w) / 2, u.U(56), w, u.U(26));
-        u.Rect(r, Kit.IronDark * 0.92f);
-        u.Panel(r, Kit.Gilt);
-        u.Text(text, r.X + u.U(12), r.Y + u.U(8), Kit.Gilt, 1);
-        if (battleTutStep < 4 && u.Button(new Rectangle(r.Right - u.U(56), r.Y + u.U(4), u.U(48), u.U(18)), "SKIP"))
+        float slide = Ui.Instant ? 1f : Ease.OutCubic(Math.Clamp(battleTutTimer / 0.3f, 0f, 1f));
+        float pulse = Ui.Instant ? 0.85f : 0.65f + 0.35f * MathF.Sin(Ui.Now * 4.2f);
+        float flash = Ui.Instant ? 0f : MathF.Max(0f, 1f - battleTutTimer / 0.55f);
+
+        int w = Math.Min(u.W - u.U(40), Math.Max(u.TW(body, 1) + u.U(36), u.TW(head, 1) + u.U(160)));
+        int yOff = (int)((1f - slide) * -u.U(14));
+        var r = new Rectangle((u.W - w) / 2, u.U(56) + yOff, w, u.U(42));
+        u.Rect(new Rectangle(r.X - u.U(2), r.Y - u.U(2), r.Width + u.U(4), r.Height + u.U(4)), Kit.Gilt * (0.25f * pulse + 0.4f * flash));
+        u.Rect(r, Color.Lerp(Kit.IronDark, Kit.Gilt, 0.14f * flash) * 0.95f);
+        u.Panel(r, Color.Lerp(Kit.Gilt * pulse, Color.White, 0.3f * flash), u.U(2));
+        u.Rect(new Rectangle(r.X, r.Y, u.U(4), r.Height), Kit.Gilt);
+        u.Text(head, r.X + u.U(12), r.Y + u.U(7), Kit.Gilt, 1);
+
+        // 4-pip beat indicator next to SKIP.
+        int pipW = u.U(12), pipGap = u.U(3);
+        int pipX = r.Right - u.U(64) - 4 * (pipW + pipGap);
+        for (int i = 0; i < 4; i++)
+        {
+            var pr = new Rectangle(pipX + i * (pipW + pipGap), r.Y + u.U(9), pipW, u.U(4));
+            u.Rect(pr, i < battleTutStep ? Kit.Gilt : i == battleTutStep ? Color.Lerp(Kit.Gilt, Color.White, 0.4f * pulse) : Kit.Rivet * 0.55f);
+        }
+        u.Text(body, r.X + u.U(12), r.Y + u.U(23), Style.Text, 1);
+        if (battleTutStep < 4 && u.Button(new Rectangle(r.Right - u.U(56), r.Y + u.U(4), u.U(48), u.U(16)), "SKIP"))
             battleTutStep = -1;
     }
 
