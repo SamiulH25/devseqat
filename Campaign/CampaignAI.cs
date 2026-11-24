@@ -252,8 +252,8 @@ public partial class Campaign
         int lordsOfFaction = Math.Max(1, S.Parties.Count(q => q.Kind == PartyKind.Lord && q.Faction == p.Faction));
         // Above a small reserve (RefitReserve): a beaten realm's refits halved its chest again and again toward nothing, and a
         // realm with an empty chest can raise no new lord (the drawn map's Order of the Ashen Sun, six seats, ran down to 50).
-        float share = MathF.Min(250 * Map.PartyScale, MathF.Max(0, fs.Treasury - RefitReserve) * 0.5f / lordsOfFaction);
-        float budget = Math.Clamp(share, 0, 250 * Map.PartyScale);
+        float share = MathF.Min(250 * Map.LordScale, MathF.Max(0, fs.Treasury - RefitReserve) * 0.5f / lordsOfFaction);
+        float budget = Math.Clamp(share, 0, 250 * Map.LordScale);
         string levy = RecruitTroop(p.Faction);
         if (p.Companies.Count == 0) p.Companies.Add(NewCompany(levy, "infantry", Scaled(12), 0, home)); // the lord's household, raised again
         if (p.KnightOrder != "") RefitOrder(p, home); // a knight order's own brothers come from its chapter

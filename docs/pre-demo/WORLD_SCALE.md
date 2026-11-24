@@ -1,6 +1,6 @@
 # World scale: a land four times as wide, with height and cliffs (WS0-WS8)
 
-Status: **WS0, WS2 and most of WS3 built 2026-11-24** (the 4x draft and its first relief in the world page; layout 6 builds it with its heights; cliffs bar the way; all headless). WS1, the rest of WS3 (the AI and choke points), WS4-WS8 open. Owner's brief 2026-11-24.
+Status: **WS0, WS2 and most of WS3 built 2026-11-24** (the 4x draft and its first relief in the world page; layout 6 builds it with its heights; cliffs bar the way; all headless), and a first WS7 pass (party counts, the two worst costs). WS1, the rest of WS3 (the AI and choke points), WS4-WS8 open. Owner's brief 2026-11-24.
 This settles `archive/HOLDS.md` HD6 (world size): the land grows, travel slows.
 
 > "A major world overhaul including elevation, cliffs, and a massive increase in scale of the world. There's no reason for
@@ -154,6 +154,13 @@ and the far ones coarse, and stream as the camera moves (`World.Upload` per chun
 (strata, scree at the foot) along the line, so a cliff is crisp whatever the grid. `--world-bench` reports per chunk; frame
 time at the widest zoom must not fall.
 
+**Measured (2026-11-24): layout 6 already draws.** `IRONFIELD_MAP_LAYOUT=6` with `IRONFIELD_CAMPAIGN_SHOTS` renders every map
+shot: the map's terrain and world meshes are already in culled tiles (the overview draws ~47k of 5.6M terrain triangles).
+So WS4 is not "build streaming" but **memory and load time**: `IRONFIELD_MAP_LAYOUT=6 --world-bench` gives a 1,678^2 terrain
+field, 199k foliage items, **50M vertices in 15k tiles, 1,881 MB of buffers** (layout 5: 148 MB), 41M of them the foliage;
+terrain 6.7 s and world meshes 5.1 s to build. Next in WS4: foliage by tile on demand (build a tile's trees and dress when it
+first comes near the camera, drop it far away) and fewer, larger far trees; then the terrain's far tiles coarser.
+
 ### WS5b: Things on the map at scale
 One `MapScale` table (above) read by everything drawn on the map. Places: plans are laid in model space (today's sizes,
 so the town plans, lots and works keep working) and the built mesh is scaled about the place's centre, its ground heights
@@ -176,6 +183,19 @@ Long marches cost: food (forage by land: rich valleys, lean highlands), wear on 
 Party counts grow with area (`PartyScale`): 16x the land must not mean 16x the cost of a day (~76 ms now, `--campaign-bench`).
 Parties far from the player think less often (an hourly brain every few hours), the encounter checks use the map index, and
 news travels: the player hears of a siege or a war when word could have reached him (a delay by distance).
+
+**First pass (2026-11-24).** `--campaign-bench` on layout 6 began at 3,362 parties (1,722 lords) and 14.8 s a game day
+(layout 5: 262 parties, 117 lords, ~234 ms). Found and fixed:
+- `Campaign.IsProvinceWebbed` swept every party for every party's speed every step (quadratic; 27% of the day): now the
+  webbed provinces are found once a game hour (`webbed`, cleared when lairs grow).
+- The AI's way round sea and cliffs searched a 6-unit grid (1.2M cells): `SeaCell` is 6 x the square root of the warp (12
+  on the draft); steps beside a cliff (`cliffNear`) also check the face itself, so none slips past a cliff's end.
+- Party counts: `WorldMap.LordScale` (lords, and their refit budget) is the drawn world's on the draft, since the realms
+  and their seats are the same; `RoamScale` (brigands, pilgrims) grows with the land's width, not its area, so the wide land
+  is emptier between places. Both equal `PartyScale` on every other map. **A starting value for the owner to judge.**
+Now: 548 parties (117 lords), **~790 ms a day** (move 600). Still to do: the AI's long ways (cache a way per goal, plan by
+province or road graph, think less often far from the player), and the world's other per-area counts (lairs, nests,
+holdouts, caravans) checked on the draft.
 
 ### WS8: Retune and docs
 Pacing (`--pacing`), realms (`--realms`), events (`--events`) at the new scale: contract distances, quest timers, lord

@@ -55,6 +55,14 @@ public sealed partial class WorldMap
     /// (provinces spread out as the map grows, and parties counted by province grew sparse; docs/archive/WORLD.md W2).
     public float PartyScale => ExtentUsed <= PreviousExtent + 1 ? ProvinceScale
         : PreviousProvinces / (float)LegacyProvinces * (ExtentUsed / PreviousExtent) * (ExtentUsed / PreviousExtent) * LandShare; // a designed map counts only its land
+    /// The draft's warp (1 on every other map): its land is warp x warp times the drawn world's with the same places on it.
+    float drawnWarp = 1;
+    /// How many lords the world raises: on the 4x draft as many as on the drawn world, since the realms and their seats are
+    /// the same (PartyScale would make 1,700 lords; WS7). Equal to PartyScale on every other map.
+    public float LordScale => PartyScale / (drawnWarp * drawnWarp);
+    /// How many roaming parties (brigands, pilgrims): on the 4x draft they grow with the land's width, not its area, so the
+    /// wide land is emptier between places, as the owner asked (WS7; a starting value to tune). PartyScale elsewhere.
+    public float RoamScale => PartyScale / drawnWarp;
     /// About how many provinces the pre-W2 map had (the anchor PartyScale grows from).
     public const int PreviousProvinces = 60;
     /// How far apart this map's places stand against the original map's (1 = the same). Distances that mean "the next

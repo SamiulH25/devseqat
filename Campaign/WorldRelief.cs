@@ -119,20 +119,85 @@ public sealed partial class WorldMap
     public bool OnCliff(Vector2 p, float half)
     {
         if (cliffs.Count == 0) return false;
+        return FaceGap(p) < half;
+    }
+
+    /// Cells a side of the face grid (2 units each) and how far from a face it still measures (beyond: "far").
+    const float FaceCell = 2, FaceFar = 12;
+    const int FaceTile = 32;
+    /// How far each cell's middle is from a cliff's face, in tenths of a unit, in tiles of 32 x 32 cells kept only near a
+    /// cliff (the rest of the map is "far"): `OnCliff` asked for every step of every party is a look-up (WS3).
+    Dictionary<long, byte[]>? faceTiles;
+    readonly object faceLock = new();
+
+    float FaceGap(Vector2 p)
+    {
+        var tiles = faceTiles ?? BuildFaces();
+        int cx = (int)MathF.Floor(p.X / FaceCell), cz = (int)MathF.Floor(p.Y / FaceCell);
+        int tx = (int)MathF.Floor(cx / (float)FaceTile), tz = (int)MathF.Floor(cz / (float)FaceTile);
+        if (!tiles.TryGetValue(((long)tx << 32) | (uint)tz, out var t)) return float.MaxValue;
+        // Less half a cell's diagonal: the look-up never calls a point further off than it is (the band never narrows).
+        return t[(cz - tz * FaceTile) * FaceTile + (cx - tx * FaceTile)] / 10f - FaceCell * 0.7072f;
+    }
+
+    Dictionary<long, byte[]> BuildFaces()
+    {
+        lock (faceLock)
+        {
+            if (faceTiles != null) return faceTiles;
+            var keys = new HashSet<long>();
+            float pad = FaceFar + RagAmp * 1.5f;
+            foreach (var c in cliffs)
+                for (int i = 1; i < c.Points.Length; i++)
+                {
+                    var lo = Vector2.Min(c.Points[i - 1], c.Points[i]) - new Vector2(pad);
+                    var hi = Vector2.Max(c.Points[i - 1], c.Points[i]) + new Vector2(pad);
+                    for (int tz = (int)MathF.Floor(lo.Y / FaceCell / FaceTile); tz <= (int)MathF.Floor(hi.Y / FaceCell / FaceTile); tz++)
+                        for (int tx = (int)MathF.Floor(lo.X / FaceCell / FaceTile); tx <= (int)MathF.Floor(hi.X / FaceCell / FaceTile); tx++)
+                            keys.Add(((long)tx << 32) | (uint)tz);
+                }
+            var built = new System.Collections.Concurrent.ConcurrentDictionary<long, byte[]>();
+            Parallel.ForEach(keys, k =>
+            {
+                int tx = (int)(k >> 32), tz = (int)(uint)k;
+                var t = new byte[FaceTile * FaceTile];
+                for (int z = 0; z < FaceTile; z++)
+                    for (int x = 0; x < FaceTile; x++)
+                    {
+                        var p = new Vector2(((tx * FaceTile + x) + 0.5f) * FaceCell, ((tz * FaceTile + z) + 0.5f) * FaceCell);
+                        t[z * FaceTile + x] = (byte)MathF.Min(255, MathF.Round(FaceGapExact(p) * 10));
+                    }
+                built[k] = t;
+            });
+            return faceTiles = new Dictionary<long, byte[]>(built);
+        }
+    }
+
+    /// How far p is from a cliff's face where it bars the way (read at the ragged point), up to FaceFar.
+    float FaceGapExact(Vector2 p)
+    {
         var q = Ragged(p.X, p.Y);
+        float gap = FaceFar;
         foreach (var c in cliffs)
         {
             if (q.X < c.Min.X || q.Y < c.Min.Y || q.X > c.Max.X || q.Y > c.Max.Y) continue;
             var (d, _, along) = Nearest(q, c);
-            if (d < half && Taper(c, along) >= BarredFrom) return true;
+            if (d < gap && Taper(c, along) >= BarredFrom) gap = d;
         }
-        return false;
+        return gap;
     }
 
     /// Does the straight way a-b climb a cliff? (Sampled every 2 units against a band 6 wide.)
     public bool CrossesCliff(Vector2 a, Vector2 b)
     {
         if (cliffs.Count == 0) return false;
+        // Most ways are nowhere near a cliff: a box test first.
+        var lo = Vector2.Min(a, b) - new Vector2(FaceFar + RagAmp * 1.5f);
+        var hi = Vector2.Max(a, b) + new Vector2(FaceFar + RagAmp * 1.5f);
+        bool near = false;
+        foreach (var c in cliffs)
+            if (hi.X >= c.Min.X + c.Reach && lo.X <= c.Max.X - c.Reach && hi.Y >= c.Min.Y + c.Reach && lo.Y <= c.Max.Y - c.Reach) { near = true; break; }
+        if (!near) return false;
         int k = Math.Max(1, (int)MathF.Ceiling(Vector2.Distance(a, b) / 2));
         for (int i = 0; i <= k; i++) if (OnCliff(Vector2.Lerp(a, b, i / (float)k), 3)) return true;
         return false;

@@ -14,8 +14,19 @@ public partial class Campaign
     public static string WildnessWord(float w) => w >= 75 ? "OVERRUN" : w >= 50 ? "WILD" : w >= 25 ? "UNQUIET" : "TAMED";
 
     /// True when a stage-2 spider brood has webbed this province's roads (WI2: slows travel and stops caravans).
-    public bool IsProvinceWebbed(int provinceId) =>
-        S.Parties.Any(p => !p.Down && p.Lair && p.Breed == "spider" && p.Stage >= 2 && Map.ProvinceAt(p.Pos).Id == provinceId);
+    public bool IsProvinceWebbed(int provinceId)
+    {
+        // Asked for every party's speed every step: the webbed provinces are found once an hour of game time, not by a sweep
+        // of every party each time (that was 27% of a day on the 4x map, WS7).
+        if (webbed == null || webbedAt != S.Hours)
+        {
+            webbed = S.Parties.Where(p => !p.Down && p.Lair && p.Breed == "spider" && p.Stage >= 2).Select(p => Map.ProvinceAt(p.Pos).Id).ToHashSet();
+            webbedAt = S.Hours;
+        }
+        return webbed.Contains(provinceId);
+    }
+    HashSet<int>? webbed;
+    double webbedAt = -1;
 
     /// True when a troll has claimed a river crossing in this province (WI2: closes the road to caravans until slain).
     public bool HasBridgeTroll(int provinceId) =>
@@ -170,6 +181,7 @@ public partial class Campaign
     /// Daily (WI2): lairs left alone grow up through stages; trolls can claim river crossings; barrows raise undead raiders.
     internal void LairsGrowDaily()
     {
+        webbed = null; // a nest may grow its webs today: look again
         int gobCap = Scaled(B.HoldoutMaxMen), spCap = Scaled(B.NestMaxMen);
         foreach (var lair in Lairs.ToList())
         {

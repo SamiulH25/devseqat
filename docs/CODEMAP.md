@@ -676,14 +676,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Wells.cs (113 lines)
 - **Campaign** (class, L10): WellTradition:13, WellBase:22, TideWord:62, CannotMarkWell:68, MarkWell:80, TideNote:89, TideEdge:97
 
-## Campaign/Wild.cs (357 lines)
-- **Campaign** (class, L7): WildnessOf:9, WildnessAt:12, WildnessWord:14, IsProvinceWebbed:17, HasBridgeTroll:21, RoadClosedByWild:25, RecruitWildFactor:29, LairStageWord:33, WildnessDaily:42, SeasonalWildDaily:91, OnMonsterCleared:119, LairsGrowDaily:171, RaiseBarrow:238, SpawnWildRosterDaily:259, MonsterStake:320, QuarryHint:335, TrackQuarry:351, KnowsQuarry:353, HuntEdge:356
+## Campaign/Wild.cs (369 lines)
+- **Campaign** (class, L7): WildnessOf:9, WildnessAt:12, WildnessWord:14, IsProvinceWebbed:17, HasBridgeTroll:32, RoadClosedByWild:36, RecruitWildFactor:40, LairStageWord:44, WildnessDaily:53, SeasonalWildDaily:102, OnMonsterCleared:130, LairsGrowDaily:182, RaiseBarrow:250, SpawnWildRosterDaily:271, MonsterStake:332, QuarryHint:347, TrackQuarry:363, KnowsQuarry:365, HuntEdge:368
 
 ## Campaign/Workings.cs (55 lines)
 - **Campaign** (class, L9): CannotBlight:18, Blight:26, Calmed:38, WorkingsWeekly:41
 
-## Campaign/WorldDesigned.cs (468 lines)
-- **WorldMap** (class, L9): Drawn:14, Drawn:15, Cell:43, InSea:51, Landness:54, DesignProvinceAt:64, FromDesign:67, BuildGrid:144, OntoLand:201, InExtent:211, Blur:217, LinkNeighbours:245, PlanAroundSea:279, PlanBySea:282, PlanOver:285, OverLand:356, DesignRoads:366, DesignRiver:411, CliffCalm:431, Meander:448
+## Campaign/WorldDesigned.cs (480 lines)
+- **WorldMap** (class, L9): Drawn:14, Drawn:15, Cell:43, InSea:51, Landness:54, DesignProvinceAt:64, FromDesign:67, BuildGrid:144, OntoLand:201, InExtent:211, Blur:217, LinkNeighbours:245, PlanAroundSea:281, PlanBySea:284, PlanOver:288, OverLand:368, DesignRoads:378, DesignRiver:423, CliffCalm:443, Meander:460
 
 ## Campaign/WorldDress.cs (90 lines)
 - **WorldMap** (class, L10): Cover:14, Dress:37
@@ -694,12 +694,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/WorldLand.cs (136 lines)
 - **WorldMap** (class, L8): LayFields:12, BitCount:71, FieldClear:74, InField:105, GrowStands:110
 
-## Campaign/WorldMap.cs (721 lines)
-- **WorldMap** (class, L8): InLand:66, WorldMap:78, readonly:90, Generate:94, Climate:211, RaiseRidges:225, AddRidge:256, RidgeDist:268, RidgeHeight:271, OnRidge:289, HomeOf:292, ReachOf:294, GrowRealms:299, SiteKindsFor:341, PlaceSites:345, Cross:370, RiverDist:379, RiverScan:380, ProvinceAt:384, ProvinceScan:387, RoadDist:400, NearRoad:402, RoadScan:404, SpeedFactor:417, BattleGround:422, Height:443, LandHeight:456, DesignedHeight:480, RimAt:505, Ridged:507, Tint:510, OwnColour:554, NearSea:557, KindTint:565, BuildTerrain:580
-- **PlaceNamer** (class, L695): PlaceNamer:702, Pool:704, Next:710
+## Campaign/WorldMap.cs (729 lines)
+- **WorldMap** (class, L8): InLand:74, WorldMap:86, readonly:98, Generate:102, Climate:219, RaiseRidges:233, AddRidge:264, RidgeDist:276, RidgeHeight:279, OnRidge:297, HomeOf:300, ReachOf:302, GrowRealms:307, SiteKindsFor:349, PlaceSites:353, Cross:378, RiverDist:387, RiverScan:388, ProvinceAt:392, ProvinceScan:395, RoadDist:408, NearRoad:410, RoadScan:412, SpeedFactor:425, BattleGround:430, Height:451, LandHeight:464, DesignedHeight:488, RimAt:513, Ridged:515, Tint:518, OwnColour:562, NearSea:565, KindTint:573, BuildTerrain:588
+- **PlaceNamer** (class, L703): PlaceNamer:710, Pool:712, Next:718
 
-## Campaign/WorldRelief.cs (179 lines)
-- **WorldMap** (class, L10): CliffLine:13, UplandArea:15, CliffReach:23, SkirtOf:25, DesignRelief:27, Bound:43, Ragged:52, Unit01:57, Relief:60, CliffLift:87, Taper:97, Climb:105, OnCliff:119, CrossesCliff:133, InsideDistance:165
+## Campaign/WorldRelief.cs (244 lines)
+- **WorldMap** (class, L10): CliffLine:13, UplandArea:15, CliffReach:23, SkirtOf:25, DesignRelief:27, Bound:43, Ragged:52, Unit01:57, Relief:60, CliffLift:87, Taper:97, Climb:105, OnCliff:119, FaceGap:133, BuildFaces:143, FaceGapExact:177, CrossesCliff:191, InsideDistance:230
 
 ## Campaign/WorldRoads.cs (264 lines)
 - **WorldMap** (class, L9): InLake:19, PlaceLakes:26, LayRoads:55

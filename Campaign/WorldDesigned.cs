@@ -66,7 +66,7 @@ public sealed partial class WorldMap
     /// The map of layout 5: everything from the design, then the same finishing as layout 4 (roads routed over the land).
     static WorldMap FromDesign(WorldDesign d, int realms, int layout = DesignLayout)
     {
-        var m = new WorldMap(DesignSeed) { ExtentUsed = d.Extent * DesignScale, Layout = layout, DesignCell = 2 * MathF.Sqrt(MathF.Max(1, d.Warp)) };
+        var m = new WorldMap(DesignSeed) { ExtentUsed = d.Extent * DesignScale, Layout = layout, DesignCell = 2 * MathF.Sqrt(MathF.Max(1, d.Warp)), SeaCell = 6 * MathF.Sqrt(MathF.Max(1, d.Warp)), drawnWarp = MathF.Max(1, d.Warp) };
         var rng = new Random(DesignSeed);
         var namer = new PlaceNamer(Names.Get(), DesignSeed);
         foreach (var s in d.Settlements) namer.Used.Add(s.Name); // invented province names never repeat a settlement's
@@ -263,7 +263,9 @@ public sealed partial class WorldMap
     }
 
     /// Does the straight line from a to b keep to the land? (Always on a generated map.)
-    const float SeaCell = 6;
+    /// The AI's land and sea grid (6 units on layout 5; on the 4x draft 6 x the square root of the warp, 12, or a way round
+    /// searched 1.2 million cells: WS7).
+    float SeaCell = 6;
     int seaN;
     float seaOrigin;
     bool[]? seaOpen;
@@ -281,6 +283,7 @@ public sealed partial class WorldMap
     /// The same search over the other half of the grid: a ship's way through open water, no longer than `reach` (WorldSea.cs).
     List<Vector2> PlanBySea(Vector2 from, Vector2 to, float reach) => PlanOver(ref waterOpen, true, from, to, reach / SeaCell);
     bool[]? waterOpen;
+    bool[]? cliffNear;
 
     List<Vector2> PlanOver(ref bool[]? grid, bool water, Vector2 from, Vector2 to, float limit = float.MaxValue)
     {
@@ -292,6 +295,14 @@ public sealed partial class WorldMap
                 seaN = (int)MathF.Ceiling(2 * ExtentUsed / SeaCell) + 1;
                 seaCostOf = new float[seaN * seaN]; seaPrev = new int[seaN * seaN]; seaSeen = new int[seaN * seaN];
             }
+            if (!water && cliffs.Count > 0 && cliffNear == null)
+            {
+                // Cells by a cliff's face, where a step to a neighbour is checked against the face itself.
+                cliffNear = new bool[seaN * seaN];
+                for (int z = 0; z < seaN; z++)
+                    for (int x = 0; x < seaN; x++)
+                        cliffNear[z * seaN + x] = OnCliff(new Vector2(seaOrigin + x * SeaCell, seaOrigin + z * SeaCell), SeaCell * 1.5f);
+            }
             if (grid == null)
             {
                 grid = new bool[seaN * seaN];
@@ -299,7 +310,7 @@ public sealed partial class WorldMap
                     for (int x = 0; x < seaN; x++)
                     {
                         var p = new Vector2(seaOrigin + x * SeaCell, seaOrigin + z * SeaCell);
-                        grid[z * seaN + x] = water ? Landness(p) < Afloat : !InSea(p) && !OnCliff(p, 4.5f); // a cliff's face is shut too (WS3)
+                        grid[z * seaN + x] = water ? Landness(p) < Afloat : !InSea(p) && !OnCliff(p, SeaCell * 0.75f); // a cliff's face is shut too (WS3), in a band wide enough for the grid
                     }
             }
             var seaOpen = grid;
@@ -324,6 +335,7 @@ public sealed partial class WorldMap
                         int x = cx + dx, z = cz + dz, id = z * n + x;
                         if ((dx | dz) == 0 || x < 0 || z < 0 || x >= n || z >= n || !seaOpen[id] && id != end) continue;
                         if (dx != 0 && dz != 0 && !seaOpen[cz * n + x] && !seaOpen[z * n + cx]) continue; // no slipping between two sea cells
+                        if (!water && cliffs.Count > 0 && (cliffNear![c] || cliffNear[id]) && CrossesCliff(At(c), At(id))) continue; // nor past a cliff's end (WS3)
                         float nc = cc + (dx != 0 && dz != 0 ? 1.4142f : 1);
                         if (seaSeen[id] == seaStamp && nc >= seaCostOf[id]) continue;
                         float est = nc + Vector2.Distance(At(id), goal) / SeaCell;

@@ -28,12 +28,12 @@ public sealed partial class Campaign
     string[]? names;
     /// Party and event caps for the balance numbers scaled by how much world there is (a bigger map raises more lords and
     /// brigands). The numbers in Data/campaign.json are quoted against the original 26-province map.
-    float ProvinceScale => Map.PartyScale;
+    float ProvinceScale => Map.RoamScale;
     /// Lords spread thinner than brigands: a realm with four times the ground raises about twice the armies, not four
     /// times (village recruits are the bottleneck, and a crowd of lords starves all of them).
     /// LordsPerFaction is quoted for the three realms of the original map: more realms share the same land, so each raises
     /// fewer lords and the world's total follows the size of the map, not the number of realms (docs/archive/WORLD.md W0).
-    public int LordsWanted => (int)MathF.Round(B.LordsPerFaction * ProvinceScale * LegacyRealms / Math.Max(1, S.DataRealms));
+    public int LordsWanted => (int)MathF.Round(B.LordsPerFaction * Map.LordScale * LegacyRealms / Math.Max(1, S.DataRealms));
     public const int LegacyRealms = 3;
     /// A realm's share of the lords. On the drawn map (docs/archive/WORLDMAP.md WM4) realms are as unequal as they were drawn (the
     /// Order holds six seats, the Khaganate twenty-seven), so the same world total is shared by the towns and castles each
