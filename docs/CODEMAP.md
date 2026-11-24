@@ -341,8 +341,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Camp.cs (48 lines)
 - **Campaign** (class, L4): MoodOfCamp:10, CampFires:18, static:23, StageCamp:28
 
-## Campaign/Campaign.cs (624 lines)
-- **Campaign** (class, L7): LordsWantedOf:41, Campaign:50, New:81, Log:158, Classify:165, LogYours:169, LogAll:171, PartyById:173, SettlementById:174, SideOf:178, Outlaw:182, Hostile:184, WarBetween:193, FactionsAtWar:194, AtWarWithAnyone:195, Score:198, Refuses:209, InSight:214, SettlementAt:216, InTown:227, Tick:232, Speed:261, PaceOf:265, BaseSpeed:269, Move:287, SeaRoute:339, Encounters:354, Clash:382, Edge:419, EdgeOfKind:420, Hourly:422, Daily:448, Weekly:553, Desert:614
+## Campaign/Campaign.cs (625 lines)
+- **Campaign** (class, L7): LordsWantedOf:41, Campaign:50, New:81, Log:158, Classify:165, LogYours:169, LogAll:171, PartyById:173, SettlementById:174, SideOf:178, Outlaw:182, Hostile:184, WarBetween:193, FactionsAtWar:194, AtWarWithAnyone:195, Score:198, Refuses:209, InSight:214, SettlementAt:216, InTown:227, Tick:232, Speed:261, PaceOf:265, BaseSpeed:269, Move:287, SeaRoute:339, Encounters:354, Clash:382, Edge:419, EdgeOfKind:420, Hourly:422, Daily:448, Weekly:554, Desert:615
 
 ## Campaign/CampaignActions.cs (196 lines)
 - **Campaign** (class, L6): MoveTo:11, Chase:12, GoTo:13, RecruitLevies:18, RecruitLevies:21, LevyPrice:66, MercenaryPrice:68, Hire:74, BuyHorses:92, RaiseHounds:107, Merge:131, Split:134, Disband:159, MoveUp:161, SignContract:169, Rest:189
@@ -708,8 +708,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Bind** (struct, L39): ToString:41, Parse:67
 - **Controls** (class, L100): Controls:162, SaveUser:170, ResetDefaults:179, AnyPressed:187, FindFile:195, Load:205, WriteDefaults:232, Update:241, IsDown:247, Down:257, WasDown:258, Pressed:259, Released:260, Axis:261, First:264, Name:267
 
-## CreatorScreen.cs (889 lines)
-- **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:68, Show:76, U:87, RandomName:91, RandomCompany:99, Randomise:102, RandomFace:115, Go:124, Refresh:136, Keys:158, Begin:183, Draw:192, DrawScreen:205, Likeness:248, Ledger:323, Tip:332, Card:347, LedgerBody:371, Homeland:473, Choices:575, Detail:618, RoadKit:673, InTheField:701, BoonCard:718, Face:742, Stepper:797, Unroll:812, Field:815, Swatches:829, Oath:845, Footer:881
+## CreatorScreen.cs (891 lines)
+- **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:68, Show:76, U:87, RandomName:91, RandomCompany:99, Randomise:102, RandomFace:115, Go:124, Refresh:136, Keys:158, Begin:183, Draw:192, DrawScreen:205, Likeness:248, Ledger:323, Tip:332, Card:347, LedgerBody:371, Homeland:474, Choices:576, Detail:619, RoadKit:674, InTheField:702, BoonCard:719, Face:743, Stepper:798, Unroll:813, Field:816, Swatches:830, Oath:846, Footer:883
 
 ## CreatorStage.cs (261 lines)
 - **CreatorStage** (class, L10): CreatorStage:45, React:56, Render:59, Build:147, Perform:168, readonly:195, Drill:204, Shoot:217, Salute:229, Camera:240
@@ -952,10 +952,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **StereoHall** (class, L232): StereoHall:246, ProcessInPlace:259
 - **MusicLibrary** (class, L312): Get:363, Has:364, Validate:367
 
-## Origins.cs (226 lines)
+## Origins.cs (229 lines)
 - **OriginDef** (class, L6)
 - **CaptainMaking** (class, L17)
-- **Origins** (class, L33): Find:59, Chosen:60, static:63, Num:65, Sum:68, BoonSpan:80, Free:82, Age:83, Perks:84, static:88, Shape:102, Wear:133, Preview:146, Describe:156, RoadGives:182, Validate:197
+- **Origins** (class, L33): Find:59, Chosen:60, static:63, Num:65, Sum:68, BoonSpan:80, Free:82, Age:83, Perks:84, static:88, Shape:102, Wear:133, Preview:146, Describe:156, RoadGives:185, Validate:200
 
 ## Overflow.cs (58 lines)
 - **Overflow** (class, L8): Frame:21, Box:24, Text:27, Flush:41
@@ -1172,7 +1172,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/OfficerTests.cs (214 lines)
 - **SelfTest** (class, L6): OfficerSkill:24, AiOnPosts:112, SkirmishersRead:143, PostsInDeployment:164, CompanySergeants:182
 
-## Tests/OriginTests.cs (111 lines)
+## Tests/OriginTests.cs (113 lines)
 - **SelfTest** (class, L4): CharacterCreator:8
 
 ## Tests/SergeantTests.cs (98 lines)

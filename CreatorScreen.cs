@@ -302,7 +302,7 @@ sealed class CreatorScreen
         y = Math.Max(y, medal.Bottom + U(6));
         int cx = inner.X;
         cx += ui.Chip(cx, y, $"AGE {Origins.Age(M)}", Style.Dim, "clock") + U(4);
-        ui.Chip(cx, y, Origins.Free(M) ? "FREE COMPANY" : $"FOR THE {def.Name.ToUpperInvariant()}", Origins.Free(M) ? Style.Warn : colours.Ui, "flag");
+        ui.Chip(cx, y, Origins.Free(M) ? "FREE COMPANY" : $"BORN OF {def.Name.ToUpperInvariant()}", Origins.Free(M) ? Style.Warn : colours.Ui, "flag");
         y += U(18);
         cx = inner.X;
         cx += ui.Chip(cx, y, $"{Kit.N((int)Gold)} CROWNS", Kit.Gilt, "coin") + U(4);
@@ -315,7 +315,7 @@ sealed class CreatorScreen
 
     float Gold => MathF.Max(0, Balance.Get().StartGold + Origins.Sum(M, "gold"));
     float Renown => MathF.Max(0, Balance.Get().StartRenown + Origins.Sum(M, "renown"));
-    int Men => (int)MathF.Round((24 + 15 + Origins.Men(M).Sum(x => x.Men)) * Balance.Get().ArmyScale);
+    int Men => (int)MathF.Round(Origins.Men(M).Where(x => x.Troop != "levies").Sum(x => x.Men) * Balance.Get().ArmyScale);
 
     // ---------- the ledger ----------
 
@@ -444,7 +444,10 @@ sealed class CreatorScreen
         if (y + U(40) > inner.Bottom) return;
         Section();
         ui.Text("COMPANY", inner.X, y, Kit.Gilt, 1); y += U(14);
-        foreach (var (troop, men) in Muster())
+        var muster = Muster();
+        if (muster.Count == 0)
+            ui.TextFit("NONE YET — RECRUIT IN YOUR HOMELAND", inner.X, y, inner.Width, Style.Dim, 1);
+        foreach (var (troop, men) in muster)
         {
             if (y + U(10) > inner.Bottom) break;
             ui.TextR($"{men}", inner.X + U(26), y, Style.Text, 1);
@@ -454,17 +457,15 @@ sealed class CreatorScreen
         }
     }
 
-    /// The men you start with, by troop: the homeland's own and the levies every captain has, then those your past brings.
+    /// The men you start with, by troop: only the followers your birth and past bring (PF1: no default levies).
     List<(string Troop, int Men)> Muster()
     {
         float scale = Balance.Get().ArmyScale;
-        var list = new List<(string Troop, int Men)> { (Factions.Root(Factions.CultureOf(M.Realm)), 24), ("levies", 15) };
-        foreach (var (troop, men) in Origins.Men(M))
-        {
-            int i = list.FindIndex(x => x.Troop == troop);
-            if (i >= 0) list[i] = (troop, list[i].Men + men); else list.Add((troop, men));
-        }
-        return list.GroupBy(x => x.Troop).Select(g => (g.Key, (int)MathF.Round(g.Sum(x => x.Men) * scale))).ToList();
+        return Origins.Men(M).Where(x => x.Troop != "levies")
+            .GroupBy(x => x.Troop)
+            .Select(g => (g.Key, (int)MathF.Round(g.Sum(x => x.Men) * scale)))
+            .Where(x => x.Item2 > 0)
+            .ToList();
     }
 
     // ---------- the steps ----------
@@ -538,7 +539,7 @@ sealed class CreatorScreen
             { ui.TextC(line, pane.Center.X, py, Kit.Parchment * 0.8f, 1); py += U(10); }
         }
         py += U(8);
-        foreach (var line in ui.Wrap("YOUR FIRST COMPANY IS RAISED FROM ITS PEOPLE, AND ITS LORDS KNOW YOUR NAME.", pane.Width - U(20)))
+        foreach (var line in ui.Wrap("YOU START INDEPENDENT AT ITS CAPITAL; ITS LORDS AND VILLAGES FAVOUR YOU.", pane.Width - U(20)))
         { ui.TextC(line, pane.Center.X, py, Style.Dim, 1); py += U(10); }
         py += U(8);
         // Its soldiers at their prime: foot, bow and horse.
@@ -848,9 +849,10 @@ sealed class CreatorScreen
         var birth = Origins.Find(M.Birth)!; var past = Origins.Find(M.Past)!; var road = Origins.Find(M.Road)!;
         string name = M.Name.Trim() == "" ? "A CAPTAIN WITH NO NAME" : M.Name.Trim();
         string company = M.Company.Trim() == "" ? "MY COMPANY" : M.Company.Trim();
-        string service = Origins.Free(M) ? "UNDER NO KING'S COLOURS, ONLY MY OWN" : $"IN THE PAY OF THE {def.Name.ToUpperInvariant()}";
+        string service = Origins.Free(M) ? "UNDER NO KING'S COLOURS, ONLY MY OWN" : $"BORN OF THE {def.Name.ToUpperInvariant()}, UNDER MY OWN BANNER";
+        string lead = Men > 0 ? $"I LEAD {company}, {Men} MEN, {service}." : $"I RAISE {company}, {service}.";
         string text = $"I, {name}, {birth.Name.ToUpperInvariant()} AND ONCE A {past.Name.ToUpperInvariant()}, TAKE UP THE CAPTAIN'S STAFF AT {Origins.Age(M)} YEARS. " +
-            $"I FIGHT WITH {road.Name.ToUpperInvariant()}. I LEAD {company}, {Men} MEN, {service}. LET THE ROLL OF THE COMPANY BEGIN WITH ME.";
+            $"I FIGHT WITH {road.Name.ToUpperInvariant()}. {lead} LET THE ROLL OF THE COMPANY BEGIN WITH ME.";
         var parch = new Rectangle(r.X + U(24), r.Y + U(6), r.Width - U(48), r.Height - U(60));
         int shown = ui.Scroll(parch, Unroll(stepAt, 1.1f));
         bool Seen(int y, int h) => y + h <= shown;

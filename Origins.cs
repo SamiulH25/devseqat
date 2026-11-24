@@ -160,6 +160,8 @@ public static class Origins
         if (Roads.Contains(o)) lines.AddRange(RoadGives(o.Id));
         if (o.Perk != "" && Skills.Perk(o.Perk) is PerkDef p) lines.Add($"PERK: {p.Name.ToUpperInvariant()}, {p.Text}");
         foreach (var (verb, a) in o.Effects.Select(Parse))
+        {
+            if (verb == "men" && a[0] == "levies") continue; // creator starts never spawn levies (Making.cs)
             lines.Add(verb switch
             {
                 "skill" => $"{(Skills.All.FirstOrDefault(s => s.Id == a[0])?.Name ?? a[0]).ToUpperInvariant()} {Signed(Num(a[1]))}",
@@ -174,6 +176,7 @@ public static class Origins
                 "buff" => $"BOON: {(Effects.Has(a[0]) ? Effects.Get(a[0]).Name : a[0]).ToUpperInvariant()} ({BoonSpan(Num(a[1]))})",
                 _ => fx(verb),
             });
+        }
         return lines.Distinct().ToList();
         static string fx(string v) => v.ToUpperInvariant();
     }

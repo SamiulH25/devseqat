@@ -58,6 +58,8 @@ public static partial class SelfTest
         Check(dc.Player.Companies.Count == 1 && dc.Player.Companies[0].Stacks.Any(s => s.Troop == "spearrunners" && s.Men == dc.Scaled(6)), "deserter spawns with only its special spearrunners and no levies");
         var noLevy = Campaign.New(78, 0, new CaptainMaking { Birth = "yeoman", Past = "drillmaster", Road = "sword" });
         Check(noLevy.Player.Men == 0 && !noLevy.Player.Companies.Any(co => co.Stacks.Any(s => s.Troop == "levies")), "creator start never spawns levies even from levy origins");
+        noLevy.Tick(26);
+        Check(noLevy.Player.Men == 0, "lone-captain start does not auto-spawn 30 levies on day 1 midnight");
         Check(dc.S.Characters.Where(l => l.Kind == "lord" && !l.Dead && l.Faction == 1).All(l => l.Opinion.GetValueOrDefault(dc.S.CaptainChar) <= -10), "your homeland's lords remember");
         Check(dc.S.Log.Any(e => e.Text.Contains("own banner")), "the log says you fly your own banner");
         Check(dc.Lasting("camp_born") && dc.Lasting("run_before"), "lasting boons last the whole campaign");

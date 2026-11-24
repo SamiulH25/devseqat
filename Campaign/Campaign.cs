@@ -492,7 +492,8 @@ public sealed partial class Campaign
         EatDaily();
         // A company bled out away from battle (rearguards, desertion, hunger) does not leave you with nothing to command:
         // a handful of loyal men gather at the nearest friendly town, as they do after a lost battle.
-        if (Player.Companies.Count == 0 && !S.GameOver)
+        // Only fires after you have actually fought or lost men to desertion — never on a fresh lone-captain start (PF1).
+        if (Player.Companies.Count == 0 && !S.GameOver && (S.Tally.GetValueOrDefault("won") + S.Tally.GetValueOrDefault("lost") > 0 || S.UnpaidWeeks > 0))
         {
             var refuge = S.Settlements.Where(t => t.Kind == SettlementKind.Town && !Refuses(t)).OrderBy(t => Vector2.Distance(t.Pos, Player.Pos)).FirstOrDefault();
             if (refuge != null) { Player.Pos = refuge.Pos + new Vector2(5, 0); Player.Moving = false; }
