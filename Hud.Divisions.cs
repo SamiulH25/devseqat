@@ -67,7 +67,10 @@ sealed partial class Hud
     void DivisionCards()
     {
         if (divCards.Count == 0) return;
-        Text($"OFFICERS ({Ctl.Name(Act.NextDivision)})", divCards[0].R.X, divCards[0].R.Y - U(12), Gold * 0.9f, 1);
+        var oh = new Rectangle(divCards[0].R.X, divCards[0].R.Y - U(15), divCards[0].R.Width, U(13));
+        Rect(oh, new Color(12, 14, 20) * 0.78f);
+        Frame(oh, Gold * 0.4f, U(1));
+        Text($"OFFICERS ({Ctl.Name(Act.NextDivision)})", oh.X + U(5), oh.Y + U(3), Gold, 1);
         foreach (var (r, d) in divCards)
         {
             bool sel = d == Div, hover = r.Contains(Mouse);
@@ -152,14 +155,15 @@ sealed partial class Hud
             bool hover = r.Contains(Mouse), on = isPost ? g.Post == Div.Post : g == Div.Goal;
             bool horn = HornMode && mark != null && (isPost ? mark.Post == g.Post && mark.Post != Div.Post : mark == g);
             if (hover) hovered = (g, isPost);
-            Rect(r, hover ? Gold * 0.35f : on ? Gold * 0.15f : Color.White * 0.06f);
-            Frame(r, hover || on ? Gold : Edge, U(1));
-            Text(isPost ? Goal.Label(g.Post) : Goal.Label(g.Stance), r.X + U(6), r.Y + U(7), isPost ? Color.White * 0.8f : Color.White, 1);
+            Rect(r, hover ? Gold * 0.35f : horn ? Gold * 0.22f : on ? Color.White * 0.12f : Color.White * 0.05f);
+            Frame(r, hover || horn ? Gold : on ? Color.White * 0.65f : Edge, U(1));
+            Text(isPost ? Goal.Label(g.Post) : Goal.Label(g.Stance), r.X + U(6), r.Y + U(7), isPost ? Color.White * 0.85f : Color.White, 1);
             string key = isPost ? "" : $"{Array.IndexOf(Goal.StancesOf(g.Post), g.Stance) + 1}"; // its number key
             if (horn) key = (key + " HORN").Trim(); // what the horn will order
-            if (key != "") TextR(key, r.Right - U(5), r.Y + U(7), Gold * 0.8f, 1);
+            else if (HornMode && on && !isPost) key = (key + " NOW").Trim();
+            if (key != "") TextR(key, r.Right - U(5), r.Y + U(7), horn ? Gold : Style.Text * 0.8f, 1);
         }
-        Text(HornMode ? $"KEPT UNTIL THE HORN ({Ctl.Name(Act.Horn)})" : "BACK / CLICK CARD: ORDER SQUADS", area.X + U(6), area.Bottom - U(13), HornMode ? Gold : Dim, 1);
+        Text(HornMode ? $"KEPT UNTIL THE HORN ({Ctl.Name(Act.Horn)})" : "BACK / CLICK CARD: ORDER SQUADS", area.X + U(6), area.Bottom - U(15), HornMode ? Gold : Dim, 1);
         if (hovered is var (hg, hp))
         {
             string tip = hp ? PostExplain(hg.Post) : StanceExplain(hg.Stance);

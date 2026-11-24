@@ -232,7 +232,7 @@ partial class MapScreen
     void FieldScene(Party e, TownLook l, TownColours c, TerrainParams g, FieldLayout layout, float t)
     {
         EnsureBackdrop(e, l, c, g, layout);
-        int s0 = ui.S;
+        float s0 = ui.S;
         ui.S = 1;
         try { ui.Sb.Draw(encBack!, new Rectangle(0, 0, encBack!.Width * EncPixel, encBack.Height * EncPixel), Color.White); }
         finally { ui.S = s0; }
@@ -275,9 +275,9 @@ partial class MapScreen
         {
             var p = EP(b.Back.X, b.Back.Y);
             float pm = st.PerMetre(b.Back.Y);
-            int top = (int)(p.Y - (b.Men.Any(m => m.Mounted) ? 4.6f : 3.7f) * pm), bw = Math.Max(ui.U(5), (int)(0.7f * pm)) / ui.S * ui.S;
+            int ps = Math.Max(1, (int)ui.S), top = (int)(p.Y - (b.Men.Any(m => m.Mounted) ? 4.6f : 3.7f) * pm), bw = Math.Max(ui.U(5), (int)(0.7f * pm)) / ps * ps;
             var pole = l.Night ? new Color(44, 32, 28) : new Color(92, 66, 44);
-            ui.Rect(new Rectangle((int)p.X, top, Math.Max(ui.U(1), (int)(0.07f * pm) / ui.S * ui.S), (int)p.Y - top), pole);
+            ui.Rect(new Rectangle((int)p.X, top, Math.Max(ui.U(1), (int)(0.07f * pm) / ps * ps), (int)p.Y - top), pole);
             ui.Rect(new Rectangle((int)p.X - ui.U(1), top - ui.U(2), ui.U(3), ui.U(2)), l.Night ? Kit.Mul(Kit.Gilt, 0.5f) : Kit.Gilt); // the finial
             var hd = b.Side < 0 ? mineHd with { Charge = (Emblem)b.K.Banner } : theirHd;
             int dir = b.Side < 0 ? 1 : -1; // the cloth flies toward the foe
@@ -288,7 +288,7 @@ partial class MapScreen
     /// Sprites on the field by layout, all behind the companies: framing trees, a wood on one flank, a hamlet, hedges, stones.
     void FieldProps(Party e, TownLook l, TownColours c, TerrainParams g, FieldLayout layout, Random rng)
     {
-        int s0 = ui.S;
+        float s0 = ui.S;
         ui.S = EncPixel;
         try
         {

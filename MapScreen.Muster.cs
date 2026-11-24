@@ -84,7 +84,7 @@ partial class MapScreen
         if (c == null) { panel = PanelKind.Party; return; }
         var r = Modal(760, 560, c.Name.ToUpperInvariant());
         int x = r.X + ui.U(24), w = r.Width - ui.U(48), y = r.Y + ui.U(34);
-        int fit = Math.Max(10, w / (6 * ui.S));
+        int fit = Math.Max(10, (int)(w / (6 * ui.S)));
         string Cut(string s, int n) => s.Length > n ? s[..n] : s;
         string record = $"{Campaign.N(c.Battles, "BATTLE")}, {Campaign.N(c.Kills, "KILL")}.";
         ui.Text(c.Home != "" ? $"RAISED IN {c.Home.ToUpperInvariant()}. {record}" : record, x, y, Style.Dim, 1);
@@ -262,7 +262,8 @@ partial class MapScreen
         ui.Pips(new Rectangle(x, y, w, ui.U(7)), (cap.Renown - RenownStep(cap, at)) / MathF.Max(1, at - RenownStep(cap, at)), Kit.Gilt, 12);
         y += ui.U(10);
         string next = $"NEXT: {unlock} AT {at:0}";
-        ui.Text(next.Length > w / (6 * ui.S) ? next[..(w / (6 * ui.S))] : next, x, y, Style.Dim, 1);
+        int nfit = Math.Max(1, (int)(w / (6 * ui.S)));
+        ui.Text(next.Length > nfit ? next[..nfit] : next, x, y, Style.Dim, 1);
         y += ui.U(14);
         float rr = Math.Min(ui.U(21), w / 6f);
         int men = C.Player.Men, limit = Math.Max(1, Rules.MenLimit(cap));

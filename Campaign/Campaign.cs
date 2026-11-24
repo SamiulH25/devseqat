@@ -71,6 +71,7 @@ public sealed partial class Campaign
         if (Map.Settlements != S.Settlements && Map.Settlements.Count > S.Settlements.Count) Map.Settlements.RemoveRange(S.Settlements.Count, Map.Settlements.Count - S.Settlements.Count);
         // ...and so do the names (a save keeps the names it was made with, whatever the name lists say now).
         for (int i = 0; i < Math.Min(Map.Provinces.Count, S.Provinces.Count); i++) Map.Provinces[i].Name = S.Provinces[i].Name;
+        RestoreLegendMonuments();
     }
 
     // ---------- a new campaign ----------
@@ -151,6 +152,7 @@ public sealed partial class Campaign
         else if (making != null && making.Past is not ("deserter" or "outlaw")) c.Log($"You were born in the {c.FactionNames[realm]}. Its lords and villages favour you, though you march under your own banner.");
         else c.Log("You fly your own banner. No steward pays your upkeep: take contracts, loot and ransoms.");
         if (making == null) c.Log("Levies earn promotion in a few battles: men rise to tier II in camp, higher at a castle or town's training yard.");
+        c.SeedWorldLegends();
         return c;
     }
 
@@ -511,6 +513,7 @@ public sealed partial class Campaign
         CoreDaily();
         FlameDaily();
         CareerDaily();
+        SyncLegendVerses();
         BrigandKingsDaily();
         DayFellDaily(); // the year's day of a costly battle (C7)
         // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous;

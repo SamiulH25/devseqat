@@ -62,6 +62,10 @@ sealed partial class Hud
         if (B.Options.Duel) return;
         var (f, mine, foes) = Tally();
         int bw = U(200), x = (W - bw) / 2, y = U(12);
+        int lw = TW($"{mine}", 1) + U(12), rw = TW($"{foes}", 1) + U(12);
+        var cap = new Rectangle(x - lw, y - U(5), bw + lw + rw, U(15));
+        Rect(cap, new Color(12, 14, 20) * 0.72f);
+        Frame(cap, Kit.Gilt * 0.35f, U(1));
         Rect(new Rectangle(x - U(1), y - U(1), bw + U(2), U(7)), Color.Black * 0.6f);
         kit.TugBar(new Rectangle(x, y, bw, U(5)), f, SideArms(0).Ui, Foe);
         ShadowR($"{mine}", x - U(6), y - U(1), SideArms(0).Ui, 1);
@@ -153,7 +157,11 @@ sealed partial class Hud
             kit.Gauge(new Rectangle(r.X + U(3), r.Bottom - U(7), r.Width - U(6), U(4)), men / (float)Math.Max(1, began), on ? cloth : Dim);
         }
         string who = all ? "ORDERS GO TO ALL" : "ORDERS GO TO " + ListenWord() + "  (PRESS 0 FOR ALL)";
-        ShadowR(who, armChips[0].R.Right, armChips[0].R.Y - U(11), all ? Color.White * 0.6f : Gold, 1);
+        int ww = TW(who, 1) + U(12), wx = Math.Min(armChips[0].R.Right, W - U(10)) - ww, wy = armChips[0].R.Y - U(19);
+        var wp = new Rectangle(wx, wy, ww, U(13));
+        Rect(wp, new Color(12, 14, 20) * 0.74f);
+        Frame(wp, (all ? Color.White * 0.18f : Gold * 0.55f), U(1));
+        TextR(who, wp.Right - U(6), wy + U(3), all ? Style.Text * 0.85f : Gold, 1);
     }
 
     /// The order you just gave, over the arms, fading: you hear the horn and read the word.
@@ -163,10 +171,11 @@ sealed partial class Hud
         float age = Ironfield.Ui.Now - CombatPromptAt;
         if (age is < 0 or > 2.6f) return;
         float a = Math.Clamp((2.6f - age) / 0.6f, 0, 1);
-        int y = (armChips.Count > 0 ? armChips[0].R.Y : H - U(20)) - U(32);
+        int y = (armChips.Count > 0 ? armChips[0].R.Y : H - U(20)) - U(44);
         string s = kit.Fit(CombatPrompt, U(460), 2);
-        int o = Math.Max(1, U(1)), x = W - U(12) - TW(s, 2);
-        Text(s, x + o, y + o, Color.Black * (0.8f * a), 2);
+        int tw = TW(s, 2), o = Math.Max(1, U(1)), x = W - U(14) - tw;
+        Rect(new Rectangle(x - U(8), y - U(3), tw + U(16), U(20)), new Color(10, 12, 18) * (0.62f * a));
+        Text(s, x + o, y + o, Color.Black * (0.85f * a), 2);
         Text(s, x, y, Color.Lerp(Color.Transparent, Gold, a), 2);
     }
 
@@ -197,7 +206,11 @@ sealed partial class Hud
             Frame(r, on ? Gold : Color.White * 0.22f, U(on ? 2 : 1));
             kit.Icon(info.Icon, r.Center.X - U(10), r.Y + (on ? U(8) : U(5)), on ? Gold : Style.Text, 3);
             TextC(info.Short, r.Center.X, r.Bottom - U(12), on ? Gold : Color.White, 1);
-            if (info.Key is Act k && Ctl.Name(k) is { Length: <= 2 } kn) TextR(kn, r.Right - U(3), r.Y + U(3), Dim, 1);
+            if (info.Key is Act k && Ctl.Name(k) is { Length: <= 2 } kn)
+            {
+                if (on) { var kb = new Rectangle(r.Right - TW(kn, 1) - U(6), r.Y + U(2), TW(kn, 1) + U(4), U(10)); Rect(kb, Gold); TextR(kn, r.Right - U(4), r.Y + U(3), Kit.IronDark, 1); }
+                else TextR(kn, r.Right - U(3), r.Y + U(3), Style.Text * 0.85f, 1);
+            }
         }
         var mid = new Rectangle((int)c.X - U(74), (int)c.Y - U(30), U(148), U(44));
         Rect(mid, Color.Black * 0.6f);
@@ -257,15 +270,15 @@ sealed partial class Hud
             float a = -MathHelper.PiOver2 + i * MathHelper.TwoPi / ring.Length;
             bool on = i == WheelSector;
             var at = c + new Vector2(MathF.Cos(a) * 1.3f, MathF.Sin(a)) * U(on ? 122 : 114);
-            int tw = U(on ? 80 : 72), ts = U(on ? 54 : 48);
+            int tw = U(on ? 82 : 74), ts = U(on ? 58 : 52);
             var r = new Rectangle((int)at.X - tw / 2, (int)at.Y - ts / 2, tw, ts);
-            var lit = ready ? (on ? Gold : Style.Aura) : Dim;
-            Rect(new Rectangle(r.X + U(2), r.Y + U(3), r.Width, r.Height), Color.Black * 0.45f);
-            kit.VGrad(r, on && ready ? new Color(104, 84, 36) : new Color(38, 40, 46), on && ready ? new Color(54, 44, 20) : Kit.IronDark, 1);
-            Frame(r, on ? (ready ? Gold : Dim) : Color.White * (ready ? 0.22f : 0.1f), U(on ? 2 : 1));
-            kit.Icon(icon, r.Center.X - U(10), r.Y + U(4), lit, 3);
-            TextC(kit.Fit(name, r.Width - U(4)), r.Center.X, r.Bottom - U(20), ready ? (on ? Gold : Color.White) : Dim, 1);
-            TextC(kit.Fit(sub, r.Width - U(4)), r.Center.X, r.Bottom - U(10), Dim, 1);
+            var lit = ready ? (on ? Gold : Style.Aura) : Dim * 0.55f;
+            Rect(new Rectangle(r.X + U(2), r.Y + U(3), r.Width, r.Height), Color.Black * (ready ? 0.45f : 0.25f));
+            kit.VGrad(r, on && ready ? new Color(104, 84, 36) : ready ? new Color(40, 42, 48) : new Color(22, 24, 28) * 0.82f, on && ready ? new Color(54, 44, 20) : ready ? Kit.IronDark : new Color(14, 15, 18) * 0.82f, 1);
+            Frame(r, on ? (ready ? Gold : Dim * 0.6f) : Color.White * (ready ? 0.26f : 0.1f), U(on ? 2 : 1));
+            kit.Icon(icon, r.Center.X - U(10), r.Y + U(5), lit, 3);
+            TextC(kit.Fit(name, r.Width - U(6)), r.Center.X, r.Bottom - U(22), ready ? (on ? Gold : Color.White) : Dim * 0.62f, 1);
+            TextC(kit.Fit(sub, r.Width - U(6)), r.Center.X, r.Bottom - U(12), ready ? Style.Text * 0.8f : Dim * 0.5f, 1);
         }
         var mid = new Rectangle((int)c.X - U(74), (int)c.Y - U(30), U(148), U(44));
         Rect(mid, Color.Black * 0.6f);

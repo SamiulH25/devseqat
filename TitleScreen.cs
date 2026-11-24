@@ -27,6 +27,7 @@ sealed partial class TitleScreen
     public string CreatorCulture => creator.CurrentCulture;
     /// LOAD: every campaign and its saves.
     readonly SaveScreen saves = new();
+    readonly LegendScreen legends = new();
 
     public TitleScreen(ScreenHost host)
     {
@@ -41,7 +42,7 @@ sealed partial class TitleScreen
 
     float lastDt = 1 / 60f;
     // The menu: the chosen row follows the mouse when it moves and the arrow keys otherwise.
-    static readonly string[] Items = { "NEW CAMPAIGN", "CONTINUE", "LOAD", "QUICK BATTLE", "SETTINGS", "QUIT" };
+    static readonly string[] Items = { "NEW CAMPAIGN", "CONTINUE", "LOAD", "LEGENDS", "QUICK BATTLE", "SETTINGS", "QUIT" };
     int sel = -1, nav;
     bool go, mouseMoved;
 
@@ -53,8 +54,8 @@ sealed partial class TitleScreen
         if (ms.Position != pms.Position) mouseMoved = true;
         pkb = kb; kb = Keyboard.GetState();
         bool Hit(Keys k) => kb.IsKeyDown(k) && !pkb.IsKeyDown(k);
-        if (Hit(Keys.F3) && !saves.Open) host.OpenLab();
         if (saves.Open) { if (Hit(Keys.Escape)) saves.Close(); }
+        else if (legends.Open) { if (Hit(Keys.Escape)) legends.Close(); }
         else if (!creator.Open && !quickBattle.Open)
         {
             if (Hit(Keys.Down) || Hit(Keys.S)) nav++;
@@ -74,7 +75,6 @@ sealed partial class TitleScreen
         gd.Clear(Kit.Night);
         ui.Begin(gd.Viewport, ms.Position, click);
         click = false;
-        if (Settings.Current.UiScale == 0 && ui.S == 1 && ui.H >= 1000) ui.S = 2; // the title is a picture: draw it large, as the creator does
     }
 
     public void Draw()
@@ -110,7 +110,12 @@ sealed partial class TitleScreen
         if (host.TitleNote != "") ui.Text(host.TitleNote, x, (int)(ui.H * 0.43f) + Items.Length * U(35) + U(10), Style.Warn, 1);
         if (save != null) Company(save, x, ui.H - U(92));
         if (saves.Open) saves.Draw(ui, ms.ScrollWheelValue - pms.ScrollWheelValue, kb, pkb);
-        ui.TextR("W/S CHOOSE   ENTER SELECT   F2 GRAPHICS   F3 UI LAB", ui.W - U(24), ui.H - U(20), Style.Text * 0.7f, 1);
+        else if (legends.Open) legends.Draw(ui, ms.ScrollWheelValue - pms.ScrollWheelValue, kb, pkb);
+        string hints = "W/S CHOOSE   ENTER SELECT   F2 GRAPHICS";
+        int hw = ui.TW(hints, 1) + U(16);
+        var hPill = new Rectangle(ui.W - U(18) - hw, ui.H - U(24), hw, U(15));
+        ui.Rect(hPill, Color.Black * 0.52f); ui.Frame(hPill, Kit.Gilt * 0.25f, U(1));
+        ui.TextR(hints, ui.W - U(24), ui.H - U(20), Style.Text * 0.88f, 1);
         ui.End();
         if (titleShots != null) TitleShot();
     }
@@ -190,17 +195,19 @@ sealed partial class TitleScreen
     void Menu(int x, int y, SaveMeta? save)
     {
         bool hasSaves = Saves.Campaigns().Count > 0;
-        bool[] can = { true, host.CanContinue, hasSaves, true, true, true };
+        int legCount = LegendArchive.Load().Count;
+        bool[] can = { true, host.CanContinue, hasSaves, legCount > 0, true, true, true };
         if (sel < 0 || !can[sel]) sel = can[1] ? 1 : 0;
         for (; nav != 0; nav -= Math.Sign(nav))
             do sel = (sel + Math.Sign(nav) + Items.Length) % Items.Length; while (!can[sel]);
         int w = U(270), h = U(30), gap = U(5);
+        ui.HGrad(new Rectangle(x - U(22), y - U(8), w + U(96), Items.Length * (h + gap) - gap + U(16)), Color.Black * 0.54f, Color.Black * 0f, 4);
         ui.Rect(new Rectangle(x - U(10), y - U(2), Math.Max(1, U(1)), Items.Length * (h + gap) - gap + U(4)), Kit.Gilt * 0.35f);
         int hit = -1;
         for (int i = 0; i < Items.Length; i++)
         {
             var r = new Rectangle(x - U(10), y + i * (h + gap), w, h);
-            if (can[i] && mouseMoved && !saves.Open && ui.Hover(r)) sel = i;
+            if (can[i] && mouseMoved && !saves.Open && !legends.Open && ui.Hover(r)) sel = i;
             bool hot = sel == i;
             float a = Ui.Anim(0x7171 + i, hot ? 1 : 0, 16);
             Overflow.Box(r);
@@ -213,15 +220,16 @@ sealed partial class TitleScreen
                 for (int j = 0; j < 4; j++) // the pointer: a small gilt arrowhead
                     ui.Rect(new Rectangle(r.X + U(10 + j), r.Center.Y - U(4 - j), U(2), U(8 - 2 * j)), new Color(255, 238, 172) * a);
             }
-            var c = !can[i] ? Style.Dim * 0.45f : Color.Lerp(Kit.Parchment, new Color(255, 250, 230), a);
+            var c = !can[i] ? Style.Dim * 0.72f : Color.Lerp(Kit.Parchment, new Color(255, 250, 230), a);
             ui.Text(Items[i], r.X + U(26) + U(3) * a, r.Y + (h - U(14)) / 2f, c, 2);
-            string note = i == 1 ? (save != null ? $"DAY {save.Day}" : can[1] ? "" : "NO SAVE") : "";
-            if (note != "") ui.TextR(note, r.Right - U(12), r.Y + (h - U(7)) / 2f, Style.Dim * (can[i] ? 1 : 0.6f), 1);
+            string note = i == 1 ? (save != null ? $"DAY {save.Day}" : can[1] ? "" : "NO SAVE")
+                : i == 3 ? (legCount > 0 ? $"{legCount} SEALED" : "NONE YET") : "";
+            if (note != "") ui.TextR(note, r.Right - U(12), r.Y + (h - U(7)) / 2f, i == 3 && can[i] ? Kit.Gilt : Style.Dim * (can[i] ? 1 : 0.78f), 1);
             ui.Block(r);
-            if (can[i] && !saves.Open && ui.Clicked(r)) hit = i;
+            if (can[i] && !saves.Open && !legends.Open && ui.Clicked(r)) hit = i;
         }
         mouseMoved = false;
-        if (go && can[sel] && !saves.Open) hit = sel;
+        if (go && can[sel] && !saves.Open && !legends.Open) hit = sel;
         go = false;
         if (hit < 0) return;
         Ui.OnClick?.Invoke();
@@ -230,8 +238,9 @@ sealed partial class TitleScreen
             case 0: creator.Show(); break;
             case 1: host.ContinueCampaign(); break;
             case 2: saves.Show(SaveScreen.Use.Load, null); break;
-            case 3: quickBattle.Show(); break;
-            case 4: host.OpenSettings(); break;
+            case 3: legends.Show(); break;
+            case 4: quickBattle.Show(); break;
+            case 5: host.OpenSettings(); break;
             default: host.Exit(); break;
         }
     }

@@ -42,10 +42,7 @@ sealed class QuickBattleScreen
         }
         if (Hit(Keys.Enter) && pickerSide < 0) { Launch(); return; }
 
-        int savedScale = ui.S;
-        if (Settings.Current.UiScale == 0 && ui.S == 1 && ui.H >= 1000) ui.S = 2;
         DrawBody(wheel);
-        ui.S = savedScale;
     }
 
     void Launch()
@@ -75,7 +72,7 @@ sealed class QuickBattleScreen
                 C = QuickBattleConfig.FromPreset(name, C.Seed);
         }
 
-        int bodyY = py + U(28), footH = U(32), bodyH = ui.H - bodyY - footH - U(16);
+        int bodyY = py + U(34), footH = U(32), bodyH = ui.H - bodyY - footH - U(16);
         int avail = pw - 2 * U(10);
         int sideW = (int)(avail * 0.31f), midW = avail - 2 * sideW;
         var left = new Rectangle(margin, bodyY, sideW, bodyH);
@@ -146,7 +143,7 @@ sealed class QuickBattleScreen
                 s.Companies = QuickBattleConfig.BuildFactionCompanies(s.Faction, s.Men, s.Tier, new Random(C.Seed + side));
             y += U(24);
 
-            int bottomReserve = U(side == 0 ? 104 : 68);
+            int bottomReserve = U(side == 0 ? 120 : 84);
             var listBox = new Rectangle(x, y, w, Math.Max(U(60), inner.Bottom - y - bottomReserve));
             ui.Rect(listBox, Color.Black * 0.25f);
             ui.Frame(listBox, Style.PanelEdge, U(1));
@@ -173,6 +170,7 @@ sealed class QuickBattleScreen
                 { s.Companies.RemoveAt(idx); break; }
             }
             if (s.Companies.Count == 0) ui.TextC("CLICK + ADD TROOP", listBox.Center.X, listBox.Center.Y - U(4), Style.Dim, 1);
+            else ui.Text($"{s.Companies.Count} COMPANIES · {s.Companies.Sum(c => c.Count)} MEN", x + U(4), listBox.Bottom + U(4), Kit.Gilt, 1);
         }
 
         // Bottom controls pinned to the bottom of the column.
@@ -221,7 +219,7 @@ sealed class QuickBattleScreen
         if (C.Mode == QuickBattleMode.Field)
         {
             int li = Math.Max(0, Array.IndexOf(QuickBattleConfig.Layouts, C.Layout));
-            string lName = C.Layout is { } fl ? fl.ToString().ToUpperInvariant() : "AUTO";
+            string lName = C.Layout is { } fl ? SplitCaps(fl.ToString()) : "AUTO";
             li = Stepper(x, y, w, "LAYOUT", lName, li, QuickBattleConfig.Layouts.Length, block);
             C.Layout = QuickBattleConfig.Layouts[li];
             y += U(24);
@@ -231,20 +229,23 @@ sealed class QuickBattleScreen
         else if (C.Mode == QuickBattleMode.Siege)
         {
             int fi = Math.Max(0, Array.IndexOf(QuickBattleConfig.Fortresses, C.FortressKind));
-            fi = Stepper(x, y, w, "FORTRESS", C.FortressKind.ToString().ToUpperInvariant(), fi, QuickBattleConfig.Fortresses.Length, block);
+            fi = Stepper(x, y, w, "FORTRESS", SplitCaps(C.FortressKind.ToString()), fi, QuickBattleConfig.Fortresses.Length, block);
             C.FortressKind = QuickBattleConfig.Fortresses[fi];
             y += U(22);
             C.WallsLevel = NumStepper(x, y, w, "WALLS LEVEL", C.WallsLevel, 1, 3, 1, block); y += U(22);
             C.Ladders = NumStepper(x, y, w, "LADDERS", C.Ladders, 0, 6, 1, block); y += U(22);
             C.Breaches = NumStepper(x, y, w, "PRE-BREACHES", C.Breaches, 0, 3, 1, block); y += U(22);
             C.WallEngines = NumStepper(x, y, w, "WALL ENGINES", C.WallEngines, 0, 4, 1, block); y += U(22);
-            ui.Text("ATTACKER ENGINES", x, y + U(2), Kit.Gilt, 1); y += U(14);
+            var engBox = new Rectangle(x - U(4), y + U(2), w + U(8), U(84));
+            ui.Rect(engBox, Color.Black * 0.28f); ui.Frame(engBox, Style.PanelEdge, U(1));
+            y += U(6);
+            ui.Text("ATTACKER ENGINES", x + U(2), y, Kit.Gilt, 1); y += U(14);
             int half = (w - U(8)) / 2;
             C.Rams = MiniNum(x, y, half, "RAM", C.Rams, 0, 2, block);
-            C.Towers = MiniNum(x + half + U(8), y, half, "TOWER", C.Towers, 0, 3, block); y += U(22);
+            C.Towers = MiniNum(x + half + U(8), y, half, "TOWER", C.Towers, 0, 3, block); y += U(21);
             C.Mangonels = MiniNum(x, y, half, "MANGONEL", C.Mangonels, 0, 3, block);
-            C.Trebuchets = MiniNum(x + half + U(8), y, half, "TREBUCHET", C.Trebuchets, 0, 3, block); y += U(22);
-            C.Springalds = MiniNum(x, y, half, "SPRINGALD", C.Springalds, 0, 3, block); y += U(24);
+            C.Trebuchets = MiniNum(x + half + U(8), y, half, "TREBUCHET", C.Trebuchets, 0, 3, block); y += U(21);
+            C.Springalds = MiniNum(x, y, half, "SPRINGALD", C.Springalds, 0, 3, block); y += U(26);
         }
         else
         {
@@ -348,8 +349,15 @@ sealed class QuickBattleScreen
             (C.Player, C.Enemy) = (C.Enemy, C.Player);
         if (ui.Gilded(new Rectangle(mid + U(10), r.Y, U(165), r.Height), "RANDOM SEED") && !block)
             C.Seed = Random.Shared.Next(1, 99999);
-        if (ui.Gilded(new Rectangle(r.Right - U(230), r.Y, U(230), r.Height), "LAUNCH BATTLE", "ENTER", tone: Style.Ok) && !block)
+        if (ui.Gilded(new Rectangle(r.Right - U(270), r.Y, U(270), r.Height), "LAUNCH BATTLE", "ENTER", tone: Style.Ok) && !block)
             Launch();
+    }
+
+    static string SplitCaps(string s)
+    {
+        var sb = new System.Text.StringBuilder(s.Length + 4);
+        for (int i = 0; i < s.Length; i++) { if (i > 0 && char.IsUpper(s[i])) sb.Append(' '); sb.Append(char.ToUpperInvariant(s[i])); }
+        return sb.ToString();
     }
 
     int Stepper(int x, int y, int w, string label, string value, int idx, int count, bool block)

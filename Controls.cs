@@ -26,7 +26,7 @@ public enum Act
     // battle quality of life (docs/archive/COMBAT_QOL.md)
     Merge, Slower, Faster, Relieve, SplitCompany, StandingOrder,
     // campaign map panels (later additions)
-    LordsScreen, SkillsScreen, RealmScreen, DivisionsScreen, AtlasScreen, SiegeScreen, InventoryScreen, QuestsScreen, CampScreen,
+    LordsScreen, SkillsScreen, RealmScreen, DivisionsScreen, AtlasScreen, SiegeScreen, InventoryScreen, QuestsScreen, CampScreen, LegendScreen,
     // sergeants (docs/archive/SERGEANTS.md)
     Horn,
     // the captain's own ring (hold; a tap couches the lance when it shares the couch key)
@@ -134,7 +134,7 @@ public sealed class Controls
         [Act.Horn] = new[] { "TILDE" }, [Act.CaptainWheel] = new[] { "Q" },
         [Act.LordsScreen] = new[] { "L" }, [Act.SkillsScreen] = new[] { "K" }, [Act.RealmScreen] = new[] { "R" },
         [Act.DivisionsScreen] = new[] { "V" }, [Act.AtlasScreen] = new[] { "M" }, [Act.SiegeScreen] = new[] { "B" },
-        [Act.InventoryScreen] = new[] { "I" }, [Act.QuestsScreen] = new[] { "J" }, [Act.CampScreen] = new[] { "C" },
+        [Act.InventoryScreen] = new[] { "I" }, [Act.QuestsScreen] = new[] { "J" }, [Act.CampScreen] = new[] { "C" }, [Act.LegendScreen] = new[] { "G" },
     };
 
     public static readonly Dictionary<Act, string> Labels = new()
@@ -156,7 +156,7 @@ public sealed class Controls
         [Act.Slower] = "BATTLE SLOWER", [Act.Faster] = "BATTLE FASTER", [Act.Relieve] = "RELIEVE (FRESH TAKES THE TIRED'S PLACE)", [Act.SplitCompany] = "SPLIT A COMPANY IN TWO", [Act.StandingOrder] = "STANDING ORDER (CYCLE)",
         [Act.Horn] = "SOUND THE HORN (OFFICERS' PLANS)", [Act.CaptainWheel] = "CAPTAIN'S RING (HOLD; TAP = COUCH)",
         [Act.LordsScreen] = "LORDS AND COMPANIONS (MAP)", [Act.SkillsScreen] = "THE CAPTAIN (MAP)", [Act.RealmScreen] = "THE REALMS (MAP)",
-        [Act.DivisionsScreen] = "DIVISIONS (MAP)", [Act.AtlasScreen] = "REALM MAP (MAP)", [Act.SiegeScreen] = "YOUR SIEGE (MAP)", [Act.InventoryScreen] = "KIT AND BAGGAGE (MAP)", [Act.QuestsScreen] = "QUESTS (MAP)", [Act.CampScreen] = "THE CAMP (MAP)",
+        [Act.DivisionsScreen] = "DIVISIONS (MAP)", [Act.AtlasScreen] = "REALM MAP (MAP)", [Act.SiegeScreen] = "YOUR SIEGE (MAP)", [Act.InventoryScreen] = "KIT AND BAGGAGE (MAP)", [Act.QuestsScreen] = "QUESTS (MAP)", [Act.CampScreen] = "THE CAMP (MAP)", [Act.LegendScreen] = "YOUR LEGEND (MAP)",
     };
 
     public Controls()

@@ -68,7 +68,7 @@ partial class MapScreen
             ui.Shield(new Rectangle(row.X + ui.U(10), row.Y + ui.U(7), ui.U(30), ui.U(36)), Style.Sides[Style.PaletteOf(to.Faction)]);
             int tx = row.X + ui.U(50), tw = row.Right - ui.U(196) - tx;
             ui.TextFit(to.Name.ToUpperInvariant(), tx, row.Y + ui.U(5), tw, Style.Text, 2);
-            ui.TextFit($"{to.KindWord} OF THE {C.FactionNames[to.Faction].ToUpperInvariant()}, TO THE {Campaign.Bearing(s.Pos, to.Pos).ToUpperInvariant()}", tx, row.Y + ui.U(23), tw, Style.Dim, 1);
+            ui.TextFit($"{to.KindWord} {OfRealm(to.Faction)}, TO THE {Campaign.Bearing(s.Pos, to.Pos).ToUpperInvariant()}", tx, row.Y + ui.U(23), tw, Style.Dim, 1);
             float hours = C.SailHours(lane), days = hours / 24;
             string time = hours < 24 ? $"{hours:0} HOURS AT SEA" : $"{days:0.#} DAYS AT SEA";
             ui.Icon("clock", tx, row.Bottom - ui.U(13), Style.Dim, 1);
@@ -123,7 +123,7 @@ partial class MapScreen
         by += ui.U(13);
         foreach (var (label, n) in new[] { ("RECRUIT 1", 1), ("RECRUIT 5", 5), ("RECRUIT ALL", 99) })
         {
-            if (ui.Button(new Rectangle(bx, by, ui.U(150), ui.U(22)), label, can, "", n == 99)) note = buy(n) ?? done();
+            if (ui.Button(new Rectangle(bx, by, ui.U(150), ui.U(22)), label, can, "", can && n == 99)) note = buy(n) ?? done();
             by += ui.U(25);
         }
     }
@@ -239,7 +239,7 @@ partial class MapScreen
         ui.Text("COHESION", tx + half, oy + ui.U(4), Style.Dim, 1);
         ui.Gauge(new Rectangle(tx + half + ui.U(60), oy + ui.U(4), half - ui.U(96), ui.U(7)), Math.Clamp(coh / 25f, 0, 1), Style.Friendly);
         ui.TextR($"{coh:0}", c.Right, oy + ui.U(4), Style.Text, 1);
-        Outcome(tx, oy + ui.U(22), tw, "heart", "RESTING IN A TOWN ALSO RESTORES COHESION, UP TO 20", town ? 1 : 0);
+        Outcome(tx, oy + ui.U(22), tw, "heart", town ? "RESTING IN A TOWN ALSO RESTORES COHESION, UP TO 20" : "NO COHESION GAIN HERE - REST IN A TOWN FOR UP TO 20", town ? 1 : 0);
         int by = card.Bottom + ui.U(12), bw = (body.Width - ui.U(12)) / 2;
         if (BigButton(new Rectangle(body.X, by, bw, ui.U(44)), "clock", "REST 1 DAY")) { C.Rest(24); note = $"RESTED. WOUNDED: {C.Player.Wounded}"; }
         if (BigButton(new Rectangle(body.X + bw + ui.U(12), by, bw, ui.U(44)), "heart", "REST UNTIL HEALED", hurt > 0, "", hurt > 0))
@@ -324,19 +324,21 @@ partial class MapScreen
         int n = 0;
         foreach (var def in Campaign.TrainDefs)
         {
-            var row = new Rectangle(body.X + n % 2 * (half + ui.U(12)), y + n / 2 * ui.U(92), half, ui.U(84));
+            var row = new Rectangle(body.X + n % 2 * (half + ui.U(12)), y + n / 2 * ui.U(110), half, ui.U(102));
             n++;
             if (row.Bottom > body.Bottom) break;
             int owned = train.Count(id => id == def.Id);
             var k = Card(row, owned > 0 ? Kit.Gilt : null, true);
             int tw = k.Width - ui.U(130);
-            ui.TextFit(def.Name.ToUpperInvariant(), k.X, k.Y, tw - ui.U(40), Style.Text, 2);
-            if (owned > 0) ui.TextR($"X{owned}", k.X + tw, k.Y + ui.U(4), Kit.Gilt, 1);
-            ui.TextFit(def.Line.ToUpperInvariant(), k.X, k.Y + ui.U(20), tw, Style.Dim, 1);
-            int sx = k.X;
+            ui.TextFit(def.Name.ToUpperInvariant(), k.X, k.Y, tw - ui.U(46), Style.Text, 2);
+            if (owned > 0) ui.TextR($"OWNED {owned}", k.X + tw, k.Y + ui.U(4), Kit.Gilt, 1);
+            int dy = k.Y + ui.U(18);
+            foreach (var line in ui.Wrap(def.Line.ToUpperInvariant(), tw).Take(2)) { ui.Text(line, k.X, dy, Style.Dim, 1); dy += ui.U(11); }
+            int sx = k.X, sy2 = k.Y + ui.U(44);
             foreach (var (icon, v) in new[] { ("arrow", $"{def.Range:0} M"), ("helm", $"CREW {def.Crew}"), ("spear", $"THROUGH {def.Pierce}") })
-            { ui.Icon(icon, sx, k.Y + ui.U(36), Style.Dim, 1); ui.Text(v, sx + ui.U(11), k.Y + ui.U(36), Style.Text, 1); sx += ui.U(22) + ui.TW(v, 1); }
-            ui.Gauge(new Rectangle(k.X, k.Y + ui.U(52), tw, ui.U(6)), def.Range / far, Style.Friendly);
+            { ui.Icon(icon, sx, sy2, Style.Dim, 1); ui.Text(v, sx + ui.U(11), sy2, Style.Text, 1); sx += ui.U(22) + ui.TW(v, 1); }
+            ui.Text("RANGE", k.X, k.Y + ui.U(60), Style.Dim, 1);
+            ui.Gauge(new Rectangle(k.X + ui.U(38), k.Y + ui.U(61), tw - ui.U(38), ui.U(6)), def.Range / far, Style.Friendly);
             var why = C.CannotBuyEngine(s, def.Id);
             var buy = new Rectangle(k.Right - ui.U(120), k.Y + ui.U(2), ui.U(120), ui.U(26));
             if (ui.Button(buy, "BUY", why == null, $"{def.Cost:0}")) note = C.BuyEngine(s, def.Id) ?? "BOUGHT";
@@ -555,6 +557,15 @@ partial class MapScreen
             note = C.Feast(s) ?? "THE COMPANY FEASTS";
         y = feast.Bottom + gap;
         Head("TALK IN THE TAVERN");
+        if (C.TavernLegendLine(s) is { Length: > 0 } bard && y + ui.U(30) <= body.Bottom)
+        {
+            var brow = new Rectangle(body.X, y, body.Width, ui.U(30));
+            TavernRow(brow);
+            ui.Icon("crown", brow.X + ui.U(7), brow.Y + ui.U(5), Color.Black * 0.8f, 3);
+            ui.Icon("crown", brow.X + ui.U(6), brow.Y + ui.U(4), Kit.Gilt, 3);
+            ui.TextFit(bard, brow.X + ui.U(36), brow.Y + ui.U(11), brow.Width - ui.U(48), Kit.Gilt, 1);
+            y += ui.U(34);
+        }
         foreach (var talk in C.Rumours(s))
         {
             if (y + ui.U(30) > body.Bottom) break;
@@ -776,8 +787,8 @@ partial class MapScreen
             bool can = C.CanBuild(s, d, out string why2, out int cost);
             // While something is building, the heading says so once; each tile shows its cost, not the same reason.
             string side = lv >= d.Max ? "BUILT" : can || why2.StartsWith("BUILDING ") ? $"{cost}" : why2;
-            if (ui.Button(row, d.Name.ToUpperInvariant(), can, side, lv > 0)) note = C.Build(s, d.Id) ?? $"WORK BEGINS ON THE {d.Name.ToUpperInvariant()}";
-            for (int i = 0; i < d.Max; i++) ui.Rect(new Rectangle(row.X + ui.U(6) + i * ui.U(8), row.Bottom - ui.U(6), ui.U(6), ui.U(3)), i < lv ? Kit.Gilt : Color.White * 0.16f);
+            if (ui.Button(row, d.Name.ToUpperInvariant(), can, side, can && lv > 0)) note = C.Build(s, d.Id) ?? $"WORK BEGINS ON THE {d.Name.ToUpperInvariant()}";
+            for (int i = 0; i < d.Max; i++) ui.Rect(new Rectangle(row.X + ui.U(6) + i * ui.U(10), row.Bottom - ui.U(7), ui.U(8), ui.U(4)), i < lv ? Kit.Gilt : Color.White * 0.18f);
             if (ui.Hover(row)) note = d.Text;
         }
     }

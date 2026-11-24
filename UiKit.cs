@@ -6,7 +6,6 @@ namespace Ironfield;
 /// The interface kit beyond the basics in `Ui`, as extensions on it (docs/DESIGN.md 4): gradients, the iron plate with rivets
 /// and a ribbon title, painted heater shields, 7x7 pixel icons, ring gauges, segmented bars, toggles, sliders, chips, charts
 /// and tooltips. Everything is drawn from the 1x1 pixel and the pixel font, so it keeps the hard-edged pixel look.
-/// The UI lab (F3 on the title) shows every widget.
 static partial class Kit
 {
     // ---------- colours ----------

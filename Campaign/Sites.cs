@@ -7,8 +7,8 @@ namespace Ironfield;
 public sealed class Site
 {
     public int Id, Province;
-    /// "ruin", "shrine", "stones", "battlefield", "mine", "hermit", "watchtower", "spring" or "mill".
-    public string Kind = "", Name = "";
+    /// "ruin", "shrine", "stones", "battlefield", "mine", "hermit", "watchtower", "spring", "mill" or "monument".
+    public string Kind = "", Name = "", LegendId = "";
     public Vector2 Pos;
 
     static readonly string[] Saints = { "Bram", "Mireille", "Odran", "Clovis", "Ysabeau", "Gerran",
@@ -39,6 +39,7 @@ public sealed class Site
         "hermit" => "A HERMIT'S HUT. HE KNOWS THINGS",
         "watchtower" => "AN OLD WATCHTOWER. SEE FAR FROM THE TOP",
         "spring" => "A HEALING SPRING. REST THE WOUNDED",
+        "monument" => "A MONUMENT TO A PAST LEGEND. PAY RESPECTS OR SEEK THEIR HEIRLOOM",
         _ => "A WATERMILL. FLOUR FOR SALE",
     };
 }
@@ -74,6 +75,11 @@ public sealed partial class Campaign
         AudioEngine.Current?.Play(site.Kind is "shrine" or "stones" ? Cue.Holy : Cue.ScrollUnroll, 0.65f);
         SiteQuests(site);
         if (!SiteReady(site)) { Log($"{site.Name}: {SiteWait(site).ToLowerInvariant()}."); return; }
+        if (site.Kind == "monument")
+        {
+            var leg = S.WorldLegends.FirstOrDefault(l => l.Id == site.LegendId);
+            if (leg != null) { ActiveMonument = (site, leg); MonumentOutcome = ""; return; }
+        }
         if (site.Kind == "shrine") { AddBuff("shrine_blessing", 3); RelicFilled(); Log($"The men pray at the {site.Name}. They march on blessed."); }
         if (VigilAt(site)) { Raise(new PendingEvent { Id = "aura_vigil", Site = site.Id, Settlement = SettlementNear(site.Pos)?.Id ?? -1 }); return; } // a trial for your aura (K5)
         SiteEvent(site); // one of the events for its kind (EventDirector.cs)

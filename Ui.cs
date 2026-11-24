@@ -10,7 +10,8 @@ sealed class Ui
     public readonly SpriteBatch Sb;
     readonly Art art;
     readonly PixelFont font;
-    public int S = 1, W, H;
+    public float S = 1;
+    public int W, H;
     public Point Mouse;
     bool click;
     List<Rectangle> blockers = new(), last = new();
@@ -109,12 +110,12 @@ sealed class Ui
     public static int Key(Rectangle r, int salt = 0) => HashCode.Combine(r.X, r.Y, r.Width, r.Height, salt);
 
     /// Start a frame for a caller that runs its own SpriteBatch (the battle HUD): scale, size and mouse, no clicks.
-    public void Reset(int scale, int w, int h, Point mouse) { S = scale; W = w; H = h; Mouse = mouse; click = false; blockers.Clear(); }
+    public void Reset(float scale, int w, int h, Point mouse) { S = scale; W = w; H = h; Mouse = mouse; click = false; blockers.Clear(); }
 
     public void Begin(Viewport vp, Point mouse, bool clicked)
     {
         W = vp.Width; H = vp.Height;
-        S = Settings.UiFor(H);
+        S = Settings.UiFor(W, H);
         Mouse = mouse;
         click = clicked;
         blockers.Clear();
@@ -134,6 +135,25 @@ sealed class Ui
     /// The font's texture with its white texel: lines and boxes drawn from it batch with the text.
     public Texture2D FontTexture => font.Texture;
     public Rectangle FontWhite => font.White;
+
+    static readonly RasterizerState Scissor = new() { ScissorTestEnable = true };
+
+    /// Draw `draw` clipped to `r` via the GPU scissor test (for vignettes and fitted portraits).
+    public void Clip(Rectangle r, Action draw)
+    {
+        var gd = Sb.GraphicsDevice;
+        var vp = gd.Viewport.Bounds;
+        var clip = Rectangle.Intersect(r, vp);
+        if (clip.Width <= 0 || clip.Height <= 0) return;
+        Sb.End();
+        var prev = gd.ScissorRectangle;
+        gd.ScissorRectangle = clip;
+        Sb.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.AlphaBlend, rasterizerState: Scissor);
+        draw();
+        Sb.End();
+        gd.ScissorRectangle = prev;
+        Sb.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.AlphaBlend);
+    }
 
     public void Frame(Rectangle r, Color c, int t)
     {
@@ -215,14 +235,14 @@ sealed class Ui
             : enabled ? (Color.Lerp(new Color(46, 44, 46), Kit.Mul(Kit.Gilt, 0.4f), h), Color.Lerp(new Color(24, 24, 28), Kit.Mul(Kit.Gilt, 0.15f), h))
             : (new Color(30, 30, 34), new Color(20, 20, 24));
         this.VGrad(r, top, bottom, 1);
-        Frame(r, active ? Kit.Gilt : enabled ? Color.Lerp(Kit.Mul(Kit.Rivet, 0.85f), Kit.Gilt, h) : Color.White * 0.1f, U(1));
-        Rect(new Rectangle(r.X + U(1), r.Y + U(1), r.Width - U(2), U(1)), Color.White * (active ? 0.3f : 0.12f + 0.18f * h));
+        Frame(r, active ? Kit.Gilt : enabled ? Color.Lerp(Kit.Mul(Kit.Rivet, 0.85f), Kit.Gilt, h) : Color.White * 0.18f, U(1));
+        Rect(new Rectangle(r.X + U(1), r.Y + U(1), r.Width - U(2), U(1)), Color.White * (active ? 0.3f : enabled ? 0.12f + 0.18f * h : 0.06f));
         if (r.Height >= U(18)) Rect(new Rectangle(r.X + U(1), r.Bottom - U(2), r.Width - U(2), U(1)), Color.Black * 0.35f);
-        var c = enabled ? (hover || active ? new Color(255, 246, 222) : Style.Text) : Style.Dim * 0.5f;
+        var c = enabled ? (hover || active ? new Color(255, 246, 222) : Style.Text) : Style.Dim * 0.78f;
         int scale = r.Height >= U(26) ? 2 : 1;
         // A label too wide for big letters (beside its note, if it has one) drops to small ones.
         if (scale == 2 && TW(label, 2) + (note == "" ? 0 : TW(note, 1) + U(12)) > r.Width - U(8)) scale = 1;
-        int ty = r.Y + (r.Height - 7 * scale * S) / 2;
+        int ty = r.Y + (r.Height - (int)(7 * scale * S)) / 2;
         if (note == "") TextC(label, r.X + r.Width / 2f, ty, c, scale);
         else { Text(label, r.X + U(6), ty, c, scale); TextR(note, r.Right - U(6), r.Y + (r.Height - 7 * S) / 2f, Style.Dim, 1); }
         Block(r);
@@ -331,5 +351,5 @@ sealed class Ui
     /// The baked sprite for a company store icon (`food`, `horse`, `wagon`, `vault`).
     public void StoreSprite(string kind, Rectangle box) => SpriteFit($"store.{kind}/n", box, layTall: false);
 
-    public void Portrait(UnitType t, Rectangle box, int k = 0, float top = 1.92f, int palette = 0) => Hud.Portrait(Sb, art, t, box, k > 0 ? k : S, top, palette);
+    public void Portrait(UnitType t, Rectangle box, float k = 0, float top = 1.92f, int palette = 0) => Hud.Portrait(Sb, art, t, box, k > 0 ? k : S, top, palette);
 }

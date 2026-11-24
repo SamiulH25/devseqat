@@ -8,7 +8,7 @@ namespace Ironfield;
 /// what it tests and its odds. Choosing turns the page to the outcome: what happened, what changed, CONTINUE.
 partial class MapScreen
 {
-    static readonly Color InkRed = new(130, 36, 24), InkGreen = new(40, 88, 40), InkFade = new(118, 92, 64);
+    static readonly Color InkRed = new(138, 34, 24), InkGreen = new(28, 86, 36), InkFade = new(82, 62, 42);
     string bookKey = "";
     float bookAt;
 
@@ -27,30 +27,40 @@ partial class MapScreen
     void EventFaces(Rectangle pic, PendingEvent pe)
     {
         int fs = Math.Min(pic.Height - ui.U(16), ui.U(84));
-        Face? left = C.LivingMan(pe.Soldier) is Soldier a ? PortraitPainter.Of(a, C.Player.Companies.FirstOrDefault(z => z.Roll.Contains(a)))
-            : C.CharacterById(pe.Lord) is Character l ? PortraitPainter.Of(C, l) : null;
-        Face? right = C.LivingMan(pe.Other) is Soldier b ? PortraitPainter.Of(b, C.Player.Companies.FirstOrDefault(z => z.Roll.Contains(b)))
-            : C.CharacterById(pe.Companion) is Character k ? PortraitPainter.Of(C, k) : null;
-        foreach (var (face, atLeft) in new[] { (left, true), (right, false) })
+        Soldier? sa = C.LivingMan(pe.Soldier), sb = C.LivingMan(pe.Other);
+        Character? cl = C.CharacterById(pe.Lord), ck = C.CharacterById(pe.Companion);
+        Face? left = sa != null ? PortraitPainter.Of(sa, C.Player.Companies.FirstOrDefault(z => z.Roll.Contains(sa))) : cl != null ? PortraitPainter.Of(C, cl) : null;
+        Face? right = sb != null ? PortraitPainter.Of(sb, C.Player.Companies.FirstOrDefault(z => z.Roll.Contains(sb))) : ck != null ? PortraitPainter.Of(C, ck) : null;
+        string leftName = sa != null ? sa.Name : cl != null ? cl.Name : "";
+        string rightName = sb != null ? sb.Name : ck != null ? ck.Name : "";
+        bool both = left != null && right != null;
+        foreach (var (face, name, atLeft) in new[] { (left, leftName, true), (right, rightName, false) })
         {
             if (face == null) continue;
             var fb = new Rectangle(atLeft ? pic.X + ui.U(8) : pic.Right - ui.U(8) - fs, pic.Y + ui.U(8), fs, fs);
             ui.Rect(new Rectangle(fb.X - ui.U(2), fb.Y - ui.U(2), fb.Width + ui.U(4), fb.Height + ui.U(4)), Kit.GiltDark);
             ui.FaceHead(face, fb);
+            if (both && name != "")
+            {
+                string shortName = name.Split(' ')[0].ToUpperInvariant();
+                var tag = new Rectangle(fb.X, fb.Bottom - ui.U(11), fb.Width, ui.U(11));
+                ui.Rect(tag, Color.Black * 0.72f);
+                ui.TextC(Kit.Fit(ui, shortName, fb.Width - ui.U(4), 1), tag.Center.X, tag.Y + ui.U(2), Style.Text, 1);
+            }
         }
     }
 
     /// One choice laid out for the page: its words, the check line, the hint, why it is barred.
     sealed record ChoiceLines(int Index, ChoiceDef Choice, List<string> Label, string Cost, string Check, float Odds, List<string> Hint, string Why)
     {
-        public int Height(int lh, int small) => Label.Count * lh + (Check != "" && Why == "" ? small : 0) + Hint.Count * small + (Why != "" ? small : 0);
+        public int Height(int lh, int small) => Label.Count * lh + (Check != "" && Why == "" ? small + 4 : 0) + Hint.Count * small + (Why != "" ? small + 2 : 0) + 6;
     }
 
     ChoiceLines LayChoice(int i, ChoiceDef ch, PendingEvent pe, int cw)
     {
         string why = C.ChoiceBlocked(ch, pe);
         string cost = string.Join("  ", ch.Cost.Select(fx => C.CostLine(fx, pe).Text));
-        int labelW = cw - ui.U(18) - (cost != "" ? ui.TW(cost, 1) + ui.U(10) : 0);
+        int labelW = cw - ui.U(26) - (cost != "" && why == "" ? ui.TW(cost, 1) + ui.U(12) : 0);
         string check = "";
         float odds = -1;
         if (ch.Check is CheckDef k) { odds = C.Odds(k, pe); check = C.CheckText(k, pe); }
@@ -65,7 +75,7 @@ partial class MapScreen
         int w = BookWidth(), cw = w - ui.U(48), lh = ProseH, small = ui.U(10), picH = BookPicH();
         var prose = ui.Wrap(C.Fill(e.Text, pe), cw, 1);
         var rows = C.OfferedChoices(pe).Select(x => LayChoice(x.Index, x.Choice, pe, cw)).ToList();
-        int h = ui.U(28) + picH + ui.U(30) + prose.Count * lh + ui.U(14) + rows.Sum(c => c.Height(lh, small) + ui.U(8)) + ui.U(30);
+        int h = ui.U(28) + picH + ui.U(30) + prose.Count * lh + ui.U(14) + rows.Sum(c => c.Height(lh, small) + ui.U(10)) + ui.U(26);
         h = Math.Min(h, ui.H - ui.U(12));
         ui.Dim(0.55f);
         var r = new Rectangle((ui.W - w) / 2, (ui.H - h) / 2, w, h);
@@ -104,12 +114,12 @@ partial class MapScreen
         if (pic.Bottom <= shown)
         {
             ui.Rect(new Rectangle(pic.X - ui.U(2), pic.Y - ui.U(2), pic.Width + ui.U(4), pic.Height + ui.U(4)), Kit.InkDeep);
-            EventScene(pic, id);
+            ui.Clip(pic, () => EventScene(pic, id));
             EventFaces(pic, pe);
         }
         y = pic.Bottom + ui.U(10);
         title = title.ToUpperInvariant();
-        int ts = ui.TW(title, 2) <= cw ? 2 : 1;
+        int ts = ui.TW(title, 2) <= cw - ui.U(16) ? 2 : 1;
         if (y + ui.U(16) <= shown) ui.Ink(title, r.Center.X, y, Kit.InkDeep, ts, cx: true);
         return y + ui.U(ts == 2 ? 24 : 16);
     }
@@ -119,31 +129,34 @@ partial class MapScreen
     bool ChoiceRow(ChoiceLines c, int n, int x, int y, int cw, int lh, int small)
     {
         bool able = c.Why == "";
-        var hit = new Rectangle(x - ui.U(6), y - ui.U(4), cw + ui.U(12), c.Height(lh, small) + ui.U(6));
+        var hit = new Rectangle(x - ui.U(6), y - ui.U(3), cw + ui.U(12), c.Height(lh, small) + ui.U(4));
         bool hover = able && ui.Hover(hit);
-        if (hover) { ui.Rect(hit, Kit.Ink * 0.1f); ui.Rect(new Rectangle(hit.X, hit.Y, ui.U(2), hit.Height), InkRed * 0.8f); }
+        ui.Rect(hit, Kit.Ink * (hover ? 0.14f : able ? 0.055f : 0.025f));
+        ui.Frame(hit, hover ? InkRed * 0.8f : Kit.Ink * (able ? 0.30f : 0.15f), ui.U(1));
+        if (hover) ui.Rect(new Rectangle(hit.X, hit.Y, ui.U(3), hit.Height), InkRed * 0.85f);
         var ink = able ? Kit.InkDeep : InkFade;
-        ui.Ink($"{n + 1}.", x, y, able ? InkRed : InkFade, 1);
-        int lx = x + ui.U(18), ly = y;
-        foreach (var line in c.Label)
-        {
-            ui.InkProse(line, lx, ly, ink);
-            if (!able) ui.Rect(new Rectangle(lx - ui.U(2), ly + ui.U(4), ui.TW(line, 1) + ui.U(4), ui.U(1)), InkFade);
-            ly += lh;
-        }
-        if (c.Cost != "") ui.Ink(c.Cost, x + cw - ui.TW(c.Cost, 1), y, able ? InkRed : InkFade, 1);
-        if (!able) { ui.Ink(c.Why.ToUpperInvariant(), lx, ly, InkRed, 1); return false; }
+        var cap = new Rectangle(x - ui.U(1), y + ui.U(1), ui.U(14), ui.U(12));
+        ui.Rect(cap, able ? (hover ? InkRed : Kit.InkDeep * 0.82f) : Kit.Ink * 0.22f);
+        ui.TextC($"{n + 1}", cap.Center.X, cap.Y + ui.U(2), able ? Kit.Parchment : InkFade, 1);
+        int lx = x + ui.U(20), ly = y + ui.U(2);
+        foreach (var line in c.Label) { ui.InkProse(line, lx, ly, ink); ly += lh; }
+        if (c.Cost != "" && able) ui.Ink(c.Cost, x + cw - ui.TW(c.Cost, 1), y + ui.U(2), InkRed, 1);
+        if (!able) { ui.Ink(c.Why.ToUpperInvariant(), lx, ly + ui.U(1), InkRed, 1); return false; }
         if (c.Check != "")
         {
+            ly += ui.U(2);
             string tests = $"TESTS {c.Check}";
             ui.Ink(tests, lx, ly, Kit.Ink, 1);
-            int bx = lx + ui.TW(tests, 1) + ui.U(10), bw = ui.U(48);
-            ui.Rect(new Rectangle(bx, ly + ui.U(2), bw, ui.U(4)), Kit.Ink * 0.25f);
-            ui.Rect(new Rectangle(bx, ly + ui.U(2), (int)(bw * c.Odds), ui.U(4)), c.Odds >= 0.5f ? InkGreen : InkRed);
+            int bx = lx + ui.TW(tests, 1) + ui.U(10), bw = ui.U(54), bh = ui.U(6);
+            var bar = new Rectangle(bx, ly + ui.U(1), bw, bh);
+            ui.Rect(bar, Kit.Ink * 0.22f);
+            int fillW = Math.Max(ui.U(3), (int)(bw * c.Odds));
+            ui.Rect(new Rectangle(bar.X, bar.Y, Math.Min(bw, fillW), bh), c.Odds >= 0.5f ? InkGreen : InkRed);
+            ui.Frame(bar, Kit.Ink * 0.5f, ui.U(1));
             ui.Ink(Campaign.OddsWord(c.Odds), bx + bw + ui.U(8), ly, c.Odds >= 0.5f ? InkGreen : InkRed, 1);
-            ly += small;
+            ly += small + ui.U(2);
         }
-        foreach (var line in c.Hint) { ui.InkProse(line, lx, ly - ui.U(1), InkFade); ly += small; }
+        foreach (var line in c.Hint) { ui.InkProse(line, lx, ly, InkFade); ly += small; }
         if (hover) Ui.Hovered(hit);
         bool click = ui.Clicked(hit);
         if (click) Ui.OnClick?.Invoke();
@@ -168,7 +181,12 @@ partial class MapScreen
         int x = r.X + ui.U(24), y = r.Y + ui.U(26);
         y = PageHead(r, x, y, cw, picH, shown, res.Id, res.Title, pe);
         bool Seen(int at, int hh) => at + hh <= shown;
-        foreach (var line in chose) { if (Seen(y, lh)) ui.InkProse(line, x + ui.U(18), y, InkFade); y += lh; }
+        foreach (var line in chose)
+        {
+            string quoted = $"\"{line}\"";
+            if (Seen(y, lh)) ui.InkProse(quoted, r.Center.X - ui.TW(quoted, 1) / 2f, y, InkFade);
+            y += lh;
+        }
         y += ui.U(6);
         if (res.Odds >= 0)
         {
@@ -179,7 +197,10 @@ partial class MapScreen
                 "awful" => ("DISASTER", InkRed),
                 _ => ("FAILURE", InkRed),
             };
-            if (Seen(y, ui.U(14))) ui.Ink($"{word}  ({Campaign.OddsWord(res.Odds)})", r.Center.X, y, col, 1, cx: true);
+            string tag = $"{word}  ({Campaign.OddsWord(res.Odds)})";
+            int tw = ui.TW(tag, 1) + ui.U(18);
+            var pill = new Rectangle(r.Center.X - tw / 2, y - ui.U(2), tw, ui.U(14));
+            if (Seen(y, ui.U(14))) { ui.Rect(pill, col * 0.12f); ui.Frame(pill, col * 0.55f, ui.U(1)); ui.Ink(tag, r.Center.X, y + ui.U(1), col, 1, cx: true); }
             y += ui.U(20);
         }
         foreach (var line in prose) { if (Seen(y, lh)) ui.InkProse(line, x, y, Kit.InkDeep); y += lh; }
@@ -193,7 +214,7 @@ partial class MapScreen
             if (!Seen(ly, ui.U(12))) continue;
             var col = l.Sign > 0 ? InkGreen : l.Sign < 0 ? InkRed : Kit.Ink;
             if (l.Icon != "") ui.Icon(l.Icon, lx, ly, col, 1);
-            ui.Ink(Kit.Fit(ui, l.Text, colW - ui.U(16), 1), lx + ui.U(12), ly, col, 1);
+            ui.Ink(Kit.Fit(ui, l.Text.TrimEnd('.'), colW - ui.U(16), 1), lx + ui.U(12), ly, col, 1);
         }
         y += lineRows * ui.U(14) + ui.U(2);
         if (res.More) { if (Seen(y, lh)) ui.InkProse("This is not the end of it.", r.Center.X - ui.TW("This is not the end of it.", 1) / 2f, y, InkFade); y += ui.U(16); }
@@ -213,7 +234,7 @@ partial class MapScreen
     void EventScene(Rectangle p, string id)
     {
         float t = Environment.TickCount64 / 1000f;
-        string scene = Campaign.EventOf(id)?.Scene ?? "";
+        string scene = id == "monument_cairn" ? "site_cairn" : Campaign.EventOf(id)?.Scene ?? "";
         string kind = scene.StartsWith("site_") || scene == "shrine" ? "site" : scene != "" ? scene : "camp";
         string siteKind = scene == "shrine" ? "shrine" : scene.StartsWith("site_") ? scene[5..] : "";
         bool day = kind is "town" or "court" or "site" or "village" or "road" or "ford" or "hills" or "sea" or "forest" && siteKind != "stones"
@@ -244,7 +265,7 @@ partial class MapScreen
         switch (kind)
         {
             case "burning": Village(p, ground, near, t, true); break;
-            case "town": Village(p, ground, near, t, false); break;
+            case "town": Village(p, ground, near, t, false, town: true); break;
             case "court": Court(p, ground, near, t, id == "tournament"); break;
             case "site": SiteScene(p, ground, near, t, siteKind); break;
             case "village": Village(p, ground, near, t, false); break;
@@ -266,13 +287,14 @@ partial class MapScreen
     }
 
     /// Houses with pitched roofs and a church tower; burning ones throw fire and smoke.
-    void Village(Rectangle p, int ground, Color c, float t, bool burning)
+    void Village(Rectangle p, int ground, Color c, float t, bool burning, bool town = false)
     {
+        int u = Math.Max(1, ui.U(1));
         for (int i = 0; i < 6; i++)
         {
             int hx = p.X + (int)(p.Width * (0.2f + i * 0.09f)), hw = ui.U(14 + i % 3 * 4), hh = ui.U(10 + i % 2 * 4);
             ui.Rect(new Rectangle(hx, ground - hh, hw, hh), c);
-            for (int k = 0; k < hw / 2; k += Math.Max(1, ui.U(1))) ui.Rect(new Rectangle(hx + k, ground - hh - (hw / 2 - k) / 2 - ui.U(1), hw - 2 * k, Math.Max(1, ui.U(1))), c);
+            for (int k = 0; k < hw / 2; k += u) ui.Rect(new Rectangle(hx + k, ground - hh - k / 2 - u, hw - 2 * k, u), c);
             if (!burning) { ui.Rect(new Rectangle(hx + hw / 2 - ui.U(1), ground - hh / 2, ui.U(3), ui.U(3)), Kit.Ember * 0.8f); continue; }
             if (i % 2 != 0) continue;
             ui.Disc(new Vector2(hx + hw / 2, ground - hh), ui.U(14), Kit.Ember * 0.12f);
@@ -283,8 +305,17 @@ partial class MapScreen
                 ui.Disc(new Vector2(hx + hw / 2 + k * ui.U(30), ground - hh - ui.U(14) - k * p.Height * 0.6f), ui.U(4) + k * ui.U(10), new Color(60, 50, 56) * (0.5f * (1 - k)));
             }
         }
-        ui.Rect(new Rectangle(p.X + (int)(p.Width * 0.38f), ground - ui.U(24), ui.U(4), ui.U(24)), c);
-        ui.Rect(new Rectangle(p.X + (int)(p.Width * 0.38f) - ui.U(2), ground - ui.U(28), ui.U(8), ui.U(4)), c);
+        ui.Rect(new Rectangle(p.X + (int)(p.Width * 0.38f), ground - ui.U(26), ui.U(4), ui.U(26)), c);
+        ui.Rect(new Rectangle(p.X + (int)(p.Width * 0.38f) - ui.U(2), ground - ui.U(30), ui.U(8), ui.U(4)), c);
+        if (town)
+        {
+            int wx = p.X + (int)(p.Width * 0.14f), ww = (int)(p.Width * 0.72f), wh = ui.U(9);
+            ui.Rect(new Rectangle(wx, ground - wh, ww, wh), c);
+            for (int x = wx; x < wx + ww - ui.U(4); x += ui.U(8)) ui.Rect(new Rectangle(x, ground - wh - ui.U(3), ui.U(4), ui.U(3)), c);
+            int gx = p.X + (int)(p.Width * 0.68f);
+            ui.Rect(new Rectangle(gx, ground - ui.U(20), ui.U(16), ui.U(20)), c);
+            ui.Rect(new Rectangle(gx + ui.U(5), ground - ui.U(8), ui.U(6), ui.U(8)), Color.Black * 0.65f);
+        }
     }
 
     /// A castle with banners on its towers; at a tournament, a row of pavilions before it.
@@ -293,8 +324,8 @@ partial class MapScreen
         int cx = p.X + p.Width / 2;
         ui.Castle(cx, ground + ui.U(2), 3, c, Kit.Ember);
         var hd = Style.Sides[Style.PaletteOf(Math.Max(0, C.Captain.Contract))];
-        ui.Banner(cx - ui.U(36), p.Y + ui.U(10), ui.U(22), ui.U(50), hd, t * 1.5f);
-        ui.Banner(cx + ui.U(36), p.Y + ui.U(10), ui.U(22), ui.U(50), hd, t * 1.5f + 1.3f);
+        ui.Banner(cx - ui.U(36), p.Y + ui.U(16), ui.U(22), ui.U(46), hd, t * 1.5f);
+        ui.Banner(cx + ui.U(36), p.Y + ui.U(16), ui.U(22), ui.U(46), hd, t * 1.5f + 1.3f);
         if (!lists) return;
         for (int i = 0; i < 5; i++)
         {
@@ -440,7 +471,7 @@ partial class MapScreen
         int ry = p.Y + ui.U(22), rw = ui.U(40); // the hollow crown, hanging in the dark above the fire
         ui.Rect(new Rectangle(cx - rw / 2, ry + ui.U(8), rw, ui.U(4)), new Color(26, 22, 26));
         for (int i = 0; i < 5; i++) ui.Rect(new Rectangle(cx - rw / 2 + i * rw / 4 - u, ry + (i % 2 == 0 ? 0 : ui.U(4)), 2 * u + u, ui.U(10)), new Color(26, 22, 26));
-        ui.Rect(new Rectangle(cx - rw / 2, ry + ui.U(12), rw, u), new Color(170, 40, 50) * 0.7f);
+        ui.Rect(new Rectangle(cx - rw / 2 + ui.U(2), ry + ui.U(10), rw - ui.U(4), u), new Color(180, 44, 52) * 0.65f);
     }
 
     /// A site as a silhouette against the sky: each kind its own shape (docs/archive/SIDE_CONTENT.md S2).

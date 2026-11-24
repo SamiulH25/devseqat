@@ -171,9 +171,10 @@ partial class MapScreen
             float pay = o.Reward + (o.Then?.Reward ?? 0), days = (o.Deadline - (float)C.S.Hours) / 24;
             int fx = tx;
             if (pay > 0) { Price(fx, row.Bottom - ui.U(12), pay); fx += ui.U(22) + ui.TW($"{pay:0}", 1); }
+            else { ui.Icon("coin", fx, row.Bottom - ui.U(12), Kit.Gilt, 1); ui.Text("PAID ON ARRIVAL", fx + ui.U(11), row.Bottom - ui.U(12), Kit.Gilt, 1); fx += ui.U(22) + ui.TW("PAID ON ARRIVAL", 1); }
             if (days > 0 && days < 400) { ui.Icon("clock", fx, row.Bottom - ui.U(12), Style.Dim, 1); ui.Text($"{days:0} DAYS", fx + ui.U(11), row.Bottom - ui.U(12), Style.Dim, 1); fx += ui.U(22) + ui.TW($"{days:0} DAYS", 1); }
             if (o.Then != null) ui.Text("MORE TO DO AFTER", fx, row.Bottom - ui.U(12), Style.Dim, 1);
-            if (ui.Button(new Rectangle(row.Right - ui.U(180), row.Center.Y - ui.U(13), ui.U(172), ui.U(26)), full ? "THREE JOBS HELD" : "ACCEPT", !full, full ? "" : $"{pay:0}")) note = C.Accept(s, o) ?? "ACCEPTED";
+            if (ui.Button(new Rectangle(row.Right - ui.U(180), row.Center.Y - ui.U(13), ui.U(172), ui.U(26)), full ? "THREE JOBS HELD" : "ACCEPT", !full, full ? "" : (pay > 0 ? $"{pay:0}" : "ON ARRIVAL"))) note = C.Accept(s, o) ?? "ACCEPTED";
             y += rh;
         }
     }

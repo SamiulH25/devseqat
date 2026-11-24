@@ -15,7 +15,7 @@ partial class MapScreen
     {
         PartyKind.Bandit => "BRIGANDS",
         PartyKind.Player => "YOU",
-        PartyKind.Caravan => p.Breed == "pilgrims" ? "PILGRIMS" : $"MERCHANTS OF THE {C.FactionNames[p.Faction].ToUpperInvariant()}",
+        PartyKind.Caravan => p.Breed == "pilgrims" ? "PILGRIMS" : $"MERCHANTS {OfRealm(p.Faction)}",
         PartyKind.Monster => p.Crisis ? $"CRISIS — {(p.Lair ? "SEAT" : "HOST")}"
             : p.Legendary ? $"LEGENDARY {p.Breed.ToUpperInvariant()}"
             : p.Lair ? $"{p.Breed.ToUpperInvariant()} {Campaign.LairWord(p.Breed)}" : Campaign.Plural(p.Breed).ToUpperInvariant(),
@@ -83,6 +83,8 @@ partial class MapScreen
                 case PanelKind.Inventory: InventoryPanel(); break;
                 case PanelKind.Camp: CampPanel(); break;
                 case PanelKind.Fallen: BookPanel(); break;
+                case PanelKind.Legend: LegendScrollPanel(); break;
+                case PanelKind.Monument: MonumentPanel(); break;
                 case PanelKind.Help: HelpPanel(); break;
             }
             if (panel != PanelKind.None && modalIn < 1) ui.Rect(modalRect, Kit.IronDark * (1 - modalIn)); // the panel's entrance: it comes up out of the dark
@@ -473,7 +475,17 @@ partial class MapScreen
         ui.Text($"{index}", r.X + ui.U(5), r.Y + ui.U(5), Style.Dim, 1);
         ui.Text(Style.Numerals[Math.Clamp(c.Type.Tier, 0, 7)], r.X + ui.U(5), r.Y + ui.U(16), Style.Accent, 1);
         ui.Portrait(c.Type, new Rectangle(r.X + ui.U(20), r.Y + ui.U(4), r.Width - ui.U(40), ui.U(44)));
-        string name = ui.Fit(c.Name.ToUpperInvariant(), r.Width - ui.U(10));
+        string raw = c.Name.ToUpperInvariant();
+        string name = ui.Fit(raw, r.Width - ui.U(10));
+        if (name != raw)
+        {
+            int sp = raw.LastIndexOf(' ');
+            if (sp > 0 && raw[(sp + 1)..] is "II" or "III" or "IV" or "V")
+            {
+                string suf = raw[sp..];
+                name = ui.Fit(raw[..sp], r.Width - ui.U(10) - ui.TW(suf, 1)) + suf;
+            }
+        }
         ui.TextC(name, r.X + r.Width / 2f, r.Y + ui.U(50), Style.Text, 1);
         ui.TextC(c.Stacks.Count > 1 ? $"{c.Type.Name.ToUpperInvariant()} +{c.Stacks.Count - 1}" : c.Type.Name.ToUpperInvariant(), r.X + r.Width / 2f, r.Y + ui.U(60), Style.Dim, 1);
         ui.TextC(c.Wounded > 0 ? $"{c.Men}+{c.Wounded}W" : $"{c.Men}", r.X + r.Width / 2f, r.Y + ui.U(71), Style.Text);
@@ -504,7 +516,7 @@ partial class MapScreen
         var row = new (string Label, Act Key, PanelKind Panel)[]
         {
             ("COMPANY", Act.PartyScreen, PanelKind.Party), ("SERGEANTS", Act.DivisionsScreen, PanelKind.Divisions), ("CAPTAIN", Act.SkillsScreen, PanelKind.Skills), ("KIT", Act.InventoryScreen, PanelKind.Inventory), ("CAMP", Act.CampScreen, PanelKind.Camp),
-            ("QUESTS", Act.QuestsScreen, PanelKind.Quests), ("LORDS", Act.LordsScreen, PanelKind.Characters), ("REALMS", Act.RealmScreen, PanelKind.Realm), ("MAP", Act.AtlasScreen, PanelKind.Atlas), ("FIND ME", Act.FollowParty, PanelKind.None), ("KEYS", Act.Help, PanelKind.Help),
+            ("LEGEND", Act.LegendScreen, PanelKind.Legend), ("QUESTS", Act.QuestsScreen, PanelKind.Quests), ("LORDS", Act.LordsScreen, PanelKind.Characters), ("REALMS", Act.RealmScreen, PanelKind.Realm), ("MAP", Act.AtlasScreen, PanelKind.Atlas), ("FIND ME", Act.FollowParty, PanelKind.None), ("KEYS", Act.Help, PanelKind.Help),
         };
         int h = ui.U(20), w = row.Max(r => ui.TW(r.Label, 1) + ui.TW(ctl.First(r.Key), 1)) + ui.U(26);
         int x = ui.W - w - ui.U(10), y = ui.U(10 + 170 + 12); // under the minimap, which is 170 high at the top right
@@ -534,7 +546,7 @@ partial class MapScreen
                 ("ZOOM", "WHEEL"), (Controls.Labels[Act.FollowParty], ctl.Name(Act.FollowParty)), ("PAUSE", ctl.Name(Act.Pause)),
                 ("SPEED X1 / X3 / X8", $"{ctl.First(Act.Speed1)} {ctl.First(Act.Speed2)} {ctl.First(Act.Speed3)}"), ("LOOK THERE", "CLICK THE MINIMAP"),
             }),
-            ("SCREENS", new[] { Act.PartyScreen, Act.SkillsScreen, Act.LordsScreen, Act.RealmScreen, Act.DivisionsScreen, Act.AtlasScreen, Act.InventoryScreen, Act.QuestsScreen, Act.CampScreen, Act.SiegeScreen }
+            ("SCREENS", new[] { Act.PartyScreen, Act.SkillsScreen, Act.LordsScreen, Act.RealmScreen, Act.DivisionsScreen, Act.AtlasScreen, Act.InventoryScreen, Act.QuestsScreen, Act.CampScreen, Act.LegendScreen, Act.SiegeScreen }
                 .Select(a => (Controls.Labels[a].Replace(" (MAP)", ""), ctl.Name(a))).ToArray()),
             ("THE GAME", new[] { Act.QuickSave, Act.QuickLoad, Act.Menu, Act.Help, Act.Graphics }
                 .Select(a => (Controls.Labels[a], ctl.Name(a))).Append(("DISMISS A TIP", "ENTER")).ToArray()),

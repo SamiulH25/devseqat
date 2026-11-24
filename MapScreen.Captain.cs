@@ -101,10 +101,10 @@ partial class MapScreen
             if (on || over) ui.Rect(Kit.Inset(box, ui.U(2)), Color.White * (on ? 0.07f : 0.04f));
             if (on) ui.Frame(Kit.Inset(box, ui.U(2)), Kit.Gilt, ui.U(2));
             float rr = ui.U(16);
-            var centre = new Vector2(box.Center.X, box.Y + rr + ui.U(6));
+            var centre = new Vector2(box.Center.X, box.Y + rr + ui.U(4));
             ui.Ring(centre, rr, lv / Skills.Max, open > 0 ? Kit.Gilt : Style.Friendly, $"{lv:0}");
-            ui.TextC(sk.Name.ToUpperInvariant(), box.Center.X, centre.Y + rr + ui.U(5), open > 0 || on ? Kit.Gilt : Style.Text, 1);
-            if (open > 0) ui.TextC($"{open} TO CHOOSE", box.Center.X, centre.Y + rr + ui.U(15), Kit.Gilt, 1);
+            ui.TextC(sk.Name.ToUpperInvariant(), box.Center.X, centre.Y + rr + ui.U(3), open > 0 || on ? Kit.Gilt : Style.Text, 1);
+            if (open > 0) ui.TextC($"{open} TO CHOOSE", box.Center.X, centre.Y + rr + ui.U(13), Kit.Gilt, 1);
             if (!on && ui.Clicked(box)) { skillPick = sk.Id; forgetAsk = null; note = ""; }
         }
         var pick = Skills.All.First(k => k.Id == skillPick);
@@ -297,7 +297,7 @@ partial class MapScreen
         int fiefs = C.S.Settlements.Count(s => s.Owner == C.Player.Id);
         foreach (var (icon, label, value) in new[]
                  {
-                     ("clock", "DAYS IN THE FIELD", $"{C.Day}"), ("flag", "MOST BATTLES", $"{(comps.Count == 0 ? 0 : comps.Max(k => k.Battles))}"),
+                     ("clock", "DAYS IN THE FIELD", $"{C.Day}"), ("flag", "BATTLES FOUGHT", $"{(comps.Count == 0 ? 0 : comps.Max(k => k.Battles))}"),
                      ("skull", "FOES SLAIN", $"{comps.Sum(k => k.Kills):N0}"), ("shield", "COMPANIES", $"{comps.Count}"),
                      ("star", "PERKS", $"{cap.Perks.Count}"), ("tower", "FIEFS", $"{fiefs}"), ("chain", "LORDS HELD", $"{C.Player.Captives.Count}"),
                  })

@@ -7,7 +7,9 @@ public enum Difficulty { Easy, Normal, Hard }
 /// Player settings, saved as settings.json in the user's Ironfield folder (next to saves/).
 public sealed class Settings
 {
-    public int Width = 1280, Height = 720, UiScale; // UiScale 0 = automatic (by window height)
+    public int Width = 1280, Height = 720;
+    public float UiScale; // 0 = automatic (0.25x steps fitted to window width & height)
+    public static readonly float[] UiScales = { 0f, 1f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 3f };
     public bool Fullscreen, Fxaa = true, VSync = true, Ironman, ColorBlind;
     /// New campaigns: a captain who falls on a lost field may die, and a companion takes command (docs/archive/COMPANY.md C7).
     public bool CaptainDeath;
@@ -61,8 +63,15 @@ public sealed class Settings
         catch (Exception e) { Console.WriteLine("could not save settings: " + e.Message); }
     }
 
-    /// The interface scale for a window height (1 below 1440p so 1080p keeps full desktop room, 2 at 1440p, 3 at 4K), unless overridden.
-    public static int UiFor(int height) => Current.UiScale > 0 ? Current.UiScale : (height >= 2050 ? 3 : height >= 1350 ? 2 : 1);
+    /// The interface scale for a window size, in 0.25x steps from 1.0x (720p) to 3.0x (4K), fitted to both axes so
+    /// 900p (1.25x), 1080p (1.5x), 1440p (2.0x) and 4K (3.0x) keep consistent proportions without jumping 1 -> 2 -> 3.
+    public static float UiFor(int width, int height)
+    {
+        if (Current.UiScale > 0) return Math.Clamp(Current.UiScale, 0.75f, 3f);
+        float fit = MathF.Min(width / 1280f, height / 720f);
+        return Math.Clamp(MathF.Floor(fit * 4f + 0.05f) / 4f, 1f, 3f);
+    }
+    public static float UiFor(int height) => UiFor(height * 16 / 9, height);
 
     /// Difficulty knobs: how hard enemies hit in battle, and how well contracts pay.
     public float EnemyDamage => Difficulty switch { Difficulty.Easy => 0.8f, Difficulty.Hard => 1.2f, _ => 1f };

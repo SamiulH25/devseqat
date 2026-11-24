@@ -115,7 +115,7 @@ partial class MapScreen
         var mood = C.MoodOfCamp();
         float t = Ui.Instant ? 3.2f : Environment.TickCount64 / 1000f;
         var bar = new Rectangle(0, ui.H - ui.U(48), ui.W, ui.U(48));
-        int s0 = ui.S;
+        float s0 = ui.S;
         ui.S = CampPixel;
         try { CampScene(l, c, mood, t); }
         finally { ui.S = s0; }
@@ -176,7 +176,7 @@ partial class MapScreen
         foreach (var x in new[] { -st.HalfWidth(-4.5f) + 2.2f })
         {
             var p = st.Project(new Vector3(x, 0, -4.5f));
-            int sc = ui.S; ui.S = Math.Max(1, (int)(st.PerMetre(-4.5f) / 14f));
+            float sc = ui.S; ui.S = Math.Max(1, (int)(st.PerMetre(-4.5f) / 14f));
             try { Cart((int)p.X - ui.U(14), (int)p.Y, l, l.Night ? new Color(48, 34, 30) : new Color(112, 78, 50)); }
             finally { ui.S = sc; }
         }
@@ -189,7 +189,7 @@ partial class MapScreen
             var foot = new Vector3(fire.X + 1.05f, 0, fire.Z - 1.1f);
             var p = st.Project(foot);
             float pm = st.PerMetre(foot.Z);
-            int top = (int)(p.Y - 3.2f * pm), bw = Math.Max(ui.U(8), (int)(0.75f * pm)) / ui.S * ui.S;
+            int ps = Math.Max(1, (int)ui.S), top = (int)(p.Y - 3.2f * pm), bw = Math.Max(ui.U(8), (int)(0.75f * pm)) / ps * ps;
             ui.Rect(new Rectangle((int)p.X - ui.U(1), top, ui.U(2), (int)p.Y - top), l.Night ? new Color(44, 32, 28) : new Color(96, 68, 44));
             ui.Banner((int)p.X + bw / 2 + ui.U(2), top + ui.U(2), bw, (int)(1.15f * pm), hd with { Charge = (Emblem)k.Banner }, t * 1.3f + k.Id);
         }

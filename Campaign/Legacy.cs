@@ -98,6 +98,7 @@ public sealed partial class Campaign
         if (CannotRetire() is string why) return why;
         var c = LegendCompany!;
         Deed($"{Me.Name} hangs up the sword. {c.Name} ride on under {N(c.BattleHonours.Count, "battle honour")}.");
+        SealCurrentLegend("Retired");
         S.Won = true;
         S.Retired = true;
         S.GameOver = true;
@@ -113,6 +114,9 @@ public sealed partial class Campaign
         if (Successor is not Character heir) return "NO ONE TO TAKE COMMAND: A COMPANION MUST";
         var c = LegendCompany!;
         string old = Me.Name;
+        SealCurrentLegend("HandedOver", force: true);
+        S.Verses.Clear();
+        S.LegendSealed = false;
         Deed($"{old} hangs up the sword, and gives {c.Name} to {heir.Name}.");
         TakeCommand(heir);
         S.Won = true; // the legend counts as won; play on

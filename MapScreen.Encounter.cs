@@ -145,7 +145,7 @@ partial class MapScreen
         // Which company the mouse is on: a block on the field, or (below) a row of a plate.
         encHover = -1;
         for (int i = encBlocks.Count - 1; i >= 0; i--) if (ui.Hover(encBlocks[i].Box)) { encHover = i; break; }
-        int s0 = ui.S;
+        float s0 = ui.S;
         try { FieldScene(e, l, c, ground, layout, t); }
         finally { ui.S = s0; }
         if (encStage.Texture != null) ui.Sb.Draw(encStage.Texture, new Rectangle(0, 0, ui.W, ui.H), Color.White);
@@ -253,9 +253,14 @@ partial class MapScreen
         ui.Ribbon(cx, r.Y + ui.U(4), C.BattleName(C.Player.Pos).ToUpperInvariant(), Kit.Mul(Style.Foe, 0.66f));
         string hour = l.Night ? "NIGHT" : l.Dusk ? "DUSK" : "DAY";
         string sky = w.Snow ? "SNOW" : w.Rain >= 0.3f ? "RAIN" : w.Fog > 0.3f ? "FOG" : "CLEAR";
-        string soil = g.Wet > 0.5f ? "SODDEN GROUND" : "DRY GROUND";
+        string soil = (g.Wet > 0.5f || w.Rain >= 0.3f) ? "SODDEN GROUND" : "DRY GROUND";
+        string tide = C.TideNote(e.Pos), spells = C.SpellNote(e);
+        int stripH = ui.U(94) + (tide != "" ? ui.U(14) : 0) + (spells is { Length: > 0 } ? ui.U(14) : 0);
+        var back = new Rectangle(r.X + ui.U(6), r.Y + ui.U(28), r.Width - ui.U(12), stripH);
+        ui.Rect(back, new Color(10, 12, 18) * 0.72f);
+        ui.Frame(back, Kit.Gilt * 0.35f, ui.U(1));
         int y = r.Y + ui.U(34);
-        TextOnDark($"{hour}  ·  {sky}  ·  {soil}", cx, y, Style.Dim, 1);
+        TextOnDark($"{hour}  ·  {sky}  ·  {soil}", cx, y, Style.Text * 0.85f, 1);
         y += ui.U(18);
         var f = C.Player.Men > 0 ? Forecast(e) : (0, 0, 0, 0, 1); // the bar weighs what auto-resolve weighs, so it agrees with the words
         float me = f.Mine, them = f.Theirs, win = f.Win;
@@ -268,7 +273,6 @@ partial class MapScreen
         TextOnDark(word, cx, y, win >= 0.6f ? Style.Ok : win > 0.4f ? Style.Warn : Style.Bad, 2);
         y += ui.U(24);
         TextOnDark(C.GroundNote(e), cx, y, Kit.Gilt, 1);
-        string tide = C.TideNote(e.Pos), spells = C.SpellNote(e);
         if (tide != "") { y += ui.U(14); TextOnDark(ui.Fit(tide, r.Width), cx, y, TideColour(C.TideAt(e.Pos).Tradition), 1); }
         if (spells is { Length: > 0 }) { y += ui.U(14); TextOnDark(ui.Fit(spells.ToUpperInvariant(), r.Width), cx, y, Style.Dim, 1); }
     }

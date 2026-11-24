@@ -95,14 +95,17 @@ public static class PortraitPainter
     public static Color[] Resample(Color[] src, int sw, Rectangle crop, int dw, int dh)
     {
         var dst = new Color[dw * dh];
+        int sh = src.Length / sw;
         float kx = crop.Width / (float)dw, ky = crop.Height / (float)dh;
         for (int y = 0; y < dh; y++)
             for (int x = 0; x < dw; x++)
             {
                 float x0 = crop.X + x * kx, x1 = x0 + kx, y0 = crop.Y + y * ky, y1 = y0 + ky, sum = 0;
+                int sy0 = Math.Max(0, (int)y0), sy1 = Math.Min(sh, (int)MathF.Ceiling(y1));
+                int sx0 = Math.Max(0, (int)x0), sx1 = Math.Min(sw, (int)MathF.Ceiling(x1));
                 var acc = Vector3.Zero;
-                for (int sy = (int)y0; sy < y1; sy++)
-                    for (int sx = (int)x0; sx < x1; sx++)
+                for (int sy = sy0; sy < sy1; sy++)
+                    for (int sx = sx0; sx < sx1; sx++)
                     {
                         float wgt = (MathF.Min(x1, sx + 1) - MathF.Max(x0, sx)) * (MathF.Min(y1, sy + 1) - MathF.Max(y0, sy));
                         if (wgt <= 0) continue;

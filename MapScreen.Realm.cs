@@ -81,7 +81,7 @@ partial class MapScreen
     void Legend(Rectangle a)
     {
         int x = a.X + ui.U(4), w = a.Width - ui.U(8), y = a.Y;
-        int fit = Math.Max(20, w / (6 * ui.S));
+        int fit = Math.Max(20, (int)(w / (6 * ui.S)));
         string Cut(string s) => s.Length > fit ? s[..fit] : s;
         ui.Text($"YOUR FAME: {C.Fame} ({Campaign.FameWord(C.Fame)})", x, y, Kit.Gilt, 2);
         y += ui.U(18);
@@ -294,7 +294,7 @@ partial class MapScreen
             ui.Rect(new Rectangle(c.X + ui.U(1), y + ui.U(5), ui.U(1), step - ui.U(4)), Color.White * 0.1f);
             ui.Rect(new Rectangle(c.X, y + ui.U(2), ui.U(3), ui.U(3)), col);
             ui.Text($"DAY {(int)(e.At / 24) + 1}", c.X + ui.U(10), y, Style.Dim, 1);
-            int tx = c.X + ui.U(64), fit = (c.Right - tx) / (6 * ui.S);
+            int tx = c.X + ui.U(64), fit = (int)((c.Right - tx) / (6 * ui.S));
             ui.Text(t.Length > fit ? t[..Math.Max(1, fit - 1)] + "." : t, tx, y, C.IsDeed(e) ? Kit.Parchment : Style.Text, 1);
             y += step;
         }

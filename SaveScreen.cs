@@ -122,7 +122,7 @@ sealed class SaveScreen
             NameBox(ui, box);
             bool exists = camp?.Saves.Any(e => e.Kind == SaveKind.Named && e.Label == name.Trim()) ?? false;
             string? cannot = current == null ? "NOTHING TO SAVE" : Saves.CannotSave(current, SaveKind.Named, name);
-            if ((ui.Button(Next(140), exists ? "OVERWRITE" : "SAVE", cannot == null) || (Hit(Keys.Enter) && cannot == null)) && current != null)
+            if ((ui.Button(Next(140), exists ? "OVERWRITE" : "SAVE", cannot == null, active: cannot == null) || (Hit(Keys.Enter) && cannot == null)) && current != null)
             {
                 savePath = Saves.Save(current, SaveKind.Named, name);
                 OnSaved?.Invoke(savePath);
@@ -135,7 +135,7 @@ sealed class SaveScreen
         else
         {
             bool readable = save?.Meta != null;
-            if (ui.Button(Next(140), "LOAD", readable) || (Hit(Keys.Enter) && readable)) { var p = save!.Path; Close(); OnLoad?.Invoke(p); return; }
+            if (ui.Button(Next(140), "LOAD", readable, active: readable) || (Hit(Keys.Enter) && readable)) { var p = save!.Path; Close(); OnLoad?.Invoke(p); return; }
         }
         bool playing = camp != null && camp.Id == current?.CampaignId;
         if (save != null && ui.Button(Next(150), confirm == save.Path ? "SURE? DELETE" : "DELETE SAVE", !(playing && current!.Ironman)))

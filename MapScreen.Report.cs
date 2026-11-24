@@ -87,7 +87,7 @@ partial class MapScreen
             ("WOUNDED", mine.Sum(x => x.Wounded), theirs.Sum(x => x.Wounded)), ("TAKEN", mine.Sum(x => x.Captured), theirs.Sum(x => x.Captured)),
             ("FLED", mine.Sum(x => x.FledLost), theirs.Sum(x => x.FledLost)),
         };
-        int y = c.Y + sh + ui.U(8), mid = c.Center.X, half = c.Width / 2 - ui.U(44), bh = ui.U(9);
+        int y = c.Y + sh + ui.U(8), mid = c.Center.X, half = c.Width / 2 - ui.U(68), bh = ui.U(9);
         foreach (var (label, l, rr) in rows)
         {
             int max = Math.Max(1, Math.Max(l, rr));
@@ -99,7 +99,7 @@ partial class MapScreen
             if (rw2 > 0) ui.HGrad(new Rectangle(mid + ui.U(36), y, rw2, bh), foeSide.Ui, Kit.Mul(foeSide.Ui, 0.5f));
             ui.TextC(label, mid, y + ui.U(1), Style.Text, 1);
             ui.TextR($"{l}", mid - ui.U(40) - lw2, y + ui.U(1), Kit.Gilt, 1);
-            ui.Text($"{rr}", mid + ui.U(40) + rw2, y + ui.U(1), foeSide.Ui, 1);
+            ui.Text($"{rr}", mid + ui.U(40) + rw2, y + ui.U(1), Style.Text, 1);
             y += ui.U(14);
         }
         // The company of the day: most kills this battle, from its ledger.
@@ -206,7 +206,7 @@ partial class MapScreen
             if (rh >= ui.U(20)) ui.Portrait(t, new Rectangle(c.X - ui.U(2), y, ui.U(20), rh - ui.U(2)));
             int nx = c.X + (rh >= ui.U(20) ? ui.U(22) : 0);
             string nm = $"{x.Name} ({t.Name})".ToUpperInvariant();
-            int fit = Math.Max(6, (c.X + cols[0] - ui.U(8) - nx) / (6 * ui.S));
+            int fit = Math.Max(6, (int)((c.X + cols[0] - ui.U(8) - nx) / (6 * ui.S)));
             ui.Text(nm.Length > fit ? nm[..fit] : nm, nx, ty, Style.Text, 1);
             int bx = c.X + cols[0];
             ui.Bar(new Rectangle(bx, ty + ui.U(2), ui.U(30), ui.U(4)), x.MenAfter / (float)Math.Max(1, x.MenBefore), Style.Sides[2].Ui);
@@ -237,7 +237,7 @@ partial class MapScreen
         int ready = rep.Companies.Count(x => x.Team == 0 && x.UpgradeReady);
         if (ready > 0)
         {
-            ui.Chip(c.X, y, $"{ready} COMPANY{(ready == 1 ? "" : "IES")} READY TO TRAIN", Kit.Gilt, "up");
+            ui.Chip(c.X, y, $"{ready} {(ready == 1 ? "COMPANY" : "COMPANIES")} READY TO TRAIN", Kit.Gilt, "up");
             y += ui.U(16);
             ui.Text("TO TIER III IN CAMP, HIGHER IN A TOWN.", c.X, y, Style.Dim, 1);
             y += ui.U(16);

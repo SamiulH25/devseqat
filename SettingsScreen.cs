@@ -81,7 +81,12 @@ sealed class SettingsScreen
                 if (Choice(1, "ON", s.Fullscreen)) { s.Fullscreen = true; host.ApplyVideo(); }
                 Row();
                 Label("INTERFACE SCALE");
-                for (int i = 0; i < 4; i++) if (Choice(i, i == 0 ? "AUTO" : $"X{i}", s.UiScale == i)) s.UiScale = i;
+                for (int i = 0; i < Settings.UiScales.Length; i++)
+                {
+                    float sc = Settings.UiScales[i];
+                    string lbl = sc == 0 ? "AUTO" : sc == MathF.Floor(sc) ? $"{(int)sc}X" : $"{sc:0.##}X";
+                    if (ui.Button(new Rectangle(body.X + ui.U(260) + i * ui.U(63), y, ui.U(58), ui.U(26)), lbl, true, "", MathF.Abs(s.UiScale - sc) < 0.01f)) s.UiScale = sc;
+                }
                 Row();
                 Label("GRAPHICS");
                 foreach (var (q, i) in new[] { (Quality.High, 0), (Quality.Medium, 1), (Quality.Low, 2) })

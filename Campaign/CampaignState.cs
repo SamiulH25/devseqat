@@ -751,6 +751,14 @@ public sealed class CampaignState
     /// World crisis state (docs/pre-demo/THE_WILD.md WI8) and regions that have spawned a legendary apex (WI7).
     public WorldCrisis Crisis = new();
     public HashSet<string> LegendRegions = new();
+    /// The captain's earned Legend Verses (docs/pre-demo/LEGENDS.md LG1) and whether this run has sealed into legends.json.
+    public List<LegendVerse> Verses = new();
+    public bool LegendSealed;
+    /// Snapshot of active past Legends loaded at Campaign.New (LG4: deterministic per save even if legends.json changes later).
+    public List<SealedLegend> WorldLegends = new();
+    /// Ids of past Legends whose monuments were visited or whose relics were claimed in this campaign.
+    public HashSet<string> LegendMonumentsVisited = new();
+    public HashSet<string> LegendRelicsClaimed = new();
 
     static readonly JsonSerializerOptions Json = new() { IncludeFields = true, WriteIndented = true };
 

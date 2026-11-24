@@ -118,6 +118,7 @@ public partial class Campaign
         m.Deed($"Knighted as {title} on day {Day}.");
         c.Cohesion = MathF.Min(30, c.Cohesion + 2);
         Deed($"Knighted {m.Name} of {c.Name} as {title}.", "company");
+        RecordVerse("maker_knights", SettlementNear(Player.Pos)?.Name ?? "camp", Player.Pos, $"Knighted {m.Name} of {c.Name} as {title}.", m.Name, m.Id);
         LogYours($"You knight {m.Name} of {c.Name} as {title}.");
         return null;
     }

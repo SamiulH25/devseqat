@@ -93,6 +93,18 @@ public partial class Campaign
             CompanionsReact(won ? "won" : "lost");
             if (r.Omen > 0) { S.Omen += r.Omen; CompanionsReact("craft"); } // craft draws Omen (C2)
             FormsAfterBattle(r);
+            if (won)
+            {
+                string foeName = (playerTeam == 0 ? side1 : side0).FirstOrDefault()?.Name ?? "the enemy";
+                if (notable) RecordVerse("first_blood", field, Player.Pos, $"Won a notable victory at {field} against {foeName}.");
+                int ourStart = reports.Where(x => x.Team == 0).Sum(x => x.MenBefore);
+                int foeStart = reports.Where(x => x.Team == 1).Sum(x => x.MenBefore);
+                if (ourStart >= 15 && foeStart >= ourStart * 1.6f)
+                    RecordVerse("against_odds", field, Player.Pos, $"Defeated {foeStart} foes with {ourStart} men at {field}.");
+                if (siegeBattle)
+                    RecordVerse("wall_breaker", field, Player.Pos, $"Stormed {field} and broke the garrison.");
+            }
+            SyncLegendVerses();
             CircleDaily(); // a fallen master leaves the circle leaderless (Circle.cs)
         }
 
@@ -210,6 +222,7 @@ public partial class Campaign
         {
             S.GameOver = true;
             Log("You are taken, and your captors will not ransom you. Your war is over.");
+            SealCurrentLegend("Fallen");
         }
         else if (r.Captain == LeaderFate.Captured || (!won && Player.Men == 0))
         {

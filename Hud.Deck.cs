@@ -405,7 +405,16 @@ sealed partial class Hud
             TextC(kit.Fit(info.Short, r.Width - U(2)), r.Center.X, r.Bottom - U(10), col, 1);
             if (info.Key is Act k && Ctl.Name(k) is { Length: > 0 and <= 2 } key) TextR(key, r.Right - U(3), r.Y + U(3), hover ? Kit.Parchment : Dim, 1);
         }
-        if (over is not Cmd oc) { TextR($"{Ctl.Name(Act.Help)} KEYS", deck.Right - U(8), deck.Y - U(10), Color.White * 0.6f, 1); return; }
+        if (over is not Cmd oc)
+        {
+            string kh = $"{Ctl.Name(Act.Help)} KEYS";
+            int kw = TW(kh, 1) + U(12);
+            var kp = new Rectangle(deck.Right - U(2) - kw, deck.Y - U(15), kw, U(13));
+            Rect(kp, new Color(12, 14, 20) * 0.78f);
+            Frame(kp, Color.White * 0.2f, U(1));
+            TextR(kh, kp.Right - U(6), kp.Y + U(3), Style.Text * 0.9f, 1);
+            return;
+        }
         var oi = Info[oc];
         string tip = Unlearned(oc, who) is string why ? why : oc == Cmd.Rule && who.FirstOrDefault(s => s.Rule != StandingRule.None) is { } ruled ? "NOW: " + Battle.RuleText(ruled.Rule).ToUpperInvariant() : oi.Tip;
         var card = new Rectangle(deck.X, deck.Y - U(38), deck.Width, U(34));

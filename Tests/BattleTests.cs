@@ -218,6 +218,31 @@ public static partial class SelfTest
 
     /// Melee cavalry on Charge consistently charge, break through or disengage, turn around, and recharge until the enemy
     /// company is broken/eliminated — never getting stuck in CavState.Melee.
+    /// Smooth 0.25x-stepped UI scaling fitted to both width and height across common resolutions.
+    static void UiScaling()
+    {
+        float saved = Settings.Current.UiScale;
+        try
+        {
+            Settings.Current.UiScale = 0;
+            Check(Settings.UiFor(1280, 720) == 1.0f, $"720p -> 1.0x ({Settings.UiFor(1280, 720)})");
+            Check(Settings.UiFor(1280, 800) == 1.0f, $"800p -> 1.0x ({Settings.UiFor(1280, 800)})");
+            Check(Settings.UiFor(1600, 900) == 1.25f, $"900p -> 1.25x ({Settings.UiFor(1600, 900)})");
+            Check(Settings.UiFor(1920, 1080) == 1.5f, $"1080p -> 1.5x ({Settings.UiFor(1920, 1080)})");
+            Check(Settings.UiFor(2560, 1440) == 2.0f, $"1440p -> 2.0x ({Settings.UiFor(2560, 1440)})");
+            Check(Settings.UiFor(3440, 1440) == 2.0f, $"ultrawide 1440p -> 2.0x ({Settings.UiFor(3440, 1440)})");
+            Check(Settings.UiFor(3840, 2160) == 3.0f, $"4K -> 3.0x ({Settings.UiFor(3840, 2160)})");
+            Check(Settings.UiFor(1024, 768) == 1.0f, $"narrow 1024x768 clamped to 1.0x ({Settings.UiFor(1024, 768)})");
+            Settings.Current.UiScale = 1.75f;
+            Check(Settings.UiFor(1280, 720) == 1.75f, "manual UiScale override respected");
+            Check(PixelFont.Width("TEST", 1.5f) == 36, $"fractional PixelFont.Width ({PixelFont.Width("TEST", 1.5f)})");
+            var px = new Color[PortraitPainter.W * PortraitPainter.H];
+            foreach (int h in new[] { 60, 75, 90, 105 })
+                Check(PortraitPainter.Resample(px, PortraitPainter.W, new Rectangle(0, 0, PortraitPainter.W, PortraitPainter.H), h * 4 / 5, h).Length == h * 4 / 5 * h, $"portrait resample at h={h}");
+        }
+        finally { Settings.Current.UiScale = saved; }
+    }
+
     static void CavalryCycleCharge()
     {
         (int recharges, int meleeTicks, int enemyLeft, int rallied) Sim(float drill)

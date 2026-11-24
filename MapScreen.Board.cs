@@ -166,7 +166,7 @@ partial class MapScreen
         {
             ui.Text("YOUR RETINUE", hx, hy, Kit.Gilt, 1);
             ui.Text("THEY OBEY YOU AT ONCE", hx, hy + ui.U(13), Style.Dim, 1);
-            ui.Text($"{comps.Count} COMPANIES . {comps.Sum(c => c.Men)} MEN", hx, hy + ui.U(25), Style.Dim, 1);
+            ui.Text($"{comps.Count} {(comps.Count == 1 ? "COMPANY" : "COMPANIES")} · {comps.Sum(c => c.Men)} MEN", hx, hy + ui.U(25), Style.Dim, 1);
         }
         else
         {

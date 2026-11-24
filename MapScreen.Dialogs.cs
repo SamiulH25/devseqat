@@ -42,34 +42,42 @@ partial class MapScreen
     /// At the walls of an enemy town or castle: besiege, assault, wait or leave.
     /// Your siege camp's works (docs/archive/SIEGECRAFT.md A3): how battered the walls are, what is built or building, and a row to
     /// order each work.
+    /// "OF THE BREVON" vs "OF THE SKARLANDS" without doubling "THE".
+    string OfRealm(int faction)
+    {
+        string n = C.FactionNames[faction].ToUpperInvariant();
+        return n.StartsWith("THE ") ? $"OF {n}" : $"OF THE {n}";
+    }
+
     void SiegeWorksRows(Settlement s, Rectangle r, int x, int y)
     {
         var works = C.WorksOf(C.Player);
-        string state = works.Count == 0 ? "NO ENGINES IN YOUR CAMP." : string.Join(", ", works.Select(w => Engines.Get(w.Id).Name.ToUpperInvariant() + (w.ReadyAt <= C.S.Hours ? " (READY)" : $" ({w.ReadyAt - C.S.Hours:0} H)")));
+        string state = works.Count == 0 ? "NO EXTRA ENGINES BUILT." : string.Join(", ", works.Select(w => Engines.Get(w.Id).Name.ToUpperInvariant() + (w.ReadyAt <= C.S.Hours ? " (READY)" : $" ({w.ReadyAt - C.S.Hours:0} H)")));
         ui.Text($"WALLS BATTERED {s.Battered * 100:0}%{(s.Battered >= 1 ? ": A BREACH" : "")}", x, y, s.Battered >= 1 ? Style.Ok : Style.Text, 1);
         ui.Text(ui.Fit(state, r.Width - ui.U(220)), x + ui.U(170), y, Style.Dim, 1);
-        y += ui.U(20);
+        y += ui.U(18);
         foreach (var def in Campaign.SiegeWorkDefs)
         {
-            var row = new Rectangle(x, y, r.Width - ui.U(48), ui.U(30));
+            var row = new Rectangle(x, y, r.Width - ui.U(48), ui.U(40));
             TownRow(row);
-            ui.Text(def.Name.ToUpperInvariant(), row.X + ui.U(10), row.Y + ui.U(5), Style.Text, 1);
-            ui.Text(ui.Fit(def.Line.ToUpperInvariant(), row.Width - ui.U(200)), row.X + ui.U(10), row.Y + ui.U(17), Style.Dim, 1);
+            ui.Text(def.Name.ToUpperInvariant(), row.X + ui.U(10), row.Y + ui.U(4), Style.Text, 1);
+            int ly = row.Y + ui.U(16);
+            foreach (var line in ui.Wrap(def.Line.ToUpperInvariant(), row.Width - ui.U(196)).Take(2)) { ui.Text(line, row.X + ui.U(10), ly, Style.Dim, 1); ly += ui.U(10); }
             var why = C.CannotBuildWork(s, def.Id);
             float hours = def.Build * (C.Has("Siegecraft") ? 0.5f : 1);
-            var bt = new Rectangle(row.Right - ui.U(176), row.Y + ui.U(2), ui.U(172), ui.U(26));
+            var bt = new Rectangle(row.Right - ui.U(176), row.Y + ui.U(7), ui.U(172), ui.U(26));
             if (ui.Button(bt, $"BUILD {hours:0} H", why == null, $"{def.Cost:0}")) note = C.BuildWork(s, def.Id) ?? $"{def.Name.ToUpperInvariant()} UNDER WAY";
             if (why != null && ui.Hover(bt)) note = why;
-            y += ui.U(34);
+            y += ui.U(44);
         }
     }
 
     void SiegePanel()
     {
         var s = at!;
-        var r = Modal(680, C.Besieging == s ? 560 : 400, (C.Besieging == s ? "THE SIEGE OF " : "") + s.Name.ToUpperInvariant(), SideColor(s.Faction));
+        var r = Modal(680, C.Besieging == s ? 580 : 400, (C.Besieging == s ? "THE SIEGE OF " : "") + s.Name.ToUpperInvariant(), SideColor(s.Faction));
         int x = r.X + ui.U(24), y = r.Y + ui.U(50);
-        ui.Text($"{s.KindWord} OF THE {C.FactionNames[s.Faction].ToUpperInvariant()}", x, y, Style.Dim, 1);
+        ui.Text($"{s.KindWord} {OfRealm(s.Faction)}", x, y, Style.Dim, 1);
         y += ui.U(18);
         ui.Text($"GARRISON {C.GarrisonMen(s)} MEN   SUPPLIES {s.Supplies:0} DAYS", x, y, Style.Text);
         y += ui.U(24);
@@ -92,17 +100,17 @@ partial class MapScreen
             y += ui.U(14);
             bool tight = C.TightEncirclement(s);
             int days = Math.Max(0, (int)((C.S.Hours - s.SiegeSince) / 24));
-            ui.Text(tight ? $"TIGHT ENCIRCLEMENT (DAY {days}) — STORES FALLING DAILY." : $"LOOSE ENCIRCLEMENT (DAY {days}) — HALF SUPPLIES TRICKLE IN.", x, y, tight ? Style.Dim : Style.Warn, 1);
+            ui.Text(tight ? $"TIGHT ENCIRCLEMENT (DAY {days}) - STORES FALLING DAILY." : $"LOOSE ENCIRCLEMENT (DAY {days}) - HALF SUPPLIES TRICKLE IN.", x, y, tight ? Style.Dim : Style.Warn, 1);
             y += ui.U(20);
             SiegeWorksRows(s, r, x, y);
             int sy = r.Bottom - ui.U(76);
             int sw = ui.U(156);
-            string sapLabel = C.SapReady(s) ? "SAP READY" : s.SapReadyAt > 0 ? $"SAP ({MathF.Ceiling(s.SapReadyAt - (float)C.S.Hours)}H)" : "MINE SAP (180C)";
-            if (ui.Button(new Rectangle(x, sy, sw, ui.U(26)), sapLabel, s.SapReadyAt <= 0 && C.S.Gold >= 180)) { note = C.MineSap(s) ?? ""; }
+            string sapLabel = C.SapReady(s) ? "SAP READY" : s.SapReadyAt > 0 ? $"SAP ({MathF.Ceiling(s.SapReadyAt - (float)C.S.Hours)}H)" : "MINE SAP";
+            if (ui.Button(new Rectangle(x, sy, sw, ui.U(26)), sapLabel, s.SapReadyAt <= 0 && C.S.Gold >= 180, s.SapReadyAt <= 0 ? "180" : "")) { note = C.MineSap(s) ?? ""; }
             if (Campaign.Level(s, "walls") >= 2)
             {
-                string ditchLabel = s.DitchFilled ? "DITCH FILLED" : "FILL DITCH (80C)";
-                if (ui.Button(new Rectangle(x + sw + ui.U(8), sy, sw, ui.U(26)), ditchLabel, !s.DitchFilled && C.S.Gold >= 80)) { note = C.FillDitch(s) ?? ""; }
+                string ditchLabel = s.DitchFilled ? "DITCH FILLED" : "FILL DITCH";
+                if (ui.Button(new Rectangle(x + sw + ui.U(8), sy, sw, ui.U(26)), ditchLabel, !s.DitchFilled && C.S.Gold >= 80, !s.DitchFilled ? "80" : "")) { note = C.FillDitch(s) ?? ""; }
             }
             bool canTerms = C.CanOfferTerms(s, out string termsWhy);
             var termsRect = new Rectangle(r.Right - ui.U(24) - sw, sy, sw, ui.U(26));
@@ -121,7 +129,7 @@ partial class MapScreen
         }
         else
         {
-            if (ui.Button(Bt(0), "ASSAULT", C.Player.Men > 0)) { panel = PanelKind.None; speed = 0; OnBattle?.Invoke(C.PrepareAssault(s)); return; }
+            if (ui.Button(Bt(0), "ASSAULT", C.Player.Men > 0, active: C.Player.Men > 0)) { panel = PanelKind.None; speed = 0; OnBattle?.Invoke(C.PrepareAssault(s)); return; }
             if (ui.Button(Bt(1), "AUTO-RESOLVE", C.Player.Men > 0)) { C.AutoResolveAssault(s); ShowResults(); return; }
             if (ui.Button(Bt(2), "WAIT 12 H")) { C.Rest(12); if (C.Encounter != null) panel = PanelKind.None; }
         }
@@ -140,12 +148,21 @@ partial class MapScreen
         var r = Modal(640, 150 + 16 * lines.Length + (won ? 40 : 0), title, won ? Style.Accent : Style.Text);
         int y = r.Y + ui.U(62);
         foreach (var line in lines) { ui.TextC(line, r.X + r.Width / 2f, y, Style.Text, 1); y += ui.U(16); }
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(44), ui.U(220), ui.U(30)), won ? "PLAY ON" : "CONTINUE"))
-        { C.Beat = null; panel = PanelKind.None; }
-        if (won && ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(80), ui.U(220), ui.U(30)), "TO THE TITLE"))
-        { C.Beat = null; Write(SaveKind.Auto); OnTitle?.Invoke(); }
-        if (!won && ui.Button(new Rectangle(r.Right - ui.U(150), r.Bottom - ui.U(44), ui.U(130), ui.U(30)), $"REALM ({ctl.Name(Act.RealmScreen)})"))
-        { C.Beat = null; realmTab = 1; OpenScreen(PanelKind.Realm); }
+        if (won)
+        {
+            if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(44), ui.U(220), ui.U(30)), "PLAY ON", active: true))
+            { C.Beat = null; panel = PanelKind.None; }
+            if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(80), ui.U(220), ui.U(30)), "TO THE TITLE"))
+            { C.Beat = null; Write(SaveKind.Auto); OnTitle?.Invoke(); }
+        }
+        else
+        {
+            int cw = ui.U(180), rw = ui.U(150), gap = ui.U(14), bx0 = r.Center.X - (cw + gap + rw) / 2;
+            if (ui.Button(new Rectangle(bx0, r.Bottom - ui.U(44), cw, ui.U(30)), "CONTINUE", active: true))
+            { C.Beat = null; panel = PanelKind.None; }
+            if (ui.Button(new Rectangle(bx0 + cw + gap, r.Bottom - ui.U(44), rw, ui.U(30)), $"REALM ({ctl.Name(Act.RealmScreen)})"))
+            { C.Beat = null; realmTab = 1; OpenScreen(PanelKind.Realm); }
+        }
     }
 
     /// Ironman: the captain was taken and executed. The campaign (and its save) ends here.

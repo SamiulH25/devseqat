@@ -46,12 +46,12 @@ sealed partial class Hud
             if (Movable(d) > 0) divAdds.Add((new Rectangle(r.Right - U(50), r.Y + U(2), U(46), U(12)), d));
         // The tray sits over your own panel: a head row, then the reserve's chips three to a row.
         var waiting = B.ReservesOf(0);
-        int pending = B.CallUpsOf(0).Count(), chips = Math.Min(9, waiting.Count + pending);
-        int rows = Math.Max(1, (chips + 2) / 3), h = U(30) + rows * U(18);
+        int pending = B.CallUpsOf(0).Count(), chips = Math.Min(8, waiting.Count + pending);
+        int rows = Math.Max(1, (chips + 1) / 2), h = U(30) + rows * U(18);
         tray = new Rectangle(player.X, player.Y - h - U(6), player.Width, h);
-        int cw = (tray.Width - U(16)) / 3;
+        int cw = (tray.Width - U(14)) / 2;
         for (int i = 0; i < Math.Min(chips, waiting.Count); i++)
-            reserveChips.Add((new Rectangle(tray.X + U(6) + i % 3 * (cw + U(2)), tray.Y + U(18) + i / 3 * U(18), cw, U(15)), i));
+            reserveChips.Add((new Rectangle(tray.X + U(6) + i % 2 * (cw + U(2)), tray.Y + U(18) + i / 2 * U(18), cw, U(15)), i));
         if (Deploying && Movable(null) > 0) toMe = new Rectangle(tray.Right - U(70), tray.Y + U(3), U(64), U(12));
         else if (Deploying && B.DivisionsOf(0).Any()) autoFill = new Rectangle(tray.Right - U(70), tray.Y + U(3), U(64), U(12)); // OF4
         else if (!Deploying && B.DivisionsOf(0).Any(d => d.Horn != null && d.Alive > 0)) hornButton = new Rectangle(tray.Right - U(96), tray.Y + U(3), U(90), U(12));
@@ -82,13 +82,13 @@ sealed partial class Hud
             TextR(n, r.Right - U(4), r.Y + U(4), Dim, 1);
         }
         // Riders already gone back for a company: the chips after the reserve's, with the time left.
-        int k = reserveChips.Count, cw = (tray.Width - U(16)) / 3;
+        int k = reserveChips.Count, cw = (tray.Width - U(14)) / 2;
         foreach (var (c, eta) in B.CallUpsOf(0))
         {
-            if (k >= 9) break;
-            var r = new Rectangle(tray.X + U(6) + k % 3 * (cw + U(2)), tray.Y + U(18) + k / 3 * U(18), cw, U(15));
+            if (k >= 8) break;
+            var r = new Rectangle(tray.X + U(6) + k % 2 * (cw + U(2)), tray.Y + U(18) + k / 2 * U(18), cw, U(15));
             Frame(r, Warn * 0.7f, U(1));
-            string n = $"IN {MathF.Max(0, eta):0}S";
+            string n = $"{MathF.Max(0, eta):0}S";
             Text(kit.Fit(Troops.Get(c.Troop).Name.ToUpperInvariant(), r.Width - TW(n, 1) - U(12)), r.X + U(4), r.Y + U(4), Warn, 1);
             TextR(n, r.Right - U(4), r.Y + U(4), Warn, 1);
             k++;

@@ -38,7 +38,7 @@ sealed partial class Hud
     readonly PixelFont font;
 
     // Per-frame state, set by the game before Draw.
-    public int Ui = 1;
+    public float Ui = 1;
     public Battle B = null!;
     public HashSet<Squad> Selected = null!;
     /// The caster you are directing and the spell you picked for it (-1 = none; docs/archive/MAGIC_AURA.md 3.1).
@@ -106,7 +106,7 @@ sealed partial class Hud
     {
         W = vp.Width;
         H = vp.Height;
-        Ui = Settings.UiFor(H);
+        Ui = Settings.UiFor(W, H);
         cards.Clear(); buttons.Clear(); menu.Clear(); speedBtns.Clear(); armChips.Clear();
         pauseBtn = modeBtn = captainBtn = topBar = deck = Rectangle.Empty;
         hiddenCards = 0;
@@ -526,7 +526,7 @@ sealed partial class Hud
 
     /// `top`: metres at the top of the box (higher shows the weapon's tip, lower closes in on the face).
     /// `palette` paints the coats and shields in a realm's colours (a `Style.Sides` index).
-    public static void Portrait(SpriteBatch sb, Art art, UnitType t, Rectangle box, int k, float top = 1.92f, int palette = 0)
+    public static void Portrait(SpriteBatch sb, Art art, UnitType t, Rectangle box, float k, float top = 1.92f, int palette = 0)
     {
         var l = t.Look;
         if (l.Beast) // a beast's portrait is its head, big
@@ -543,11 +543,15 @@ sealed partial class Hud
         {
             var src = art[key + (pal ?? side)];
             var dest = new Rectangle((int)(box.Center.X + xm / Art.Px * k - src.Width * k / 2f), (int)(box.Y + (top - ym) / Art.Px * k - src.Height * k / 2f),
-                src.Width * k, src.Height * k);
+                (int)(src.Width * k), (int)(src.Height * k));
             var d = Rectangle.Intersect(dest, box);
             if (d.IsEmpty) return;
-            var s2 = new Rectangle(src.X + (d.X - dest.X) / k, src.Y + (d.Y - dest.Y) / k, d.Width / k, d.Height / k);
-            sb.Draw(art.Atlas, new Rectangle(d.X, d.Y, s2.Width * k, s2.Height * k), s2, tint ?? Color.White);
+            int sx = (int)((d.X - dest.X) / k), sy = (int)((d.Y - dest.Y) / k);
+            int sw = Math.Min(src.Width - sx, (int)MathF.Ceiling(d.Width / k));
+            int sh = Math.Min(src.Height - sy, (int)MathF.Ceiling(d.Height / k));
+            if (sw <= 0 || sh <= 0) return;
+            var s2 = new Rectangle(src.X + sx, src.Y + sy, sw, sh);
+            sb.Draw(art.Atlas, d, s2, tint ?? Color.White);
         }
         float WeaponY(string w) => 1.0f + (0.5f - SpriteSheet.Grip[w]) * art[w + "/0"].Height * Art.Px;
         if (t.Mount is { Barding: "wolf" }) Part("whead", -0.3f, 0.8f, "/n", new Color(150, 140, 135));
@@ -600,7 +604,7 @@ sealed partial class Hud
         else if (!p.Mounted && B.EngineNear(p) is { } near) prompt = $"{Ctl.Name(Act.Interact)}  WORK {near.Def.Name.ToUpperInvariant()}";
         else if (!p.Mounted && B.LooseHorses.Any(h => Vector2.DistanceSquared(h.Pos, p.Pos) < 2.8f * 2.8f)) prompt = $"{Ctl.Name(Act.Interact)}  MOUNT HORSE";
         else if (p.Mounted && !p.Couched && p.Speed > 6) prompt = $"{Ctl.Name(Act.Couch)}  COUCH LANCE";
-        else if (p.Mounted && MathF.Abs(p.Speed) < 1.5f) prompt = $"{Ctl.Name(Act.Interact)}  DISMOUNT";
+        else if (p.Mounted && MathF.Abs(p.Speed) < 1.5f && !WheelOpen && !CapWheelOpen) prompt = $"{Ctl.Name(Act.Interact)}  DISMOUNT";
         // Orders by looking (PT4): hold the hold key to plant the line where you look; charge sends them at the company you look at.
         if (HoldPlace >= 0.25f) prompt = "LET GO: HOLD THAT GROUND";
         else if (prompt == null && LookFoe is { Alive: > 0 } lf) prompt = $"{Ctl.Name(Act.Charge)}  ATTACK {lf.Name.ToUpperInvariant()}";
@@ -755,7 +759,7 @@ sealed partial class Hud
         {
             ((s.Company?.Name is { Length: > 0 } n ? n + ": " : "") + t.Name.ToUpperInvariant(), s.Team == 0 ? Friendly : Foe),
             ($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]} {t.Class.ToString().ToUpperInvariant()}   {s.Alive}/{s.StartCount} MEN", Color.White),
-            ($"{StateOf(s)}   {FormationName(s.Formation)}   " + s.Order switch { Order.Follow => "FOLLOWING YOU", Order.Charge => s.Target != null ? "ATTACKING" : "CHARGING", _ => "HOLDING" }
+            ((s.Alive == 0 || s.Units.Count(u => u.Active && u.Routing) > s.Alive ? StateOf(s) + "   " : "") + $"{FormationName(s.Formation)}   " + s.Order switch { Order.Follow => "FOLLOWING YOU", Order.Charge => s.Target != null ? "ATTACKING" : "CHARGING", _ => "HOLDING" }
                 + (!s.FireAtWill ? "   HOLDING FIRE" : "") + (s.Rule != StandingRule.None ? "   RULE " + Battle.RuleTag(s.Rule) : "") + (s.Queue.Count > 0 ? $"   +{s.Queue.Count} QUEUED" : ""), Dim),
             ((s.Swarm ? "A MOB" : Battle.GradeName(s.Grade).ToUpperInvariant() + (RanksOf(s) is { Length: > 0 } rk ? "   " + rk : "")) + (PlanOf(s) is { Length: > 0 } pl ? "   " + pl : ""), s.Swarm ? Dim : GradeColor(s.Grade)),
             ($"MORALE {morale}   STAMINA {stamina}" + (t.Ammo > 0 ? $"   ARROWS {act.Sum(u => u.Ammo)}" : ""), morale < 30 ? Bad : Dim),

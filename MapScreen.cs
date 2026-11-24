@@ -8,7 +8,7 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed partial class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help, Talk, Inventory, Quests, Saves, Camp, Fallen }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help, Talk, Inventory, Quests, Saves, Camp, Fallen, Legend, Monument }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
@@ -266,6 +266,7 @@ sealed partial class MapScreen
         else if (renaming == null && panel == PanelKind.Settlement && tab != "" && ctl.Pressed(Act.Menu)) { tab = ""; note = ""; } // out of the building, onto the street
         else if (panel == PanelKind.Camp && campMan != null && ctl.Pressed(Act.Menu)) campMan = null; // from a man's page back to the fires
         else if (panel == PanelKind.Fallen && ctl.Pressed(Act.Menu)) panel = bookFrom; // the book closes where it was opened
+        else if (panel == PanelKind.Legend && ctl.Pressed(Act.Menu)) { sealConfirm = false; panel = CameFrom(PanelKind.Legend); }
         else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Quests or PanelKind.Camp)
             panel = panel is PanelKind.Upgrade or PanelKind.Roll ? PanelKind.Party : panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Siege ? PanelKind.None : CameFrom(panel);
         if (renaming != null) Rename();
@@ -274,6 +275,7 @@ sealed partial class MapScreen
         // A career beat or the council's word waits for the map to be clear (F5).
         if (panel == PanelKind.None && C.Beat != null) { panel = PanelKind.Beat; speed = 0; }
         if (panel == PanelKind.None && C.S.GameOver) { panel = PanelKind.GameOver; speed = 0; }
+        if (panel == PanelKind.None && C.ActiveMonument != null && C.Encounter == null) { panel = PanelKind.Monument; speed = 0; note = ""; }
         if (panel == PanelKind.None && (C.S.Event != null || C.EventOutcome != null) && C.Encounter == null) { panel = PanelKind.Event; speed = 0; note = ""; }
         // You entered a tournament (S5): the fight in the lists starts at once.
         if (panel == PanelKind.None && C.Lists is Settlement lists) { C.Lists = null; speed = 0; OnBattle?.Invoke(C.PrepareTournament(lists)); }
@@ -288,14 +290,14 @@ sealed partial class MapScreen
     {
         (Act.PartyScreen, PanelKind.Party), (Act.LordsScreen, PanelKind.Characters), (Act.SkillsScreen, PanelKind.Skills),
         (Act.RealmScreen, PanelKind.Realm), (Act.DivisionsScreen, PanelKind.Divisions), (Act.AtlasScreen, PanelKind.Atlas), (Act.InventoryScreen, PanelKind.Inventory),
-        (Act.QuestsScreen, PanelKind.Quests), (Act.CampScreen, PanelKind.Camp),
+        (Act.QuestsScreen, PanelKind.Quests), (Act.CampScreen, PanelKind.Camp), (Act.LegendScreen, PanelKind.Legend),
     };
     /// The screen the current one was opened from (the map or the party screen), where BACK and its key return.
     PanelKind from;
 
     /// Panels you can leave for another screen without losing a choice (no encounter, town, event or report open).
     bool Browsing => panel is PanelKind.None or PanelKind.Party or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm
-        or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Inventory or PanelKind.Quests or PanelKind.Camp;
+        or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Inventory or PanelKind.Quests or PanelKind.Camp or PanelKind.Legend;
 
     /// One-time tips for the systems a campaign reaches later: named men, divisions, sites, duels, gear, fiefs, fame, retiring.
     void LaterTips()
@@ -1114,6 +1116,8 @@ sealed partial class MapScreen
                 break;
             case "campmen": C.StageCamp(); break;
             case "camp": panel = PanelKind.Camp; campMan = null; note = ""; break;
+        case "legend-scroll": panel = PanelKind.Legend; legendScroll = 0; sealConfirm = false; note = ""; break;
+        case "monument": panel = PanelKind.Monument; note = ""; break;
             case "campman":
                 panel = PanelKind.Camp; note = "";
                 campManOf = C.CampFires().First(k => k.Roll.Count > 0);

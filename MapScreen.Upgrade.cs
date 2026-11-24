@@ -159,7 +159,8 @@ partial class MapScreen
         ui.Rect(new Rectangle(b.X + ui.U(1), b.Y + ui.U(2), b.Width, b.Height), Color.Black * 0.35f);
         ui.VGrad(b, root || picked ? Kit.Mul(Kit.Gilt, 0.36f) : focus ? new Color(56, 58, 66) : new Color(34, 37, 46), root || picked ? Kit.Mul(Kit.Gilt, 0.12f) : Kit.IronDark, 1);
         int ph = b.Height - ui.U(4);
-        PortraitWell(n.T, new Rectangle(b.X + ui.U(2), b.Y + ui.U(2), ph, ph), 2);
+        var pBox = new Rectangle(b.X + ui.U(2), b.Y + ui.U(2), ph, ph);
+        ui.Clip(pBox, () => PortraitWell(n.T, pBox, 2));
         int tx = b.X + ph + ui.U(7), tw = b.Right - tx - ui.U(n.Locked ? 14 : 5);
         bool two = b.Height >= ui.U(28);
         // A name too long for one line takes both (and the line of his kind gives way), so no name is cut short.
@@ -245,7 +246,8 @@ partial class MapScreen
             foreach (var (line, sign) in changes)
             {
                 if (ky + ui.U(11) > d.Bottom) break;
-                ui.TextFit(line, kx, ky, kw, sign > 0 ? Style.Ok : sign < 0 ? Style.Warn : Style.Text, 1);
+                string shownLine = sign < 0 && line.StartsWith("+ ") ? "> " + line[2..] : line;
+                ui.TextFit(shownLine, kx, ky, kw, sign > 0 ? Style.Ok : sign < 0 ? Style.Warn : Style.Text, 1);
                 ky += ui.U(12);
             }
             ky += ui.U(4);

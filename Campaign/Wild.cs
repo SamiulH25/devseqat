@@ -159,8 +159,9 @@ public partial class Campaign
         }
         if (p.Breed == "undead")
             foreach (var o in S.Orders.Where(o => !o.Gone)) RaiseStanding(o.Id, p.Lair ? 12 : 6);
-        if (p.Breed == "troll") Deed($"Troll-Bane: slew {p.Name} in {prov.Title}.", "wild");
-        else if (p.Breed == "wyvern") Deed($"Wyrmslayer: brought down {p.Name} in {prov.Title}.", "wild");
+        if (p.Breed == "troll") { Deed($"Troll-Bane: slew {p.Name} in {prov.Title}.", "wild"); RecordVerse("beast_bane", prov.Title, p.Pos, $"Slew {p.Name} in {prov.Title}."); }
+        else if (p.Breed == "wyvern") { Deed($"Wyrmslayer: brought down {p.Name} in {prov.Title}.", "wild"); RecordVerse("beast_bane", prov.Title, p.Pos, $"Brought down {p.Name} in {prov.Title}."); }
+        if (p.Lair) RecordVerse("lair_burner", prov.Title, p.Pos, $"Burned out {p.Name} in {prov.Title}.");
         else if (p.Breed == "undead" && p.Lair) Deed($"Grave-Warden: laid {p.Name} to rest.", "wild");
         if (Captain.AuraWall && p.Breed is "troll" or "wyvern")
             BreakThrough($"Slaying {p.Name} broke the wall holding back your aura.");

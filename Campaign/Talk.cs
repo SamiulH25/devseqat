@@ -158,6 +158,7 @@ public sealed partial class Campaign
     {
         string line = Line(ch, "greet");
         string note = OriginReaction(ch);
+        if (note == "") note = LegendGreeting(ch);
         return note == "" ? line : line == "" ? note : line + " " + note;
     }
 

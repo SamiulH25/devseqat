@@ -20,7 +20,7 @@ sealed class ScreenHost : Game
     public SettingsScreen SettingsPanel = null!;
     readonly GraphicsDeviceManager gdm;
 
-    enum Mode { Title, Map, Battle, Lab, Loading }
+    enum Mode { Title, Map, Battle, Loading }
     Mode mode = Mode.Title;
     // The screen last drawn and when it changed: each new screen rises out of black (docs/archive/VISUALS.md V6).
     Mode shown = Mode.Title;
@@ -31,7 +31,6 @@ sealed class ScreenHost : Game
     BattleScreen battle = null!;
     MapScreen map = null!;
     TitleScreen title = null!;
-    UiLab lab = null!;
     Campaign? campaign;
     BattleSetup? setup;
 
@@ -66,6 +65,7 @@ sealed class ScreenHost : Game
     /// Debug: with IRONFIELD_SAVES_ONLY=1 a campaign shots run writes a few saves (with their map pictures) into IRONFIELD_SAVES,
     /// and a second campaign's, then saves the save screens: `campaign-save-as.png`, `campaign-load.png`.
     static readonly bool savesOnly = Environment.GetEnvironmentVariable("IRONFIELD_SAVES_ONLY") == "1";
+    static readonly bool legendsOnly = Environment.GetEnvironmentVariable("IRONFIELD_LEGENDS_ONLY") == "1";
     /// Debug: with IRONFIELD_CAMP_ONLY=1 a campaign shots run saves only the camp (docs/archive/COMPANY.md C5): by day after a
     /// won field, at night, at dusk after a lost one, and a man's page (`campaign-camp-*.png`, `campaign-man.png`).
     static readonly bool campOnly = Environment.GetEnvironmentVariable("IRONFIELD_CAMP_ONLY") == "1";
@@ -99,7 +99,6 @@ sealed class ScreenHost : Game
         };
         bool anyShots = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 }
             || Environment.GetEnvironmentVariable("IRONFIELD_CAMPAIGN_SHOTS") is { Length: > 0 }
-            || Environment.GetEnvironmentVariable("IRONFIELD_LAB_SHOTS") is { Length: > 0 }
             || Environment.GetEnvironmentVariable("IRONFIELD_CREATOR_SHOTS") is { Length: > 0 }
             || Environment.GetEnvironmentVariable("IRONFIELD_TITLE_SHOTS") is { Length: > 0 };
         IsFixedTimeStep = anyShots;
@@ -175,8 +174,6 @@ sealed class ScreenHost : Game
         map = new MapScreen(GraphicsDevice, Sb, Art, Font, Shading, MeshKit, Ctl) { OnBattle = StartCampaignBattle, OnTitle = () => mode = Mode.Title, OnSettings = OpenSettings };
         map.OnLoadSave = LoadSave;
         title = new TitleScreen(this);
-        lab = new UiLab(this) { OnBack = () => mode = Mode.Title };
-        if (lab.ShotsDir != null) mode = Mode.Lab;
         if (battle.HasShots) mode = Mode.Battle;
         if (campaignShots != null) StartCampaign(3);
     }
@@ -267,9 +264,6 @@ sealed class ScreenHost : Game
         return null;
     }
 
-    /// The UI lab: a gallery of interface concepts (F3 on the title screen).
-    public void OpenLab() => mode = Mode.Lab;
-
     public void QuickBattle()
     {
         battle.NewBattle();
@@ -345,7 +339,6 @@ sealed class ScreenHost : Game
                 }
                 Audio?.Beds(title.InCreator ? 0.25f : 0.6f, 0, 0);
                 break;
-            case Mode.Lab: IsMouseVisible = true; lab.Update(dt); Audio?.Music(MusicTrack.Title); break;
             case Mode.Map: IsMouseVisible = true; map.Update(dt, IsActive); map.Soundscape(Audio, dt); break;
             case Mode.Loading:
                 IsMouseVisible = true;
@@ -395,13 +388,12 @@ sealed class ScreenHost : Game
         wantCursor = IsMouseVisible; // the cursor is drawn by the game on Linux (see DrawCursor)
         if (SoftCursor) IsMouseVisible = false;
         Ui.Now = (float)gameTime.TotalGameTime.TotalSeconds;
-        Ui.Instant = campaignShots != null || lab.ShotsDir != null || title.ShotsDir != null || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("IRONFIELD_SHOTS"));
+        Ui.Instant = campaignShots != null || title.ShotsDir != null || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("IRONFIELD_SHOTS"));
         Overflow.Frame(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
         Tips.InBattle = mode == Mode.Battle;
         switch (mode)
         {
             case Mode.Title: title.Draw(); break;
-            case Mode.Lab: lab.Draw(); break;
             case Mode.Loading: title.DrawLoading(loadStage); break;
             case Mode.Map:
                 try { map.Draw(Quality); }
@@ -479,8 +471,8 @@ sealed class ScreenHost : Game
 
     void CaptureShot()
     {
-        string? name = pendingShot ?? battle.PendingShot ?? lab.PendingShot ?? title.PendingShot;
-        string? dir = campaignShots ?? lab.ShotsDir ?? title.ShotsDir ?? Environment.GetEnvironmentVariable("IRONFIELD_SHOTS");
+        string? name = pendingShot ?? battle.PendingShot ?? title.PendingShot;
+        string? dir = campaignShots ?? title.ShotsDir ?? Environment.GetEnvironmentVariable("IRONFIELD_SHOTS");
         if (name == null || string.IsNullOrEmpty(dir)) return;
         var gd = GraphicsDevice;
         int w = gd.PresentationParameters.BackBufferWidth, h = gd.PresentationParameters.BackBufferHeight;
@@ -497,7 +489,6 @@ sealed class ScreenHost : Game
         if (mode == Mode.Map && map.RenderCost is { } mc) File.AppendAllText(Path.Combine(dir, "render.txt"), $"{name}: {mc}\n");
         pendingShot = null;
         battle.PendingShot = null;
-        lab.PendingShot = null;
         title.PendingShot = null;
     }
 
@@ -594,6 +585,36 @@ sealed class ScreenHost : Game
     }
 
     /// The save screens over the map (IRONFIELD_SAVES_ONLY): a quicksave and a named save of this campaign, another campaign's.
+    int legendShot;
+
+    /// The Legends shots (IRONFIELD_LEGENDS_ONLY): living illuminated scroll and sealed monument visit.
+    void LegendShots(Campaign c)
+    {
+        switch (legendShot++)
+        {
+            case 0:
+                c.RecordVerse("first_blood", "Ashby Ford", c.Player.Pos, "Won a notable victory at Ashby Ford against the Red Lances.");
+                c.RecordVerse("apex_slayer", "The Highlands", c.Player.Pos + new Vector2(10, 4), "Slew the legendary Ash-Wing in the Highlands.");
+                c.RecordVerse("wall_breaker", "Lowmoor", c.Player.Pos + new Vector2(-8, 6), "Stormed the walls of Lowmoor and broke the garrison.");
+                c.RecordVerse("maker_knights", "Orvalle", c.Player.Pos, "Knighted Cuddy of Fallowby Shields as Foot Knight.");
+                map.Stage("legend-scroll");
+                pendingShot = "campaign-legend-scroll";
+                break;
+            case 1:
+                var sealedLeg = c.SealCurrentLegend("Retired", force: true)!;
+                c.S.WorldLegends.Add(sealedLeg);
+                c.RestoreLegendMonuments();
+                var mon = c.Sites.First(s => s.Kind == "monument" && s.LegendId == sealedLeg.Id);
+                c.ActiveMonument = (mon, sealedLeg);
+                c.MonumentOutcome = "";
+                map.Stage("monument");
+                pendingShot = "campaign-legend-monument";
+                break;
+            default: Exit(); return;
+        }
+        shotFrames = 0;
+    }
+
     void SaveShots(Campaign c)
     {
         switch (saveShot++)
@@ -720,6 +741,7 @@ sealed class ScreenHost : Game
         }
         if (mapOnly && cStage == 2) { Exit(); return; }
         if (savesOnly) { SaveShots(c); return; }
+        if (legendsOnly) { LegendShots(c); return; }
         if (campOnly) { CampShots(c); return; }
         if (eventsOnly) { EventShots(c); return; }
         if (encounterOnly) { EncounterShots(c); return; }
@@ -825,8 +847,8 @@ sealed class ScreenHost : Game
             {
                 c.Beat = null;
                 int me = c.Captain.Contract;
-                var w = c.WarBetween(me, 0)!;
-                if (w.A == me) { w.ScoreA = 1800; w.ExhB = 41; w.ExhA = 12; } else { w.ScoreB = 1800; w.ExhA = 41; w.ExhB = 12; }
+                var w = c.WarBetween(me, 0) ?? c.S.Wars.FirstOrDefault(x => x.A == me || x.B == me);
+                if (w != null) { if (w.A == me) { w.ScoreA = 1800; w.ExhB = 41; w.ExhA = 12; } else { w.ScoreB = 1800; w.ExhA = 41; w.ExhB = 12; } }
                 map.Stage("career");
                 Shot("campaign-realm-king");
                 break;

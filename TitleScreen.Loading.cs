@@ -57,17 +57,19 @@ sealed partial class TitleScreen
         Spaced(loadTitle, x + U(40), sy + U(20), Kit.Parchment, 2, U(5));
         if (stage != "")
         {
-            ui.Text(stage, x + U(40), sy + U(42), Kit.Parchment * 0.7f, 1);
-            ui.Text(Dots[Ui.Instant ? 3 : (int)(t * 2.5f) % 4], x + U(40) + ui.TW(stage, 1), sy + U(42), Kit.Parchment * 0.7f, 1);
+            ui.Text(stage, x + U(40), sy + U(42), Kit.Parchment * 0.88f, 1);
+            ui.Text(Dots[Ui.Instant ? 3 : (int)(t * 2.5f) % 4], x + U(40) + ui.TW(stage, 1), sy + U(42), Kit.Parchment * 0.88f, 1);
         }
-        var parch = new Rectangle(x, (int)(ui.H * 0.43f), U(250), 0);
-        var lines = ui.Wrap(Counsel[counsel], parch.Width - U(34));
+        var parch = new Rectangle(x, (int)(ui.H * 0.43f), U(288), 0);
+        var lines = ui.Wrap(Counsel[counsel], parch.Width - U(44));
         int lh = U(12);
-        parch.Height = (lines.Count + 1) * lh + U(54);
+        parch.Height = (lines.Count + 1) * lh + U(58);
         int shown = ui.Scroll(parch, Ui.Instant ? 1 : Ease.Out(t / 0.7f)), ly = parch.Y + U(26);
         if (ly + lh - U(4) <= shown) ui.Ink("A WORD OF COUNSEL", parch.Center.X, ly, Kit.Ink, 1, cx: true);
-        ly += lh + U(6);
-        foreach (var line in lines) { if (ly + lh - U(4) <= shown) ui.Ink(line, parch.X + U(17), ly, Kit.InkDeep, 1); ly += lh; }
+        ly += lh + U(2);
+        if (ly <= shown) ui.Rect(new Rectangle(parch.X + U(28), ly, parch.Width - U(56), Math.Max(1, U(1))), Kit.Ink * 0.35f);
+        ly += U(6);
+        foreach (var line in lines) { if (ly + lh - U(4) <= shown) ui.Ink(line, parch.X + U(22), ly, Kit.InkDeep, 1); ly += lh; }
         ui.End();
     }
 

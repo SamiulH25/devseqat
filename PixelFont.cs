@@ -93,7 +93,7 @@ public sealed class PixelFont
     /// One white texel well inside the white cell (point sampling: no bleed from the neighbours).
     public Rectangle White => new(Chars.Length * 6 + 2, 3, 1, 1);
 
-    public static int Width(string s, int scale) => s.Length * 6 * scale;
+    public static int Width(string s, float scale) => (int)MathF.Ceiling(s.Length * 6 * scale);
 
     /// Is the font's pixel at (col 0-4, row 0-6) of this character set? For drawing a glyph block by block (the title's name).
     public static bool Lit(char ch, int col, int row)
@@ -102,17 +102,17 @@ public sealed class PixelFont
         return (Convert.ToInt32(Glyphs[CharIdx[ch]].Substring(row * 2, 2), 16) >> (4 - col) & 1) != 0;
     }
 
-    public void Draw(SpriteBatch sb, string s, Vector2 pos, Color c, int scale = 2)
+    public void Draw(SpriteBatch sb, string s, Vector2 pos, Color c, float scale = 2)
     {
         DrawRun(sb, s, pos, c, scale); // the glyph and its shadow are one cell of the texture
     }
 
     /// The glyphs alone, with no black shadow under them (ink on paper, where a dark shadow would smear dark letters).
-    public void DrawPlain(SpriteBatch sb, string s, Vector2 pos, Color c, int scale = 2) => DrawRun(sb, s, pos, c, scale, 8);
+    public void DrawPlain(SpriteBatch sb, string s, Vector2 pos, Color c, float scale = 2) => DrawRun(sb, s, pos, c, scale, 8);
 
     /// Capitals and lowercase as written, for prose (the event book). A line takes ten rows, not eight: leave room for the
     /// descenders. `plain` drops the shadow (ink on paper).
-    public void DrawMixed(SpriteBatch sb, string s, Vector2 pos, Color c, int scale = 2, bool plain = false)
+    public void DrawMixed(SpriteBatch sb, string s, Vector2 pos, Color c, float scale = 2, bool plain = false)
     {
         int space = CharIdx[' '];
         for (int k = 0; k < s.Length; k++)
@@ -120,12 +120,12 @@ public sealed class PixelFont
             char ch = s[k];
             var src = ch is >= 'a' and <= 'z' ? new Rectangle((ch - 'a') * 6, plain ? LowPlain : LowShadow, 6, 10)
                 : new Rectangle((ch < 256 ? CharIdx[ch] : space) * 6, plain ? 8 : 0, 6, 8);
-            sb.Draw(tex, pos, src, c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+            sb.Draw(tex, new Vector2(MathF.Floor(pos.X), MathF.Floor(pos.Y)), src, c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
             pos.X += 6 * scale;
         }
     }
 
-    void DrawRun(SpriteBatch sb, string s, Vector2 pos, Color c, int scale, int top = 0)
+    void DrawRun(SpriteBatch sb, string s, Vector2 pos, Color c, float scale, int top = 0)
     {
         int space = CharIdx[' '];
         for (int k = 0; k < s.Length; k++)
@@ -133,7 +133,7 @@ public sealed class PixelFont
             char ch = s[k];
             if (ch is >= 'a' and <= 'z') ch = (char)(ch - 32);
             int i = ch < 256 ? CharIdx[ch] : space;
-            sb.Draw(tex, pos, new Rectangle(i * 6, top, 6, 8), c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+            sb.Draw(tex, new Vector2(MathF.Floor(pos.X), MathF.Floor(pos.Y)), new Rectangle(i * 6, top, 6, 8), c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
             pos.X += 6 * scale;
         }
     }

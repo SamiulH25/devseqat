@@ -8,7 +8,7 @@ namespace Ironfield;
 static class Overflow
 {
     /// On only in shots runs, so normal play pays nothing.
-    public static readonly bool On = new[] { "IRONFIELD_SHOTS", "IRONFIELD_CAMPAIGN_SHOTS", "IRONFIELD_LAB_SHOTS" }
+    public static readonly bool On = new[] { "IRONFIELD_SHOTS", "IRONFIELD_CAMPAIGN_SHOTS" }
         .Any(v => Environment.GetEnvironmentVariable(v) is { Length: > 0 });
 
     static readonly List<Rectangle> boxes = new();

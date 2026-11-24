@@ -194,12 +194,7 @@ sealed class CreatorScreen
         time = now;
         Keys(kb, pkb);
         Refresh();
-        // On a 1080p-class screen the interface would be drawn at 1x, with text too small to read comfortably: the creator
-        // uses the 2x scale there (its layout follows the window, so it fits the smaller logical area).
-        int savedScale = ui.S;
-        if (Settings.Current.UiScale == 0 && ui.S == 1 && ui.H >= 1000) ui.S = 2;
         DrawScreen();
-        ui.S = savedScale;
     }
 
     void DrawScreen()
@@ -446,7 +441,7 @@ sealed class CreatorScreen
         ui.Text("COMPANY", inner.X, y, Kit.Gilt, 1); y += U(14);
         var muster = Muster();
         if (muster.Count == 0)
-            ui.TextFit("NONE YET — RECRUIT IN YOUR HOMELAND", inner.X, y, inner.Width, Style.Dim, 1);
+            ui.TextFit("NONE YET - RECRUIT IN YOUR HOMELAND", inner.X, y, inner.Width, Style.Dim, 1);
         foreach (var (troop, men) in muster)
         {
             if (y + U(10) > inner.Bottom) break;
@@ -539,7 +534,7 @@ sealed class CreatorScreen
             { ui.TextC(line, pane.Center.X, py, Kit.Parchment * 0.8f, 1); py += U(10); }
         }
         py += U(8);
-        foreach (var line in ui.Wrap("YOU START INDEPENDENT AT ITS CAPITAL; ITS LORDS AND VILLAGES FAVOUR YOU.", pane.Width - U(20)))
+        foreach (var line in ui.Wrap("YOU START INDEPENDENT AT ITS CAPITAL. ITS LORDS AND VILLAGES FAVOUR YOU.", pane.Width - U(20)))
         { ui.TextC(line, pane.Center.X, py, Style.Dim, 1); py += U(10); }
         py += U(8);
         // Its soldiers at their prime: foot, bow and horse.
@@ -771,11 +766,13 @@ sealed class CreatorScreen
         foreach (var line in ui.Wrap("YOUR FACE IS YOURS IN EVERY BATTLE AND EVERY HALL. YOUR ARMS FLY OVER YOUR FIRST COMPANIES.", lw))
         { if (ly + U(10) > r.Bottom) break; ui.Text(line, x, ly, Style.Dim, 1); ly += U(10); }
 
-        // The face, painted, as lords will see it.
-        int ph = pw * PortraitPainter.H / PortraitPainter.W;
-        var frame = new Rectangle(px, y, pw, ph);
-        ui.Rect(frame, Color.Black * 0.5f);
-        ui.Face(PortraitPainter.Of(M), frame);
+        // The face, painted, as lords will see it (sized tightly to its whole-pixel bust so there is no dead gap above it).
+        int maxPh = pw * PortraitPainter.H / PortraitPainter.W;
+        int fk = Math.Max(1, Math.Min(pw / PortraitPainter.W, maxPh / PortraitPainter.H));
+        int fw = PortraitPainter.W * fk + U(12), fh = PortraitPainter.H * fk + U(12);
+        var frame = new Rectangle(px + (pw - fw) / 2, y, fw, fh);
+        ui.Rect(frame, Color.Black * 0.55f);
+        ui.Face(PortraitPainter.Of(M), Kit.Inset(frame, U(6)));
         ui.Frame(frame, Kit.Gilt * 0.8f, U(1));
         ui.Frame(Kit.Inset(frame, U(3)), Color.Black * 0.4f, U(1));
 
@@ -788,7 +785,12 @@ sealed class CreatorScreen
         {
             var box = new Rectangle(px + i % per * (sw + U(6)), ay + i / per * (sh + U(6)), sw, sh);
             bool on = M.Arms == (int)Charges[i];
-            if (on || ui.Hover(box)) ui.Rect(Kit.Inset(box, -U(2)), (on ? Kit.Gilt : Kit.Gilt * 0.4f));
+            if (on || ui.Hover(box))
+            {
+                var hi = Kit.Inset(box, -U(2));
+                ui.Rect(hi, Color.Black * 0.45f);
+                ui.Frame(hi, on ? Kit.Gilt : Kit.Gilt * 0.55f, U(on ? 2 : 1));
+            }
             ui.Shield(box, colours with { Charge = Charges[i] });
             if (ui.Clicked(box)) { M.Arms = (int)Charges[i]; Ui.OnClick?.Invoke(); }
         }
@@ -856,7 +858,7 @@ sealed class CreatorScreen
         var parch = new Rectangle(r.X + U(24), r.Y + U(6), r.Width - U(48), r.Height - U(60));
         int shown = ui.Scroll(parch, Unroll(stepAt, 1.1f));
         bool Seen(int y, int h) => y + h <= shown;
-        int sc = parch.Width >= U(420) ? 2 : 1, lh = U(sc == 2 ? 22 : 11);
+        int sc = 1, lh = U(13);
         var oath = ui.Wrap(text, parch.Width - U(56), sc);
         var tale = ui.Wrap(string.Join(" ", new[] { birth.Line, past.Line }.Where(l => l != "")).ToUpperInvariant(), parch.Width - U(60));
         int height = U(40) + oath.Count * lh + U(16) + tale.Count * U(12);
@@ -877,7 +879,7 @@ sealed class CreatorScreen
         ui.Disc(seal, U(15), Kit.Mul(colours.Cloth, 0.6f));
         ui.Shield(new Rectangle((int)seal.X - U(9), (int)seal.Y - U(11), U(18), U(22)), colours with { Charge = (Emblem)M.Arms });
         Button:
-        if (ui.Gilded(new Rectangle(r.Center.X - U(130), parch.Bottom + U(14), U(260), U(34)), "BEGIN THE CAMPAIGN", "", M.Name.Trim() != "")) Begin();
+        if (ui.Gilded(new Rectangle(r.Center.X - U(162), parch.Bottom + U(14), U(324), U(34)), "BEGIN THE CAMPAIGN", "ENTER", M.Name.Trim() != "", tone: Style.Ok)) Begin();
     }
 
     void Footer(Rectangle r)

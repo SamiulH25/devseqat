@@ -103,6 +103,7 @@ public partial class Campaign
         S.Gold += 500;
         Captain.Renown += 80;
         Deed($"Legend Slain: {p.Name} fell to your banner in {prov.Title}.", "wild");
+        RecordVerse("apex_slayer", prov.Title, p.Pos, $"Slew the legendary {p.Name} in {prov.Title}.");
         LogYours($"You slew {p.Name}! Took 3x {spoil.Replace('_', ' ')} and 500 crowns.");
         // Sew the legendary beast's name onto your foremost company's banner (WI7).
         var lead = Player.Companies.OrderByDescending(c => c.Men).FirstOrDefault();
@@ -355,6 +356,8 @@ public partial class Campaign
             if (lead != null && !lead.BattleHonours.Contains(title)) lead.BattleHonours.Add(title);
             S.Won = true;
             Deed($"{title}: destroyed {seat.Name} and saved the realms.", "wild");
+            RecordVerse("crisis_breaker", seat.Name, seat.Pos, $"Destroyed {seat.Name} and saved the realms.");
+            SealCurrentLegend("Victorious");
             LogAll($"VICTORY! You destroyed {seat.Name} and ended the crisis. The realms hail you as {title}!");
         }
         else

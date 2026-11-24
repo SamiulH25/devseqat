@@ -60,7 +60,7 @@ partial class MapScreen
         foreach (var (p, r) in spots)
             if (r.Contains(ui.Mouse) && !bar.Contains(ui.Mouse) && !(open && well.Contains(ui.Mouse)) && Available(s, p, tabs)) hover = p;
         spots.Clear();
-        int s0 = ui.S;
+        float s0 = ui.S;
         ui.S = Math.Max(2, ui.H / 240); // the street is painted big, by the screen's height (about 430 of its pixels across at 16:9): the town fills the screen
         try { Street(s, ground, hover, openPlace); }
         finally { ui.S = s0; }
