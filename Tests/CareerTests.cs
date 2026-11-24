@@ -311,7 +311,7 @@ public static partial class SelfTest
         // A king's terms: only what his standing allows.
         var k = Campaign.New(7008);
         k.Captain.Fealty = true;
-        k.Captain.Renown = 400;
+        k.Captain.Renown = 500;
         foreach (var t in k.S.Settlements.Where(s => s.Faction == 0 && s.Kind != SettlementKind.Village).OrderByDescending(s => s.Kind == SettlementKind.Town).Take(2)) t.Owner = k.Player.Id;
         Check(k.DeclareIndependence() == null, "a lord rebels to test diplomacy");
         int me = k.Captain.Contract;

@@ -322,7 +322,9 @@ public partial class Campaign
             else
             {
                 // Repelled by the garrison — take losses and fall back
-                foreach (var c in p.Companies) c.RemoveFit(Math.Max(1, c.Men / 3), true);
+                foreach (var c in p.Companies) { c.RemoveFit(Math.Max(1, c.Men / 3), true); c.Prune(); }
+                p.Companies.RemoveAll(c => c.Men + c.Wounded <= 0);
+                if (p.Men <= 0) p.Down = true;
                 p.GoalSettlement = -1;
             }
         }

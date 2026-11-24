@@ -1337,7 +1337,7 @@ public static partial class SelfTest
         var reachable = Troops.Tree("levies").Concat(Troops.Tree("clansmen")).Concat(Troops.Tree("cutthroats")).Concat(Troops.Tree("esquires")).Concat(Troops.Tree("mounted_esquires")).Select(t => t.Id).ToHashSet(); // nobles: from the castle roots (docs/pre-demo/NOBILITY.md); bandits: from cutthroats
         Check(Troops.All.Where(t => !t.Leader && !t.Wild && t.Class != UnitClass.Caster).All(t => reachable.Contains(t.Id)), "every troop can be reached by upgrading a culture's recruits");
         var magi = Troops.Tree("acolytes").Select(t => t.Id).ToHashSet(); // mages are super units: hired as Acolytes, never drilled from recruits
-        Check(Troops.All.Where(t => t.Class == UnitClass.Caster).All(t => magi.Contains(t.Id) && !reachable.Contains(t.Id)), "every mage rises from Acolytes, and no recruit becomes one");
+        Check(Troops.All.Where(t => !t.Wild && t.Class == UnitClass.Caster).All(t => magi.Contains(t.Id) && !reachable.Contains(t.Id)), "every mage rises from Acolytes, and no recruit becomes one");
     }
 
     /// The sprites are PNG files (SpriteBake): Data/sprites holds every part the code paints, at the size the rig expects,

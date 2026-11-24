@@ -109,6 +109,34 @@ public sealed partial class SpriteSheet
             Add("goods.furs/n", c);
         }
 
+        // Monster spoils (THE_WILD.md WI3/WI5): 8 trophy & reagent icons
+        void Spoil(string id, Color body, Color trim, bool sharp = false)
+        {
+            var bm = new Mat(body); var tm = new Mat(trim);
+            var c = new Canvas(18, 18);
+            if (sharp)
+            {
+                c.Line(4, 14, 13, 4, bm, 0.2f, 3);
+                c.Line(6, 13, 14, 5, tm, 0.5f, 1);
+                c.Ellipse(5, 13, 2.4f, 2.2f, leatherDk, 0.05f);
+            }
+            else
+            {
+                c.Ellipse(9, 10, 5.8f, 4.6f, bm, 0.05f);
+                c.Ellipse(9, 8.5f, 3.8f, 2.6f, tm, 0.25f);
+                c.Line(5, 13, 13, 13, leatherDk, 0.1f, 1);
+            }
+            Add($"goods.{id}/n", c);
+        }
+        Spoil("troll_hide", new Color(82, 104, 68), new Color(114, 136, 94));
+        Spoil("wyvern_sting", new Color(72, 112, 78), new Color(218, 206, 174), sharp: true);
+        Spoil("spider_silk", new Color(216, 218, 226), new Color(244, 246, 252));
+        Spoil("bear_pelt", new Color(112, 76, 48), new Color(148, 108, 72));
+        Spoil("dire_fang", new Color(224, 218, 202), new Color(248, 244, 232), sharp: true);
+        Spoil("grave_dust", new Color(108, 114, 126), new Color(164, 182, 198));
+        Spoil("basilisk_eye", new Color(64, 108, 66), new Color(238, 186, 62));
+        Spoil("harpy_quills", new Color(118, 86, 82), new Color(188, 152, 136), sharp: true);
+
         // store.food: grain sack, bread loaf and wheel of cheese
         {
             var c = new Canvas(18, 18);

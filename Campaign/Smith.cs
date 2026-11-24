@@ -81,6 +81,7 @@ public sealed partial class Campaign
         S.Gold -= crowns;
         if (lots > 0) { S.Goods[goods] -= lots; if (S.Goods[goods] <= 0) S.Goods.Remove(goods); }
         i.Quality++;
+        if (i.Id <= 0) i.Id = S.NextItemId++;
         if (!Captain.Baggage.Contains(i)) Captain.Baggage.Add(i);
         LogYours($"The smith makes your {g.Name.ToLowerInvariant()} {QualityName(i.Quality)}.");
         AudioEngine.Current?.Play(Cue.AnvilRing, 0.8f);
@@ -139,6 +140,7 @@ public sealed partial class Campaign
         if (pool.Count == 0 || !rng.Chance(0.5f)) return;
         var hit = rng.Pick(pool);
         hit.Battered = true;
+        if (hit.Id <= 0) hit.Id = S.NextItemId++;
         if (!Captain.Baggage.Contains(hit)) Captain.Baggage.Add(hit);
         LogYours($"Your {ItemName(hit, Gear.Get(hit.Def)).ToLowerInvariant()} is battered in your fall. A smith can mend it.");
     }

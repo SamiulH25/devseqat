@@ -276,7 +276,7 @@ public static partial class SelfTest
     /// Mages are super units: a circle of a few, each worth more than any soldier of his tier; one circle a captain; hired, rarely.
     static void SuperMages()
     {
-        foreach (var t in Troops.All.Where(t => t.Class == UnitClass.Caster))
+        foreach (var t in Troops.All.Where(t => !t.Wild && t.Class == UnitClass.Caster))
         {
             int n = Rules.CapOf(t.Id, "casters");
             Check(n is >= 1 and <= 4, $"a circle of {t.Name} is a few men ({n})");

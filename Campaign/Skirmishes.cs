@@ -71,32 +71,46 @@ public partial class Campaign
         }
 
         foreach (var sk in S.Skirmishes.ToList())
+            StepOneSkirmish(sk, h);
+    }
+
+    void StepOneSkirmish(MapSkirmish sk, float h)
+    {
+        var sideA = sk.SideA.Select(PartyById).Where(p => p != null && !p.Down).Cast<Party>().ToList();
+        var sideB = sk.SideB.Select(PartyById).Where(p => p != null && !p.Down).Cast<Party>().ToList();
+        if (sideA.Count == 0 || sideB.Count == 0) { CancelSkirmish(sk); return; }
+
+        sk.Hours += h;
+        sk.Step++;
+        var (w0, w1) = Rules.AutoWeights(sideA, sideB, sk.EdgeA, sk.EdgeB);
+        float r0 = ((Rng.Mix(sk.Seed, sk.Step, 1) & 0xFFFF) / 65535f) * 0.24f + 0.88f;
+        float r1 = ((Rng.Mix(sk.Seed, sk.Step, 2) & 0xFFFF) / 65535f) * 0.24f + 0.88f;
+        float p0 = w0 * r0, p1 = w1 * r1, sum = MathF.Max(1f, p0 + p1);
+
+        // Paced so small clashes finish in ~2-4h, blowouts/caravan ambushes quickly, and large lord battles in ~6-12h.
+        bool blowout = MathF.Max(p0, p1) / sum > 0.75f || sideA.Any(p => p.Kind == PartyKind.Caravan) || sideB.Any(p => p.Kind == PartyKind.Caravan);
+        float scale = (blowout ? 0.65f : 0.24f) * h;
+        InflictSkirmishStep(sk, sideA, scale * (p1 / sum));
+        InflictSkirmishStep(sk, sideB, scale * (p0 / sum));
+
+        int menA = SkirmishRemaining(sk, sideA), menB = SkirmishRemaining(sk, sideB);
+        bool brokeA = menA == 0 || (sk.Hours >= 1f && menA <= sk.StartMenA * 0.35f);
+        bool brokeB = menB == 0 || (sk.Hours >= 1f && menB <= sk.StartMenB * 0.35f);
+        if (brokeA || brokeB || sk.Hours >= 24f)
         {
-            var sideA = sk.SideA.Select(PartyById).Where(p => p != null && !p.Down).Cast<Party>().ToList();
-            var sideB = sk.SideB.Select(PartyById).Where(p => p != null && !p.Down).Cast<Party>().ToList();
-            if (sideA.Count == 0 || sideB.Count == 0) { CancelSkirmish(sk); continue; }
-
-            sk.Hours += h;
-            sk.Step++;
-            var (w0, w1) = Rules.AutoWeights(sideA, sideB, sk.EdgeA, sk.EdgeB);
-            float r0 = ((Rng.Mix(sk.Seed, sk.Step, 1) & 0xFFFF) / 65535f) * 0.24f + 0.88f;
-            float r1 = ((Rng.Mix(sk.Seed, sk.Step, 2) & 0xFFFF) / 65535f) * 0.24f + 0.88f;
-            float p0 = w0 * r0, p1 = w1 * r1, sum = MathF.Max(1f, p0 + p1);
-
-            // Paced so small clashes finish in ~2-4h and large lord battles in ~6-12h.
-            float scale = 0.24f * h;
-            InflictSkirmishStep(sk, sideA, scale * (p1 / sum));
-            InflictSkirmishStep(sk, sideB, scale * (p0 / sum));
-
-            int menA = sideA.Sum(p => p.Men), menB = sideB.Sum(p => p.Men);
-            bool brokeA = menA == 0 || (sk.Hours >= 1f && menA <= sk.StartMenA * 0.35f);
-            bool brokeB = menB == 0 || (sk.Hours >= 1f && menB <= sk.StartMenB * 0.35f);
-            if (brokeA || brokeB || sk.Hours >= 24f)
-            {
-                int winner = brokeA && !brokeB ? 1 : brokeB && !brokeA ? 0 : p0 >= p1 ? 0 : 1;
-                FinishSkirmish(sk, sideA, sideB, winner);
-            }
+            int winner = brokeA && !brokeB ? 1 : brokeB && !brokeA ? 0 : p0 >= p1 ? 0 : 1;
+            FinishSkirmish(sk, sideA, sideB, winner);
         }
+    }
+
+    static int SkirmishRemaining(MapSkirmish sk, List<Party> side)
+    {
+        int rem = 0;
+        foreach (var p in side)
+            foreach (var c in p.Companies)
+                foreach (var st in c.Stacks)
+                    rem += sk.Stacks.TryGetValue($"{c.Id}:{st.Troop}", out var rec) ? Math.Max(0, rec.Start - rec.Fallen) : st.Men;
+        return rem;
     }
 
     void InflictSkirmishStep(MapSkirmish sk, List<Party> side, float lossFrac)
@@ -112,9 +126,11 @@ public partial class Campaign
             float share = want * (st.Men / (float)st.Type.Tier) / weight;
             int hit = Math.Min(st.Men, (int)MathF.Floor(share) + (((Rng.Mix(sk.Seed, sk.Step, c.Id, st.Men) & 0xFFFF) / 65535f) < (share - MathF.Floor(share)) ? 1 : 0));
             if (hit <= 0) continue;
-            st.Men -= hit;
+            if (sk.Stacks.TryGetValue($"{c.Id}:{st.Troop}", out var rec)) rec.Fallen = Math.Min(rec.Start, rec.Fallen + hit);
+            // Keep at least 1 man in the company's live stack until FinishSkirmish/CancelSkirmish resolves so rosters never hold empty companies mid-fight.
+            int keep = c.Men + c.Wounded - hit <= 0 ? 1 : 0;
+            st.Men = Math.Max(keep, st.Men - hit);
             if (st.Xp > st.PoolCap) st.Xp = st.PoolCap;
-            if (sk.Stacks.TryGetValue($"{c.Id}:{st.Troop}", out var rec)) rec.Fallen += hit;
         }
     }
 

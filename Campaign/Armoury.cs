@@ -30,7 +30,7 @@ public sealed partial class Campaign
     /// The road the captain came by (P5, the Free Company's reward), chosen once at the start: the sword (Arms 20 and a
     /// kite shield), the lance (Riding 20, a warhorse, a boar spear as the second weapon) or the bow (Bowcraft 20, a
     /// hunting bow in hand and the sword at the side). Returns the line the event shows.
-    public string ChooseRoad(string road) => TakeRoad(Captain, road);
+    public string ChooseRoad(string road) { var s = TakeRoad(Captain, road); EnsureItemIds(); return s; }
 
     /// The road on any captain: the event above, and the character creator's preview (Origins.Shape).
     public static string TakeRoad(CaptainState c, string road)
@@ -75,7 +75,12 @@ public sealed partial class Campaign
     /// Offer the starting road as the first event of a new campaign (the title screen calls it).
     public void OfferRoad() => Force("start_road", new PendingEvent());
 
-    GearItem? Own(string id, ItemQuality q = ItemQuality.Plain, string mark = "", string from = "") => Own(Captain, id, q, mark, from);
+    GearItem? Own(string id, ItemQuality q = ItemQuality.Plain, string mark = "", string from = "")
+    {
+        var i = Own(Captain, id, q, mark, from);
+        if (i != null && i.Id <= 0) i.Id = S.NextItemId++;
+        return i;
+    }
     /// Take a piece into the baggage (one of each kind; a better make of one you hold replaces it). Free plain pieces need no item.
     internal static GearItem? Own(CaptainState c, string id, ItemQuality q = ItemQuality.Plain, string mark = "", string from = "")
     {

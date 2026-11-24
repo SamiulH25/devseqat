@@ -53,7 +53,7 @@ public sealed partial class Battle
             if (d < 8) foreach (var o in Near(u.Pos, 8, nearUrge)) if (o.Mounted && o.Active && o.Team != u.Team) { horse = true; break; }
             if (!steady && !horse)
             {
-                if (d < 18) gain += 0.9f * (18 - d) / 18 * temper;
+                if (d < 18) gain += 1.15f * (18 - d) / 18 * temper;
                 if (d < 20 && Time - u.HurtAt < 3) gain += 0.25f * temper; // a blow taken, a foe close by: he wants to hit back
                 int lunging = 0;
                 foreach (var o in Near(u.Pos, 5, nearUrge)) if (o != u && o.Lunging && o.Team == u.Team && o.Squad == s) lunging++;

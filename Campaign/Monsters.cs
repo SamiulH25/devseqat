@@ -154,6 +154,7 @@ public partial class Campaign
 
     internal void MonstersDaily()
     {
+        if (S.GameOver) return;
         foreach (var lair in Lairs.ToList())
         {
             if (lair.Breed == "spider") GrowNest(lair); else if (lair.Breed == "goblin") Grow(lair);

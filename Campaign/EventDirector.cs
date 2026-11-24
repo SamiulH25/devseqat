@@ -24,6 +24,7 @@ public sealed partial class Campaign
         var moments = NoteMoments();
         if (S.Event == null) DrainQueue();
         if (S.Event != null || Sailing || moments.Count == 0) return;
+        if (S.GoalSite >= 0 && SiteById(S.GoalSite) is Site gs && Vector2.Distance(Player.Pos, gs.Pos) < 12 * Map.Spread) return; // don't interrupt arriving at a clicked site
         if (S.Hours < S.NextEvent) return;
         if (S.EventHistory.Count(h => S.Hours - h.At < 7 * 24 && Drawn(h.Id)) >= B.EventWeekCap) return;
         float overdue = (float)Math.Max(0, (S.Hours - S.NextEvent) / 24);

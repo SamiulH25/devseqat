@@ -52,9 +52,9 @@ public partial class Battle
         var f = FormSlot[i];
         var p = Player;
         if (f == null) return "NO FORM IN THAT SLOT";
+        if (f.Great && greatUsed) return "THE GREAT FORM IS SPENT";
         if (!p.Active) return "YOU ARE DOWN";
         if (AuraTier < f.Tier) return $"NEEDS AURA TIER {f.Tier}";
-        if (f.Great && greatUsed) return "THE GREAT FORM IS SPENT";
         if (Time < formReady[i]) return $"{f.Name.ToUpperInvariant()} IN {formReady[i] - Time:0}";
         if (Aura + Surge < FormCost(f)) return "NOT ENOUGH AURA";
         if (p.Action is UnitAction.Windup or UnitAction.Recover or UnitAction.Stagger) return "BUSY";

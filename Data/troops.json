@@ -1589,7 +1589,7 @@
         "feet": "boots",
         "hands": "skin",
         "shield": "none",
-        "weapon": "bow",
+        "weapon": "longbow",
         "cape": true
       }
     },
@@ -4370,7 +4370,7 @@
         "feet": "boots",
         "hands": "gauntlets",
         "shield": "kalkan",
-        "weapon": "daneaxe",
+        "weapon": "axe",
         "tabard": true,
         "cape": true
       }
@@ -6163,10 +6163,10 @@
       "look": {
         "head": "steppe",
         "body": "lamellar",
-        "legs": "cloth",
+        "legs": "mail",
         "feet": "boots",
-        "hands": "skin",
-        "shield": "targe",
+        "hands": "gauntlets",
+        "shield": "kalkan",
         "weapon": "spear",
         "tabard": true
       }

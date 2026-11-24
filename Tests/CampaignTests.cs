@@ -1808,6 +1808,7 @@ public static partial class SelfTest
         Check(band.Men == men && !band.Down, "a lord with a job rides past brigands that leave him alone");
         band.ChaseId = member.Id;
         c.Clash(member, band);
+        c.Tick(0.5f);
         Check(band.Down || band.Men < men, "brigands who fall on a lord get their fight");
 
         // Rabble is slow, trained brigands quick.
