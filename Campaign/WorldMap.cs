@@ -416,7 +416,7 @@ public sealed partial class WorldMap
     /// Map travel speed factor at a point (terrain kind, roads).
     public float SpeedFactor(Vector2 p, float roadBonus) =>
         NearRoad(p, 2.5f) ? roadBonus : RiverDist(p) < 1.6f || InLake(p) ? 0.35f : OnRidge(p) ? 0.45f
-        : Lands.Of(ProvinceAt(p).Kind).Speed;
+        : Lands.Of(ProvinceAt(p).Kind).Speed * Climb(p);
 
     /// Battle ground for a fight at p: the province's kind, with a road if one runs close.
     public TerrainParams BattleGround(Vector2 p, float wet = 0, int season = -1)

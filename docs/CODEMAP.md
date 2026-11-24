@@ -698,18 +698,18 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **WorldMap** (class, L8): InLand:66, WorldMap:78, readonly:90, Generate:94, Climate:211, RaiseRidges:225, AddRidge:256, RidgeDist:268, RidgeHeight:271, OnRidge:289, HomeOf:292, ReachOf:294, GrowRealms:299, SiteKindsFor:341, PlaceSites:345, Cross:370, RiverDist:379, RiverScan:380, ProvinceAt:384, ProvinceScan:387, RoadDist:400, NearRoad:402, RoadScan:404, SpeedFactor:417, BattleGround:422, Height:443, LandHeight:456, DesignedHeight:480, RimAt:505, Ridged:507, Tint:510, OwnColour:554, NearSea:557, KindTint:565, BuildTerrain:580
 - **PlaceNamer** (class, L695): PlaceNamer:702, Pool:704, Next:710
 
-## Campaign/WorldRelief.cs (128 lines)
-- **WorldMap** (class, L10): CliffLine:13, UplandArea:15, CliffReach:23, SkirtOf:25, DesignRelief:27, Bound:43, Ragged:52, Unit01:57, Relief:60, CliffLift:87, InsideDistance:114
+## Campaign/WorldRelief.cs (179 lines)
+- **WorldMap** (class, L10): CliffLine:13, UplandArea:15, CliffReach:23, SkirtOf:25, DesignRelief:27, Bound:43, Ragged:52, Unit01:57, Relief:60, CliffLift:87, Taper:97, Climb:105, OnCliff:119, CrossesCliff:133, InsideDistance:165
 
-## Campaign/WorldRoads.cs (260 lines)
+## Campaign/WorldRoads.cs (264 lines)
 - **WorldMap** (class, L9): InLake:19, PlaceLakes:26, LayRoads:55
 
 ## Campaign/WorldSea.cs (72 lines)
 - **SeaLane** (record, L6)
 - **WorldMap** (class, L11): OverWater:22, DesignSeaLanes:29
 
-## Campaign/WorldTravel.cs (130 lines)
-- **WorldMap** (class, L8): TravelCostAt:17, CellCost:27, PlanRoute:38, LineCost:96, Straighten:111
+## Campaign/WorldTravel.cs (131 lines)
+- **WorldMap** (class, L8): TravelCostAt:17, CellCost:28, PlanRoute:39, LineCost:97, Straighten:112
 
 ## Campaign/Wounds.cs (50 lines)
 - **WoundDef** (record, L4)
@@ -1191,8 +1191,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186
 - **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543, ArcanaCensus:585, WellsFromSites:596, TideFeedsOffers:637, TideShared:655, Overreach:678, CourtMage:711, DoctrinesAndUnweave:743, WorkingsBite:776, WorkingsRemembered:806
 
-## Tests/MapTests.cs (769 lines)
-- **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:280, ReliefRaised:308, SegmentGap:358, NewLands:369, FieldsApart:408, MapDressed:428, ShipTravel:466, DesignedMap:514, PlacesPlanned:580, TownsLaidOut:610, PlanSvg:633, VillagesLaidOut:658, FieldsStyled:683, PlacesShowState:714
+## Tests/MapTests.cs (820 lines)
+- **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:280, ReliefRaised:308, CliffsBar:361, SegmentGap:409, NewLands:420, FieldsApart:459, MapDressed:479, ShipTravel:517, DesignedMap:565, PlacesPlanned:631, TownsLaidOut:661, PlanSvg:684, VillagesLaidOut:709, FieldsStyled:734, PlacesShowState:765
 
 ## Tests/MeleeTests.cs (455 lines)
 - **SelfTest** (class, L7): HoldsRanks:22, RecklessCharge:41, RearRanksWait:68, StepsUp:89, FightsItsTarget:105, LeviesLoseRanks:143, TierWins:157, PartsByCompany:180, UrgeLunges:201, RefusesFlank:231, VeteransWrap:270, ElitePincer:286, Reforms:318, HorseRegroup:348, BowsFallBack:392, MusterGrade:431, MightWeighsDrill:446

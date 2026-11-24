@@ -1,6 +1,6 @@
 # World scale: a land four times as wide, with height and cliffs (WS0-WS8)
 
-Status: **WS0 and WS2 built 2026-11-24** (the 4x draft and its first relief in the world page; layout 6 builds it with its heights, headless). WS1, WS3-WS8 open. Owner's brief 2026-11-24.
+Status: **WS0, WS2 and most of WS3 built 2026-11-24** (the 4x draft and its first relief in the world page; layout 6 builds it with its heights; cliffs bar the way; all headless). WS1, the rest of WS3 (the AI and choke points), WS4-WS8 open. Owner's brief 2026-11-24.
 This settles `archive/HOLDS.md` HD6 (world size): the land grows, travel slows.
 
 > "A major world overhaul including elevation, cliffs, and a massive increase in scale of the world. There's no reason for
@@ -131,6 +131,21 @@ Cliffs are barriers like the sea: `PlanRoute` and the AI's routes (`Campaign.Sea
 through a pass; a party is never pushed up one. Roads only cross at passes (checked by the validator). Passes and bridges
 become choke points the AI knows (`LordThink` blocks, holds, ambushes). Speed by slope and by land kind (high ground
 slower, roads still fast). Test: a party ordered across a cliff takes the pass.
+
+**As built (2026-11-24), the barrier and the climb.** `WorldMap.OnCliff(p, half)` (WorldRelief.cs): p within `half` of a
+cliff's line, read at the ragged point as the heights are, where the step still stands at least `BarredFrom` (0.35) of its
+height; toward a cliff's ends the step tapers below that, so a gap between two cliffs is a walkable ramp (a pass).
+`CrossesCliff(a, b)` samples every 2 units against a 6-wide band. Wired in: the player's planner (`TravelCostAt`: a face is
+impassable, band 6 wide so no diagonal step slips through the 4-unit grid), the AI's land grid (`PlanOver`, band 9 on its
+6-unit grid, which also forbids slipping between two shut cells), `OverLand` (a straight way up a face is not over land, so
+`Campaign.SeaRoute` sends AI parties round), and the road router (`Router.Barred`; a wider search when a cliff stands
+between, and a leg keeps its cells' own way where smoothing would cut over a face). `DesignRelief` now runs before
+`DesignRoads`, so the links the drawing left out never run up a cliff. Off the road, `SpeedFactor` multiplies by
+`Climb(p)`: 1 on the flat (a plateau's top too), down to 0.45 on an upland's skirt or a scarp's back slope, from the
+relief's slope only. Test `CliffsBar`: below to above the middle of the Tarn rim, 60 units straight, the player's way is
+~1,120 and the AI's ~1,070 (round by a pass); no road leg climbs a face. Layout 5 unchanged (`--world-bench` checksum).
+Still open in WS3: passes and bridges as places the AI knows (holds, blocks, ambushes), and battles fought on a cliff's
+edge or in a pass taking their field from it (`BattleGround`).
 
 ### WS4: The terrain at scale (drawing)
 At 6,600 units with a 4-unit grid the map is about 2.7M height cells: too many for one mesh baked at load. Split the map's

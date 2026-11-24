@@ -101,8 +101,8 @@ public sealed partial class WorldMap
                 Rank = s.Kind == "castle" ? Math.Clamp(s.Rank == 0 ? 2 : s.Rank, 1, 3) : 0, // HD5: tower house, castle, great castle
             });
         }
+        m.DesignRelief(d); // before the roads: the links the drawing left out must not run up a cliff (OverLand, WS3)
         m.DesignRoads(d);
-        m.DesignRelief(d);
         m.DesignSeaLanes(d);
         // A river's bends and its berth round places are in plain units, as on layout 5 (span / warp = layout 5's span): on the
         // 4x draft, span-sized berths (150 units) pushed rivers off their drawn lines and through the gorges' walls.
@@ -299,7 +299,7 @@ public sealed partial class WorldMap
                     for (int x = 0; x < seaN; x++)
                     {
                         var p = new Vector2(seaOrigin + x * SeaCell, seaOrigin + z * SeaCell);
-                        grid[z * seaN + x] = water ? Landness(p) < Afloat : !InSea(p);
+                        grid[z * seaN + x] = water ? Landness(p) < Afloat : !InSea(p) && !OnCliff(p, 4.5f); // a cliff's face is shut too (WS3)
                     }
             }
             var seaOpen = grid;
@@ -358,7 +358,7 @@ public sealed partial class WorldMap
         if (cellSea == null) return true;
         int steps = (int)MathF.Ceiling(Vector2.Distance(a, b) / DesignCell);
         for (int i = 1; i < steps; i++) if (InSea(Vector2.Lerp(a, b, i / (float)steps))) return false;
-        return true;
+        return !CrossesCliff(a, b); // a straight way up a cliff is no way (WS3)
     }
 
     /// The drawn roads, then the links the drawing left out: every village to a town or castle near it, and every town and

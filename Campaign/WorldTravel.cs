@@ -17,6 +17,7 @@ public sealed partial class WorldMap
     float TravelCostAt(Vector2 p, float roadBonus)
     {
         if (InSea(p) || Landness(p) < 0.35f) return float.PositiveInfinity; // the sea is not crossed (docs/archive/WORLDMAP.md WM2)
+        if (OnCliff(p, 3)) return float.PositiveInfinity; // nor a cliff's face (WS3): a band ~6 wide, so no diagonal step slips through
         if (InLake(p)) return 40;
         if (RoadDist(p) < 2.5f) return 1 / roadBonus;
         foreach (var r in Rivers)

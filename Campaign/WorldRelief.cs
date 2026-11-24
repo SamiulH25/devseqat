@@ -86,6 +86,62 @@ public sealed partial class WorldMap
     /// One cliff's lift at p: full height at the edge on the high side, easing out over its reach; none on the low side.
     static float CliffLift(Vector2 p, CliffLine c)
     {
+        var (best, side, along) = Nearest(p, c);
+        if (best > c.Reach) return 0;
+        float step = MathHelper.SmoothStep(0, 1, Math.Clamp((side + 1) / 2, 0, 1)); // a step a couple of units wide at the edge
+        float back = 1 - MathHelper.SmoothStep(0, 1, Math.Clamp((best - c.Reach * 0.25f) / (c.Reach * 0.75f), 0, 1));
+        return c.Height * step * back * Taper(c, along);
+    }
+
+    /// How much of a cliff's height stands `along` units from its start: none at its ends, all of it past half its reach.
+    static float Taper(CliffLine c, float along)
+    {
+        float ends = MathF.Min(c.Reach * 0.5f, c.Length / 3);
+        return ends <= 0 ? 1 : MathHelper.SmoothStep(0, 1, Math.Clamp(along / ends, 0, 1)) * MathHelper.SmoothStep(0, 1, Math.Clamp((c.Length - along) / ends, 0, 1));
+    }
+
+    /// How much a climb off the road slows a party at p (WS3): 1 on the flat (a plateau's top too), down to 0.45 on an
+    /// upland's skirt or a scarp's back slope. Only the uplands' and cliffs' slope counts (the old land is priced by its kind).
+    public float Climb(Vector2 p)
+    {
+        if (cliffs.Count + uplands.Count == 0) return 1;
+        const float d = 4;
+        float gx = Relief(p.X + d, p.Y) - Relief(p.X - d, p.Y), gz = Relief(p.X, p.Y + d) - Relief(p.X, p.Y - d);
+        float grade = MathF.Sqrt(gx * gx + gz * gz) / (2 * d);
+        return MathF.Max(0.45f, 1 / (1 + 4 * grade));
+    }
+
+    /// The share of its height at which a cliff bars the way: below it, near the ends, it is a ramp a party walks up.
+    public const float BarredFrom = 0.35f;
+
+    /// Is p on a cliff's face (WS3): within `half` of the line (read at the ragged point, as the heights are) where the step
+    /// still stands at least `BarredFrom` of its height. Nothing crosses such ground; a pass is the gap between two cliffs.
+    public bool OnCliff(Vector2 p, float half)
+    {
+        if (cliffs.Count == 0) return false;
+        var q = Ragged(p.X, p.Y);
+        foreach (var c in cliffs)
+        {
+            if (q.X < c.Min.X || q.Y < c.Min.Y || q.X > c.Max.X || q.Y > c.Max.Y) continue;
+            var (d, _, along) = Nearest(q, c);
+            if (d < half && Taper(c, along) >= BarredFrom) return true;
+        }
+        return false;
+    }
+
+    /// Does the straight way a-b climb a cliff? (Sampled every 2 units against a band 6 wide.)
+    public bool CrossesCliff(Vector2 a, Vector2 b)
+    {
+        if (cliffs.Count == 0) return false;
+        int k = Math.Max(1, (int)MathF.Ceiling(Vector2.Distance(a, b) / 2));
+        for (int i = 0; i <= k; i++) if (OnCliff(Vector2.Lerp(a, b, i / (float)k), 3)) return true;
+        return false;
+    }
+
+    /// The nearest point of a cliff's line to p: how far, how far to the high side (left of the run; past an end, the end
+    /// segment's side), and how far along the line it lies.
+    static (float Dist, float Side, float Along) Nearest(Vector2 p, CliffLine c)
+    {
         float best = float.MaxValue, side = 0, along = 0, run = 0;
         for (int i = 1; i < c.Points.Length; i++)
         {
@@ -102,12 +158,7 @@ public sealed partial class WorldMap
             }
             run += seg;
         }
-        if (best > c.Reach) return 0;
-        float step = MathHelper.SmoothStep(0, 1, Math.Clamp((side + 1) / 2, 0, 1)); // a step a couple of units wide at the edge
-        float back = 1 - MathHelper.SmoothStep(0, 1, Math.Clamp((best - c.Reach * 0.25f) / (c.Reach * 0.75f), 0, 1));
-        float ends = MathF.Min(c.Reach * 0.5f, c.Length / 3);
-        float taper = ends <= 0 ? 1 : MathHelper.SmoothStep(0, 1, Math.Clamp(along / ends, 0, 1)) * MathHelper.SmoothStep(0, 1, Math.Clamp((c.Length - along) / ends, 0, 1));
-        return c.Height * step * back * taper;
+        return (best, side, along);
     }
 
     /// How far inside an outline p lies (0 or less outside).

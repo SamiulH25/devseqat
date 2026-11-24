@@ -355,6 +355,57 @@ public static partial class SelfTest
         Check(WorldMap.Generate(7, layout: WorldMap.DesignLayout).Cliffs.Count == 0, "layout 5 has no cliffs");
     }
 
+    /// WS3 (docs/pre-demo/WORLD_SCALE.md): nothing climbs a cliff. From below the middle of the Tarn plateau's long rim to the
+    /// top, the player's route and the AI's way both go round by a pass (no leg climbs the face, and the way is longer than
+    /// the straight line), and the straight line is not "over land". Roads keep off the faces too.
+    static void CliffsBar()
+    {
+        var m = WorldMap.Generate(7, layout: WorldMap.DraftLayout);
+        // The middle of a cliff, and the points 30 units below and above it.
+        (Vector2 Low, Vector2 High) Across(WorldMap.CliffLine c)
+        {
+            float half = c.Length / 2, run = 0;
+            Vector2 at = c.Points[0], dir = Vector2.UnitX;
+            for (int i = 1; i < c.Points.Length; i++)
+            {
+                float seg = Vector2.Distance(c.Points[i - 1], c.Points[i]);
+                if (run + seg >= half && seg > 0) { dir = (c.Points[i] - c.Points[i - 1]) / seg; at = c.Points[i - 1] + dir * (half - run); break; }
+                run += seg;
+            }
+            var left = new Vector2(dir.Y, -dir.X);
+            return (at - left * 30, at + left * 30);
+        }
+        // The longest cliff with land on both sides (a sea cliff's foot is in the water).
+        var c = m.Cliffs.Where(c => Across(c) is var (lo, hi) && m.Landness(lo) > 0.95f && m.Landness(hi) > 0.95f).OrderByDescending(c => c.Length).First();
+        var (low, high) = Across(c);
+        Check(m.Height(high.X, high.Y) - m.Height(low.X, low.Y) > c.Height * 0.5f, "the test stands below and above the cliff");
+        Check(!m.OverLand(low, high) && m.CrossesCliff(low, high), "the straight way up the cliff is no way");
+        float Walk(List<Vector2> way, Vector2 from)
+        {
+            float len = 0;
+            var prev = from;
+            foreach (var q in way)
+            {
+                Check(!m.CrossesCliff(prev, q), $"no leg climbs the face ({prev} to {q})");
+                len += Vector2.Distance(prev, q);
+                prev = q;
+            }
+            Check(Vector2.Distance(prev, way[^1]) < 1, "the way ends at its goal");
+            return len;
+        }
+        float player = Walk(m.PlanRoute(low, high, 1.3f), low), ai = Walk(m.PlanAroundSea(low, high), low);
+        Console.WriteLine($"cliff {c.Length:0} long, {c.Height} high: straight {Vector2.Distance(low, high):0}, the player's way {player:0}, the AI's {ai:0}");
+        Check(player > 120 && ai > 120, "both go round by a pass");
+        // Off the road: the plain below is quick, the scarp's back slope above is slow (a plateau's flat top is quick again).
+        var up = high + (high - low) / 60 * 10;
+        Console.WriteLine($"climb: below {m.Climb(low):0.00}, the back slope {m.Climb(up):0.00}");
+        Check(m.Climb(low) > 0.9f && m.Climb(up) < 0.8f, "the plain is quick and the slope above a cliff is slow");
+        int crossing = m.RoadLines.Sum(l => Enumerable.Range(1, l.Points.Length - 1).Count(i => m.CrossesCliff(l.Points[i - 1], l.Points[i])));
+        Console.WriteLine($"road legs over a cliff face: {crossing}");
+        foreach (var l in m.RoadLines) for (int i = 1; i < l.Points.Length; i++) if (m.CrossesCliff(l.Points[i - 1], l.Points[i])) Console.WriteLine($"  road ({l.Village}) {l.Points[0]} .. {l.Points[^1]} leg {i}/{l.Points.Length - 1}: {l.Points[i - 1]} -> {l.Points[i]}");
+        Check(crossing == 0, "no road climbs a cliff's face");
+    }
+
     static float SegmentGap(Vector2 p, Vector2 a, Vector2 b)
     {
         var ab = b - a;

@@ -123,7 +123,7 @@ public sealed partial class WorldMap
             if (b == 0)
             {
                 var p = At(x, z);
-                b = (sbyte)(m.InLake(p, 2.5f) || m.RiverDist(p) < riverHalf + 1.5f || m.Landness(p) < 0.45f ? -1 : 1); // and the sea, on a designed map
+                b = (sbyte)(m.InLake(p, 2.5f) || m.RiverDist(p) < riverHalf + 1.5f || m.Landness(p) < 0.45f || m.OnCliff(p, 3) ? -1 : 1); // and the sea, on a designed map, and a cliff (WS3)
             }
             return b < 0;
         }
@@ -161,20 +161,24 @@ public sealed partial class WorldMap
         {
             float len = Vector2.Distance(from, to);
             if (len < C * 3) { pts.Add(to); return; }
-            var cells = Search(from, to, len);
+            var cells = Search(from, to, len, 0.22f);
+            // A cliff (WS3) may need a wider search to find its pass.
+            if (cells == null && m.cliffs.Count > 0 && m.CrossesCliff(from, to)) cells = Search(from, to, len, 1.2f);
             if (cells == null) { pts.Add(to); return; }
             var raw = new List<Vector2> { from };
             for (int i = 1; i + 1 < cells.Count; i++) raw.Add(At(cells[i].X, cells[i].Z));
             raw.Add(to);
             var smooth = Simplify(Chaikin(Simplify(raw, 1.6f), 2), 0.45f); // few segments: RoadDist is asked every tick
+            // Smoothing cuts corners: where that would climb a cliff's face, keep the cells' own way.
+            if (m.cliffs.Count > 0 && Enumerable.Range(1, smooth.Count - 1).Any(i => m.CrossesCliff(smooth[i - 1], smooth[i]))) smooth = raw;
             for (int i = 1; i < smooth.Count; i++) pts.Add(smooth[i]);
         }
 
-        List<(int X, int Z)>? Search(Vector2 from, Vector2 to, float len)
+        List<(int X, int Z)>? Search(Vector2 from, Vector2 to, float len, float spread)
         {
             var (sx, sz) = Cell(from);
             var (ex, ez) = Cell(to);
-            float pad = MathF.Max(16, len * 0.22f);
+            float pad = MathF.Max(16, len * spread);
             var lo = Cell(Vector2.Min(from, to) - new Vector2(pad));
             var hi = Cell(Vector2.Max(from, to) + new Vector2(pad));
             int w = hi.Item1 - lo.Item1 + 1, d = hi.Item2 - lo.Item2 + 1;
