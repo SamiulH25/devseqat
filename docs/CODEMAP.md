@@ -873,8 +873,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Castle.cs (58 lines)
 - **MapScreen** (class, L6): MusterTab:8
 
-## MapScreen.cs (1209 lines)
-- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:99, Prepared:114, Prepare:119, PlaceStateOf:128, Open:150, ShowResults:172, Pressed:180, Update:184, readonly:289, LaterTips:303, Pan:327, ScreenKeys:329, OpenScreen:337, Soundscape:348, CameFrom:442, Camera:444, Rename:468, Trails:481, MapPick:494, OnScreen:500, PickAt:515, ClickWorld:546, Ground:555, Draw:569, UpdateBearers:729, FinishLife:786, UpdateLife:793, BuildSprites:827, BuildSpritesInner:834, BuildUnits3D:841, DrawUnits3D:865, DrawSprites:876, Surface:889, G:891, DrawLines:893, MapWeather:952, DrawMapAmbience:975, Stage:1038
+## MapScreen.cs (1211 lines)
+- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:99, Prepared:114, Prepare:119, PlaceStateOf:128, Open:152, ShowResults:174, Pressed:182, Update:186, readonly:291, LaterTips:305, Pan:329, ScreenKeys:331, OpenScreen:339, Soundscape:350, CameFrom:444, Camera:446, Rename:470, Trails:483, MapPick:496, OnScreen:502, PickAt:517, ClickWorld:548, Ground:557, Draw:571, UpdateBearers:731, FinishLife:788, UpdateLife:795, BuildSprites:829, BuildSpritesInner:836, BuildUnits3D:843, DrawUnits3D:867, DrawSprites:878, Surface:891, G:893, DrawLines:895, MapWeather:954, DrawMapAmbience:977, Stage:1040
 
 ## MapScreen.Dialogs.cs (241 lines)
 - **MapScreen** (class, L8): MeetingPanel:11, OfRealm:46, SiegeWorksRows:52, SiegePanel:75, BeatPanel:143, GameOverPanel:169, StoryFaceRow:187, MenuPanel:213, SavesPanel:229

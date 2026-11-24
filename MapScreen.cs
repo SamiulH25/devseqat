@@ -100,8 +100,8 @@ sealed partial class MapScreen
     {
         this.gd = gd; this.art = art; this.shading = shading; this.ctl = ctl; campKit = meshKit;
         ui = new Ui(sb, art, font);
-        puppet = new Puppet(art, sprites) { Scale = 2.5f }; // a little smaller than the towns they ride between (WL3)
-        if (meshKit != null) puppet3D = new Puppet3D(meshKit, units3D) { Scale = 2.5f };
+        puppet = new Puppet(art, sprites) { Scale = FigureScale }; // a little smaller than the towns they ride between (WL3)
+        if (meshKit != null) puppet3D = new Puppet3D(meshKit, units3D) { Scale = FigureScale };
         spriteFx = new AlphaTestEffect(gd)
         {
             Texture = art.Atlas, VertexColorEnabled = true, AlphaFunction = CompareFunction.Greater, ReferenceAlpha = 128,
@@ -142,6 +142,8 @@ sealed partial class MapScreen
     }
 
     const float MapTreeScale = 0.72f;
+    /// How large a party's rider stands on the map. Debug `IRONFIELD_MAP_FIGURE=1` tries smaller ones (docs/pre-demo/WORLD_SCALE.md).
+    static readonly float FigureScale = float.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_MAP_FIGURE"), System.Globalization.CultureInfo.InvariantCulture, out var f) && f > 0 ? f : 2.5f;
     /// How long a raided village shows its burnt houses and smoke (SM5).
     const float RaidSmokeHours = 96;
     int placeTick, smokeSeen;

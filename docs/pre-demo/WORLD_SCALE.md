@@ -28,6 +28,35 @@ Speeds: foot 5.5 units an hour, horse 9, roads x1.3 (`Balance`); `HourSeconds` 0
 the speeds instead would double the game days a trip takes and drag every daily system (food, wages, events) along; a
 slower clock keeps a march at 5 days. Check with `--pacing` (career stage days will rise: march time is real game time now).
 
+## Smaller things instead of (only) a longer land (owner's idea, 2026-11-24; looked into)
+
+**What is oversized now.** Against the land (1 unit is about 0.6 km on a 1,000 km continent) everything on the map is a
+token: a party's rider is drawn at 2.5x life (`MapScreen.FigureScale`) and stands ~6 units tall, half as wide as a town
+(`PlacePlans.FootprintOf`: town 13, castle 4.2-9, village 5.5 units, i.e. a town ~8 km across); trees at 0.72
+(`MapTreeScale`). A rider beside a town reads as a giant beside a hamlet, so the land reads small whatever the distances.
+
+**Tried** (debug `IRONFIELD_MAP_FIGURE=x`, map shots `campaign-close.png` and `campaign-road.png` at 2.5, 1.0 and 0.6):
+at 1.0 the rider is about a house's size and still reads at the default camera (the "YOUR COMPANY" plate does the rest);
+at 0.6 he is a speck and needs a closer camera or a marker. Shrinking the riders alone makes the town look even bigger.
+
+**What it does and does not do.**
+- Smaller figures alone change only the look: the march still takes 15 s. Travel time is distance over speed, so the time
+  goal is met only by more distance or a slower clock, whatever size the riders are.
+- Shrinking *everything on the map* by k (riders, places, trees, roads and rivers, encounter and join radii, doorsteps,
+  map life, the camera's zoom range) plays exactly like a world 1/k as large, **without the terrain growing**: the height
+  grid keeps its cell count, which is the costly part of a 4x land (WS4: 2.7M cells to stream).
+- The catch: the 4-unit height grid grows coarse against small things (a rider 2 units tall on 4-unit cells); hills
+  stay fine, but close views need a finer grid near the camera (a local patch, far cheaper than streaming all the land),
+  and cliffs stay crisp because they are their own meshes (WS4).
+
+**Proposal: a hybrid.** Keep the 4x draft as drawn (the geography: room, uplands, cliffs), build it at **2x** in the game
+(`DesignScale` 1.33 to 0.67 for layout 6), and **halve everything on the map** (one `MapScale` 0.5 read by the figures,
+footprints, models, trees, road and river widths, radii, camera). The land then feels 4x as large; the terrain is about
+825 x 825 cells (4x today's ~170k cells, not 16x), likely one bake with LOD instead of chunk streaming. Town to town in
+units is ~435; for 2 real minutes the clock goes to about 2 s a game hour, or speeds drop a little (choose with `--pacing`).
+With men this small a party can be a **column** (a few riders and foot, longer with more men) instead of one giant, and a
+**banner marker** keeps it readable when zoomed out.
+
 ## The draft (WS0, built)
 
 - `Data/world6.json`: revision 17 of the drawn world with every point x4 (`extent` 2480), ridges 4x as wide, rivers 1.5x,
