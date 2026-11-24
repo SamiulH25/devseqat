@@ -1,27 +1,27 @@
 import { THREE, V, M, shadeVerts, heightShade, loft, column, lathe, bladeExtrude, addPart } from '../geom.mjs';
 
 export function buildProps(root) {
-  // plume: sweeping helm crest feather plume (Y 0..0.26, Z -0.32..0.05)
+  // plume: bold sweeping helm crest feather plume (Y 0..0.28, Z -0.34..0.05)
   addPart(root, 'plume', (mesh) => {
-    const socket = column([[0.0, 0.024, 0.024], [0.045, 0.030, 0.030]], { segs: 6 });
+    const socket = column([[0.0, 0.028, 0.028], [0.050, 0.036, 0.036]], { segs: 6 });
     mesh(socket, M.brass);
-    const body = loft(V(0, 0.04, 0.02), V(0, 0.14, -0.31), [
-      [0.0, 0.035, 0.035],
-      [0.25, 0.068, 0.095, 0, 0.09],
-      [0.60, 0.084, 0.105, 0, 0.10],
-      [0.85, 0.062, 0.070, 0, 0.05],
-      [1.0, 0.018, 0.022, 0, -0.02],
-    ], { segs: 7, fwd: V(0, 1, 0) });
-    mesh(heightShade(body, 0.04, 0.26, 0.82, 1.0), M.cloth);
+    const body = loft(V(0, 0.045, 0.02), V(0, 0.13, -0.33), [
+      [0.0, 0.042, 0.042],
+      [0.25, 0.082, 0.112, 0, 0.11],
+      [0.58, 0.098, 0.122, 0, 0.12],
+      [0.84, 0.072, 0.080, 0, 0.05],
+      [1.0, 0.022, 0.026, 0, -0.04],
+    ], { segs: 6, fwd: V(0, 1, 0) });
+    mesh(heightShade(body, 0.04, 0.28, 0.80, 1.0), M.cloth);
   });
 
-  // cape: draped shoulder cloak (X -0.28..0.28, Y 0.28..1.28, Z -0.35..-0.10)
+  // cape: bold wide draped faceted shoulder cloak (visible on both sides of legs like reference)
   addPart(root, 'cape', (mesh) => {
     const rows = [
-      [1.28, 0.18, -0.11, 0.025],
-      [1.05, 0.23, -0.17, 0.040],
-      [0.72, 0.26, -0.25, 0.052],
-      [0.28, 0.28, -0.34, 0.060],
+      [1.28, 0.24, -0.11, 0.028],
+      [1.00, 0.31, -0.19, 0.048],
+      [0.64, 0.36, -0.27, 0.060],
+      [0.20, 0.41, -0.36, 0.068],
     ];
     const cols = 6;
     const pos = [], idx = [];
@@ -29,7 +29,7 @@ export function buildProps(root) {
       const [y, hw, z0, bow] = rows[r];
       for (let c = 0; c <= cols; c++) {
         const u = (c / cols) * 2 - 1;
-        const ripple = r > 0 ? Math.sin(u * Math.PI * 2) * 0.014 * (r / 3) : 0;
+        const ripple = r > 0 ? Math.sin(u * Math.PI * 2) * 0.018 * (r / 3) : 0;
         pos.push(u * hw, y, z0 - bow * (1 - u * u) + ripple);
       }
     }
@@ -44,7 +44,7 @@ export function buildProps(root) {
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     g.setIndex(idx);
     g.computeVertexNormals();
-    mesh(heightShade(g, 0.28, 1.28, 0.78, 1.0), M.cloth);
+    mesh(heightShade(g, 0.24, 1.28, 0.78, 1.0), M.cloth);
   });
 
   // quiver: angled leather quiver with brass mouth & fletched arrows (X -0.14..0.07, Y -0.21..0.35)

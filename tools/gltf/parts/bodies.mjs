@@ -1,149 +1,136 @@
 import { THREE, V, M, shadeVerts, heightShade, loft, column, lathe, bladeExtrude, addPart } from '../geom.mjs';
 
 export function buildBodies(root) {
+  // 1. chest_tunic: heroic tapered low-poly gambeson/tunic with bold shoulder breadth & cinched waist
   addPart(root, 'chest_tunic', (mesh) => {
     const torso = column([
-      [0.79, 0.178, 0.132, 0, 0.004],
-      [0.86, 0.168, 0.126, 0, 0.006],
-      [0.98, 0.186, 0.136, 0, 0.010],
-      [1.14, 0.208, 0.146, 0, 0.012],
-      [1.26, 0.214, 0.138, 0, 0.006],
-      [1.33, 0.172, 0.116, 0, -0.002],
-      [1.37, 0.098, 0.092, 0, -0.004],
-    ], { segs: 8 });
-    mesh(torso, M.cloth);
+      [0.79, 0.178, 0.136, 0, 0.004],
+      [0.86, 0.172, 0.132, 0, 0.006],
+      [1.00, 0.218, 0.154, 0, 0.012],
+      [1.16, 0.256, 0.168, 0, 0.016],
+      [1.28, 0.258, 0.156, 0, 0.008],
+      [1.34, 0.195, 0.128, 0, 0.0],
+      [1.38, 0.106, 0.100, 0, -0.002],
+    ], { segs: 6 });
+    mesh(heightShade(torso, 0.79, 1.38, 0.82, 1.0), M.cloth);
 
-    // Rolled collar band around neck
     const collar = column([
-      [1.32, 0.106, 0.098, 0, -0.002],
-      [1.355, 0.112, 0.104, 0, -0.002],
-      [1.385, 0.096, 0.090, 0, -0.004],
-    ], { segs: 8 });
+      [1.32, 0.124, 0.114, 0, -0.002],
+      [1.36, 0.130, 0.120, 0, -0.002],
+      [1.39, 0.106, 0.100, 0, -0.004],
+    ], { segs: 6 });
     mesh(collar, M.clothDark);
 
-    // Subtle V-neck lacing slit (dark cloth, no stark white block)
-    const placket = shadeVerts(new THREE.BoxGeometry(0.032, 0.11, 0.018), () => 0.88);
-    mesh(placket, M.clothDark, [0, 1.26, 0.132], [-0.16, 0, 0]);
-
-    // Subtle shoulder cap sleeves (blends arm joint cleanly)
     for (const s of [-1, 1]) {
-      const cap = loft(V(s * 0.16, 1.27, 0.0), V(s * 0.245, 1.20, 0.0), [
-        [0, 0.088, 0.092],
-        [0.5, 0.086, 0.090],
-        [1, 0.072, 0.076],
-      ], { segs: 7, fwd: V(0, 0, 1) });
+      const cap = loft(V(s * 0.18, 1.29, 0.0), V(s * 0.285, 1.19, 0.0), [
+        [0, 0.106, 0.110],
+        [0.5, 0.102, 0.106],
+        [1, 0.086, 0.090],
+      ], { segs: 6, fwd: V(0, 0, 1) });
       mesh(shadeVerts(cap, () => 0.92), M.cloth);
     }
   });
 
-  // 2. skirt_tunic: flared knee-length tunic skirt with front & side overlap pleats + hem band
+  // 2. skirt_tunic: bold A-line flared low-poly tunic skirt with crisp hem band
   addPart(root, 'skirt_tunic', (mesh) => {
     const skirt = column([
-      [0.54, 0.228, 0.168, 0, 0.008],
-      [0.60, 0.214, 0.158, 0, 0.008],
-      [0.72, 0.194, 0.144, 0, 0.006],
-      [0.83, 0.180, 0.134, 0, 0.004],
-    ], { segs: 8 });
-    mesh(skirt, M.cloth);
+      [0.46, 0.288, 0.205, 0, 0.008],
+      [0.56, 0.256, 0.184, 0, 0.008],
+      [0.70, 0.214, 0.156, 0, 0.006],
+      [0.83, 0.182, 0.140, 0, 0.004],
+    ], { segs: 6 });
+    mesh(heightShade(skirt, 0.46, 0.83, 0.80, 0.98), M.cloth);
     const hem = column([
-      [0.535, 0.232, 0.172, 0, 0.008],
-      [0.575, 0.224, 0.166, 0, 0.008],
-    ], { segs: 8, caps: false });
+      [0.455, 0.294, 0.210, 0, 0.008],
+      [0.495, 0.282, 0.202, 0, 0.008],
+    ], { segs: 6, caps: false });
     mesh(hem, M.clothDark);
   });
 
-  // 3. shld_collar_cloth: draped medieval linen/wool shoulder mantle
+  // 3. shld_collar_cloth: crisp flared medieval hood-capelet over shoulders
   addPart(root, 'shld_collar_cloth', (mesh) => {
     const mantle = column([
-      [1.22, 0.248, 0.178, 0, -0.004],
-      [1.28, 0.226, 0.162, 0, -0.002],
-      [1.35, 0.132, 0.114, 0, -0.002],
-      [1.39, 0.102, 0.096, 0, -0.004],
-    ], { segs: 8 });
-    mesh(mantle, M.clothDark);
+      [1.17, 0.295, 0.210, 0, -0.004],
+      [1.26, 0.258, 0.182, 0, -0.002],
+      [1.35, 0.146, 0.128, 0, -0.002],
+      [1.39, 0.110, 0.104, 0, -0.004],
+    ], { segs: 6 });
+    mesh(heightShade(mantle, 1.17, 1.39, 0.82, 1.0), M.clothDark);
   });
 
-  // 4. belt_leather: snug waist belt (fits chest_tunic waist closely!) + brass buckle + hip pouch
+  // 4. belt_leather: snug waist belt + crisp brass buckle + hip pouch
   addPart(root, 'belt_leather', (mesh) => {
     const strap = column([
-      [0.805, 0.182, 0.138, 0, 0.005],
-      [0.855, 0.178, 0.135, 0, 0.006],
-    ], { segs: 8 });
+      [0.790, 0.194, 0.150, 0, 0.005],
+      [0.865, 0.188, 0.146, 0, 0.006],
+    ], { segs: 6 });
     mesh(strap, M.leather);
-    const buckle = shadeVerts(new THREE.BoxGeometry(0.052, 0.054, 0.024), () => 1.0);
-    mesh(buckle, M.brass, [0, 0.83, 0.140]);
-    const pouch = shadeVerts(new THREE.BoxGeometry(0.068, 0.088, 0.044), (_x, y) => 0.85 + y);
-    mesh(pouch, M.leather, [-0.178, 0.785, 0.055], [0, -0.3, 0.08]);
+    const buckle = shadeVerts(new THREE.BoxGeometry(0.068, 0.068, 0.028), () => 1.0);
+    mesh(buckle, M.brass, [0, 0.828, 0.152]);
+    const pouch = shadeVerts(new THREE.BoxGeometry(0.082, 0.105, 0.054), (_x, y) => 0.86 + y);
+    mesh(pouch, M.leather, [-0.198, 0.770, 0.055], [0, -0.3, 0.08]);
   });
 
-  // 5. helm_cap: medieval padded arming cap / woollen cap sitting above the brow, with rolled brim & back ear flaps
-
+  // 5. chest_brigandine: broad heroic coat-of-plates / brigandine with clean planar facets
   addPart(root, 'chest_brigandine', (mesh) => {
     const body = column([
-      [0.79, 0.184, 0.136, 0, 0.004],
-      [0.86, 0.174, 0.130, 0, 0.006],
-      [0.98, 0.194, 0.142, 0, 0.010],
-      [1.14, 0.214, 0.152, 0, 0.012],
-      [1.26, 0.218, 0.142, 0, 0.006],
-      [1.33, 0.176, 0.120, 0, -0.002],
-      [1.37, 0.104, 0.096, 0, -0.004],
-    ], { segs: 8 });
-    mesh(body, M.cloth);
+      [0.79, 0.188, 0.142, 0, 0.004],
+      [0.87, 0.184, 0.140, 0, 0.006],
+      [1.00, 0.228, 0.160, 0, 0.014],
+      [1.16, 0.260, 0.174, 0, 0.018],
+      [1.28, 0.258, 0.158, 0, 0.008],
+      [1.34, 0.196, 0.130, 0, 0.0],
+      [1.38, 0.112, 0.104, 0, -0.002],
+    ], { segs: 6 });
+    mesh(heightShade(body, 0.79, 1.38, 0.82, 1.0), M.cloth);
 
-    // Subtle dark collar & chest seam
     const collar = column([
-      [1.32, 0.112, 0.102, 0, -0.002],
-      [1.36, 0.116, 0.106, 0, -0.002],
-      [1.385, 0.098, 0.092, 0, -0.004],
-    ], { segs: 8 });
-    mesh(collar, M.leather);
+      [1.32, 0.138, 0.122, 0, -0.002],
+      [1.36, 0.132, 0.118, 0, -0.002],
+      [1.39, 0.108, 0.102, 0, -0.004],
+    ], { segs: 6 });
+    mesh(collar, M.steel);
 
-    // Neat vertical brass rivet studs on front & sides
-    for (const sx of [-0.11, -0.04, 0.04, 0.11]) {
-      for (const y of [0.95, 1.05, 1.15, 1.24]) {
-        const stud = shadeVerts(new THREE.BoxGeometry(0.016, 0.016, 0.016), () => 1.0);
-        mesh(stud, M.brass, [sx, y, 0.142 - Math.abs(sx) * 0.18]);
-      }
-    }
+    mesh(shadeVerts(new THREE.BoxGeometry(0.040, 0.48, 0.018), () => 0.90), M.clothDark, [0, 1.09, 0.176]);
   });
 
-  // shld_pauldrons_steel: articulated 3-lame overlapping steel pauldrons + gorget
+  // shld_pauldrons_steel: bold heroic wide 3-tier angular faceted steel pauldrons + gorget
   addPart(root, 'shld_pauldrons_steel', (mesh) => {
     const gorget = column([
-      [1.31, 0.154, 0.128, 0, -0.002],
-      [1.36, 0.124, 0.108, 0, -0.002],
-      [1.40, 0.102, 0.096, 0, -0.004],
-    ], { segs: 8 });
-    mesh(gorget, M.mail);
+      [1.28, 0.205, 0.162, 0, 0.004],
+      [1.35, 0.156, 0.132, 0, 0.0],
+      [1.40, 0.116, 0.108, 0, -0.002],
+    ], { segs: 6 });
+    mesh(heightShade(gorget, 1.28, 1.40, 0.84, 1.0), M.steel);
 
     for (const s of [-1, 1]) {
-      // Main rounded shoulder dome
-      const dome = loft(V(s * 0.17, 1.33, 0), V(s * 0.29, 1.24, 0), [
-        [0.0, 0.085, 0.095],
-        [0.5, 0.096, 0.106],
-        [1.0, 0.082, 0.090],
-      ], { segs: 7, fwd: V(0, 0, 1) });
-      mesh(shadeVerts(dome, () => 0.94), M.steel);
-      // Two overlapping lower lames
-      for (const [k, yOff, xOff] of [[0, -0.07, 0.03], [1, -0.13, 0.05]]) {
-        const lame = loft(V(s * (0.21 + xOff), 1.27 + yOff, 0), V(s * (0.29 + xOff), 1.22 + yOff, 0), [
-          [0.0, 0.076, 0.084],
-          [1.0, 0.068, 0.076],
-        ], { segs: 7, fwd: V(0, 0, 1) });
-        mesh(shadeVerts(lame, () => 0.88 - k * 0.04), k === 0 ? M.steel : M.mail);
+      // Wide angular top shoulder plate
+      const dome = loft(V(s * 0.17, 1.37, 0.0), V(s * 0.365, 1.23, 0.0), [
+        [0.0, 0.120, 0.140],
+        [0.45, 0.134, 0.154],
+        [1.0, 0.110, 0.126],
+      ], { segs: 6, fwd: V(0, 0, 1) });
+      mesh(shadeVerts(dome, (_x, y) => 0.86 + 0.14 * Math.max(0, (y - 1.18) / 0.20)), M.steel);
+
+      // Two crisp stepped lower lames descending the upper arm
+      for (const [k, yOff, xOff, w] of [[0, -0.095, 0.032, 0.110], [1, -0.175, 0.052, 0.098]]) {
+        const lame = loft(V(s * (0.225 + xOff), 1.29 + yOff, 0), V(s * (0.350 + xOff), 1.21 + yOff, 0), [
+          [0.0, w, w * 1.14],
+          [1.0, w * 0.90, w * 1.04],
+        ], { segs: 6, fwd: V(0, 0, 1) });
+        mesh(shadeVerts(lame, () => 0.90 - k * 0.08), k === 0 ? M.steel : M.mail);
       }
     }
   });
 
-  // helm_kettle: classic chapel-de-fer kettle hat with wide sloped brim, ridged dome & chin-strap
-
   // ---------- SHARED TORSO HELPERS ----------
-  const torsoCol = (rxW, rzW, rxC, rzC, zC = 0.015, yBot = 0.80, yTop = 1.37, segs = 10) => column([
+  // Heroic V-tapered 6-sided faceted torso: cinched waist -> broad athletic chest -> clean shoulder slope
+  const torsoCol = (rxW, rzW, rxC, rzC, zC = 0.018, yBot = 0.80, yTop = 1.37, segs = 6) => column([
     [yBot, rxW, rzW, 0, 0],
-    [yBot + 0.14, rxW * 1.03, rzW * 1.06, 0, zC * 0.5],
-    [yBot + 0.34, rxC, rzC, 0, zC],
-    [yTop - 0.08, rxC * 0.94, rzC * 0.84, 0, zC * 0.4],
-    [yTop, rxC * 0.52, rzC * 0.62, 0, 0],
+    [yBot + 0.12, rxW * 1.05, rzW * 1.06, 0, zC * 0.5],
+    [yBot + 0.34, rxC * 1.12, rzC * 1.08, 0, zC],
+    [yTop - 0.08, rxC * 1.08, rzC * 0.92, 0, zC * 0.45],
+    [yTop, rxC * 0.50, rzC * 0.60, 0, 0],
   ], { segs });
 
   const cuirassBase = (mesh, bodyMat, trimMat, {
@@ -196,22 +183,22 @@ export function buildBodies(root) {
 
   // ---------- CHESTS (24 remaining) ----------
   addPart(root, 'chest_surcoat', (mesh) => {
-    mesh(heightShade(torsoCol(0.19, 0.145, 0.235, 0.165, 0.012, 0.80, 1.35, 10), 0.80, 1.35, 0.82, 1.0), M.cloth);
-    mesh(column([[1.31, 0.138, 0.128], [1.36, 0.130, 0.120]], { segs: 10 }), M.mail);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.045, 0.50, 0.014), () => 0.96), M.trim, [0, 1.08, 0.168]);
+    // Keep front z <= 0.166 so the 3D heraldic emblem (z=0.186) sits completely proud with zero clipping
+    mesh(heightShade(torsoCol(0.182, 0.136, 0.240, 0.144, 0.010, 0.80, 1.36, 6), 0.80, 1.36, 0.82, 1.0), M.cloth);
+    mesh(column([[1.31, 0.148, 0.128], [1.37, 0.132, 0.118]], { segs: 6 }), M.steel);
   });
 
   addPart(root, 'chest_leather', (mesh) => {
-    mesh(heightShade(torsoCol(0.185, 0.14, 0.235, 0.16, 0.012, 0.80, 1.36, 10), 0.80, 1.36, 0.80, 1.0), M.leather);
+    mesh(heightShade(torsoCol(0.185, 0.14, 0.238, 0.158, 0.012, 0.80, 1.36, 6), 0.80, 1.36, 0.80, 1.0), M.leather);
     for (const sx of [-1, 1]) {
       mesh(shadeVerts(new THREE.BoxGeometry(0.045, 0.44, 0.024), () => 0.92), M.dark, [sx * 0.10, 1.09, 0.155]);
     }
-    mesh(column([[1.32, 0.132, 0.120], [1.36, 0.124, 0.114]], { segs: 8 }), M.clothDark);
+    mesh(column([[1.32, 0.132, 0.120], [1.36, 0.124, 0.114]], { segs: 6 }), M.clothDark);
   });
 
   addPart(root, 'chest_mail', (mesh) => {
-    mesh(heightShade(torsoCol(0.19, 0.145, 0.238, 0.165, 0.012, 0.80, 1.37, 10), 0.80, 1.37, 0.82, 1.0), M.mail);
-    mesh(column([[1.32, 0.142, 0.130], [1.37, 0.134, 0.122]], { segs: 10 }), M.leather);
+    mesh(heightShade(torsoCol(0.192, 0.145, 0.244, 0.162, 0.012, 0.80, 1.37, 6), 0.80, 1.37, 0.82, 1.0), M.steel);
+    mesh(column([[1.32, 0.146, 0.132], [1.37, 0.136, 0.124]], { segs: 6 }), M.mail);
   });
 
   addPart(root, 'chest_plate', (mesh) => cuirassBase(mesh, M.steel, M.mail, { ridge: true }));
@@ -363,7 +350,23 @@ export function buildBodies(root) {
     mesh(heightShade(g, yBot, yTop, 0.80, 1.0), matMain);
   };
 
-  addPart(root, 'shld_mail_aventail', (mesh) => buildMantle(mesh, M.mail, 0.265, 0.205, 1.19, 1.40));
+  addPart(root, 'shld_mail_aventail', (mesh) => {
+    buildMantle(mesh, M.mail, 0.285, 0.210, 1.20, 1.40, 6);
+    // Bold 2-tier faceted steel pauldrons for footmen & greatswords (matches reference silhouette)
+    for (const s of [-1, 1]) {
+      const cap = loft(V(s * 0.175, 1.36, 0.0), V(s * 0.345, 1.22, 0.0), [
+        [0.0, 0.112, 0.128],
+        [0.48, 0.124, 0.142],
+        [1.0, 0.102, 0.118],
+      ], { segs: 6, fwd: V(0, 0, 1) });
+      mesh(shadeVerts(cap, () => 0.94), M.steel);
+      const lame = loft(V(s * 0.245, 1.21, 0.0), V(s * 0.360, 1.13, 0.0), [
+        [0.0, 0.100, 0.112],
+        [1.0, 0.088, 0.100],
+      ], { segs: 6, fwd: V(0, 0, 1) });
+      mesh(shadeVerts(lame, () => 0.86), M.steel);
+    }
+  });
   addPart(root, 'shld_gorget_steel', (mesh) => buildMantle(mesh, M.steel, 0.29, 0.175, 1.19, 1.40));
   addPart(root, 'shld_lamellar', (mesh) => buildMantle(mesh, M.leather, 0.32, 0.16, 1.13, 1.39));
   addPart(root, 'shld_scale', (mesh) => buildMantle(mesh, M.mail, 0.315, 0.145, 1.13, 1.39));
@@ -372,9 +375,22 @@ export function buildBodies(root) {
   addPart(root, 'shld_tarn_mantle', (mesh) => buildMantle(mesh, M.clothDark, 0.29, 0.225, 1.18, 1.40));
 
   addPart(root, 'shld_fur_mantle', (mesh) => {
-    buildMantle(mesh, M.hair, 0.35, 0.23, 1.10, 1.39, 10);
-    const ruff = shadeVerts(new THREE.TorusGeometry(0.18, 0.055, 5, 10), () => 0.90);
-    mesh(ruff, M.hair, [0, 1.33, 0], [Math.PI / 2, 0, 0]);
+    // Wide angular low-poly draped fur shoulder pelt (6-sided faceted capelet, clearly wider than shoulders)
+    const cape = column([
+      [1.06, 0.390, 0.270, 0, -0.008],
+      [1.20, 0.365, 0.252, 0, -0.006],
+      [1.31, 0.280, 0.202, 0, -0.004],
+      [1.39, 0.155, 0.142, 0, -0.002],
+    ], { segs: 6 });
+    mesh(heightShade(cape, 1.06, 1.39, 0.76, 1.0), M.hair);
+    // Chunky angular pelt hem tabs around the bottom edge
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
+      const tab = shadeVerts(new THREE.ConeGeometry(0.115, 0.15, 4), () => 0.84 + (i % 2) * 0.08);
+      mesh(tab, M.hair, [Math.cos(a) * 0.31, 1.08, Math.sin(a) * 0.215 - 0.008], [Math.PI, a, 0]);
+    }
+    // Bold brass cloak clasp
+    mesh(shadeVerts(new THREE.CylinderGeometry(0.042, 0.042, 0.026, 6), () => 1.0), M.brass, [0.12, 1.27, 0.222], [Math.PI / 2, 0, 0]);
   });
   addPart(root, 'shld_fur_collar', (mesh) => {
     buildMantle(mesh, M.hair, 0.25, 0.20, 1.12, 1.39, 8);
@@ -389,40 +405,40 @@ export function buildBodies(root) {
   });
 
   // ---------- BELTS (8 remaining) ----------
-  const beltRing = (mesh, matMain, buckleMat, y0 = 0.80, y1 = 0.88, rx = 0.225, rz = 0.185) => {
-    mesh(column([[y0, rx, rz], [y1, rx, rz]], { segs: 10 }), matMain);
+  const beltRing = (mesh, matMain, buckleMat, y0 = 0.79, y1 = 0.87, rx = 0.204, rz = 0.162) => {
+    mesh(column([[y0, rx, rz], [y1, rx, rz]], { segs: 8 }), matMain);
     if (buckleMat) {
-      mesh(shadeVerts(new THREE.BoxGeometry(0.068, y1 - y0 + 0.012, 0.032), () => 1.0), buckleMat, [0, (y0 + y1) / 2, rz + 0.008]);
+      mesh(shadeVerts(new THREE.BoxGeometry(0.072, y1 - y0 + 0.016, 0.034), () => 1.0), buckleMat, [0, (y0 + y1) / 2, rz + 0.008]);
     }
   };
 
   addPart(root, 'belt_pouch', (mesh) => {
-    beltRing(mesh, M.leather, M.brass, 0.79, 0.87, 0.22, 0.175);
+    beltRing(mesh, M.leather, M.brass, 0.79, 0.87, 0.202, 0.160);
     mesh(shadeVerts(new THREE.BoxGeometry(0.11, 0.13, 0.075), () => 0.88), M.leather, [-0.18, 0.74, 0.08]);
     mesh(shadeVerts(new THREE.BoxGeometry(0.09, 0.11, 0.065), () => 0.88), M.leather, [0.16, 0.75, 0.06]);
   });
-  addPart(root, 'belt_gilded', (mesh) => beltRing(mesh, M.brass, M.trim, 0.80, 0.88, 0.23, 0.185));
-  addPart(root, 'belt_sash_trim', (mesh) => beltRing(mesh, M.trim, M.brass, 0.79, 0.88, 0.23, 0.185));
-  addPart(root, 'belt_sash_dark', (mesh) => beltRing(mesh, M.clothDark, M.trim, 0.80, 0.87, 0.23, 0.185));
+  addPart(root, 'belt_gilded', (mesh) => beltRing(mesh, M.brass, M.trim, 0.79, 0.87, 0.208, 0.166));
+  addPart(root, 'belt_sash_trim', (mesh) => beltRing(mesh, M.trim, M.brass, 0.79, 0.87, 0.208, 0.166));
+  addPart(root, 'belt_sash_dark', (mesh) => beltRing(mesh, M.clothDark, M.trim, 0.79, 0.87, 0.208, 0.166));
   addPart(root, 'belt_plate', (mesh) => {
-    beltRing(mesh, M.steel, M.brass, 0.79, 0.88, 0.242, 0.192);
+    beltRing(mesh, M.leather, M.brass, 0.79, 0.87, 0.208, 0.166);
     for (const sx of [-1, 1]) {
-      mesh(shadeVerts(new THREE.BoxGeometry(0.07, 0.07, 0.025), () => 0.96), M.brass, [sx * 0.14, 0.835, 0.18]);
+      mesh(shadeVerts(new THREE.BoxGeometry(0.064, 0.072, 0.026), () => 0.98), M.brass, [sx * 0.125, 0.83, 0.156]);
     }
   });
   addPart(root, 'belt_baldric', (mesh) => {
-    beltRing(mesh, M.leather, M.brass, 0.80, 0.86, 0.22, 0.175);
-    // Diagonal shoulder strap front & back
-    const fStrap = loft(V(-0.18, 1.26, 0.16), V(0.18, 0.83, 0.17), [[0, 0.032, 0.012], [1, 0.032, 0.012]], { segs: 4 });
-    const bStrap = loft(V(-0.18, 1.26, -0.16), V(0.18, 0.83, -0.17), [[0, 0.032, 0.012], [1, 0.032, 0.012]], { segs: 4 });
+    beltRing(mesh, M.leather, M.brass, 0.79, 0.86, 0.204, 0.162);
+    // Diagonal shoulder strap hugging chest front & back
+    const fStrap = loft(V(-0.18, 1.28, 0.165), V(0.17, 0.83, 0.162), [[0, 0.034, 0.014], [1, 0.034, 0.014]], { segs: 4 });
+    const bStrap = loft(V(-0.18, 1.28, -0.155), V(0.17, 0.83, -0.155), [[0, 0.034, 0.014], [1, 0.034, 0.014]], { segs: 4 });
     mesh(fStrap, M.leather);
     mesh(bStrap, M.leather);
   });
   addPart(root, 'belt_cross_straps', (mesh) => {
-    beltRing(mesh, M.leather, M.brass, 0.80, 0.86, 0.22, 0.175);
+    beltRing(mesh, M.leather, M.brass, 0.79, 0.86, 0.204, 0.162);
     for (const sx of [-1, 1]) {
-      const f = loft(V(-sx * 0.17, 1.22, 0.17), V(sx * 0.17, 0.83, 0.17), [[0, 0.028, 0.012], [1, 0.028, 0.012]], { segs: 4 });
-      const b = loft(V(-sx * 0.17, 1.22, -0.16), V(sx * 0.17, 0.83, -0.16), [[0, 0.028, 0.012], [1, 0.028, 0.012]], { segs: 4 });
+      const f = loft(V(-sx * 0.17, 1.24, 0.165), V(sx * 0.17, 0.83, 0.162), [[0, 0.028, 0.014], [1, 0.028, 0.014]], { segs: 4 });
+      const b = loft(V(-sx * 0.17, 1.24, -0.155), V(sx * 0.17, 0.83, -0.155), [[0, 0.028, 0.014], [1, 0.028, 0.014]], { segs: 4 });
       mesh(f, M.leather);
       mesh(b, M.leather);
     }
@@ -454,9 +470,9 @@ export function buildBodies(root) {
     }
   };
 
-  addPart(root, 'skirt_mail', (mesh) => buildSkirt(mesh, M.mail, 0.48, 0.83, 0.195, 0.24, 0.18));
-  addPart(root, 'skirt_fauld_steel', (mesh) => buildSkirt(mesh, M.steel, 0.52, 0.83, 0.205, 0.258, 0.178, M.mail, 3));
-  addPart(root, 'skirt_fauld_gilded', (mesh) => buildSkirt(mesh, M.steel, 0.52, 0.83, 0.205, 0.258, 0.178, M.brass, 3));
+  addPart(root, 'skirt_mail', (mesh) => buildSkirt(mesh, M.mail, 0.48, 0.83, 0.195, 0.245, 0.182));
+  addPart(root, 'skirt_fauld_steel', (mesh) => buildSkirt(mesh, M.steel, 0.52, 0.83, 0.200, 0.258, 0.178, M.mail, 0));
+  addPart(root, 'skirt_fauld_gilded', (mesh) => buildSkirt(mesh, M.steel, 0.52, 0.83, 0.200, 0.258, 0.178, M.brass, 0));
   addPart(root, 'skirt_fauld_dark', (mesh) => buildSkirt(mesh, M.mail, 0.51, 0.83, 0.205, 0.258, 0.178, M.dark, 3));
   addPart(root, 'skirt_fauld_long', (mesh) => buildSkirt(mesh, M.steel, 0.43, 0.83, 0.205, 0.262, 0.182, M.mail, 4));
   addPart(root, 'skirt_fauld_hollow', (mesh) => buildSkirt(mesh, M.mail, 0.52, 0.80, 0.20, 0.24, 0.17, M.brass, 2));

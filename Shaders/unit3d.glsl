@@ -56,14 +56,14 @@ void main()
     float patId = floor(aInt / 16.0);
     float metal = mod(aInt, 16.0) / 15.0;
 
-    // 4-band stepped cel shading (vibrant, painterly tonal steps — never crushed black in shadow!).
-    float rawLit = clamp((ndotl * 0.72 + 0.28) * mix(0.45, 1.0, sh), 0.0, 1.0);
-    float band = 0.18;
-    band += smoothstep(0.22, 0.26, rawLit) * 0.26;
-    band += smoothstep(0.48, 0.52, rawLit) * 0.30;
-    band += smoothstep(0.75, 0.79, rawLit) * 0.28;
+    // 4-band stepped cel shading (crisp low-poly tonal steps with clean shadow/mid/lit separation, never blowing out steel to pure white).
+    float rawLit = clamp((ndotl * 0.76 + 0.24) * mix(0.42, 1.0, sh), 0.0, 1.0);
+    float band = 0.22;
+    band += smoothstep(0.24, 0.28, rawLit) * 0.26;
+    band += smoothstep(0.52, 0.56, rawLit) * 0.28;
+    band += smoothstep(0.78, 0.82, rawLit) * 0.24;
 
-    // Distance fade so procedural micro-detail enhances close/mid views and stays 100% shimmer-free far away!
+    // Subtle distance-faded surface micro-detail (kept gentle so crisp low-poly planes stay clean, never noisy static).
     float dist = length(CameraPos - vWorld);
     float detailFade = 1.0 - smoothstep(10.0, 26.0, dist);
 
@@ -74,63 +74,62 @@ void main()
     {
         if (patId < 1.5)
         {
-            // Pattern 1: Chainmail interlocking rings (staggered metallic dimple + ring glint).
-            vec2 p = vUV * 24.0;
+            // Pattern 1: Subtle chainmail weave tone.
+            vec2 p = vUV * 20.0;
             p.x += step(1.0, mod(floor(p.y), 2.0)) * 0.5;
             float r = length(fract(p) - 0.5);
-            float ring = smoothstep(0.16, 0.30, r) * (1.0 - smoothstep(0.35, 0.48, r));
+            float ring = smoothstep(0.18, 0.32, r) * (1.0 - smoothstep(0.36, 0.48, r));
             float hole = 1.0 - smoothstep(0.08, 0.20, r);
-            albedo *= 1.0 + (ring * 0.14 - hole * 0.16) * detailFade;
-            specBoost = 1.0 + ring * 0.35 * detailFade;
+            albedo *= 1.0 + (ring * 0.05 - hole * 0.06) * detailFade;
+            specBoost = 1.0 + ring * 0.18 * detailFade;
         }
         else if (patId < 2.5)
         {
-            // Pattern 2: Lamellar / scale overlapping horizontal shingles with upper catchlight lip.
-            vec2 p = vUV * vec2(11.0, 11.0);
+            // Pattern 2: Subtle lamellar / scale horizontal bands.
+            vec2 p = vUV * vec2(10.0, 10.0);
             p.x += step(1.0, mod(floor(p.y), 2.0)) * 0.5;
             vec2 f = fract(p);
-            float botSeam = 1.0 - smoothstep(0.0, 0.20, f.y);
-            float sideSeam = 1.0 - smoothstep(0.0, 0.14, min(f.x, 1.0 - f.x));
-            float topLip = smoothstep(0.72, 0.90, f.y) * (1.0 - sideSeam);
-            albedo *= 1.0 + (topLip * 0.14 - botSeam * 0.20 - sideSeam * 0.08) * detailFade;
-            specBoost = 1.0 + topLip * 0.30 * detailFade;
+            float botSeam = 1.0 - smoothstep(0.0, 0.18, f.y);
+            float topLip = smoothstep(0.76, 0.92, f.y);
+            albedo *= 1.0 + (topLip * 0.07 - botSeam * 0.10) * detailFade;
+            specBoost = 1.0 + topLip * 0.18 * detailFade;
         }
         else if (patId < 3.5)
         {
-            // Pattern 3: Quilted gambeson / padded wool diamond stitching.
-            vec2 p = vUV * 9.5;
+            // Pattern 3: Very subtle cloth weave (keeps flat-shaded low-poly cloth crisp).
+            vec2 p = vUV * 9.0;
             float d1 = abs(fract(p.x + p.y) - 0.5);
             float d2 = abs(fract(p.x - p.y) - 0.5);
-            float stitch = 1.0 - smoothstep(0.0, 0.10, min(d1, d2));
-            albedo *= 1.0 + (0.04 - stitch * 0.13) * detailFade;
+            float stitch = 1.0 - smoothstep(0.0, 0.08, min(d1, d2));
+            albedo *= 1.0 + (0.02 - stitch * 0.05) * detailFade;
         }
         else
         {
-            // Pattern 4: Brushed steel fluting / wood grain subtle directional sheen.
-            float grain = sin(vUV.x * 34.0 + vUV.y * 5.0) * 0.5 + 0.5;
-            albedo *= 1.0 + (grain - 0.5) * 0.08 * detailFade;
+            // Pattern 4: Clean brushed steel / wood sheen.
+            float grain = sin(vUV.x * 28.0 + vUV.y * 4.0) * 0.5 + 0.5;
+            albedo *= 1.0 + (grain - 0.5) * 0.04 * detailFade;
         }
     }
 
-    // Warm/cool split-tone ambient: shadow side stays rich cool-sky lit, sunlit side glows warm.
+    // Balanced cool-shadow / warm-key lighting so midtone steel stays rich silver-grey and only true specular glints hit bright white.
     float hemi = n.y * 0.5 + 0.5;
-    vec3 amb = mix(GroundColor * 0.85, SkyColor * 1.05, hemi) * vec3(0.92, 0.96, 1.06);
-    vec3 direct = SunColor * (band * 1.15);
+    vec3 amb = mix(GroundColor * 0.52, SkyColor * 0.62, hemi) * vec3(0.86, 0.92, 1.08);
+    vec3 direct = SunColor * (band * 0.78);
 
     vec3 col = albedo * (amb + direct);
 
-    // Crisp quantized metallic specular glint on steel/plate/brass (helm domes, breastplates, blades, chanfrons).
+    // Crisp quantized metallic specular highlight on steel/plate/brass (never blows out whole limbs).
     if (metal > 0.2)
     {
         vec3 h = normalize(l + v);
-        float spec = pow(max(dot(n, h), 0.0), 16.0) * sh * specBoost;
-        float specBand = smoothstep(0.28, 0.34, spec);
-        col += SunColor * mix(vec3(0.76, 0.82, 0.92), albedo * 1.35, 0.45) * specBand * metal * 0.78;
+        float spec = pow(max(dot(n, h), 0.0), 22.0) * sh * specBoost;
+        float specBand = smoothstep(0.36, 0.42, spec);
+        col += SunColor * mix(vec3(0.82, 0.88, 0.98), albedo * 1.15, 0.35) * specBand * metal * 0.52;
     }
 
-    // Subtle stepped rim light on the sun-grazing silhouette so dark armor & black horses separate cleanly from grass.
-    float rim = pow(1.0 - max(dot(n, v), 0.0), 2.6) * max(ndotl * 0.5 + 0.5, 0.0) * sh;
-    col += (SunColor * 0.55 + SkyColor * 0.45) * smoothstep(0.48, 0.55, rim) * 0.22;
+    // Subtle stepped rim light on sun-grazing edges.
+    float rim = pow(1.0 - max(dot(n, v), 0.0), 2.8) * max(ndotl * 0.5 + 0.5, 0.0) * sh;
+    col += (SunColor * 0.50 + SkyColor * 0.50) * smoothstep(0.52, 0.60, rim) * 0.14;
 
     // Night torches & moving spell glows.
     col += albedo * (TorchLight(vWorld) + GlowLight(vWorld));

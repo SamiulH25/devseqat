@@ -420,10 +420,10 @@ sealed partial class Puppet3D
                     if (legSign > 0f) bend = MathF.Max(4f, bend - legSign * 8f * walkFactor);
                     else bend += -legSign * (10f + 12f * runFactor);
                 }
-                var hip = RotY(new Vector3(side * 0.125f, 0.68f + legSign * 0.012f * walkFactor, 0), pelvisYaw) + new Vector3(hipShiftX, 0, 0);
-                var knee = hip + RotY(new Vector3(0, -Shank * MathF.Cos(Rad(a)), Shank * MathF.Sin(Rad(a))), pelvisYaw * 0.6f);
-                var foot = knee + RotY(new Vector3(0, -Shank * MathF.Cos(Rad(a - bend)), Shank * MathF.Sin(Rad(a - bend))), pelvisYaw * 0.4f);
-                var toeFwd = RotY(new Vector3(side * 0.14f, legSign > 0.15f ? 0.22f * walkFactor : -0.18f * walkFactor, 1f), pelvisYaw * 0.4f);
+                var hip = RotY(new Vector3(side * 0.145f, 0.68f + legSign * 0.012f * walkFactor, 0), pelvisYaw) + new Vector3(hipShiftX, 0, 0);
+                var knee = hip + RotY(new Vector3(side * 0.015f, -Shank * MathF.Cos(Rad(a)), Shank * MathF.Sin(Rad(a))), pelvisYaw * 0.6f);
+                var foot = knee + RotY(new Vector3(side * 0.018f, -Shank * MathF.Cos(Rad(a - bend)), Shank * MathF.Sin(Rad(a - bend))), pelvisYaw * 0.4f);
+                var toeFwd = RotY(new Vector3(side * 0.22f, legSign > 0.15f ? 0.22f * walkFactor : -0.18f * walkFactor, 1f), pelvisYaw * 0.4f);
                 if (Detail == 0)
                 {
                     EmitBone(lm.Thigh, hip, knee, toeFwd, 1f, lm.LegPat);
@@ -549,7 +549,7 @@ sealed partial class Puppet3D
         }
 
         // 4. Arms, Weapon, Shield, Quivers & Special Combat Stances
-        Vector3 Shoulder(int side) => torsoPos + RotY(new Vector3(side * 0.23f, 1.24f + breath * 0.01f, 0), twist);
+        Vector3 Shoulder(int side) => torsoPos + RotY(new Vector3(side * 0.255f, 1.25f + breath * 0.01f, 0), twist);
         Vector3 ArmEnd(int side, float alphaDeg, float yawDeg, float reach)
         {
             var sh = Shoulder(side);
@@ -765,8 +765,8 @@ sealed partial class Puppet3D
 
         if (u.Type.HasShield && lm.HasShield)
         {
-            Vector3 shPos = p.ShieldUp ? offHand + new Vector3(0.05f, 0.02f, 0.12f) : offHand + new Vector3(-0.07f, 0.02f, 0.06f);
-            float shYaw = p.ShieldUp ? (14f - hitRecoil * 16f) : (-58f + twist * 0.35f - stagger * 22f);
+            Vector3 shPos = p.ShieldUp ? offHand + new Vector3(0.05f, 0.02f, 0.12f) : offHand + new Vector3(-0.04f, 0.02f, 0.08f);
+            float shYaw = p.ShieldUp ? (14f - hitRecoil * 16f) : (-22f + twist * 0.35f - stagger * 22f);
             float shPitch = p.ShieldUp ? (-14f + hitRecoil * 22f) : (runFactor * 12f + stagger * 18f);
             float shRoll = p.ShieldUp ? (8f - hitRecoil * 14f) : (-legNorm * 6f * walkFactor - stagger * 16f);
             EmitShield(lm, palIdx, shPos, shYaw, u.StuckArrows, false, shPitch, shRoll);

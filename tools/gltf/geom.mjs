@@ -56,6 +56,13 @@ export function heightShade(geo, y0, y1, lo = 0.86, hi = 1.0) {
   return shadeVerts(geo, (_x, y) => lo + (hi - lo) * Math.max(0, Math.min(1, (y - y0) / span)), Math.min(0.55, lo));
 }
 
+/** Convert indexed geometry to crisp flat-shaded low-poly facets (distinct per-face normals for clean cel banding & creases). */
+export function flat(geo) {
+  const g = geo.index ? geo.toNonIndexed() : geo;
+  g.computeVertexNormals();
+  return g;
+}
+
 /**
  * Rings of sculpted cross-sections along a->b.
  * Ring: [t, rx, rz, ox=0, oz=0].
@@ -232,12 +239,13 @@ export function bladeExtrude(shapePts, depth = 0.014, bevel = 0.004) {
   return shadeVerts(g, (_x, y) => 0.82 + 0.18 * Math.max(0, Math.min(1, y)));
 }
 
-export function addPart(root, name, builder) {
+export function addPart(root, name, builder, { smooth = false } = {}) {
   const g = new THREE.Group();
   g.name = name;
   const mesh = (geo, matRef, pos = null, rot = null, scl = null) => {
-    if (!geo.attributes.color) shadeVerts(geo, () => 0.92);
-    const m = new THREE.Mesh(geo, matRef);
+    const outGeo = smooth ? geo : flat(geo);
+    if (!outGeo.attributes.color) shadeVerts(outGeo, () => 0.92);
+    const m = new THREE.Mesh(outGeo, matRef);
     if (pos) m.position.set(pos[0], pos[1], pos[2]);
     if (rot) m.rotation.set(rot[0], rot[1], rot[2]);
     if (scl) m.scale.set(scl[0], scl[1], scl[2]);

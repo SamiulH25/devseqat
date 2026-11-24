@@ -4,146 +4,152 @@ export function buildLimbs(root) {
   // --- CLOTH LIMBS ---
   addPart(root, 'uarm_cloth', (mesh) => {
     const sleeve = loft(V(0, -0.06, 0), V(0, 1.04, 0), [
-      [0, 0.068, 0.072],
-      [0.2, 0.072, 0.076],
-      [0.7, 0.062, 0.066],
-      [1, 0.056, 0.060],
-    ], { segs: 7 });
+      [0, 0.078, 0.082],
+      [0.25, 0.082, 0.086],
+      [0.72, 0.070, 0.074],
+      [1, 0.064, 0.068],
+    ], { segs: 6 });
     mesh(heightShade(sleeve, -0.06, 1.04, 0.80, 1.0), M.cloth);
   });
 
   addPart(root, 'farm_cloth', (mesh) => {
     const sleeve = loft(V(0, -0.05, 0), V(0, 0.62, 0), [
-      [0, 0.056, 0.060], [0.5, 0.052, 0.056], [1, 0.048, 0.052],
-    ], { segs: 7 });
+      [0, 0.064, 0.068], [0.5, 0.058, 0.062], [1, 0.052, 0.056],
+    ], { segs: 6 });
     mesh(shadeVerts(sleeve, () => 0.90), M.cloth);
-    const wrap = loft(V(0, 0.58, 0), V(0, 0.84, 0), [
-      [0, 0.050, 0.054], [0.5, 0.046, 0.050], [1, 0.042, 0.046],
-    ], { segs: 8 });
+    const wrap = loft(V(0, 0.56, 0), V(0, 0.84, 0), [
+      [0, 0.058, 0.062], [0.5, 0.052, 0.056], [1, 0.048, 0.052],
+    ], { segs: 6 });
     mesh(shadeVerts(wrap, () => 0.88), M.leather);
-    const hand = loft(V(0, 0.82, 0), V(0, 1.05, 0), [
-      [0, 0.038, 0.042], [0.5, 0.040, 0.046], [1, 0.028, 0.034],
-    ], { segs: 7 });
+    const hand = loft(V(0, 0.82, 0), V(0, 1.06, 0), [
+      [0, 0.044, 0.048], [0.5, 0.048, 0.052], [1, 0.032, 0.038],
+    ], { segs: 6 });
     mesh(shadeVerts(hand, () => 0.96), M.skin);
   });
 
   addPart(root, 'thigh_cloth', (mesh) => {
     const thigh = loft(V(0, -0.06, 0), V(0, 1.05, 0), [
-      [0, 0.088, 0.096], [0.45, 0.080, 0.088, 0, 0.004], [1, 0.064, 0.068],
-    ], { segs: 7 });
+      [0, 0.098, 0.104], [0.45, 0.088, 0.094, 0, 0.004], [1, 0.072, 0.076],
+    ], { segs: 6 });
     mesh(heightShade(thigh, -0.06, 1.05, 0.82, 1.0), M.clothDark);
   });
 
   addPart(root, 'shin_cloth', (mesh) => {
-    const hose = loft(V(0, -0.05, 0), V(0, 0.36, 0), [
-      [0, 0.064, 0.068], [0.45, 0.062, 0.068, 0, 0.004], [1, 0.056, 0.060],
-    ], { segs: 7 });
+    const hose = loft(V(0, -0.05, 0), V(0, 0.34, 0), [
+      [0, 0.072, 0.076], [0.5, 0.068, 0.074, 0, 0.004], [1, 0.062, 0.066],
+    ], { segs: 6 });
     mesh(shadeVerts(hose, () => 0.90), M.clothDark);
-    const boot = loft(V(0, 0.34, 0), V(0, 0.94, 0), [
-      [0, 0.066, 0.070], [0.14, 0.064, 0.068], [0.55, 0.054, 0.058], [1, 0.056, 0.064],
-    ], { segs: 7 });
+    // Distinct flared medieval leather boot cuff + shaft
+    const cuff = column([[0.28, 0.078, 0.084], [0.42, 0.072, 0.078]], { segs: 6 });
+    mesh(shadeVerts(cuff, () => 0.94), M.leather);
+    const boot = loft(V(0, 0.38, 0), V(0, 0.94, 0), [
+      [0, 0.072, 0.078], [0.55, 0.062, 0.066], [1, 0.064, 0.072],
+    ], { segs: 6 });
     mesh(shadeVerts(boot, (_x, y) => 0.78 + 0.22 * (1 - y)), M.leather);
-    const foot = loft(V(0, 0.95, -0.055), V(0, 0.98, 0.165), [
-      [0, 0.048, 0.044], [0.35, 0.056, 0.046], [0.78, 0.048, 0.032], [1, 0.026, 0.020],
-    ], { segs: 7, fwd: V(0, 1, 0) });
+    const foot = loft(V(0, 0.94, -0.060), V(0, 0.97, 0.190), [
+      [0, 0.058, 0.050], [0.38, 0.066, 0.054], [0.80, 0.056, 0.038], [1, 0.032, 0.024],
+    ], { segs: 6, fwd: V(0, 1, 0) });
     mesh(shadeVerts(foot, () => 0.88), M.leather);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.104, 0.024, 0.225), () => 0.80), M.dark, [0, 1.015, 0.055]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.122, 0.026, 0.255), () => 0.78), M.dark, [0, 1.015, 0.065]);
   });
 
   // --- MAIL LIMBS ---
   addPart(root, 'uarm_mail', (mesh) => {
     const sleeve = loft(V(0, -0.07, 0), V(0, 1.05, 0), [
-      [0, 0.078, 0.082], [0.25, 0.084, 0.088], [0.75, 0.070, 0.074], [1, 0.064, 0.068],
-    ], { segs: 7 });
+      [0, 0.086, 0.090], [0.25, 0.092, 0.096], [0.75, 0.076, 0.080], [1, 0.070, 0.074],
+    ], { segs: 6 });
     mesh(heightShade(sleeve, -0.07, 1.05, 0.82, 1.0), M.mail);
-    const strap = column([[0.68, 0.074, 0.078], [0.76, 0.074, 0.078]], { segs: 7 });
+    const strap = column([[0.66, 0.082, 0.086], [0.76, 0.082, 0.086]], { segs: 6 });
     mesh(strap, M.leather);
   });
 
   addPart(root, 'farm_mail', (mesh) => {
     const mail = loft(V(0, -0.06, 0), V(0, 0.72, 0), [
-      [0, 0.062, 0.066], [0.5, 0.058, 0.062], [1, 0.052, 0.056],
-    ], { segs: 7 });
+      [0, 0.070, 0.074], [0.5, 0.064, 0.068], [1, 0.058, 0.062],
+    ], { segs: 6 });
     mesh(shadeVerts(mail, () => 0.90), M.mail);
-    const cuff = loft(V(0, 0.68, 0), V(0, 0.86, 0), [
-      [0, 0.056, 0.060], [1, 0.048, 0.052],
-    ], { segs: 7 });
+    const cuff = loft(V(0, 0.64, 0), V(0, 0.86, 0), [
+      [0, 0.066, 0.070], [1, 0.056, 0.060],
+    ], { segs: 6 });
     mesh(shadeVerts(cuff, () => 0.86), M.leather);
-    const hand = loft(V(0, 0.84, 0), V(0, 1.04, 0), [
-      [0, 0.042, 0.046], [0.5, 0.044, 0.048], [1, 0.030, 0.036],
-    ], { segs: 7 });
+    const hand = loft(V(0, 0.84, 0), V(0, 1.05, 0), [
+      [0, 0.048, 0.052], [0.5, 0.050, 0.054], [1, 0.034, 0.040],
+    ], { segs: 6 });
     mesh(shadeVerts(hand, () => 0.90), M.leather);
   });
 
   addPart(root, 'thigh_mail', (mesh) => {
     const thigh = loft(V(0, -0.07, 0), V(0, 1.05, 0), [
-      [0, 0.094, 0.100], [0.5, 0.086, 0.092], [1, 0.068, 0.072],
-    ], { segs: 7 });
+      [0, 0.102, 0.108], [0.5, 0.092, 0.098], [1, 0.076, 0.080],
+    ], { segs: 6 });
     mesh(heightShade(thigh, -0.07, 1.05, 0.82, 1.0), M.mail);
   });
 
   addPart(root, 'shin_mail', (mesh) => {
-    const chausses = loft(V(0, -0.06, 0), V(0, 0.44, 0), [
-      [0, 0.070, 0.074], [0.5, 0.066, 0.070], [1, 0.060, 0.064],
-    ], { segs: 7 });
+    const chausses = loft(V(0, -0.06, 0), V(0, 0.38, 0), [
+      [0, 0.076, 0.080], [0.5, 0.072, 0.076], [1, 0.066, 0.070],
+    ], { segs: 6 });
     mesh(shadeVerts(chausses, () => 0.90), M.mail);
+    const cuff = column([[0.32, 0.082, 0.086], [0.46, 0.076, 0.080]], { segs: 6 });
+    mesh(shadeVerts(cuff, () => 0.94), M.leather);
     const boot = loft(V(0, 0.42, 0), V(0, 0.94, 0), [
-      [0, 0.068, 0.072], [0.5, 0.058, 0.062], [1, 0.058, 0.066],
-    ], { segs: 7 });
+      [0, 0.076, 0.080], [0.5, 0.064, 0.068], [1, 0.066, 0.074],
+    ], { segs: 6 });
     mesh(shadeVerts(boot, (_x, y) => 0.80 + 0.20 * (1 - y)), M.leather);
-    const foot = loft(V(0, 0.95, -0.055), V(0, 0.98, 0.16), [
-      [0, 0.050, 0.044], [0.4, 0.058, 0.046], [0.85, 0.046, 0.030], [1, 0.026, 0.020],
-    ], { segs: 7, fwd: V(0, 1, 0) });
+    const foot = loft(V(0, 0.94, -0.060), V(0, 0.97, 0.190), [
+      [0, 0.058, 0.050], [0.4, 0.068, 0.054], [0.85, 0.054, 0.036], [1, 0.032, 0.024],
+    ], { segs: 6, fwd: V(0, 1, 0) });
     mesh(shadeVerts(foot, () => 0.88), M.leather);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.124, 0.026, 0.255), () => 0.78), M.dark, [0, 1.015, 0.065]);
   });
 
   // --- PLATE LIMBS ---
   addPart(root, 'uarm_plate', (mesh) => {
     const rerebrace = loft(V(0, -0.07, 0), V(0, 1.05, 0), [
-      [0, 0.088, 0.094], [0.22, 0.096, 0.100], [0.72, 0.076, 0.080], [1, 0.070, 0.074],
-    ], { segs: 8 });
+      [0, 0.094, 0.100], [0.24, 0.102, 0.108], [0.74, 0.082, 0.086], [1, 0.076, 0.080],
+    ], { segs: 6 });
     mesh(heightShade(rerebrace, -0.07, 1.05, 0.84, 1.0), M.steel);
-    // Elbow couter guard near distal joint
-    const couter = shadeVerts(new THREE.SphereGeometry(0.080, 7, 5), () => 0.96);
-    couter.scale(1.05, 0.85, 1.12);
+    // Crisp faceted elbow couter guard
+    const couter = shadeVerts(new THREE.OctahedronGeometry(0.092, 0), () => 0.98);
+    couter.scale(1.05, 0.90, 1.15);
     mesh(couter, M.steel, [0, 0.98, -0.015]);
   });
 
   addPart(root, 'farm_plate', (mesh) => {
     const vambrace = loft(V(0, -0.05, 0), V(0, 0.78, 0), [
-      [0, 0.068, 0.072], [0.45, 0.062, 0.066], [1, 0.054, 0.058],
-    ], { segs: 8 });
+      [0, 0.076, 0.080], [0.45, 0.068, 0.072], [1, 0.060, 0.064],
+    ], { segs: 6 });
     mesh(heightShade(vambrace, -0.05, 0.78, 0.84, 1.0), M.steel);
-    // Flared gauntlet cuff + mittened steel hand
-    const cuff = column([[0.64, 0.064, 0.068], [0.78, 0.056, 0.060]], { segs: 8 });
+    // Flared faceted gauntlet cuff + steel mitten hand
+    const cuff = column([[0.60, 0.074, 0.078], [0.78, 0.062, 0.066]], { segs: 6 });
     mesh(cuff, M.steel);
-    const gauntlet = loft(V(0, 0.78, 0), V(0, 1.04, 0), [
-      [0, 0.048, 0.052], [0.55, 0.050, 0.054], [1, 0.034, 0.038],
-    ], { segs: 7 });
-    mesh(shadeVerts(gauntlet, () => 0.94), M.steel);
+    const gauntlet = loft(V(0, 0.78, 0), V(0, 1.05, 0), [
+      [0, 0.054, 0.058], [0.55, 0.056, 0.060], [1, 0.038, 0.042],
+    ], { segs: 6 });
+    mesh(shadeVerts(gauntlet, () => 0.96), M.steel);
   });
 
   addPart(root, 'thigh_plate', (mesh) => {
     const cuisse = loft(V(0, -0.07, 0), V(0, 1.05, 0), [
-      [0, 0.098, 0.104], [0.45, 0.090, 0.096, 0, 0.008], [1, 0.074, 0.078],
-    ], { segs: 8 });
+      [0, 0.106, 0.112], [0.45, 0.096, 0.102, 0, 0.008], [1, 0.080, 0.084],
+    ], { segs: 6 });
     mesh(heightShade(cuisse, -0.07, 1.05, 0.84, 1.0), M.steel);
-    // Poleyn (knee cop) at distal end
-    const poleyn = shadeVerts(new THREE.SphereGeometry(0.082, 7, 5), () => 0.98);
-    poleyn.scale(1.0, 0.9, 1.1);
-    mesh(poleyn, M.steel, [0, 0.99, 0.025]);
+    // Crisp beveled faceted poleyn (knee cop)
+    const poleyn = shadeVerts(new THREE.OctahedronGeometry(0.096, 0), () => 1.0);
+    poleyn.scale(1.0, 0.95, 1.15);
+    mesh(poleyn, M.steel, [0, 0.99, 0.032]);
   });
 
   addPart(root, 'shin_plate', (mesh) => {
     const greave = loft(V(0, -0.05, 0), V(0, 0.92, 0), [
-      [0, 0.074, 0.080], [0.35, 0.072, 0.082, 0, 0.008], [0.75, 0.060, 0.068], [1, 0.058, 0.068],
-    ], { segs: 8 });
+      [0, 0.082, 0.088], [0.35, 0.080, 0.090, 0, 0.010], [0.75, 0.066, 0.074], [1, 0.066, 0.076],
+    ], { segs: 6 });
     mesh(heightShade(greave, -0.05, 0.92, 0.82, 1.0), M.steel);
-    // Pointed gothic steel sabaton (+Z)
-    const sabaton = loft(V(0, 0.94, -0.060), V(0, 0.98, 0.185), [
-      [0, 0.054, 0.048], [0.35, 0.064, 0.052], [0.75, 0.050, 0.036], [1, 0.020, 0.018],
-    ], { segs: 7, fwd: V(0, 1, 0) });
-    mesh(shadeVerts(sabaton, () => 0.94), M.steel);
+    // Bold faceted gothic steel sabaton (+Z)
+    const sabaton = loft(V(0, 0.94, -0.065), V(0, 0.97, 0.210), [
+      [0, 0.062, 0.054], [0.35, 0.072, 0.058], [0.75, 0.058, 0.040], [1, 0.026, 0.022],
+    ], { segs: 6, fwd: V(0, 1, 0) });
+    mesh(shadeVerts(sabaton, () => 0.96), M.steel);
   });
 
   // --- SKELETON / BONE LIMBS ---

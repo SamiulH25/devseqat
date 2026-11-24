@@ -54,21 +54,21 @@ export function buildWeapons(root) {
   // 2. weapon_daneaxe (edgeAlongZ = true)
   addPart(root, 'weapon_daneaxe', (mesh) => {
     const haft = column([
-      [-0.58, 0.020, 0.024],
-      [0.0, 0.022, 0.026],
-      [1.36, 0.024, 0.028],
-    ], { segs: 8 });
+      [-0.58, 0.022, 0.026],
+      [0.0, 0.024, 0.028],
+      [1.38, 0.026, 0.030],
+    ], { segs: 6 });
     mesh(haft, M.wood);
-    const langets = shadeVerts(new THREE.BoxGeometry(0.052, 0.34, 0.062), () => 0.88);
+    const langets = shadeVerts(new THREE.BoxGeometry(0.056, 0.36, 0.068), () => 0.88);
     mesh(langets, M.mail, [0, 1.24, 0]);
     const blade = bladeExtrude([
-      [0.025, 1.18],
-      [0.22, 1.06],
-      [0.27, 1.16],
-      [0.26, 1.38],
-      [0.20, 1.43],
-      [0.025, 1.33],
-    ], 0.018, 0.005);
+      [0.028, 1.16],
+      [0.25, 1.02],
+      [0.31, 1.14],
+      [0.30, 1.40],
+      [0.22, 1.47],
+      [0.028, 1.34],
+    ], 0.022, 0.006);
     blade.rotateY(-Math.PI / 2);
     mesh(blade, M.steel);
   });
@@ -95,37 +95,37 @@ export function buildWeapons(root) {
 
   // 4. Straight swords: weapon_sword, weapon_longsword, weapon_greatsword (edgeAlongZ = false, edges +-X)
   const swords = [
-    { name: 'weapon_sword', gripLo: -0.15, bladeHi: 0.85, guardW: 0.21, bladeW: 0.048, zweihander: false },
-    { name: 'weapon_longsword', gripLo: -0.25, bladeHi: 1.13, guardW: 0.27, bladeW: 0.052, zweihander: false },
-    { name: 'weapon_greatsword', gripLo: -0.34, bladeHi: 1.39, guardW: 0.35, bladeW: 0.062, zweihander: true },
+    { name: 'weapon_sword', gripLo: -0.16, bladeHi: 0.88, guardW: 0.25, bladeW: 0.058, zweihander: false },
+    { name: 'weapon_longsword', gripLo: -0.26, bladeHi: 1.16, guardW: 0.31, bladeW: 0.062, zweihander: false },
+    { name: 'weapon_greatsword', gripLo: -0.35, bladeHi: 1.42, guardW: 0.40, bladeW: 0.074, zweihander: true },
   ];
   for (const sw of swords) {
     addPart(root, sw.name, (mesh) => {
       const pommel = lathe([
-        [0.0, sw.gripLo - 0.045],
-        [0.038, sw.gripLo - 0.022],
-        [0.038, sw.gripLo],
-        [0.0, sw.gripLo + 0.01],
-      ], 10);
-      mesh(pommel, M.brass);
-      const grip = column([[sw.gripLo, 0.018, 0.015], [0.06, 0.020, 0.016]], { segs: 8 });
+        [0.0, sw.gripLo - 0.052],
+        [0.044, sw.gripLo - 0.026],
+        [0.044, sw.gripLo],
+        [0.0, sw.gripLo + 0.012],
+      ], 8);
+      mesh(pommel, sw.zweihander ? M.steel : M.brass);
+      const grip = column([[sw.gripLo, 0.022, 0.018], [0.06, 0.024, 0.020]], { segs: 6 });
       mesh(grip, M.leather);
-      const guard = shadeVerts(new THREE.BoxGeometry(sw.guardW, 0.024, 0.032), () => 0.94);
-      mesh(guard, sw.zweihander ? M.steel : M.brass, [0, 0.072, 0]);
+      const guard = shadeVerts(new THREE.BoxGeometry(sw.guardW, 0.032, 0.038), () => 0.96);
+      mesh(guard, sw.zweihander ? M.steel : M.brass, [0, 0.074, 0]);
       if (sw.zweihander) {
         for (const s of [-1, 1]) {
-          const lug = shadeVerts(new THREE.BoxGeometry(0.042, 0.020, 0.024), () => 0.92);
-          mesh(lug, M.steel, [s * 0.055, 0.21, 0], [0, 0, s * -0.45]);
+          const lug = shadeVerts(new THREE.BoxGeometry(0.050, 0.024, 0.028), () => 0.94);
+          mesh(lug, M.steel, [s * 0.062, 0.22, 0], [0, 0, s * -0.45]);
         }
       }
       const w0 = sw.bladeW * 0.5, w1 = sw.bladeW * 0.36;
       const blade = bladeExtrude([
         [-w0, 0.08],
-        [-w1, sw.bladeHi - 0.14],
+        [-w1, sw.bladeHi - 0.15],
         [0, sw.bladeHi],
-        [w1, sw.bladeHi - 0.14],
+        [w1, sw.bladeHi - 0.15],
         [w0, 0.08],
-      ], 0.016, 0.005);
+      ], 0.020, 0.006);
       mesh(blade, M.steel);
     });
   }
@@ -215,20 +215,20 @@ export function buildWeapons(root) {
 
   // 8. weapon_bow (curve toward -Z, string at -Z)
   addPart(root, 'weapon_bow', (mesh) => {
-    const limb = loft(V(0, -0.54, -0.18), V(0, 0.54, -0.18), [
-      [0.00, 0.010, 0.010, 0, -0.02],
-      [0.12, 0.014, 0.014, 0, 0.09],
-      [0.32, 0.018, 0.016, 0, 0.16],
-      [0.50, 0.020, 0.022, 0, 0.18],
-      [0.68, 0.018, 0.016, 0, 0.16],
-      [0.88, 0.014, 0.014, 0, 0.09],
-      [1.00, 0.010, 0.010, 0, -0.02],
-    ], { segs: 8 });
+    const limb = loft(V(0, -0.58, -0.19), V(0, 0.58, -0.19), [
+      [0.00, 0.014, 0.014, 0, -0.02],
+      [0.12, 0.018, 0.018, 0, 0.10],
+      [0.32, 0.022, 0.020, 0, 0.18],
+      [0.50, 0.024, 0.026, 0, 0.20],
+      [0.68, 0.022, 0.020, 0, 0.18],
+      [0.88, 0.018, 0.018, 0, 0.10],
+      [1.00, 0.014, 0.014, 0, -0.02],
+    ], { segs: 6 });
     mesh(shadeVerts(limb, () => 0.90), M.wood);
-    const grip = column([[-0.07, 0.023, 0.025, 0, 0.0], [0.07, 0.023, 0.025, 0, 0.0]], { segs: 8 });
+    const grip = column([[-0.08, 0.028, 0.030, 0, 0.0], [0.08, 0.028, 0.030, 0, 0.0]], { segs: 6 });
     mesh(grip, M.leather);
-    const str = shadeVerts(new THREE.BoxGeometry(0.006, 1.08, 0.006), () => 0.95);
-    mesh(str, M.trim, [0, 0, -0.19]);
+    const str = shadeVerts(new THREE.BoxGeometry(0.008, 1.16, 0.008), () => 0.95);
+    mesh(str, M.trim, [0, 0, -0.20]);
   });
 
   // 9. weapon_crossbow (prod +-X, tiller +Y): carved walnut stock, brass nut/trigger, heavy steel prod, stirrup & loaded quarrel
@@ -573,13 +573,13 @@ export function buildWeapons(root) {
     mesh(shadeVerts(rimGeo, () => 0.94), rimMat);
   }
 
-  // shield_heater (classic triangular curved knight shield)
+  // shield_heater (classic triangular curved knight shield; keep front z=0.077 so Puppet3D emblems sit proud)
   addPart(root, 'shield_heater', (mesh) => {
     buildCurvedShield(mesh, [
-      [-0.34, 0.01], [-0.22, 0.14], [-0.04, 0.225], [0.16, 0.25], [0.34, 0.245],
-    ], 0.042, 0.020, M.cloth, M.steel, M.wood);
-    const bar = shadeVerts(new THREE.BoxGeometry(0.46, 0.024, 0.014), () => 0.94);
-    mesh(bar, M.trim, [0, 0.31, 0.068]);
+      [-0.36, 0.015], [-0.22, 0.155], [-0.02, 0.245], [0.18, 0.268], [0.35, 0.262],
+    ], 0.042, 0.020, M.cloth, M.brass, M.wood);
+    const bar = shadeVerts(new THREE.BoxGeometry(0.49, 0.030, 0.016), () => 0.96);
+    mesh(bar, M.brass, [0, 0.32, 0.068]);
   });
 
   // shield_kite (tall Norman teardrop shield)

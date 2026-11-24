@@ -22,99 +22,99 @@ export function buildHeads(root) {
     }
   });
 
-  // 6. helm_hood: medieval gugel/chaperon hood with open face (+Z), closed crown & draped liripipe tail
+  // 6. helm_hood: medieval gugel/chaperon hood with open face (+Z), closed crown & flared shoulder capelet
   addPart(root, 'helm_hood', (mesh) => {
     // Open-front cowl wrapping back and sides (-Z, +-X), leaving face (+Z) exposed
     const cowl = column([
-      [-0.12, 0.158, 0.164, 0, -0.012],
-      [-0.03, 0.154, 0.164, 0, -0.014],
-      [0.06, 0.156, 0.168, 0, -0.016],
-      [0.13, 0.140, 0.156, 0, -0.016],
-    ], { segs: 8, arc: [-Math.PI * 1.24, Math.PI * 0.24] });
-    mesh(cowl, M.cloth);
-    // Closed brow & crown above eyes (y >= 0.085)
+      [-0.13, 0.168, 0.174, 0, -0.010],
+      [-0.03, 0.164, 0.174, 0, -0.012],
+      [0.06, 0.166, 0.178, 0, -0.014],
+      [0.14, 0.148, 0.162, 0, -0.014],
+    ], { segs: 8, arc: [-Math.PI * 1.26, Math.PI * 0.26] });
+    mesh(heightShade(cowl, -0.13, 0.14, 0.84, 1.0), M.cloth);
+    // Closed brow & crown above eyes (y >= 0.080)
     const crown = column([
-      [0.085, 0.162, 0.174, 0, -0.012],
-      [0.145, 0.148, 0.162, 0, -0.014],
-      [0.195, 0.100, 0.112, 0, -0.016],
-      [0.225, 0.026, 0.030, 0, -0.016],
+      [0.080, 0.170, 0.182, 0, -0.010],
+      [0.150, 0.154, 0.166, 0, -0.012],
+      [0.205, 0.104, 0.114, 0, -0.014],
+      [0.235, 0.028, 0.032, 0, -0.014],
     ], { segs: 8 });
-    mesh(crown, M.cloth);
+    mesh(heightShade(crown, 0.08, 0.235, 0.88, 1.0), M.cloth);
     // Draped liripipe tail at back
-    const tail = loft(V(0, 0.16, -0.11), V(0, 0.05, -0.32), [
-      [0, 0.064, 0.060],
-      [0.45, 0.044, 0.042],
-      [0.85, 0.024, 0.024],
-      [1, 0.010, 0.010],
-    ], { segs: 8, fwd: V(0, 1, 0) });
-    mesh(shadeVerts(tail, () => 0.88), M.clothDark);
-    // Neck collar wrap
-    const collar = column([
-      [-0.155, 0.168, 0.168, 0, -0.012],
-      [-0.105, 0.162, 0.164, 0, -0.012],
+    const tail = loft(V(0, 0.16, -0.12), V(0, 0.04, -0.30), [
+      [0, 0.066, 0.060],
+      [0.5, 0.044, 0.042],
+      [1, 0.014, 0.014],
+    ], { segs: 6, fwd: V(0, 1, 0) });
+    mesh(shadeVerts(tail, () => 0.86), M.clothDark);
+    // Flared medieval hood capelet draping over the collar/shoulders (matches reference Bowman)
+    const capelet = column([
+      [-0.255, 0.265, 0.205, 0, -0.008],
+      [-0.190, 0.215, 0.185, 0, -0.010],
+      [-0.120, 0.170, 0.168, 0, -0.010],
     ], { segs: 8 });
-    mesh(collar, M.clothDark);
+    mesh(heightShade(capelet, -0.255, -0.120, 0.82, 0.98), M.clothDark);
   });
 
-  // 7. uarm_cloth: normalized bone [0..1] along +Y (shoulder -> elbow)
-
+  // 7. helm_kettle: classic chapel-de-fer kettle hat with wide sloped brim & crisp faceted dome
   addPart(root, 'helm_kettle', (mesh) => {
     const dome = column([
-      [0.055, 0.156, 0.168, 0, -0.008],
-      [0.120, 0.152, 0.164, 0, -0.010],
-      [0.185, 0.122, 0.132, 0, -0.010],
-      [0.240, 0.068, 0.074, 0, -0.008],
-      [0.265, 0.014, 0.016, 0, -0.008],
+      [0.055, 0.166, 0.178, 0, -0.006],
+      [0.130, 0.160, 0.172, 0, -0.008],
+      [0.200, 0.126, 0.136, 0, -0.008],
+      [0.255, 0.064, 0.070, 0, -0.006],
+      [0.280, 0.016, 0.018, 0, -0.006],
     ], { segs: 8 });
-    mesh(dome, M.steel);
+    mesh(heightShade(dome, 0.055, 0.280, 0.84, 1.0), M.steel);
 
-    // Wide sloped kettle brim
+    // Wide sloped faceted kettle brim
     const brim = column([
-      [0.005, 0.258, 0.274, 0, -0.006],
-      [0.032, 0.240, 0.256, 0, -0.006],
-      [0.068, 0.158, 0.170, 0, -0.008],
-    ], { segs: 7 });
-    mesh(brim, M.mail);
+      [0.000, 0.275, 0.288, 0, -0.004],
+      [0.032, 0.252, 0.266, 0, -0.004],
+      [0.072, 0.168, 0.180, 0, -0.006],
+    ], { segs: 8 });
+    mesh(heightShade(brim, 0.0, 0.072, 0.82, 0.96), M.steel);
 
-    // Subtle crest comb & brow band
-    const comb = shadeVerts(new THREE.BoxGeometry(0.020, 0.042, 0.22), () => 0.96);
-    mesh(comb, M.steel, [0, 0.245, -0.01]);
+    // Crisp medial crest comb
+    const comb = shadeVerts(new THREE.BoxGeometry(0.024, 0.044, 0.24), () => 0.98);
+    mesh(comb, M.steel, [0, 0.258, -0.008]);
   });
 
-  // helm_sallet: Gothic sallet with swept lobster-tail neck guard, brow visor & dark iron bevor
+  // helm_sallet: sleek Gothic sallet with flared lobster-tail neck guard, dark eye-slit visor & solid steel bevor
   addPart(root, 'helm_sallet', (mesh) => {
-    // Upper skull dome
+    // Upper faceted skull dome
     const skull = column([
-      [0.055, 0.154, 0.170, 0, -0.012],
-      [0.125, 0.150, 0.166, 0, -0.014],
-      [0.195, 0.120, 0.134, 0, -0.014],
-      [0.245, 0.064, 0.074, 0, -0.012],
-      [0.265, 0.018, 0.022, 0, -0.010],
+      [0.045, 0.168, 0.184, 0, -0.008],
+      [0.125, 0.164, 0.180, 0, -0.010],
+      [0.200, 0.130, 0.144, 0, -0.010],
+      [0.255, 0.068, 0.078, 0, -0.008],
+      [0.278, 0.020, 0.024, 0, -0.006],
     ], { segs: 8 });
-    mesh(skull, M.steel);
+    mesh(heightShade(skull, 0.045, 0.278, 0.84, 1.0), M.steel);
 
-    // Swept rear lobster tail (-Z)
-    const tail = loft(V(0, 0.08, -0.10), V(0, -0.03, -0.34), [
-      [0.0, 0.148, 0.065],
-      [0.5, 0.132, 0.052],
-      [1.0, 0.098, 0.036],
-    ], { segs: 7, fwd: V(0, 1, 0) });
-    mesh(shadeVerts(tail, () => 0.90), M.steel);
+    // Swept flared rear lobster tail (-Z)
+    const tail = loft(V(0, 0.075, -0.10), V(0, -0.045, -0.34), [
+      [0.0, 0.162, 0.068],
+      [0.5, 0.146, 0.056],
+      [1.0, 0.112, 0.038],
+    ], { segs: 6, fwd: V(0, 1, 0) });
+    mesh(shadeVerts(tail, () => 0.88), M.steel);
 
-    // Visor brow ridge across front (+Z)
+    // Protruding angled visor brow + crisp dark horizontal eye slit (+Z)
     const visor = column([
-      [0.032, 0.166, 0.184, 0, 0.004],
-      [0.072, 0.160, 0.178, 0, -0.002],
-    ], { segs: 8, arc: [Math.PI * 0.10, Math.PI * 0.90] });
-    mesh(visor, M.mail);
+      [0.018, 0.178, 0.206, 0, 0.012],
+      [0.074, 0.172, 0.194, 0, 0.002],
+    ], { segs: 8, arc: [Math.PI * 0.06, Math.PI * 0.94] });
+    mesh(shadeVerts(visor, () => 0.96), M.steel);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.22, 0.024, 0.024), () => 0.10), M.dark, [0, 0.032, 0.206]);
 
-    // Dark iron bevor (lower chin/neck guard)
+    // Solid beveled steel bevor covering jaw & chin cleanly (no bare gap)
     const bevor = column([
-      [-0.125, 0.134, 0.144, 0, 0.004],
-      [-0.045, 0.146, 0.158, 0, 0.008],
-      [-0.010, 0.144, 0.154, 0, 0.006],
-    ], { segs: 7, arc: [Math.PI * 0.14, Math.PI * 0.86] });
-    mesh(bevor, M.mail);
+      [-0.145, 0.148, 0.164, 0, 0.010],
+      [-0.055, 0.168, 0.190, 0, 0.018],
+      [0.012, 0.166, 0.188, 0, 0.014],
+    ], { segs: 8, arc: [Math.PI * 0.08, Math.PI * 0.92] });
+    mesh(heightShade(bevor, -0.145, 0.012, 0.82, 0.96), M.steel);
   });
 
   // ---------- HEADS (8 parts, centered at 0,0,0, face toward +Z) ----------
@@ -267,18 +267,18 @@ export function buildHeads(root) {
   };
 
   const buildGreathelm = (mesh, trimMat = M.brass) => {
+    // Compact, heroic flat-top great helm (clean eye-slit visor + brass top/brow bands, no cross)
     const barrel = column([
-      [-0.16, 0.172, 0.188, 0, 0.006],
-      [0.06, 0.176, 0.194, 0, 0.008],
-      [0.24, 0.166, 0.182, 0, 0.004],
-      [0.27, 0.115, 0.125, 0, 0.002],
-    ], { segs: 10 });
-    mesh(heightShade(barrel, -0.16, 0.27, 0.82, 1.0), M.steel);
-    // Dark eye slit + brass cross reinforce on front (+Z)
-    mesh(shadeVerts(new THREE.BoxGeometry(0.22, 0.024, 0.022), () => 0.12), M.dark, [0, 0.055, 0.194]);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.036, 0.36, 0.024), () => 0.98), trimMat, [0, 0.055, 0.198]);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.26, 0.030, 0.024), () => 0.98), trimMat, [0, 0.088, 0.196]);
-    mesh(column([[0.21, 0.174, 0.190], [0.245, 0.170, 0.186]], { segs: 10 }), trimMat);
+      [-0.14, 0.168, 0.182, 0, 0.004],
+      [0.05, 0.172, 0.188, 0, 0.006],
+      [0.215, 0.162, 0.178, 0, 0.004],
+      [0.250, 0.118, 0.128, 0, 0.002],
+    ], { segs: 8 });
+    mesh(heightShade(barrel, -0.14, 0.250, 0.82, 1.0), M.steel);
+    // Dark horizontal eye slit + brass brow & crown bands (no cross)
+    mesh(shadeVerts(new THREE.BoxGeometry(0.22, 0.026, 0.024), () => 0.10), M.dark, [0, 0.058, 0.188]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.24, 0.026, 0.024), () => 0.98), trimMat, [0, 0.088, 0.190]);
+    mesh(column([[0.195, 0.170, 0.186], [0.228, 0.166, 0.182]], { segs: 8 }), trimMat);
   };
 
   // ---------- HELMS (30 remaining) ----------
@@ -316,12 +316,16 @@ export function buildHeads(root) {
   });
 
   addPart(root, 'helm_spangen', (mesh) => {
-    mailCoifBase(mesh, 0.04);
-    domeBowl(mesh, M.steel, 0.03, 0.32, 0.178, 0.190, true);
-    mesh(column([[0.025, 0.188, 0.198], [0.065, 0.184, 0.195]], { segs: 9 }), M.brass);
-    // Spectacle/nasal guard
-    mesh(shadeVerts(new THREE.BoxGeometry(0.032, 0.13, 0.024), () => 0.96), M.brass, [0, -0.02, 0.194]);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.18, 0.026, 0.022), () => 0.94), M.brass, [0, 0.03, 0.192]);
+    mailCoifBase(mesh, 0.04, 0.168);
+    domeBowl(mesh, M.steel, 0.03, 0.31, 0.178, 0.190, true);
+    // Bold brass brow band + 4 vertical spangen ribs + spectacle/nasal guard
+    mesh(column([[0.025, 0.188, 0.198], [0.068, 0.184, 0.195]], { segs: 8 }), M.brass);
+    const ribF = loft(V(0, 0.05, 0.190), V(0, 0.315, 0.012), [[0, 0.020, 0.012], [0.5, 0.018, 0.012], [1, 0.012, 0.010]], { segs: 4 });
+    const ribB = loft(V(0, 0.05, -0.192), V(0, 0.315, -0.012), [[0, 0.020, 0.012], [0.5, 0.018, 0.012], [1, 0.012, 0.010]], { segs: 4 });
+    mesh(ribF, M.brass);
+    mesh(ribB, M.brass);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.034, 0.135, 0.026), () => 0.98), M.brass, [0, -0.015, 0.196]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.19, 0.028, 0.024), () => 0.96), M.brass, [0, 0.035, 0.194]);
   });
 
   addPart(root, 'helm_spangen_horns', (mesh) => {
@@ -441,10 +445,26 @@ export function buildHeads(root) {
     }
   };
 
-  addPart(root, 'helm_armet', (mesh) => buildVisoredHelm(mesh, M.steel, M.steel, 0.26, -0.19));
+  addPart(root, 'helm_armet', (mesh) => buildVisoredHelm(mesh, M.steel, M.steel, 0.24, -0.19));
   addPart(root, 'helm_bascinet', (mesh) => {
-    mailCoifBase(mesh, 0.03, 0.172);
-    buildVisoredHelm(mesh, M.steel, M.brass, 0.295, -0.19);
+    // Crisp faceted kettle/bascinet helm with open face + mail aventail (matches Man-at-Arms reference!)
+    mailCoifBase(mesh, 0.04, 0.172);
+    // Clean sculpted low-poly face under the brim (since helm_bascinet skips head_0 in FullEnclosedHelm)
+    const face = column([
+      [-0.12, 0.095, 0.110, 0, 0.022],
+      [-0.03, 0.132, 0.146, 0, 0.018],
+      [0.05, 0.138, 0.150, 0, 0.012],
+    ], { segs: 6 });
+    mesh(heightShade(face, -0.12, 0.05, 0.82, 0.96), M.skin);
+    // Faceted steel kettle/bascinet dome + wide sloped brim
+    domeBowl(mesh, M.steel, 0.05, 0.30, 0.176, 0.190, true);
+    const brim = column([
+      [0.018, 0.278, 0.292, 0, -0.004],
+      [0.050, 0.242, 0.256, 0, -0.004],
+      [0.082, 0.178, 0.192, 0, -0.006],
+    ], { segs: 6 });
+    mesh(heightShade(brim, 0.018, 0.082, 0.84, 0.98), M.steel);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.026, 0.044, 0.24), () => 0.98), M.steel, [0, 0.272, -0.006]);
   });
   addPart(root, 'helm_sallet_crest', (mesh) => {
     buildVisoredHelm(mesh, M.steel, M.brass, 0.20, -0.42);
