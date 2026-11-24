@@ -344,9 +344,10 @@ sealed partial class MapLife
     /// bends him to the work (hoeing, reaping).
     void DrawPerson(Vector2 pos, float heading, float phase, bool moving, float stoop, Person who, float k, float lift = 0)
     {
+        k *= K;
         var f = new Vector2(MathF.Cos(heading), MathF.Sin(heading));
         var s = new Vector2(-f.Y, f.X);
-        float ground = t.Height(pos) + lift;
+        float ground = t.Height(pos) + lift * K;
         Vector3 At(float fwd, float side, float up) { var p = pos + f * fwd * k + s * side * k; return new Vector3(p.X, ground + up * k, p.Y); }
         if (lift == 0)
             foreach (var (side, ph) in new[] { (0.08f, 0f), (-0.08f, MathF.PI) })
@@ -393,6 +394,7 @@ sealed partial class MapLife
     /// An ox cart (or with `covered`, a merchant's wagon under canvas) drawn by one ox, a driver walking beside it.
     void DrawCart(Vector2 pos, float heading, float phase, bool covered, float k)
     {
+        k *= K;
         var f = new Vector2(MathF.Cos(heading), MathF.Sin(heading));
         var s = new Vector2(-f.Y, f.X);
         float ground = t.Height(pos);
@@ -459,7 +461,7 @@ sealed partial class MapLife
     {
         if (!trails.TryGetValue(id, out var trail) || trail.Count < 2) return;
         int count = pilgrims ? 6 : 2 + id % 2;
-        float gap = pilgrims ? 1.6f : 4.2f, first = pilgrims ? 2.6f : 5f;
+        float gap = (pilgrims ? 1.6f : 4.2f) * K, first = (pilgrims ? 2.6f : 5f) * K;
         var r = new Random(id);
         for (int i = 0; i < count; i++)
         {

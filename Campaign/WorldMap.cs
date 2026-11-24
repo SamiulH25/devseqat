@@ -55,6 +55,10 @@ public sealed partial class WorldMap
     /// (provinces spread out as the map grows, and parties counted by province grew sparse; docs/archive/WORLD.md W2).
     public float PartyScale => ExtentUsed <= PreviousExtent + 1 ? ProvinceScale
         : PreviousProvinces / (float)LegacyProvinces * (ExtentUsed / PreviousExtent) * (ExtentUsed / PreviousExtent) * LandShare; // a designed map counts only its land
+    /// What places, trees and sites on the map are drawn at against their size on the drawn world (WS5b: half on the 4x
+    /// draft, so the land between them reads as wide), and parties' figures (0.3 there). 1 on every other map.
+    public float ThingScale => Layout >= DraftLayout ? 0.5f : 1;
+    public float FigureShrink => Layout >= DraftLayout ? 0.3f : 1;
     /// The draft's warp (1 on every other map): its land is warp x warp times the drawn world's with the same places on it.
     float drawnWarp = 1;
     /// How many lords the world raises: on the 4x draft as many as on the drawn world, since the realms and their seats are
@@ -680,7 +684,7 @@ public sealed partial class WorldMap
         var outer = plans.SelectMany(pl => pl.Lots.Where(l => l.W > 0 && l.Use is not (LotUse.Camp or LotUse.Fire or LotUse.Engine) && Vector2.Distance(l.Pos, pl.Pos) > pl.Radius - 1)).ToList(); // sheds, yurts, mills, suburbs and works out past the footprint (a siege camp pitches round the trees)
         foliage.RemoveAll(f => f.Kind is not (FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village)
             && (plans.Any(pl => Vector2.DistanceSquared(pl.Pos, f.Pos) < (pl.Radius + 0.8f) * (pl.Radius + 0.8f)) || outer.Any(l => Vector2.Distance(l.Pos, f.Pos) < (l.W + l.D) / 2 + 0.8f)));
-        var terrain = new Terrain(Seed, GroundHalf, ExtentUsed < Extent ? LegacyStep : Step, Height, RoadDist, foliage, Tint, Rivers) { Own = OwnColour };
+        var terrain = new Terrain(Seed, GroundHalf, ExtentUsed < Extent ? LegacyStep : Step, Height, RoadDist, foliage, Tint, Rivers) { Own = OwnColour, ThingScale = ThingScale };
         terrain.Places.AddRange(plans);
         terrain.RoadLines.AddRange(RoadLines);
         terrain.Lakes.AddRange(Lakes);

@@ -178,6 +178,16 @@ figures by party size and kind (lords' horse, levy foot, a caravan's wagons, a m
 takes over as the camera pulls back. Trees, dress and map life shrink with the places. Shots: `campaign-close`, `-road`,
 `-holds`, `-village`, `place-*` at each step; the rider must stay readable at the default camera.
 
+**As built (2026-11-24), first pass.** `WorldMap.ThingScale` (0.5 on the draft, 1 elsewhere) rides on
+`Terrain.ThingScale` into the drawing: trees and dress (`World.treeScale` x it), rocks, flowers, sites and roadside pieces
+(`World.Item`), the places (built at their drawn size from their plans, then each shrunk about its middle onto the ground
+where its pieces now stand, chimneys and fires too: `BuildPlaceTile`), road ribbons (`World.Water.cs`), and map life's
+folk, carts, caravans and beasts (`MapLife.K`). Parties: `WorldMap.FigureShrink` 0.3 sets the puppets' scale in
+`MapScreen.Open`. Only drawing changed: plans, footprints, `RoadDist` and the sim are as they were; the drawn world's
+checksum is unchanged. Shots (`IRONFIELD_MAP_LAYOUT=6 IRONFIELD_MAP_ONLY=1`): the rider reads at the close camera; a
+castle is about four riders across. Still open: the plans' footprints and the ground pad under a place (flattened at the
+old size), the click radius and labels, rivers, boats, the camera's close end (WS5), and columns and banner markers.
+
 ### WS5: The camera and the map at scale
 Zoom bands: local (as now), regional (a province or two, places as models), strategic (the realm map M folded into the
 main view: banners, borders, armies as counters). Labels, cards and the encounter ring keep their screen size. Sight

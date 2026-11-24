@@ -66,7 +66,7 @@ sealed partial class World
             {
                 var (p, d) = s[i];
                 Vector2 nrm = new(-d.Y, d.X);
-                float half = road.Half * PlacePlan.StreetScale(t.Places, p); // a town's streets narrow (docs/archive/SETTLEMENTS.md SM2)
+                float half = road.Half * PlacePlan.StreetScale(t.Places, p) * t.ThingScale; // a town's streets narrow (docs/archive/SETTLEMENTS.md SM2); the draft's roads too (WS5b)
                 for (int c = 0; c < cols.Length; c++) at[i * cols.Length + c] = Vertex(p + nrm * cols[c] * half, c);
             }
             ribbons[k] = (s.Count, at);

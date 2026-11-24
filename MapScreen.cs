@@ -152,6 +152,8 @@ sealed partial class MapScreen
     public void Open(Campaign c, Prepared? prepared = null)
     {
         C = c;
+        puppet.Scale = FigureScale * c.Map.FigureShrink; // smaller on the 4x draft (WS5b)
+        if (puppet3D != null) puppet3D.Scale = puppet.Scale;
         world?.Dispose();
         season = c.SeasonIndex;
         var p = prepared ?? Prepare(c);

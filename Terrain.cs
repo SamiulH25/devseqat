@@ -308,6 +308,8 @@ public sealed partial class Terrain
     /// The campaign map: how much of the colour `Tint` gives a place keeps through the map's grassland look (0-1: sand,
     /// frost, heath; docs/archive/WORLDMAP.md WM3). Null or 0 = the grassland look, as every map had before. Visual only.
     public Func<Vector2, float>? Own { get; init; }
+    /// The share of their drawn size that places, trees and sites are built at (the map's `WorldMap.ThingScale`; 1 in battle).
+    public float ThingScale { get; init; } = 1;
     /// Grass tufts and the minimap's reach (the campaign map has no grass and a wider overview).
     public readonly bool Grass = true;
     public readonly float MinimapRange = 110;

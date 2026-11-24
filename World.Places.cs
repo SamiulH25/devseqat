@@ -67,7 +67,22 @@ sealed partial class World
     void BuildPlaceTile(PlaceTile tile)
     {
         var m = new Mesh();
-        foreach (var p in tile.Plans) Place(m, p, placeShown[p.Id], new Random(p.Seed));
+        foreach (var p in tile.Plans)
+        {
+            if (t.ThingScale == 1) { Place(m, p, placeShown[p.Id], new Random(p.Seed)); continue; }
+            // A smaller place (WS5b): built at its drawn size, then shrunk about its middle onto the ground where its pieces now stand.
+            var pm = new Mesh();
+            Place(pm, p, placeShown[p.Id], new Random(p.Seed));
+            float k = t.ThingScale;
+            Vector3 Shrink(Vector3 v)
+            {
+                var at = new Vector2(p.Pos.X + (v.X - p.Pos.X) * k, p.Pos.Y + (v.Z - p.Pos.Y) * k);
+                return new Vector3(at.X, t.Height(at) + (v.Y - t.Height(new Vector2(v.X, v.Z))) * k, at.Y);
+            }
+            foreach (var v in pm.V) m.V.Add(new VertexPNCT(Shrink(v.Position), v.Normal, v.Color, v.UV));
+            foreach (var c in pm.Chimneys) m.Chimneys.Add(Shrink(c));
+            foreach (var c in pm.Fires) m.Fires.Add(Shrink(c));
+        }
         var min = new Vector3(float.MaxValue); var max = new Vector3(float.MinValue);
         foreach (var v in m.V) { min = Vector3.Min(min, v.Position); max = Vector3.Max(max, v.Position); }
         tile.Box = m.V.Count > 0 ? new BoundingBox(min - new Vector3(1.5f), max + new Vector3(1.5f)) : default;

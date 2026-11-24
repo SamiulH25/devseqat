@@ -46,6 +46,8 @@ sealed partial class MapLife
     const float BirdBig = 3.6f;
 
     readonly Terrain t;
+    /// Folk, carts and beasts drawn at the map's thing scale, as the places they live by (WS5b; 1 but on the 4x draft).
+    float K => battle ? 1 : t.ThingScale;
     readonly Random rng;
     readonly List<(Vector2 Pos, Beast Kind, FieldPlot? Plot, int Key)> homes = new();
     readonly Dictionary<int, Herd> herds = new();
@@ -349,7 +351,7 @@ sealed partial class MapLife
     {
         var f = new Vector2(MathF.Cos(a.Heading), MathF.Sin(a.Heading));
         var s = new Vector2(-f.Y, f.X);
-        float k = kind switch { Beast.Sheep => 1.1f, Beast.Cow => 1.25f, Beast.Deer => 1.4f, _ => 1.3f }, ground = t.Height(a.Pos) + (kind == Beast.Deer ? 0 : 0.26f), yaw = a.Heading; // about one fence post high
+        float k = K * kind switch { Beast.Sheep => 1.1f, Beast.Cow => 1.25f, Beast.Deer => 1.4f, _ => 1.3f }, ground = t.Height(a.Pos) + (kind == Beast.Deer ? 0 : 0.26f), yaw = a.Heading; // about one fence post high
         bool moving = a.Speed > 0 && !a.Grazing;
         float stride = moving ? MathF.Sin(a.Phase) : 0;
         Vector3 At(float fwd, float side, float up) { var p = a.Pos + f * fwd * k + s * side * k; return new Vector3(p.X, ground + up * k, p.Y); }

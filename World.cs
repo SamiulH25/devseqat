@@ -63,7 +63,7 @@ sealed partial class World : IDisposable
     public World(Terrain terrain, float treeScale = 1, Func<int, PlaceState>? placeState = null)
     {
         t = terrain;
-        this.treeScale = treeScale;
+        this.treeScale = treeScale * terrain.ThingScale;
         mark = System.Diagnostics.Stopwatch.GetTimestamp();
         GroundColor(Vector2.Zero); // builds the map's look-up grids once, before the parallel parts read them
         var (v, idx) = BuildTerrain(); Mark("terrain", v.Length);
@@ -535,6 +535,7 @@ sealed partial class World : IDisposable
         if (t.Places.Count > 0 && f.Kind is FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village) return; // built as places (World.Places.cs)
         var rng = new Random(f.Seed);
         var b = new Vector3(f.Pos.X, t.Height(f.Pos), f.Pos.Y);
+        if (t.ThingScale != 1) f = f with { Scale = f.Scale * (Plant(f.Kind) && f.Kind is not (FoliageKind.Rock or FoliageKind.Flowers or FoliageKind.Driftwood) ? 1 : t.ThingScale) }; // trees shrink by treeScale
         switch (f.Kind)
         {
             case FoliageKind.Broadleaf: Broadleaf(m, b, f.Scale * treeScale, rng); break;
