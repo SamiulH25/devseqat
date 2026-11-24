@@ -233,7 +233,7 @@ sealed partial class MapScreen
             hover = active && viewReady && panel == PanelKind.None && !ui.Blocks(ms.Position) ? PickAt(ms.Position, true) : default;
             if (active && viewReady && pendingClick && !ui.Blocks(ms.Position)) { pendingClick = false; ClickWorld(PickAt(ms.Position, false)); }
             FrameProf.Begin("campaignTick");
-            if (speed > 0) C.Tick(dt / Balance.Get().HourSeconds * speed);
+            if (speed > 0) C.Tick(dt / (Balance.Get().HourSeconds * C.Map.HourScale) * speed);
             FrameProf.End("campaignTick");
             if (C.Reached) { C.Reached = false; speed = 0; }
             if (C.Encounter != null)

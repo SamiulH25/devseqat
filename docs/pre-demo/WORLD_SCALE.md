@@ -198,6 +198,12 @@ main view: banners, borders, armies as counters). Labels, cards and the encounte
 matters (a party in sight, arrival, an event, hunger). Forced march (faster, tiring), and camps at night as the C5 camp.
 Long marches cost: food (forage by land: rich valleys, lean highlands), wear on horses, sickness in winter passes.
 
+**As built (2026-11-24), the clock.** `WorldMap.HourScale` (1.5 on the draft, 1 elsewhere) multiplies
+`Balance.HourSeconds` in `MapScreen.Update`. Test `MarchTakesMinutes`: on foot from each town to its nearest town, along
+the way the player's planner takes and at the map's speed there, the median is **123 s real at normal speed** (34-563 s,
+19 towns; 15 s at 8x); mounted parties are ~40% quicker. Open in WS6: a 16x step, auto-pause on what matters beyond the
+encounter and arrival stops there are, forced march, foraging by land, wear and winter sickness.
+
 ### WS7: The sim at scale
 Party counts grow with area (`PartyScale`): 16x the land must not mean 16x the cost of a day (~76 ms now, `--campaign-bench`).
 Parties far from the player think less often (an hourly brain every few hours), the encounter checks use the map index, and

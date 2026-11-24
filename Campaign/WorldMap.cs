@@ -59,6 +59,10 @@ public sealed partial class WorldMap
     /// draft, so the land between them reads as wide), and parties' figures (0.3 there). 1 on every other map.
     public float ThingScale => Layout >= DraftLayout ? 0.5f : 1;
     public float FigureShrink => Layout >= DraftLayout ? 0.3f : 1;
+    /// Real seconds a game hour lasts against `Balance.HourSeconds` (WS6): 1.5 on the draft, so a march on foot from a town to
+    /// the nearest town (median ~160 game hours by the way the planner takes) takes about two minutes at normal speed
+    /// (test `MarchTakesMinutes`); the speed-ups (3x, 8x) shorten it.
+    public float HourScale => Layout >= DraftLayout ? 1.5f : 1;
     /// The draft's warp (1 on every other map): its land is warp x warp times the drawn world's with the same places on it.
     float drawnWarp = 1;
     /// How many lords the world raises: on the 4x draft as many as on the drawn world, since the realms and their seats are

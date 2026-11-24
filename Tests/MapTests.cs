@@ -358,6 +358,33 @@ public static partial class SelfTest
     /// WS3 (docs/pre-demo/WORLD_SCALE.md): nothing climbs a cliff. From below the middle of the Tarn plateau's long rim to the
     /// top, the player's route and the AI's way both go round by a pass (no leg climbs the face, and the way is longer than
     /// the straight line), and the straight line is not "over land". Roads keep off the faces too.
+    /// WS6: on the 4x draft a march on foot from a town to the nearest town takes about two real minutes at normal speed.
+    static void MarchTakesMinutes()
+    {
+        var m = WorldMap.Generate(7, layout: WorldMap.DraftLayout);
+        var b = Balance.Get();
+        var towns = m.Settlements.Where(x => x.Kind == SettlementKind.Town).ToList();
+        var secs = new List<float>();
+        foreach (var a in towns)
+        {
+            var to = towns.Where(x => x != a).MinBy(x => Vector2.Distance(a.Pos, x.Pos))!;
+            var way = m.PlanRoute(a.Pos, to.Pos, b.RoadBonus);
+            float hours = 0;
+            var at = a.Pos;
+            foreach (var p in way)
+            {
+                hours += Vector2.Distance(at, p) / (b.FootSpeed * m.SpeedFactor((at + p) / 2, b.RoadBonus));
+                at = p;
+            }
+            secs.Add(hours * b.HourSeconds * m.HourScale);
+        }
+        secs.Sort();
+        float median = secs[secs.Count / 2];
+        Console.WriteLine($"town to nearest town on foot: median {median:0} s real at normal speed ({secs[0]:0}-{secs[^1]:0} s, {towns.Count} towns)");
+        Check(median > 80 && median < 200, "town to town takes about two minutes at normal speed");
+        Check(WorldMap.Generate(7).HourScale == 1, "the drawn world keeps its clock");
+    }
+
     static void CliffsBar()
     {
         var m = WorldMap.Generate(7, layout: WorldMap.DraftLayout);
