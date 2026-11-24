@@ -342,6 +342,7 @@ public sealed partial class Campaign
     {
         if (p.SeaWay.Count > 0 && Vector2.DistanceSquared(p.SeaGoal, t) < 64)
         {
+            if (p.SeaWay.Count == 1 && p.SeaWay[0] == p.SeaGoal) return false; // no way there was found: do not search again for the same goal
             while (p.SeaWay.Count > 1 && Vector2.DistanceSquared(p.SeaWay[0], p.Pos) < 0.25f) p.SeaWay.RemoveAt(0);
             if (p.SeaWay.Count > 1) { t = p.SeaWay[0]; return true; }
         }
@@ -349,6 +350,7 @@ public sealed partial class Campaign
         if (Map.OverLand(p.Pos, t)) return false;
         p.SeaWay = Map.PlanAroundSea(p.Pos, t);
         p.SeaGoal = t;
+        if (p.SeaWay.Count <= 1) p.SeaWay = new List<Vector2> { t }; // remembered: no way to this goal
         if (p.SeaWay.Count > 1) { t = p.SeaWay[0]; return true; }
         return false;
     }

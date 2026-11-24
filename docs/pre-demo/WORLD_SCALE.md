@@ -239,7 +239,11 @@ news travels: the player hears of a siege or a war when word could have reached 
 - Party counts: `WorldMap.LordScale` (lords, and their refit budget) is the drawn world's on the draft, since the realms
   and their seats are the same; `RoamScale` (brigands, pilgrims) grows with the land's width, not its area, so the wide land
   is emptier between places. Both equal `PartyScale` on every other map. **A starting value for the owner to judge.**
-Now: 548 parties (117 lords), **~790 ms a day** (move 600). Still to do: the AI's long ways (cache a way per goal, plan by
+Now: 548 parties (117 lords), **~790 ms a day** (move 600). After the redraw (167 provinces) it rose to ~2 s a day: brigands' wander goals fell on
+cliff faces, whose shut cells no step may enter, so each way round searched the whole land (~20 ms) and failed, again
+every step. Now `PlanOver` aims at the nearest open cell that reaches such a goal without crossing (`OpenNear`), and
+`Campaign.SeaRoute` remembers a goal it found no way to (`SeaWay = [goal]`) instead of searching again: **~580 ms a day**
+(move 370; 588 parties, 118 lords). Layout 5 unchanged (~240 ms). Still to do: the AI's long ways (cache a way per goal, plan by
 province or road graph, think less often far from the player), and the world's other per-area counts (lairs, nests,
 holdouts, caravans) checked on the draft.
 

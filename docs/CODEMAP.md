@@ -341,8 +341,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Camp.cs (48 lines)
 - **Campaign** (class, L4): MoodOfCamp:10, CampFires:18, static:23, StageCamp:28
 
-## Campaign/Campaign.cs (628 lines)
-- **Campaign** (class, L7): LordsWantedOf:41, Campaign:50, New:82, Log:160, Classify:167, LogYours:171, LogAll:173, PartyById:175, SettlementById:176, SideOf:180, Outlaw:184, Hostile:186, WarBetween:195, FactionsAtWar:196, AtWarWithAnyone:197, Score:200, Refuses:211, InSight:216, SettlementAt:218, InTown:229, Tick:234, Speed:263, PaceOf:267, BaseSpeed:271, Move:289, SeaRoute:341, Encounters:356, Clash:384, Edge:421, EdgeOfKind:422, Hourly:424, Daily:450, Weekly:557, Desert:618
+## Campaign/Campaign.cs (630 lines)
+- **Campaign** (class, L7): LordsWantedOf:41, Campaign:50, New:82, Log:160, Classify:167, LogYours:171, LogAll:173, PartyById:175, SettlementById:176, SideOf:180, Outlaw:184, Hostile:186, WarBetween:195, FactionsAtWar:196, AtWarWithAnyone:197, Score:200, Refuses:211, InSight:216, SettlementAt:218, InTown:229, Tick:234, Speed:263, PaceOf:267, BaseSpeed:271, Move:289, SeaRoute:341, Encounters:358, Clash:386, Edge:423, EdgeOfKind:424, Hourly:426, Daily:452, Weekly:559, Desert:620
 
 ## Campaign/CampaignActions.cs (196 lines)
 - **Campaign** (class, L6): MoveTo:11, Chase:12, GoTo:13, RecruitLevies:18, RecruitLevies:21, LevyPrice:66, MercenaryPrice:68, Hire:74, BuyHorses:92, RaiseHounds:107, Merge:131, Split:134, Disband:159, MoveUp:161, SignContract:169, Rest:189
@@ -682,8 +682,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Workings.cs (55 lines)
 - **Campaign** (class, L9): CannotBlight:18, Blight:26, Calmed:38, WorkingsWeekly:41
 
-## Campaign/WorldDesigned.cs (503 lines)
-- **WorldMap** (class, L9): Drawn:14, Drawn:15, Cell:43, InSea:51, Landness:54, DesignProvinceAt:64, Roadside:68, FromDesign:89, BuildGrid:167, OntoLand:224, InExtent:234, Blur:240, LinkNeighbours:268, PlanAroundSea:304, PlanBySea:307, PlanOver:311, OverLand:391, DesignRoads:401, DesignRiver:446, CliffCalm:466, Meander:483
+## Campaign/WorldDesigned.cs (526 lines)
+- **WorldMap** (class, L9): Drawn:14, Drawn:15, Cell:43, InSea:51, Landness:54, DesignProvinceAt:64, Roadside:68, FromDesign:89, BuildGrid:167, OntoLand:224, InExtent:234, Blur:240, LinkNeighbours:268, PlanAroundSea:304, PlanBySea:307, PlanOver:311, OverLand:414, DesignRoads:424, DesignRiver:469, CliffCalm:489, Meander:506
 
 ## Campaign/WorldDress.cs (90 lines)
 - **WorldMap** (class, L10): Cover:14, Dress:37

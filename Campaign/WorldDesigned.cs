@@ -341,6 +341,7 @@ public sealed partial class WorldMap
             int Of(Vector2 p) => Math.Clamp((int)MathF.Round((p.Y - seaOrigin) / SeaCell), 0, n - 1) * n + Math.Clamp((int)MathF.Round((p.X - seaOrigin) / SeaCell), 0, n - 1);
             Vector2 At(int c) => new(seaOrigin + c % n * SeaCell, seaOrigin + c / n * SeaCell);
             int start = Of(from), end = Of(to);
+            if (!seaOpen[end] && !water && cliffs.Count > 0) end = OpenNear(end, to);
             if (++seaStamp == int.MaxValue) { Array.Clear(seaSeen); seaStamp = 1; }
             var open = new PriorityQueue<int, float>();
             seaSeen[start] = seaStamp; seaCostOf[start] = 0; seaPrev[start] = -1;
@@ -368,6 +369,28 @@ public sealed partial class WorldMap
                     }
             }
             if (!found) return new List<Vector2> { to };
+
+            // A goal on a cliff's face (a brigand's wander point, WS3): its cell is shut and no step may cross into it, so the
+            // search ran through the whole land. Aim instead at the nearest open cell that reaches the goal without crossing.
+            int OpenNear(int c, Vector2 goal)
+            {
+                int gx = c % n, gz = c / n, near = c;
+                for (int r = 1; r <= 4; r++)
+                {
+                    float bd = float.MaxValue;
+                    for (int z = gz - r; z <= gz + r; z++)
+                        for (int x = gx - r; x <= gx + r; x++)
+                        {
+                            if (x < 0 || z < 0 || x >= n || z >= n || Math.Max(Math.Abs(x - gx), Math.Abs(z - gz)) != r) continue;
+                            int id = z * n + x;
+                            if (!seaOpen[id] || CrossesCliff(At(id), goal)) continue;
+                            float d = Vector2.DistanceSquared(At(id), goal);
+                            if (d < bd) { bd = d; near = id; }
+                        }
+                    if (near != c) return near;
+                }
+                return c;
+            }
             var cells = new List<Vector2>();
             for (int i = end; i >= 0 && i != start; i = seaPrev[i]) cells.Add(At(i));
             cells.Add(from);
