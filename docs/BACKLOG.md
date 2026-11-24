@@ -24,6 +24,7 @@ them yourself (CLAUDE.md step 4); the scores in old notes are history only.
 | [`pre-demo/NOBILITY.md`](pre-demo/NOBILITY.md) | Done (N1-N5 shipped 2026-11-24) | — | Noble stock gate, castle esquires, knighting named veterans on the roll, AI lord noble retinues, TrainTab noble badge & copy |
 | [`pre-demo/KIT.md`](pre-demo/KIT.md) | KT5 (price from kit) and KT7 (re-equip companies) only, both deferred until after the demo | — | **Not pre-demo work.** KT0–KT4 and KT6 built 2026-11-21 (`7cb10df`, `53b056e`, `471c168`); every man's numbers come from base + skills + worn kit |
 | [`pre-demo/THE_WILD.md`](pre-demo/THE_WILD.md) | Done (WI1-WI9 shipped 2026-11-24) | — | Wildness, growing lairs, monster spoils & marks, contracts/hunts, 15 new monsters + high-poly Three.js models, legendary apexes, world crisis endgame |
+| [`pre-demo/WORLD_SCALE.md`](pre-demo/WORLD_SCALE.md) | WS1-WS8: settle the redraw, height and cliffs in the land (layout 6), cliffs bar the way, chunked terrain, zoom bands, a slower clock (town to town ~2 real minutes), the sim at scale, retune | huge | Owner's brief 2026-11-24 (4x, redraw Roven, fewer places per area). WS0 built: `Data/world6.json` with first relief as notes. Settles HD6 |
 | [`pre-demo/PROGRESSION_FEEL.md`](pre-demo/PROGRESSION_FEEL.md) | PF1-PF5: unified progression feel & character impact (Homeland != Sworn Sword, Total War scale, named men/camp/divisions in battle, arcane/order counters, origin on-ramps, tier jumps & sinks) | large | Owner's brief 2026-11-23 (merged `CHARACTER_IMPACT.md`). In progress |
 
 ## Left out of finished plans (pick up or drop)
@@ -34,7 +35,7 @@ them yourself (CLAUDE.md step 4); the scores in old notes are history only.
   in armies with bows, or beasts could tire and go to ground. The monster AI (`TrollThink`, `WyvernThink`, ...) still judges
   prey by the old `Might`.
 - **The dressed map** (`archive/WORLD_DRESS.md` "Closed", 2026-11-21): WD5 (wild herds by land, gulls, waterfowl, storks, campfires), WD6 (cloud shadows, wind on grass, dawn mist, dust, blown snow), WD7 (every land per season, frame time at widest zoom).
-- **Holds** (`archive/HOLDS.md` "Closed", 2026-11-21): HD6 world size (keep, slow travel, or scale `DesignScale`; run `--pacing` first) and HD7 (README, CAMPAIGN.md, tips and landing page numbers for castles, muster and holders).
+- **Holds** (`archive/HOLDS.md` "Closed", 2026-11-21): HD6 world size (settled 2026-11-24: 4x, `pre-demo/WORLD_SCALE.md`) and HD7 (README, CAMPAIGN.md, tips and landing page numbers for castles, muster and holders).
 - **Playtest fixes** (`archive/PLAYTEST.md` "Closed", 2026-11-21): PT5 (re-look at `pose-grips`, `pose-stances` and the clash gallery after the sprite overhaul) and PT6d (CK systems, waiting on the playtester).
 - **Settlement models** (`archive/SETTLEMENTS.md` "Closed", 2026-11-21): SM7 (check and polish).
 - **Magic and aura** (`archive/ARCANA.md` "As built"): a second shallow path and breakthroughs as choices (AR6); orders

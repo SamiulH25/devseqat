@@ -6,6 +6,7 @@
   tools/world.py --summary       the world in a few lines: each realm's provinces, towns, castles, villages; the totals
   tools/world.py --inbox [you]   the notes that wait for the model (or for the person)
   tools/world.py --shot out.png  a picture of the map as the page draws it (needs chromium), so a model can look at it
+  --file PATH (or IRONFIELD_WORLD=PATH) works on another map file, e.g. the 4x draft Data/world6.json (docs/pre-demo/WORLD_SCALE.md)
 
 Only the standard library. The file's shape and the rules for changing it are in docs/world/README.md.
 """
@@ -14,10 +15,15 @@ import json, os, sys, shutil, subprocess, threading, http.server
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "world")
 # The map is game data (the game builds layout 5 from it, docs/archive/WORLDMAP.md); the page lives beside its README.
 FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Data", "world.json")
+if "--file" in sys.argv:
+    FILE = os.path.abspath(sys.argv.pop(sys.argv.index("--file") + 1)); sys.argv.remove("--file")
+elif os.environ.get("IRONFIELD_WORLD"):
+    FILE = os.path.abspath(os.environ["IRONFIELD_WORLD"])
 AUTHORS = ["you", "model"]
 SETTLEMENTS = ["town", "castle", "village"]
 POINTS = ["provinces", "settlements", "sites", "lakes", "notes"]
-LINES = ["rivers", "ridges", "roads", "sealanes"]
+LINES = ["rivers", "ridges", "roads", "sealanes", "cliffs", "uplands"]
+UPLANDS = ["plateau", "massif", "hills"]
 
 
 def load():
@@ -111,6 +117,16 @@ def faults(w):
     for r in w.get("ridges", []):
         if w.get("provinces") and any(nearest(w, q[0], q[1]).get("kind") == "Sea" for q in r.get("points", [])):
             out.append(f"ridge {r.get('id')}: sits in the sea")
+    for c in w.get("cliffs", []):
+        if not isinstance(c.get("height"), (int, float)) or c["height"] <= 0:
+            out.append(f"cliff {c.get('id')}: no height (how far the land drops, in world units)")
+    for u in w.get("uplands", []):
+        if len(u.get("points", [])) < 3:
+            out.append(f"upland {u.get('id')}: an area needs at least three points")
+        if not isinstance(u.get("height"), (int, float)) or u["height"] <= 0:
+            out.append(f"upland {u.get('id')}: no height")
+        if u.get("kind") not in UPLANDS:
+            out.append(f"upland {u.get('id')}: kind '{u.get('kind')}' is not one of {', '.join(UPLANDS)}")
     for s in w.get("sites", []):
         if w.get("provinces") and all(isinstance(s.get(k), (int, float)) for k in ("x", "y")):
             if nearest(w, s["x"], s["y"]).get("kind") == "Sea":
@@ -166,7 +182,7 @@ def summary(w):
             land[p["kind"]] = land.get(p["kind"], 0) + 1
     print("land: " + ", ".join(f"{k} {v}" for k, v in sorted(land.items(), key=lambda t: -t[1])) + (f" | sea: {sea}" if sea else ""))
     print(f"{len(w['provinces']) - sea} land provinces ({sea} sea), {len(w['settlements'])} settlements ({sum(1 for s in w['settlements'] if s.get('port'))} ports), {len(w.get('subcultures', []))} subcultures, {len(w.get('rivers', []))} rivers, {len(w.get('lakes', []))} lakes, "
-          f"{len(w.get('ridges', []))} ridges, {len(w.get('roads', []))} roads, {len(w.get('sealanes', []))} sea lanes, {len(w.get('sites', []))} sites, {len(w.get('notes', []))} notes")
+          f"{len(w.get('ridges', []))} ridges, {len(w.get('cliffs', []))} cliffs, {len(w.get('uplands', []))} uplands, {len(w.get('roads', []))} roads, {len(w.get('sealanes', []))} sea lanes, {len(w.get('sites', []))} sites, {len(w.get('notes', []))} notes")
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):

@@ -10,4 +10,5 @@ ships, its "As built" note goes at its end and it moves to `docs/archive/`. Idea
 | [`EVENTS.md`](EVENTS.md) | The events rework: storylets with conditions and a cast, a pacing director, choices with checks and an outcome page, the parchment book, new content (EV0-EV7; nothing built) |
 | [`KIT.md`](KIT.md) | Troops made of kit and skill: base man + Arms, Riding, Bowcraft + the gear they wear, for every troop (KT0-KT7; KT0-KT4 and KT6 built, KT5 and KT7 deferred until after the demo) |
 | [`THE_WILD.md`](THE_WILD.md) | Monsters as part of the game: wildness, growing lairs, spoils, new monsters, the world crisis (WI1-WI9; nothing built) |
+| [`WORLD_SCALE.md`](WORLD_SCALE.md) | The world at 4x with height and cliffs: the redraw, uplands and cliffs, layout 6, terrain in chunks, zoom bands, slower clock, the sim at scale (WS0-WS8; WS0 built: the draft `Data/world6.json`) |
 | [`PROGRESSION_FEEL.md`](PROGRESSION_FEEL.md) | Unified progression feel & character impact: Homeland vs. Contract, earned ranks, origin system on-ramps, named men/camp/divisions in battle, arcane/order counters, tier jumps & sinks (PF1-PF5; in progress) |

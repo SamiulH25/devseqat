@@ -99,9 +99,10 @@ const KIND_COL = {
 };
 const CULT_COL = { azure: "#4a78d0", crimson: "#c0443c", northern: "#3f8a62", southern: "#d99a3a", steppe: "#3a9aa6", league: "#8a5ac0", order: "#d8d6cc", common: "#888" };
 const SITE_GLYPH = { ruin: "R", shrine: "+", stones: "o", battlefield: "x", mine: "M", hermit: "h", watchtower: "T", spring: "~", mill: "*" };
-const TOOLS = [["select", "➤", "Pick"], ["paint", "▨", "Realm"], ["terrain", "≋", "Land"], null, ["town", "■", "Town"], ["castle", "♜", "Castle"], ["village", "●", "Village"], ["site", "◆", "Site"], ["province", "✚", "Prov."], ["lake", "◯", "Lake"], null, ["river", "≈", "River"], ["road", "╌", "Road"], ["sealane", "⛵", "Sea lane"], ["ridge", "⋀", "Ridge"], null, ["note", "✎", "Note"]];
-const HINTS = { select: "Click a thing to pick it, drag it to move it. Drag the land to pan, wheel to zoom.", paint: "Click or drag across provinces to give them to the realm picked on the right.", terrain: "Click or drag across provinces to paint land or Sea (carve coasts, bays and islands).", town: "Click to found a town.", castle: "Click to raise a castle.", village: "Click to found a village.", site: "Click to place a site.", province: "Click to add a province: its land is whatever lies nearest its centre.", lake: "Click to place a lake; set its size on the right.", river: "Click point after point; Enter or double-click ends the river.", road: "Click point after point; Enter or double-click ends the road.", sealane: "Click point after point across water; Enter or double-click ends the sea lane.", ridge: "Click point after point; Enter or double-click ends the ridge.", note: "Click the map to pin a note there for the model." };
-const LISTS = { settlement: "settlements", province: "provinces", site: "sites", lake: "lakes", river: "rivers", road: "roads", sealane: "sealanes", ridge: "ridges", note: "notes" };
+const TOOLS = [["select", "➤", "Pick"], ["paint", "▨", "Realm"], ["terrain", "≋", "Land"], null, ["town", "■", "Town"], ["castle", "♜", "Castle"], ["village", "●", "Village"], ["site", "◆", "Site"], ["province", "✚", "Prov."], ["lake", "◯", "Lake"], null, ["river", "≈", "River"], ["road", "╌", "Road"], ["sealane", "⛵", "Sea lane"], ["ridge", "⋀", "Ridge"], ["cliff", "⫠", "Cliff"], ["upland", "⛰", "Upland"], null, ["note", "✎", "Note"]];
+const HINTS = { select: "Click a thing to pick it, drag it to move it. Drag the land to pan, wheel to zoom.", paint: "Click or drag across provinces to give them to the realm picked on the right.", terrain: "Click or drag across provinces to paint land or Sea (carve coasts, bays and islands).", town: "Click to found a town.", castle: "Click to raise a castle.", village: "Click to found a village.", site: "Click to place a site.", province: "Click to add a province: its land is whatever lies nearest its centre.", lake: "Click to place a lake; set its size on the right.", river: "Click point after point; Enter or double-click ends the river.", road: "Click point after point; Enter or double-click ends the road.", sealane: "Click point after point across water; Enter or double-click ends the sea lane.", ridge: "Click point after point; Enter or double-click ends the ridge.", cliff: "Click point after point with the high ground on your left; Enter or double-click ends the cliff. Nothing climbs it.", upland: "Click round the high ground (plateau, massif or hills); Enter or double-click closes the area.", note: "Click the map to pin a note there for the model." };
+const LISTS = { settlement: "settlements", province: "provinces", site: "sites", lake: "lakes", river: "rivers", road: "roads", sealane: "sealanes", ridge: "ridges", cliff: "cliffs", upland: "uplands", note: "notes" };
+const LINE_TOOLS = ["river", "road", "sealane", "ridge", "cliff", "upland"];
 
 let W = null, dirty = false, handle = null, mode = "realm", tool = "select", sel = null, paintRealm = 0, paintKind = "Sea", drawing = null;
 const layers = { roads: true, sealanes: true, water: true, sites: true, names: true, notes: true };
@@ -111,6 +112,7 @@ const $ = (s) => document.querySelector(s), cv = $("#map"), g = cv.getContext("2
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const today = () => new Date().toISOString().slice(0, 10);
 const r1 = (v) => Math.round(v * 10) / 10;
+const kz = () => view.k * (W?.warp || 1); // zoom as the 1x map would read it, for what to show when
 const sx = (x) => (x - view.x) * view.k + cv.width / 2, sy = (y) => (y - view.y) * view.k + cv.height / 2;
 const wx = (px) => (px - cv.width / 2) / view.k + view.x, wy = (py) => (py - cv.height / 2) / view.k + view.y;
 const realm = (id) => W.realms.find((r) => r.id === id);
@@ -131,7 +133,13 @@ function vnoise(x, y) {
   const a = hash2(ix, iy), b = hash2(ix + 1, iy), c = hash2(ix, iy + 1), d = hash2(ix + 1, iy + 1);
   return (a * (1 - ux) + b * ux) * (1 - uy) + (c * (1 - ux) + d * ux) * uy - .5;
 }
+// A map drawn larger (the 4x draft, docs/pre-demo/WORLD_SCALE.md) sets "warp": the borders keep their shape at that scale.
 function warp(x, y) {
+  const s = W.warp || 1;
+  if (s !== 1) { const [a, b] = warp1(x / s, y / s); return [a * s, b * s]; }
+  return warp1(x, y);
+}
+function warp1(x, y) {
   return [x + vnoise(x / 65, y / 65) * 24 + vnoise(x / 24 + 17, y / 24 - 9) * 9 + vnoise(x / 9 - 3, y / 9 + 5) * 3.5,
           y + vnoise(x / 65 + 31, y / 65 + 13) * 24 + vnoise(x / 24 - 7, y / 24 + 23) * 9 + vnoise(x / 9 + 11, y / 9 - 13) * 3.5];
 }
@@ -162,7 +170,7 @@ function buildLand() {
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
     const idx = j * N + i, o = owner[idx], p = P[o], isSea = p.kind === "Sea";
     const wx0 = -E + (i + .5) * cell, wy0 = -E + (j + .5) * cell;
-    const tex = 1 + vnoise(wx0 / 28, wy0 / 28) * .12 + vnoise(wx0 / 10, wy0 / 10) * .05;
+    const ws = W.warp || 1, tex = 1 + vnoise(wx0 / (28 * ws), wy0 / (28 * ws)) * .12 + vnoise(wx0 / (10 * ws), wy0 / (10 * ws)) * .05;
     const r = i < N - 1 ? owner[idx + 1] : o, b = j < N - 1 ? owner[idx + N] : o;
     const pr = P[r], pb = P[b];
     let c;
@@ -194,6 +202,12 @@ function draw() {
   g.imageSmoothingEnabled = k * 2 * E / N < 3;
   g.drawImage(land, sx(-E), sy(-E), 2 * E * k, 2 * E * k);
   g.lineJoin = g.lineCap = "round";
+  // Uplands: the raised land, tinted by how high it stands (plateau tops flat and pale, massifs dark, hills soft).
+  for (const u of W.uplands) {
+    line(u.points, true);
+    g.fillStyle = u.kind === "massif" ? "#3a2f2455" : u.kind === "plateau" ? "#e8d8b040" : "#5a503a30"; g.fill();
+    g.strokeStyle = u.kind === "massif" ? "#2b241daa" : "#4a3f2c99"; g.lineWidth = 1.5 * px; g.setLineDash(u.kind === "hills" ? [3 * px, 4 * px] : []); g.stroke(); g.setLineDash([]);
+  }
   for (const r of W.ridges) {
     // Soft alpine shadow under the range, then individual shaded mountain peaks along the spine.
     line(r.points); g.strokeStyle = "#2b241d55"; g.lineWidth = Math.max(2 * px, r.width * k * .75); g.stroke();
@@ -221,6 +235,17 @@ function draw() {
       }
     }
   }
+  // Cliffs: a dark edge with teeth pointing down the drop (the high ground is on the left as the line runs).
+  for (const c of W.cliffs) {
+    line(c.points); g.strokeStyle = "#1c1610"; g.lineWidth = Math.max(2 * px, 2.5 * px); g.stroke();
+    const tick = Math.max(4 * px, Math.min(14 * px, c.height * k * .6)), gap = 9 * px;
+    for (let i = 1; i < c.points.length; i++) {
+      const [ax, ay] = c.points[i - 1], [bx, by] = c.points[i], X = sx(bx) - sx(ax), Y = sy(by) - sy(ay), len = Math.hypot(X, Y);
+      if (len < 1) continue;
+      const nx = -Y / len, ny = X / len; // screen right of the run = the low side
+      for (let t = gap / 2; t < len; t += gap) { const x0 = sx(ax) + X * t / len, y0 = sy(ay) + Y * t / len; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + nx * tick, y0 + ny * tick); g.strokeStyle = "#1c1610cc"; g.lineWidth = 1.3 * px; g.stroke(); }
+    }
+  }
   if (layers.water) {
     for (const l of W.lakes) { g.beginPath(); g.arc(sx(l.x), sy(l.y), l.radius * k, 0, 7); g.fillStyle = "#3d74a8"; g.fill(); g.strokeStyle = "#1f4468"; g.lineWidth = px; g.stroke(); }
     for (const r of W.rivers) {
@@ -237,30 +262,30 @@ function draw() {
     for (const r of W.sealanes) { line(r.points); g.strokeStyle = "#8fd4f0aa"; g.lineWidth = 1.8 * px; g.stroke(); }
     g.setLineDash([]);
   }
-  if (layers.roads) for (const r of W.roads) { if (r.minor && k < .9 * px) continue; line(r.points); g.strokeStyle = r.minor ? "#d9c79066" : "#e6d6a0cc"; g.lineWidth = (r.minor ? 1 : 1.8) * px; g.stroke(); }
-  if (layers.sites && k > .75 * px) for (const s of W.sites) { const x = sx(s.x), y = sy(s.y), q = 3.5 * px; g.beginPath(); g.moveTo(x, y - q); g.lineTo(x + q, y); g.lineTo(x, y + q); g.lineTo(x - q, y); g.closePath(); g.fillStyle = "#efe6c8"; g.fill(); g.strokeStyle = "#222"; g.lineWidth = px; g.stroke(); }
+  if (layers.roads) for (const r of W.roads) { if (r.minor && kz() < .9 * px) continue; line(r.points); g.strokeStyle = r.minor ? "#d9c79066" : "#e6d6a0cc"; g.lineWidth = (r.minor ? 1 : 1.8) * px; g.stroke(); }
+  if (layers.sites && kz() > .75 * px) for (const s of W.sites) { const x = sx(s.x), y = sy(s.y), q = 3.5 * px; g.beginPath(); g.moveTo(x, y - q); g.lineTo(x + q, y); g.lineTo(x, y + q); g.lineTo(x - q, y); g.closePath(); g.fillStyle = "#efe6c8"; g.fill(); g.strokeStyle = "#222"; g.lineWidth = px; g.stroke(); }
   g.textAlign = "center"; g.textBaseline = "middle";
-  if (layers.names && k > .55 * px) { g.font = `italic ${Math.min(15, 9 + k * 2) * px}px Georgia`; for (const p of W.provinces) { if (p.kind === "Sea" && sel?.id !== p.id) continue; g.fillStyle = "#0009"; g.fillText(p.name, sx(p.x) + px, sy(p.y) + 13 * px); g.fillStyle = "#fff6"; g.fillText(p.name, sx(p.x), sy(p.y) + 12 * px); } }
+  if (layers.names && kz() > .55 * px) { g.font = `italic ${Math.min(15, 9 + k * 2) * px}px Georgia`; for (const p of W.provinces) { if (p.kind === "Sea" && sel?.id !== p.id) continue; g.fillStyle = "#0009"; g.fillText(p.name, sx(p.x) + px, sy(p.y) + 13 * px); g.fillStyle = "#fff6"; g.fillText(p.name, sx(p.x), sy(p.y) + 12 * px); } }
   if (tool === "province" || sel?.type === "province") for (const p of W.provinces) { const x = sx(p.x), y = sy(p.y); g.strokeStyle = "#fffb"; g.lineWidth = 1.5 * px; g.beginPath(); g.moveTo(x - 4 * px, y); g.lineTo(x + 4 * px, y); g.moveTo(x, y - 4 * px); g.lineTo(x, y + 4 * px); g.stroke(); }
   for (const kind of ["village", "castle", "town"]) for (const s of W.settlements) {
     if (s.kind !== kind) continue;
     const x = sx(s.x), y = sy(s.y), c = mode === "culture" ? cultCol(s.subculture, s.culture) : realmCol(s.realm);
     g.fillStyle = c; g.strokeStyle = "#111"; g.lineWidth = 1.5 * px;
-    if (kind === "village") { if (k < .7 * px) continue; g.beginPath(); g.arc(x, y, 3 * px, 0, 7); g.fill(); g.stroke(); }
+    if (kind === "village") { if (kz() < .7 * px) continue; g.beginPath(); g.arc(x, y, 3 * px, 0, 7); g.fill(); g.stroke(); }
     else if (kind === "town") { const q = 6 * px; if (s.port) { g.beginPath(); g.arc(x, y, 9.5 * px, 0, 7); g.strokeStyle = "#8fd4f0"; g.lineWidth = 1.6 * px; g.stroke(); } g.fillStyle = c; g.strokeStyle = "#111"; g.lineWidth = 1.5 * px; g.fillRect(x - q, y - q, 2 * q, 2 * q); g.strokeRect(x - q, y - q, 2 * q, 2 * q); g.fillStyle = "#fff"; g.fillRect(x - 2 * px, y - 2 * px, 4 * px, 4 * px); }
     else { const q = 5 * px; if (s.port) { g.beginPath(); g.arc(x, y, 8.5 * px, 0, 7); g.strokeStyle = "#8fd4f0"; g.lineWidth = 1.4 * px; g.stroke(); } g.fillStyle = c; g.strokeStyle = "#111"; g.lineWidth = 1.5 * px; g.beginPath(); g.moveTo(x - q, y + q); g.lineTo(x - q, y - q); g.lineTo(x - q / 3, y - q); g.lineTo(x - q / 3, y - q / 3); g.lineTo(x + q / 3, y - q / 3); g.lineTo(x + q / 3, y - q); g.lineTo(x + q, y - q); g.lineTo(x + q, y + q); g.closePath(); g.fill(); g.stroke(); }
-    if (layers.names && (kind === "town" || kind === "castle" && k > 1.1 * px || k > 2.2 * px)) {
+    if (layers.names && (kind === "town" || kind === "castle" && kz() > 1.1 * px || kz() > 2.2 * px)) {
       g.font = `${(kind === "town" ? 13 : 11) * px}px Georgia`; g.lineWidth = 3 * px; g.strokeStyle = "#000c"; const ty = y - (kind === "village" ? 9 : 14) * px;
       g.strokeText(s.name, x, ty); g.fillStyle = kind === "town" ? "#fff" : "#e6dfcc"; g.fillText(s.name, x, ty);
     }
   }
-  if (layers.sites && layers.names && k > 2.6 * px) { g.font = `italic ${10 * px}px Georgia`; for (const s of W.sites) { g.lineWidth = 3 * px; g.strokeStyle = "#000c"; g.strokeText(s.name, sx(s.x), sy(s.y) - 9 * px); g.fillStyle = "#efe6c8"; g.fillText(s.name, sx(s.x), sy(s.y) - 9 * px); } }
+  if (layers.sites && layers.names && kz() > 2.6 * px) { g.font = `italic ${10 * px}px Georgia`; for (const s of W.sites) { g.lineWidth = 3 * px; g.strokeStyle = "#000c"; g.strokeText(s.name, sx(s.x), sy(s.y) - 9 * px); g.fillStyle = "#efe6c8"; g.fillText(s.name, sx(s.x), sy(s.y) - 9 * px); } }
   if (layers.notes) for (const n of W.notes) { const x = sx(n.x), y = sy(n.y), q = 8 * px; g.beginPath(); g.moveTo(x, y); g.lineTo(x - q * .7, y - q * 1.5); g.arc(x, y - q * 1.7, q * .75, Math.PI, 0); g.closePath(); g.fillStyle = n.done ? "#777" : n.by === ME ? "#70a0ff" : "#e0a85a"; g.fill(); g.strokeStyle = waitsFor(n, ME) ? "#fff" : "#111"; g.lineWidth = (waitsFor(n, ME) ? 2.5 : 1.2) * px; g.stroke(); }
   // The thing picked, and a line being drawn.
   const o = item(sel);
   if (o) {
     g.strokeStyle = "#fff"; g.lineWidth = 2 * px; g.setLineDash([5 * px, 4 * px]);
-    if (o.points) { line(o.points); g.stroke(); g.setLineDash([]); for (const p of o.points) { g.fillStyle = "#fff"; g.fillRect(sx(p[0]) - 3 * px, sy(p[1]) - 3 * px, 6 * px, 6 * px); } }
+    if (o.points) { line(o.points, sel.type === "upland"); g.stroke(); g.setLineDash([]); for (const p of o.points) { g.fillStyle = "#fff"; g.fillRect(sx(p[0]) - 3 * px, sy(p[1]) - 3 * px, 6 * px, 6 * px); } }
     else { g.beginPath(); g.arc(sx(o.x), sy(o.y), (sel.type === "lake" ? o.radius * k : 0) + 12 * px, 0, 7); g.stroke(); g.setLineDash([]); }
   }
   if (drawing) { line(drawing.points.concat([[wx(mouse.x), wy(mouse.y)]])); g.strokeStyle = "#fff"; g.lineWidth = 2 * px; g.setLineDash([4 * px, 4 * px]); g.stroke(); g.setLineDash([]); }
@@ -276,7 +301,7 @@ function pick(px, py) {
   if (tool === "province" || sel?.type === "province") point("province", W.provinces);
   if (best) return best;
   const lines = (type, list, on = true) => { if (on) for (const o of list) for (let i = 1; i < o.points.length; i++) { const d = segDist([x, y], o.points[i - 1], o.points[i]); if (d < bd) { bd = d; best = { type, id: o.id }; } } };
-  lines("river", W.rivers, layers.water); lines("ridge", W.ridges); lines("road", W.roads, layers.roads); lines("sealane", W.sealanes, layers.sealanes);
+  lines("river", W.rivers, layers.water); lines("ridge", W.ridges); lines("road", W.roads, layers.roads); lines("sealane", W.sealanes, layers.sealanes); lines("cliff", W.cliffs); lines("upland", W.uplands.map((u) => ({ id: u.id, points: u.points.concat([u.points[0]]) })));
   if (best) return best;
   if (layers.water) for (const l of W.lakes) if (Math.hypot(l.x - x, l.y - y) < l.radius) return { type: "lake", id: l.id };
   if (Math.abs(x) <= W.extent && Math.abs(y) <= W.extent) return { type: "province", id: W.provinces[provinceAt(x, y)].id };
@@ -302,7 +327,8 @@ function place(x, y) {
 function endLine() {
   if (!drawing) return;
   const d = drawing; drawing = null;
-  if (d.points.length > 1) { before(); const list = W[LISTS[d.type]], o = { id: nextId(list), ...(d.type === "road" ? { minor: false } : { width: d.type === "ridge" ? 25 : 4.5 }), points: d.points }; list.push(o); sel = { type: d.type, id: o.id }; dirty = true; }
+  const s = W.warp || 1;
+  if (d.points.length > (d.type === "upland" ? 2 : 1)) { before(); const list = W[LISTS[d.type]], o = { id: nextId(list), ...(d.type === "road" ? { minor: false } : d.type === "cliff" ? { height: 12 * s } : d.type === "upland" ? { kind: "plateau", height: 30 * s } : { width: d.type === "ridge" ? 25 * s : 4.5 }), points: d.points }; list.push(o); sel = { type: d.type, id: o.id }; dirty = true; }
   setTool("select"); paint();
 }
 
@@ -312,7 +338,7 @@ const at = (e) => { const b = cv.getBoundingClientRect(); return [(e.clientX - b
 cv.addEventListener("mousedown", (e) => {
   if (!W || e.button === 2) return;
   const [px, py] = at(e), x = wx(px), y = wy(py);
-  if (tool === "river" || tool === "road" || tool === "sealane" || tool === "ridge") { (drawing ||= { type: tool, points: [] }).points.push([r1(x), r1(y)]); draw(); return; }
+  if (LINE_TOOLS.includes(tool)) { (drawing ||= { type: tool, points: [] }).points.push([r1(x), r1(y)]); draw(); return; }
   if (tool === "paint") { const p = W.provinces[provinceAt(x, y)]; if (p && p.kind !== "Sea" && p.realm !== paintRealm) { before(); const pi = W.provinces.indexOf(p); p.realm = paintRealm; for (const s of W.settlements) if (s._p === pi) s.realm = paintRealm; changed(true); } drag = { paint: true }; return; }
   if (tool === "terrain") { const p = W.provinces[provinceAt(x, y)]; if (p && p.kind !== paintKind) { before(); p.kind = paintKind; if (paintKind === "Sea") p.realm = -1; changed(true); } drag = { terrain: true }; return; }
   if (tool !== "select") { if (Math.abs(x) <= W.extent && Math.abs(y) <= W.extent) place(x, y); return; }
@@ -357,7 +383,7 @@ cv.addEventListener("contextmenu", (e) => {
   const [px, py] = at(e), vi = o.points.findIndex((p) => Math.hypot(sx(p[0]) - px, sy(p[1]) - py) < 8 * devicePixelRatio);
   if (vi >= 0) { before(); o.points.splice(vi, 1); changed(false); }
 });
-cv.addEventListener("wheel", (e) => { e.preventDefault(); const [px, py] = at(e), x = wx(px), y = wy(py), f = Math.exp(-e.deltaY * .0015); view.k = Math.max(.15, Math.min(40, view.k * f)); view.x = x - (px - cv.width / 2) / view.k; view.y = y - (py - cv.height / 2) / view.k; draw(); }, { passive: false });
+cv.addEventListener("wheel", (e) => { e.preventDefault(); const [px, py] = at(e), x = wx(px), y = wy(py), f = Math.exp(-e.deltaY * .0015); view.k = Math.max(.15 / (W.warp || 1), Math.min(40, view.k * f)); view.x = x - (px - cv.width / 2) / view.k; view.y = y - (py - cv.height / 2) / view.k; draw(); }, { passive: false });
 addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); save(); return; }
   if (e.target.matches("input, textarea, select")) return;
@@ -373,10 +399,10 @@ function remove() {
   if (!confirm("Remove " + label(sel) + "?")) return;
   before(); const list = W[LISTS[sel.type]]; list.splice(list.findIndex((o) => o.id === sel.id), 1); sel = null; changed(true);
 }
-function goTo(o, s) { view.x = o.x ?? o.points[0][0]; view.y = o.y ?? o.points[0][1]; view.k = Math.max(view.k, 2.2 * devicePixelRatio); sel = s; paint(); }
+function goTo(o, s) { view.x = o.x ?? o.points[0][0]; view.y = o.y ?? o.points[0][1]; view.k = Math.max(view.k, 2.2 * devicePixelRatio / (W.warp || 1)); sel = s; paint(); }
 
 // ---------- the panels ----------
-function setTool(t) { tool = t; if (t !== "river" && t !== "road" && t !== "sealane" && t !== "ridge") drawing = null; paintTools(); $("#hint").textContent = HINTS[t]; }
+function setTool(t) { tool = t; if (!LINE_TOOLS.includes(t)) drawing = null; paintTools(); $("#hint").textContent = HINTS[t]; }
 function paintTools() { $("#tools").innerHTML = TOOLS.map((t) => t ? `<button data-tool="${t[0]}" class="${tool === t[0] ? "on" : ""}" title="${esc(HINTS[t[0]])}"><b>${t[1]}</b>${t[2]}</button>` : "<hr>").join(""); }
 const field = (name, key, o, opts) => `<div class="row"><span>${name}</span>${opts ? `<select data-k="${key}">${opts.map(([v, t]) => `<option value="${esc(v)}" ${String(o[key]) === String(v) ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>` : `<input data-k="${key}" value="${esc(o[key])}" ${typeof o[key] === "number" ? 'type="number" step="any"' : ""}>`}</div>`;
 function paintSide() {
@@ -391,6 +417,8 @@ function paintSide() {
     else if (sel.type === "site") h += field("Name", "name", o) + field("Kind", "kind", o, Object.keys(SITE_GLYPH).map((k) => [k, k]));
     else if (sel.type === "lake") h += field("Radius", "radius", o);
     else if (sel.type === "river" || sel.type === "ridge") h += field("Width", "width", o) + `<div class="empty">${o.points.length} points. Drag a point; double-click the line to add one; right-click a point to remove it.</div>`;
+    else if (sel.type === "cliff") h += field("Height", "height", o) + `<div class="empty">${o.points.length} points. The high ground is on the left as the line runs; the teeth point down the drop.</div>`;
+    else if (sel.type === "upland") h += field("Kind", "kind", o, [["plateau", "Plateau (flat top)"], ["massif", "Massif (peaks)"], ["hills", "Hills (rolling)"]]) + field("Height", "height", o) + `<div class="empty">${o.points.length} points round its edge.</div>`;
     else if (sel.type === "road") h += field("Kind", "minor", o, [["false", "Road"], ["true", "Village track"]]) + `<div class="empty">${o.points.length} points. Drag a point; double-click the line to add one; right-click a point to remove it.</div>`;
     else if (sel.type === "sealane") h += `<div class="empty">${o.points.length} points. Drag a point; double-click the line to add one; right-click a point to remove it.</div>`;
     else if (sel.type === "note") {
@@ -414,7 +442,7 @@ function paintSide() {
     h += `<h2>Subcultures</h2><div class="pad">` + W.subcultures.map((sc) => `<div style="margin:3px 0"><span class="sw" style="background:${sc.colour}"></span><b>${esc(sc.name)}</b> <span class="mono" style="color:var(--dim)">(${esc(sc.parent)})</span><div class="empty" style="margin-left:16px">${esc(sc.flavour || "")}</div></div>`).join("") + `</div>`;
   }
   const seaN = W.provinces.filter((p) => p.kind === "Sea").length;
-  h += `<h2>The whole world</h2><div class="pad mono" style="color:var(--dim)">${W.provinces.length - seaN} land . ${seaN} sea . ${W.settlements.length} settlements<br>${W.rivers.length} rivers . ${W.lakes.length} lakes . ${W.ridges.length} ridges<br>${W.roads.length} roads . ${W.sealanes.length} sea lanes . ${W.sites.length} sites<br>${2 * W.extent} units across<br>${esc(W.source || "")}</div>`;
+  h += `<h2>The whole world</h2><div class="pad mono" style="color:var(--dim)">${W.provinces.length - seaN} land . ${seaN} sea . ${W.settlements.length} settlements<br>${W.rivers.length} rivers . ${W.lakes.length} lakes . ${W.ridges.length} ridges . ${W.cliffs.length} cliffs . ${W.uplands.length} uplands<br>${W.roads.length} roads . ${W.sealanes.length} sea lanes . ${W.sites.length} sites<br>${2 * W.extent} units across<br>${esc(W.source || "")}</div>`;
   $("#side").innerHTML = h;
 }
 function paint() {

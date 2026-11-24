@@ -503,6 +503,19 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Legacy.cs (141 lines)
 - **Campaign** (class, L8): BattleName:19, BannerAfterBattle:37, CompanyFame:67, FameXp:77, FameWord:80, CannotRetire:89, Retire:96, HandOver:111, TakeCommand:127
 
+## Campaign/LegendArchive.cs (69 lines)
+- **LegendArchive** (class, L7): Forget:16, Load:19, Save:33, Add:44, Active:53, SetActive:55, Delete:64
+
+## Campaign/Legends.cs (253 lines)
+- **LegendVerse** (class, L6)
+- **LegendGear** (class, L14)
+- **SealedLegend** (class, L22)
+- **VerseDef** (record, L38)
+- **Campaign** (class, L42): RecordVerse:95, SyncLegendVerses:122, UnwrittenVerses:162, CannotSealLegend:175, SealAndRetire:181, SealCurrentLegend:196, PickSignatureGear:237
+
+## Campaign/LegendWorld.cs (155 lines)
+- **Campaign** (class, L8): MonumentName:15, SeedWorldLegends:23, RestoreLegendMonuments:45, ClampMonumentPos:66, ResolveMonumentChoice:78, TavernLegendLine:123, LegendGreeting:141
+
 ## Campaign/LordArmies.cs (205 lines)
 - **Campaign** (class, L9): ArmyOf:15, Rabble:18, OnDuty:21, Comrades:25, SideStrength:35, FormArmy:39, Disband:72, LeaveArmy:84, ArmiesDaily:93, RealmArmies:110, ArmyThink:130, ArmyPace:198
 
@@ -818,6 +831,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Hud.Posts.cs (120 lines)
 - **Hud** (class, L9): ZonesShown:29, ZoneAt:32, PostZones:51, PostLabel:94, DragGhost:109
 
+## LegendScreen.cs (92 lines)
+- **LegendScreen** (class, L8): Show:15, Close:25, Draw:27
+
+## LegendScroll.cs (174 lines)
+- **LegendScroll** (class, L7): Data:12, SealColor:29, FateBadge:37, Draw:48
+
 ## Looks.cs (24 lines)
 - **Looks** (class, L10)
 
@@ -877,6 +896,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## MapScreen.Inventory.cs (600 lines)
 - **MapScreen** (class, L8): InventoryPanel:24, MakeColour:41, KitDoll:48, PieceDetail:75, SmithRow:174, KitSlot:214, StorageEntry:253, BuildStorageEntries:255, BaggageGrid:314, StorageCell:366, StorageActions:455, BaggageTrainFooter:558
+
+## MapScreen.Legend.cs (150 lines)
+- **MapScreen** (class, L8): LegendScrollPanel:13, MonumentPanel:63
 
 ## MapScreen.Muster.cs (302 lines)
 - **MapScreen** (class, L7): DoctrineRow:10, Spellbook:38, RollPanel:81, SergeantPick:184, RollActions:210, ManActions:219, MusterSide:247
@@ -1155,6 +1177,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Tests/KnightTests.cs (1142 lines)
 - **SelfTest** (class, L6): AuraBlade:9, AuraArmour:46, AuraBound:69, AuraGrows:94, Press:133, FormsWork:141, FormsLearned:227, OrdersOnMap:248, Bout:295, OrderOath:299, CreedBroken:325, OrderRankGate:366, CoreAndTrials:408, PresenceShakes:469, ChampionsUseAura:500, OrderPolitics:538, BlackFlame:606, FlameTakesYou:661, OwnOrderFounded:684, AuraPool:732, AuraField:799, CastNow:807, BlessingFeedsAura:815, CurseOnCaptain:831, BladeBreaksCast:859, RelicRaised:885, OwnFormFromStyle:901, AspectChanges:931, BreakInBattle:957, ClashRing:979, TranscendentLight:1004, AwakeningByDeeds:1044, PathsDiffer:1084
+
+## Tests/LegendTests.cs (78 lines)
+- **SelfTest** (class, L5): LegendsSystem:9
 
 ## Tests/MagicTests.cs (819 lines)
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186

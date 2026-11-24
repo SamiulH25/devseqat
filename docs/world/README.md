@@ -9,6 +9,7 @@ new campaign plays on (layout 5) from this file (plan and status: `docs/archive/
 | `Data/world.json` | The map. The only source of truth. Both authors edit it; the game reads it. |
 | `docs/world/index.html` | The person's page: the map from above, its layers, editing tools and the notes. No build, no libraries. |
 | `tools/world.py` | Serves the page, validates the file, prints what waits for an author, saves it in the page's layout. |
+| `Data/world6.json` | The 4x draft (`docs/pre-demo/WORLD_SCALE.md`): the same world four times as wide, with uplands and cliffs. The game does not read it yet. Open it with `tools/world.py --file Data/world6.json` (every switch takes `--file`). |
 
 ## Using it (the person)
 
@@ -43,6 +44,10 @@ Opened straight from disk without the server, the page asks you to pick the file
 }
 ```
 
+- `warp` (optional, default 1): the border warp's scale; the 4x draft sets 4 so borders keep their shape.
+- `uplands` (`{id, kind: plateau|massif|hills, height, points}`, at least three points): a closed area of raised land.
+  `cliffs` (`{id, height, points}`): a sheer drop with **the high ground on the left** as the line runs; a road through a
+  gap in a cliff is a pass. Both are drawn with the Upland and Cliff tools.
 - World units: x east, y south, the middle at 0,0; everything lies within `extent` of it.
 - **Provinces** are points. The land a province holds is everything nearer its centre than any other's after a noise warp
   (`warp` and `provinceAt` in the page; the game ports them exactly). A `Sea` province is water and belongs to no realm
