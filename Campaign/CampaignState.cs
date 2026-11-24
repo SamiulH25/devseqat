@@ -298,9 +298,25 @@ public sealed class Party
     public string KnightOrder = "";
     /// The army this lord rides in (CampaignState.Armies, LordArmies.cs); -1 for none.
     public int ArmyId = -1;
+    /// Active live map skirmish (CampaignState.Skirmishes, Campaign/Skirmishes.cs); -1 when not locked in battle.
+    public int BattleId = -1;
 
     public int Men => Companies.Sum(c => c.Men);
     public int Wounded => Companies.Sum(c => c.Wounded);
+}
+
+public sealed class MapSkirmish
+{
+    public int Id, Seed, Step;
+    public Vector2 Pos;
+    public List<int> SideA = new(), SideB = new();
+    public float EdgeA = 1, EdgeB = 1, Hours, StartMenA, StartMenB;
+    public Dictionary<string, SkirmishStack> Stacks = new();
+}
+
+public sealed class SkirmishStack
+{
+    public int Start, Fallen, Fled;
 }
 
 public sealed class Settlement
@@ -490,6 +506,10 @@ public sealed class CaptainState
     public bool Fealty;
     public float ContractSince;
     public int BestRank;
+    /// The realm you were born into (chosen in the character creator, -1 = none); favoured there without starting on its payroll.
+    public int Homeland = -1;
+    /// Contracts finished or battles won in your current employer's service (towards Sworn Sword).
+    public int ServiceDeeds;
     /// Skills 0-100 (step F4) by id, and the perks taken from their branches (Skills.cs).
     public Dictionary<string, float> Skills = new();
     public List<string> Perks = new();
@@ -536,7 +556,7 @@ public sealed class CaptainState
     public Dictionary<string, string> FormAspects = new();
     /// Who the captain was before the company (the character creator, Data/origins.json): birth and past ids ("" = a save
     /// from before origins, or a campaign started without the creator), and the face chosen (a Variety visage, -1 = the plain head).
-    public string Birth = "", Origin = "";
+    public string Birth = "", Origin = "", Road = "";
     public int Visage = -1;
     /// The painted face chosen in the creator (null: derived from the captain's id) and the arms on your first banners (-1: none chosen).
     public CaptainLook? Likeness;
@@ -655,6 +675,8 @@ public sealed class CampaignState
     public List<Settlement> Settlements = new();
     public List<Province> Provinces = new();
     public List<FactionState> Factions = new();
+    /// Ongoing AI-vs-AI battles simulated incrementally on the map (Campaign/Skirmishes.cs).
+    public List<MapSkirmish> Skirmishes = new();
     public List<LogEntry> Log = new();
     public List<Contract> Contracts = new();   // the contracts you have accepted
     /// The quests screen (docs/archive/PLAYTEST.md PT3): finished and failed quests, oldest first; and the one pinned to the HUD (-1: none).
@@ -862,7 +884,7 @@ public sealed class Balance
     /// Wages by tier (docs/post-demo/TIERS.md TI0, TI4): a man's wage is figured from his `cost` bent toward `WageAnchor` by
     /// `WageCurve` (1 = his cost as it is; under 1 the dear troops cost less to keep and the cheap ones more). Hire prices keep `cost`.
     public float WageCurve = 0.6f, WageAnchor = 36;
-    public float UpkeepRate = 0.1f, ContractPay = 0.85f, LootRate = 0.25f, LootCoinShare = 0.3f, RansomRate = 1, MercMarkup = 1.5f;
+    public float UpkeepRate = 0.1f, FreeContractPay = 0.35f, ContractPay = 0.85f, LootRate = 0.25f, LootCoinShare = 0.3f, RansomRate = 1, MercMarkup = 1.5f;
     public float WoundBase = 0.3f, WoundArmor = 40, WoundMin = 0.25f, WoundMax = 0.7f, CaptureChance = 0.5f, FledReturnOnDefeat = 0.7f;
     public float XpParticipation = 10, XpVictory = 1.5f, XpPerKillTier = 6;
     public float RenownPerVictory = 5, RenownStrengthDivisor = 50;
@@ -872,7 +894,7 @@ public sealed class Balance
     /// Your hand on the roll (C4): the purse for a man you mention, and a pension for a man you send home.
     public int MentionPurse = 20, PensionCost = 40;
     /// What a company's senior named man's nature adds to its might in auto-resolve (docs/archive/COMPANY.md C2).
-    public float NatureWeight = 0.01f;
+    public float NatureWeight = 0.05f;
     public float CompanySlotsBase = 10, MenBase = 40, MenRenownDivisor = 5;
     /// Men per company, party, band and garrison are this many times the base numbers below; per-man prices are divided by it.
     public float ArmyScale = 3;
@@ -886,7 +908,7 @@ public sealed class Balance
     /// this x tier). Worth a company, never an army (docs/archive/KNIGHT_ORDERS.md 5.7, K6).
     public float AuraWeight = 0.03f;
     /// How much the Tide (docs/archive/ARCANA.md AR3) moves a side's circles in auto-resolve: x(1 + mage share x this x (tide - 1)).
-    public float TideWeight = 0.5f;
+    public float TideWeight = 0.75f;
     /// A feast in town, crowns a man (docs/archive/COMPANIONS_MAGIC.md A5).
     public float FeastPerMan = 6;
     /// Named men a company keeps at most (L1), and how much more often a named man lives through what kills his stack (L2).
@@ -897,7 +919,7 @@ public sealed class Balance
     public int VillageRecruitsMax = 8, LordsPerFaction = 8, BanditsMax = 80;
     /// Noble recruits (docs/pre-demo/NOBILITY.md N2): a castle's pool of esquires (times ArmyScale), the days between each new batch, the price against a levy's, the renown a house wants of you.
     public int NobleRecruitsMax = 4, NobleRefillDays = 3;
-    public float NobleMarkup = 1.6f, NobleRenown = 60;
+    public float NobleMarkup = 1.6f, NobleRenown = 140;
     /// A bandit band appears this many times a day while below BanditsMax (0-1) — the roll for each attempt.
     public float BanditSpawnChance = 0.95f;
     /// How many bands the world tries to raise each day (while under BanditsMax), so a big map fills up quickly.
@@ -919,10 +941,10 @@ public sealed class Balance
     public float LordAggression = 0.35f;
     public float HealField = 0.08f, HealTown = 0.25f, DrillCamp = 0.6f, DrillTown = 1.2f;
     /// The highest tier men may be promoted into away from a town or yard (docs/archive/HOLDS.md HD1).
-    public int CampTier = 3;
+    public int CampTier = 2;
     /// The castle's MUSTER (docs/archive/HOLDS.md HD2): the highest tier its yard trains, the castellan's cut on pooled recruits, the
     /// granary's reserve (garrison days kept back) and how many mouths a day of its stores feeds, the stables' stock and breeding.
-    public int CastleYardTier = 5;
+    public int CastleYardTier = 4;
     public float MusterMarkup = 1.15f, GranaryReserve = 10, GranaryMouths = 60, CastleHorsesMax = 15, CastleHorsesWeek = 4;
     /// Villages and their castle (HD3): days of stores a whole village sends a week at prosperity 50 (scaled by it), how near
     /// its villages (km before Spread) the castellan rides out at brigands, and by how much his garrison must outweigh them.
@@ -955,7 +977,7 @@ public sealed class Balance
     // Rare monsters (docs/archive/CREATURES.md phase 3): how many trolls, how many in each, the bounty on one.
     public float RareStart = 3, RareEvery = 60, RareMax = 8, RareSpawnChance = 0.3f, TrollMen = 2, BountyTroll = 300;
     /// A troll's weight in an auto-resolve by night and by day (a battle at night or noon shows the same).
-    public float TrollNight = 1.6f, TrollDay = 0.8f;
+    public float TrollNight = 1.0f, TrollDay = 0.85f;
     /// Creatures for you (phase 4): hounds a kennel breeds a week, and the most it keeps.
     public float KennelPerWeek = 4, KennelMax = 12;
     /// The chance a town's mercenary board offers ogres each week, and how many.

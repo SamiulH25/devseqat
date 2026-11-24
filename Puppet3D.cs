@@ -1168,8 +1168,8 @@ sealed partial class Puppet3D
     {
         "steppetack" or "camel" => 1.08f,
         "saddle" or "halfbarding" or "furbarding" => 1.18f,
-        "scalebarding" or "gildedcaparison" => 1.32f,
-        _ => 1.26f,
+        "scalebarding" or "mailbarding" or "lamellarbarding" or "gildedcaparison" => 1.30f,
+        _ => 1.25f,
     };
 
     /// Two-bone leg: where the middle joint of a leg from `hip` to `hoof` sits (segment lengths `upper`, `lower`). A
@@ -1207,14 +1207,29 @@ sealed partial class Puppet3D
         }
 
         bool camel = barding == "camel";
-        bool scaleB = barding == "scalebarding";
+        bool scaleB = barding is "scalebarding" or "mailbarding" or "lamellarbarding";
+        bool halfB = barding == "halfbarding";
         bool furB = barding == "furbarding";
-        bool barded = barding is "barding" or "halfbarding" or "gildedcaparison";
+        bool barded = barding is "barding" or "caparison" or "gildedcaparison" or "partibarding" or "crossbarding" or "chequybarding" or "tasselled";
 
-        var bodyMesh = camel ? kit.CamelBody : scaleB ? kit.HorseBodyScale : furB ? kit.HorseBodyFur : barded ? kit.HorseBodyBarded : kit.HorseBody;
-        var neckMesh = camel ? kit.CamelNeck : scaleB ? kit.HorseNeckScale : barded ? kit.HorseNeckBarded : kit.HorseNeck;
-        var headMesh = camel ? kit.CamelHead : scaleB ? kit.HorseHeadScale : barded ? kit.HorseHeadBarded : kit.HorseHead;
-        byte bodyPat = scaleB ? MeshKit3D.PatScale : barded ? MeshKit3D.PatQuilt : MeshKit3D.PatSmooth;
+        var bodyMesh = camel ? kit.CamelBody
+            : scaleB ? kit.HorseBodyScale
+            : halfB ? kit.HorseBodyHalf
+            : furB ? kit.HorseBodyFur
+            : barded ? kit.HorseBodyBarded
+            : kit.HorseBody;
+        var neckMesh = camel ? kit.CamelNeck
+            : scaleB ? kit.HorseNeckScale
+            : (barded || halfB) ? kit.HorseNeckBarded
+            : kit.HorseNeck;
+        var headMesh = camel ? kit.CamelHead
+            : scaleB ? kit.HorseHeadScale
+            : (barded || halfB) ? kit.HorseHeadBarded
+            : kit.HorseHead;
+        byte bodyPat = barding == "mailbarding" ? MeshKit3D.PatMail
+            : scaleB ? MeshKit3D.PatScale
+            : (barded || halfB) ? MeshKit3D.PatQuilt
+            : MeshKit3D.PatSmooth;
 
         // Fuller gallop suspension + rocking pitch across the barrel!
         float susp = MathF.Max(0f, MathF.Sin(anim * MathF.Tau - 0.25f)) * 0.055f * gait;
@@ -1237,29 +1252,33 @@ sealed partial class Puppet3D
         float duty = 0.62f * walkK + 0.45f * trotK + 0.36f * gallopK;      // share of the stride a hoof is on the ground
         float sweep = speed < 0.3f ? 0 : 0.17f * walkK + 0.25f * trotK + 0.31f * gallopK; // half the hoof's travel, horse units
         sweep *= Math.Clamp(speed / 1.2f, 0, 1);
-        const float Upper = 0.41f, Lower = 0.41f, Sole = 0.02f;
+        const float FrontUpper = 0.40f, FrontLower = 0.41f, HindUpper = 0.43f, HindLower = 0.42f, Sole = 0.02f;
 
         for (int i = 0; i < 4; i++)
         {
             bool front = i < 2;
             float sd = i % 2 == 0 ? -1f : 1f;
-            // The top of the leg sits up inside the barrel and is drawn thick (forearm, gaskin), so it grows out of the body.
-            var hip = new Vector3(sd * 0.19f + shift, y - 0.06f + (front ? rock : -rock), front ? 0.56f : -0.58f);
+            float upper = front ? FrontUpper : HindUpper;
+            float lower = front ? FrontLower : HindLower;
+            // The top of the leg sits up inside the barrel (forearm in front, muscular haunch behind).
+            var hip = new Vector3(sd * 0.19f + shift, y - (front ? 0.04f : 0.02f) + (front ? rock : -rock), front ? 0.56f : -0.56f);
             Vector3 hoof;
+            bool planted = false;
             if ((front && Rear > 0) || (i == 0 && paw > 0))
             {
                 // Rearing forelegs paw the air; a standing horse paws the ground.
                 float a = front && Rear > 0 ? Rad(58 * Rear) : Rad(20 * paw), fold = front && Rear > 0 ? 0.9f * Rear : 0.4f * paw;
-                var k0 = hip + new Vector3(0, -Upper * MathF.Cos(a), Upper * MathF.Sin(a));
-                hoof = k0 + new Vector3(0, -Lower * MathF.Cos(a - fold), Lower * MathF.Sin(a - fold));
+                var k0 = hip + new Vector3(0, -upper * MathF.Cos(a), upper * MathF.Sin(a));
+                hoof = k0 + new Vector3(0, -lower * MathF.Cos(a - fold), lower * MathF.Sin(a - fold));
             }
             else
             {
                 float ph = anim + walkP[i] * walkK + trotP[i] * trotK + gallopP[i] * gallopK;
                 ph -= MathF.Floor(ph);
-                float stand = (front ? 0.04f : -0.06f); // where the hoof stands under its hip (a hind hoof a little behind it)
+                float stand = front ? 0.02f : -0.08f; // standing forelegs straight under shoulder; hind hoof slightly back
                 if (ph < duty || sweep <= 0)
                 {
+                    planted = true;
                     float k = duty > 0 ? ph / duty : 0;
                     hoof = new Vector3(hip.X, Sole, hip.Z + stand + MathHelper.Lerp(sweep, -sweep, k)); // planted: the body moves over it
                 }
@@ -1267,16 +1286,19 @@ sealed partial class Puppet3D
                 {
                     float k = (ph - duty) / (1 - duty);
                     float e = k * k * (3 - 2 * k); // the swing gathers and slows into the next footfall
-                    float lift = (front ? 0.10f + 0.16f * gallopK + 0.06f * trotK : 0.07f + 0.08f * gallopK + 0.04f * trotK) * MathF.Sin(k * MathF.PI);
+                    float lift = (front ? 0.11f + 0.18f * gallopK + 0.07f * trotK : 0.08f + 0.10f * gallopK + 0.05f * trotK) * MathF.Sin(k * MathF.PI);
                     hoof = new Vector3(hip.X, Sole + lift, hip.Z + stand + MathHelper.Lerp(-sweep, sweep, e) - (front ? 0.05f : 0.02f) * MathF.Sin(k * MathF.PI));
                 }
             }
-            var knee = Joint(hip, hoof, Upper, Lower, front);
+            // Standing/planted forelegs lock nearly straight under weight; swinging forelegs fold cleanly at the knee.
+            var knee = Joint(hip, hoof, upper, lower, front);
+            if (front && planted && sweep < 0.05f)
+                knee = Vector3.Lerp(hip, hoof, upper / (upper + lower)) + new Vector3(0, 0, 0.015f);
             if (Detail == 0)
             {
-                var into = Vector3.Normalize(knee - hoof) * 0.05f; // the cannon starts inside the forearm: no gap at the joint
+                var into = Vector3.Normalize(knee - hoof) * 0.05f; // the cannon starts inside the forearm/gaskin: no gap at the joint
                 EmitBone(kit.HorseLegLow, knee + into, hoof, Vector3.UnitZ);
-                EmitBone(kit.HorseLegUp, hip, knee, Vector3.UnitZ, front ? 1.25f : 1.4f);
+                EmitBone(front ? kit.HorseLegUp : kit.HorseLegHindUp, hip, knee, Vector3.UnitZ, front ? 1.05f : 1.0f);
             }
             else
             {
@@ -1291,25 +1313,29 @@ sealed partial class Puppet3D
         EmitLocal(bodyMesh, new Vector3(shift, y, 0), Vector3.UnitX, bU, bF, 1f, 1f, 1f, bodyPat);
 
         float neckPump = MathF.Sin(anim * MathF.Tau - 0.85f) * 0.085f * gait;
-        float neckOut = gait * 0.19f + neckPump;
-        float neckDrop = gait * 0.08f + neckPump * 0.45f;
+        float neckOut = gait * 0.22f + neckPump;
+        float neckDrop = gait * 0.09f + neckPump * 0.45f;
+        float headTurnX = Math.Clamp(turnDelta * 0.22f, -0.22f, 0.22f); // horse looks into turns
         var neckBase = new Vector3(shift, y + rock + (camel ? 0.02f : 0.14f), 0.72f);
-        var poll = new Vector3(0, y + rock + (camel ? 0.88f : 0.74f) + nod - neckDrop, (camel ? 1.24f : 1.16f) + neckOut);
+        var poll = new Vector3(headTurnX * 0.55f, y + rock + (camel ? 0.90f : 0.78f) + nod - neckDrop, (camel ? 1.24f : 1.12f) + neckOut);
         EmitBone(neckMesh, neckBase, poll, Vector3.UnitZ, 1f, bodyPat);
 
-        var muzzle = new Vector3(0, y + rock + (camel ? 0.62f : 0.36f) + nod * 1.5f - neckDrop * 1.35f, (camel ? 1.62f : 1.52f) + neckOut * 1.45f);
+        var muzzle = new Vector3(headTurnX * 1.25f, y + rock + (camel ? 0.68f : 0.48f) + nod * 1.4f - neckDrop * 1.2f, (camel ? 1.64f : 1.56f) + neckOut * 1.38f);
         Vector3 headFwd = Vector3.Normalize(muzzle - poll);
-        Vector3 headUp = Vector3.Normalize(Vector3.Cross(headFwd, Vector3.UnitX));
-        if (headUp.Y < 0) headUp = -headUp;
-        EmitLocal(headMesh, poll, Vector3.UnitX, headUp, headFwd);
+        Vector3 headRight = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, headFwd));
+        Vector3 headUp = Vector3.Normalize(Vector3.Cross(headFwd, headRight));
+        EmitLocal(headMesh, poll, headRight, headUp, headFwd);
 
         if (Detail == 0)
         {
             float swish = MathF.Sin(Now * 2.1f + pos.X * 0.7f) * 0.09f * (1 - gait)
                 + MathF.Sin(anim * MathF.Tau) * 0.13f * gait
-                - Math.Clamp(turnDelta * 0.25f, -0.25f, 0.25f);
-            float tailLift = 0.82f + bob - rock + gait * 0.56f + MathF.Sin(anim * MathF.Tau - 1.1f) * 0.08f * gait;
-            EmitBone(kit.HorseTail, new Vector3(0, y - rock + 0.18f, -0.88f), new Vector3(swish, tailLift, -1.18f - gait * 0.58f), Vector3.UnitZ);
+                - Math.Clamp(turnDelta * 0.28f, -0.28f, 0.28f);
+            // Natural hanging tail at rest, streaming gracefully back & slightly lifted at trot/gallop.
+            var dock = new Vector3(0, y - rock + 0.16f, -0.84f);
+            float tailTipY = y - rock - 0.50f + gait * 0.44f + MathF.Sin(anim * MathF.Tau - 1.1f) * 0.07f * gait;
+            float tailTipZ = -1.08f - gait * 0.62f;
+            EmitBone(kit.HorseTail, dock, new Vector3(swish, tailTipY, tailTipZ), Vector3.UnitZ);
         }
 
         return (Saddle + bob) * hScale * Scale;
@@ -1326,7 +1352,50 @@ sealed partial class Puppet3D
             EmitLocal(kit.LodHorse, Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
             return;
         }
-        DrawHorse3D(h.Pos, ground, h.Heading, 0, 0, h.Mount.Barding, Ease.Hash((int)(h.Pos.X * 7) + (int)(h.Pos.Y * 13) * 31));
+        DrawHorse3D(h.Pos, ground, h.Heading, h.Anim, h.Speed, h.Mount.Barding, Ease.Hash((int)(h.Pos.X * 7) + (int)(h.Pos.Y * 13) * 31));
+    }
+
+    public void DrawDeadHorse(DeadHorse h, float ground)
+    {
+        if (h.Barding == "wolf") return;
+        float k = Now > 0 ? (Now - h.At) / 0.7f : 1f;
+        if (k >= 1f) return;
+        UnitMatTable.Fill(h.Team, -1, h.Coat, h.Barding == "camel", Color.White, palCols);
+        unitIdHash = Ease.Hash((int)(h.Pos.X * 13 + h.Pos.Y * 29));
+        float hScale = HorseScale(h.Barding);
+        float drop = Ease.Out(MathF.Min(1f, k * 2f)) * 0.34f * Scale * hScale;
+        float roll = 88f * Ease.In(MathF.Max(0f, k * 1.25f - 0.25f));
+        Frame(h.Pos, h.Heading, ground - drop, Scale * hScale);
+        Lean(roll, 0f);
+        bool camel = h.Barding == "camel";
+        bool scaleB = h.Barding is "scalebarding" or "mailbarding" or "lamellarbarding";
+        bool halfB = h.Barding == "halfbarding";
+        bool furB = h.Barding == "furbarding";
+        bool barded = h.Barding is "barding" or "caparison" or "gildedcaparison" or "partibarding" or "crossbarding" or "chequybarding" or "tasselled";
+        var bodyMesh = camel ? kit.CamelBody : scaleB ? kit.HorseBodyScale : halfB ? kit.HorseBodyHalf : furB ? kit.HorseBodyFur : barded ? kit.HorseBodyBarded : kit.HorseBody;
+        var neckMesh = camel ? kit.CamelNeck : scaleB ? kit.HorseNeckScale : (barded || halfB) ? kit.HorseNeckBarded : kit.HorseNeck;
+        var headMesh = camel ? kit.CamelHead : scaleB ? kit.HorseHeadScale : (barded || halfB) ? kit.HorseHeadBarded : kit.HorseHead;
+        float y = 0.85f;
+        for (int i = 0; i < 4; i++)
+        {
+            bool front = i < 2;
+            float sd = i % 2 == 0 ? -1f : 1f;
+            var hip = new Vector3(sd * 0.19f, y - 0.04f, front ? 0.56f : -0.56f);
+            var hoof = new Vector3(sd * 0.22f, 0.08f + k * 0.18f, hip.Z + (front ? 0.14f : -0.14f));
+            var knee = Joint(hip, hoof, 0.41f, 0.41f, front);
+            EmitBone(kit.HorseLegLow, knee, hoof, Vector3.UnitZ);
+            EmitBone(front ? kit.HorseLegUp : kit.HorseLegHindUp, hip, knee, Vector3.UnitZ);
+        }
+        EmitLocal(bodyMesh, new Vector3(0, y, 0), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
+        var neckBase = new Vector3(0, y + 0.14f, 0.72f);
+        var poll = new Vector3(0, y + 0.72f - k * 0.18f, 1.16f);
+        EmitBone(neckMesh, neckBase, poll, Vector3.UnitZ);
+        var muzzle = new Vector3(0, y + 0.44f - k * 0.22f, 1.56f);
+        Vector3 headFwd = Vector3.Normalize(muzzle - poll);
+        Vector3 headRight = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, headFwd));
+        Vector3 headUp = Vector3.Normalize(Vector3.Cross(headFwd, headRight));
+        EmitLocal(headMesh, poll, headRight, headUp, headFwd);
+        EmitBone(kit.HorseTail, new Vector3(0, y + 0.16f, -0.84f), new Vector3(0, y - 0.45f, -1.08f), Vector3.UnitZ);
     }
 
     /// Headless CPU vertex-build benchmark for 3D Pixel Art (`--bench-3d [menPerSide]`).

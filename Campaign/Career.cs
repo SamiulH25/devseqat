@@ -8,8 +8,8 @@ public enum Rank { FreeCompany, SwornSword, Vassal, Lord, Marshal, King }
 /// Career ranks, the realm council, founding a realm, and winning or losing the campaign (step F5).
 public sealed partial class Campaign
 {
-    public const float SwornDays = 30, VassalRenown = 120, VassalOpinion = 10, LordRenown = 350, MarshalRenown = 500, CouncilDays = 14, WinShare = 0.6f;
-    public const int LordFiefs = 2, MarshalTerm = 4;
+    public const float SwornDays = 14, VassalRenown = 120, VassalOpinion = 10, LordRenown = 350, MarshalRenown = 500, CouncilDays = 14, WinShare = 0.6f;
+    public const int SwornDeeds = 3, LordFiefs = 2, MarshalTerm = 4;
 
     /// A career beat or the council's word for the map screen to show once (not saved): a title and a few lines.
     public (string Title, string[] Lines)? Beat;
@@ -31,7 +31,7 @@ public sealed partial class Campaign
                 if (fs.Marshal == S.CaptainChar) return Rank.Marshal;
                 return FiefSeats >= LordFiefs && Captain.Renown >= LordRenown ? Rank.Lord : Rank.Vassal;
             }
-            return S.Hours - Captain.ContractSince >= SwornDays * 24 ? Rank.SwornSword : Rank.FreeCompany;
+            return S.Hours - Captain.ContractSince >= SwornDays * 24 && Captain.ServiceDeeds >= SwornDeeds ? Rank.SwornSword : Rank.FreeCompany;
         }
     }
 
@@ -45,7 +45,7 @@ public sealed partial class Campaign
     public static readonly (Rank Rank, string How, string Opens)[] Ladder =
     {
         (Rank.FreeCompany, "THE START", "WORK AND PAY FOR YOUR MEN FROM ANY REALM"),
-        (Rank.SwornSword, $"SERVE ONE REALM {SwornDays:0} DAYS", "RECRUITS FOR THE RANKS AT HALF PRICE, A PERK"),
+        (Rank.SwornSword, $"SERVE ONE REALM {SwornDays:0} DAYS AND {SwornDeeds} DEEDS", "FULL REALM PAY (85%), HALF-PRICE RECRUITS, A PERK"),
         (Rank.Vassal, $"SWEAR FEALTY: {VassalRenown:0} RENOWN, LIEGE OPINION {VassalOpinion:+0}", "LAND FOR YOUR MEN, A VOTE, A GUARD"),
         (Rank.Lord, $"HOLD {LordFiefs} FIEFS, {LordRenown:0} RENOWN", "A HALL FOR THE COMPANY, WARS, GUARD 25"),
         (Rank.Marshal, "500 RENOWN, THE COUNCIL'S VOTE", "THE REALM MARCHES WITH YOU, A MOUNTED GUARD"),
@@ -69,9 +69,13 @@ public sealed partial class Campaign
         switch (r)
         {
             case Rank.FreeCompany:
-                if (Captain.Contract < 0) return (Rank.SwornSword, "SIGN WITH A REALM AND SERVE IT A MONTH");
-                float days = SwornDays - (float)(S.Hours - Captain.ContractSince) / 24;
-                return (Rank.SwornSword, $"{MathF.Ceiling(days):0} MORE DAYS IN THE {FactionNames[Captain.Contract].ToUpperInvariant()}'S SERVICE");
+                if (Captain.Contract < 0) return (Rank.SwornSword, $"SIGN WITH A REALM AND PROVE YOURSELF ({SwornDays:0} DAYS, {SwornDeeds} DEEDS)");
+                float days = MathF.Max(0, SwornDays - (float)(S.Hours - Captain.ContractSince) / 24);
+                int deedsLeft = Math.Max(0, SwornDeeds - Captain.ServiceDeeds);
+                var parts = new List<string>();
+                if (days > 0) parts.Add($"{MathF.Ceiling(days):0} MORE DAYS");
+                if (deedsLeft > 0) parts.Add($"{deedsLeft} MORE DEED{(deedsLeft == 1 ? "" : "S")} (CONTRACTS OR BATTLES)");
+                return (Rank.SwornSword, $"{string.Join(" AND ", parts)} FOR THE {FactionNames[Captain.Contract].ToUpperInvariant()}");
             case Rank.SwornSword:
                 CanSwearFealty(out string why);
                 return (Rank.Vassal, why == "" ? "SWEAR FEALTY" : why);
@@ -101,7 +105,7 @@ public sealed partial class Campaign
         var ruler = RulerOf(Captain.Contract);
         why = Captain.Contract < 0 ? "SIGN WITH A REALM FIRST"
             : Captain.Fealty || Rank == Rank.King ? "YOU HAVE ALREADY SWORN"
-            : Rank < Rank.SwornSword ? $"SERVE THE REALM {SwornDays:0} DAYS FIRST"
+            : Rank < Rank.SwornSword ? $"EARN SWORN SWORD FIRST ({SwornDays:0} DAYS, {SwornDeeds} DEEDS)"
             : Captain.Renown < VassalRenown ? $"NEEDS {VassalRenown:0} RENOWN ({Captain.Renown:0})"
             : ruler == null ? "THE REALM HAS NO RULER TO SWEAR TO"
             : OpinionOfYou(ruler) < VassalOpinion ? $"{ruler.Name.ToUpperInvariant()} DOES NOT TRUST YOU ({OpinionOfYou(ruler):+0;-0;0}, NEEDS {VassalOpinion:+0})"
@@ -489,6 +493,7 @@ public sealed partial class Campaign
         S.Contracts.Clear();
         Captain.Contract = f;
         Captain.ContractSince = (float)S.Hours;
+        Captain.ServiceDeeds = 0;
         Captain.Fealty = false;
         Me.Faction = f;
         foreach (var k in Companions) k.Faction = f;
@@ -608,5 +613,6 @@ public sealed partial class Campaign
     /// The weekly retainer a liege pays a sworn sword or better, on top of contract pay (F9): 30 crowns plus a tenth of renown.
     public float Retainer => Rank is >= Rank.SwornSword and < Rank.King ? 30 + Captain.Renown * 0.1f : 0;
 
-    public float RecruitPriceFactor(Settlement s) => Rank >= Rank.SwornSword && s.Faction == Captain.Contract ? 0.5f : 1;
+    public float RecruitPriceFactor(Settlement s) => Rank >= Rank.SwornSword && s.Faction == Captain.Contract ? 0.5f
+        : s.Faction == Captain.Homeland && Captain.Origin is not ("deserter" or "outlaw") ? 0.85f : 1;
 }

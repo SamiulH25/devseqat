@@ -1,0 +1,3 @@
+# Merged into `PROGRESSION_FEEL.md`
+
+On 2026-11-23, `CHARACTER_IMPACT.md` was merged into [`PROGRESSION_FEEL.md`](PROGRESSION_FEEL.md) (see PF1–PF2).

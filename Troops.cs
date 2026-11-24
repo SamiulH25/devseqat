@@ -207,7 +207,7 @@ public static class Troops
 /// A named man in a battle; Wounds and Age only paint his face on the HUD (docs/archive/COMPANY.md C1).
 /// A named man in a battle company: his face (id, wounds, age), and for the HUD and his lines (C6) his nature, his brothers' ids and
 /// whether he is a lad under a master.
-public sealed record NamedSpec(int Id, string Troop, string Name, int Wounds = 0, int Age = 0, bool Avenging = false, string Nature = "", int[]? Brothers = null, bool Lad = false);
+public sealed record NamedSpec(int Id, string Troop, string Name, int Wounds = 0, int Age = 0, bool Avenging = false, string Nature = "", int[]? Brothers = null, bool Lad = false, bool Armed = false, bool Banner = false, int Battles = 0);
 
 public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false,
     StackSpec[]? Mix = null, float RoutBonus = 0, float VsMounted = 1, int Banner = -1, string Hero = "", int Division = -1, NamedSpec[]? Named = null,

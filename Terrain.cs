@@ -478,8 +478,8 @@ public sealed partial class Terrain
         return MathF.Abs(p.Y - RoadCenter(p.X)) / MathF.Sqrt(1 + slope * slope);
     }
 
-    /// Ground height, interpolated on the same triangles the renderer draws.
-    public float Height(Vector2 p)
+    /// Raw terrain heightmap elevation (without dynamic ladder/ramp climb elevation).
+    public float BaseHeight(Vector2 p)
     {
         if (IsFlat) return 0;
         float gx = Math.Clamp((p.X + Half) / Step, 0, N - 1.001f), gz = Math.Clamp((p.Y + Half) / Step, 0, N - 1.001f);
@@ -489,6 +489,14 @@ public sealed partial class Terrain
         return fx + fz <= 1
             ? h00 + (h10 - h00) * fx + (h01 - h00) * fz
             : h11 + (h01 - h11) * (1 - fx) + (h10 - h11) * (1 - fz);
+    }
+
+    /// Ground height, interpolated on the same triangles the renderer draws, plus smooth ladder/ramp climb height.
+    public float Height(Vector2 p)
+    {
+        float h = BaseHeight(p);
+        if (Wall != null && Wall.ClimbElevation(p, BaseHeight, out float cy) && cy > h) return cy;
+        return h;
     }
 
     public float Height(float x, float z) => Height(new Vector2(x, z));

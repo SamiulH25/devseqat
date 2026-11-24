@@ -18,7 +18,8 @@ public partial class Campaign
         if (s.Kind != SettlementKind.Castle) return "ONLY CASTLES RAISE ESQUIRES";
         bool ours = s.Owner == Player.Id || Captain.Contract >= 0 && s.Faction == Captain.Contract;
         if (!ours) return "THE HOUSE SENDS ESQUIRES ONLY WITH ITS OWN CAPTAINS";
-        if (Captain.Renown < B.NobleRenown) return $"NEEDS {B.NobleRenown:0} RENOWN";
+        float need = MathF.Max(40, B.NobleRenown - (Captain.Birth == "highborn" || Captain.Origin == "disinherited" ? 40 : 0));
+        if (Captain.Renown < need) return $"NEEDS {need:0} RENOWN";
         if (s.Nobles <= 0) return "NO ESQUIRES READY";
         return null;
     }

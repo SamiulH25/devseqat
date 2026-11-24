@@ -274,6 +274,7 @@ public sealed partial class Campaign
                 if (c.Then == null)
                 {
                     Captain.Renown += 5;
+                    if (Captain.Contract >= 0 && (c.Faction == Captain.Contract || c.Faction < 0)) Captain.ServiceDeeds++;
                     if (CharacterById(c.Giver) is Character giver) Remember(giver, Me, "you did what I asked of you", 15);
                 }
                 if (c.Then == null) Deed($"Contract done: {c.Text} (+{c.Reward:0} crowns).", "quests");

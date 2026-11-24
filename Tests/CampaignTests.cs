@@ -165,9 +165,9 @@ public static partial class SelfTest
         Check(c.MusterPrice(castle) > villagePrice, $"the castellan takes a cut ({c.MusterPrice(castle)} against {villagePrice})");
         Check(c.Muster(castle, pool) == null && c.Player.Men > before, $"mustered {c.Player.Men - before} men");
         Check(c.MusterRecruits(castle) < pool, "the villages' men are drawn down");
-        // The yard: tier V here, tier VI and up still a town.
-        Check(c.CanTrainHere(c.Player, Troops.All.First(t => t.Tier == 5).Id), "the castle yard trains to tier V");
-        Check(!c.CanTrainHere(c.Player, Troops.All.First(t => t.Tier == 6).Id), "but not to tier VI");
+        // The yard: tier IV here, tier V and up need a town.
+        Check(c.CanTrainHere(c.Player, Troops.All.First(t => t.Tier == 4).Id), "the castle yard trains to tier IV");
+        Check(!c.CanTrainHere(c.Player, Troops.All.First(t => t.Tier == 5).Id), "but not to tier V");
         // Stables and granary.
         castle.Horses = c.Scaled(4);
         int horses = c.Player.Horses;
@@ -237,6 +237,8 @@ public static partial class SelfTest
     static void Economy()
     {
         var c = Campaign.New(41);
+        c.Captain.ContractSince = -Campaign.SwornDays * 24;
+        c.Captain.ServiceDeeds = Campaign.SwornDeeds;
         c.Player.Companies.Clear();
         foreach (var co in Armies.Standard(0).Companies) c.Player.Companies.Add(c.NewCompany(co.Troop, co.Role, co.Count, 0));
         c.Player.Cooldown = 1e6f;
@@ -401,6 +403,24 @@ public static partial class SelfTest
         float none = Campaign.GroundEdge(g, new[] { foot }, new[] { foot }, 1), mine = Campaign.GroundEdge(g with { Favour = 0 }, new[] { foot }, new[] { foot }, 1), theirs = Campaign.GroundEdge(g with { Favour = 1 }, new[] { foot }, new[] { foot }, 1);
         Check(none == 1 && mine > 1 && theirs < 1, "choosing the ground is an edge");
         Check(Campaign.GroundEdge(g with { Wet = 0.9f }, new[] { foot }, new[] { horse }, 1) > Campaign.GroundEdge(g, new[] { foot }, new[] { horse }, 1), "their horse is worth less on sodden ground");
+    }
+
+    /// The encounter screen's forecast of auto-resolve: a dry run that leaves the campaign's dice alone, says the same thing
+    /// twice, and weighs a far bigger foe as worse odds.
+    static void EncounterForecast()
+    {
+        var c = Campaign.New(31);
+        var foe = c.S.Parties.First(p => p.Kind == PartyKind.Bandit && p.Men > 0);
+        c.Encounter = foe;
+        ulong dice = c.S.Rng;
+        var f = c.AutoForecast(foe);
+        Check(c.S.Rng == dice, "the forecast does not touch the campaign's dice");
+        Check(f.Win is >= 0 and <= 1 && f.FewFall <= f.ManyFall && f.Mine > 0 && f.Theirs > 0, "a share, a range and two strengths");
+        Check(c.AutoForecast(foe) == f, "the same forecast twice");
+        foreach (var k in foe.Companies) foreach (var st in k.Stacks) st.Men *= 20;
+        var big = c.AutoForecast(foe);
+        Check(big.Theirs > f.Theirs * 10 && big.Win < f.Win && big.ManyFall >= f.ManyFall, "a foe twenty times the size: likelier a loss, dearer a win");
+        Check(c.FieldOf(foe).Ground != null, "the field the screen paints");
     }
 
     /// An assault headless: nobody crosses the wall's face except at a ladder or the broken gate, and it ends.
@@ -902,9 +922,9 @@ public static partial class SelfTest
         Check(c.Player.Companies.Count == companies + 1, "only one company is raised for them");
         Check(co.Men == men - 2 && co.Stacks.Count == 2, "the foot company holds levies and shieldmen");
         Check(co.Stacks.All(st => st.Xp <= st.PoolCap + 1e-3f), "pools stay under their caps after promotion");
-        // Promotion past tier III needs a town (HD1); out in the field it is refused with a reason.
+        // Promotion past tier II needs a castle or town (PF1); out in the field it is refused with a reason.
         c.Player.Pos = town.Pos + new Vector2(40, 40);
-        Check(c.SettlementAt(c.Player.Pos) != null || !c.CanTrainHere(c.Player, Troops.All.First(t => t.Tier == 4).Id), "promotion past tier III out in the field is refused");
+        Check(c.SettlementAt(c.Player.Pos) != null || !c.CanTrainHere(c.Player, Troops.All.First(t => t.Tier == 3).Id), "promotion past tier II out in the field is refused");
         // Moving and splitting stacks.
         Check(c.SplitStack(co, co.Stack("shieldmen"), 2) == null && co.Stack("shieldmen").Men == 3, "a stack can be split into a new company");
         var split = c.Player.Companies.First(k => k.Name.EndsWith(" II"));
@@ -1984,7 +2004,7 @@ public static partial class SelfTest
         var c = Campaign.New(96);
         var castle = c.S.Settlements.First(t => t.Kind == SettlementKind.Castle && t.Faction >= 0);
         var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town);
-        c.S.Gold = 5000; c.Captain.Renown = 100; c.Captain.Contract = castle.Faction;
+        c.S.Gold = 5000; c.Captain.Renown = 160; c.Captain.Contract = castle.Faction;
         Check(c.RecruitNobles(town, false, 3) is string s1 && s1.Contains("CASTLES"), "towns raise no esquires: " + c.RecruitNobles(town, false, 3));
         castle.Nobles = 0;
         Check(c.RecruitNobles(castle, false, 3) is string s2 && s2.Contains("NO ESQUIRES"), "an empty pool sends none");
@@ -1993,7 +2013,7 @@ public static partial class SelfTest
         Check(castle.Nobles > 0 && castle.Nobles <= c.Scaled(Balance.Get().NobleRecruitsMax), $"the pool refills to its cap ({castle.Nobles})");
         c.Captain.Renown = 10;
         Check(c.CannotRecruitNobles(castle) is string lowRenown && lowRenown.Contains("RENOWN"), "a house wants renown");
-        c.Captain.Renown = 100;
+        c.Captain.Renown = 160;
         int gold = (int)c.S.Gold, pool = castle.Nobles;
         Check(c.RecruitNobles(castle, false, 2) == null && castle.Nobles == pool - 2 && c.S.Gold < gold, "esquires join for a price");
         Check(c.Player.Companies.Any(k => k.Stacks.Any(x => x.Troop == "esquires")), "they form a company of their own");
@@ -2096,5 +2116,34 @@ public static partial class SelfTest
         c2.BeginTutorial();
         c2.SkipTutorial(persist: false);
         Check(!c2.TutorialActive && c2.S.TutorialStep == -1, "SkipTutorial immediately ends the tutorial");
+    }
+
+    /// Live map skirmishes (Campaign/Skirmishes.cs): AI-vs-AI clashes run incrementally over campaign hours,
+    /// allow nearby lords to join mid-fight, and resolve identically across save/load.
+    static void LiveSkirmishes()
+    {
+        var c = Campaign.New(77);
+        var a = c.S.Parties.First(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == 0);
+        var b = c.S.Parties.First(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == 1);
+        if (c.WarBetween(0, 1) is War w) w.Active = true; else c.S.Wars.Add(new War { A = 0, B = 1, Active = true });
+        a.Pos = new Microsoft.Xna.Framework.Vector2(0, 0);
+        b.Pos = new Microsoft.Xna.Framework.Vector2(1, 0);
+        a.Cooldown = 0; b.Cooldown = 0;
+        int startA = a.Men, startB = b.Men;
+
+        c.Clash(a, b);
+        int skId = a.BattleId;
+        Check(c.S.Skirmishes.Any(s => s.Id == skId) && skId >= 0 && a.BattleId == b.BattleId, "AI clash starts a live MapSkirmish instead of instant resolution");
+        Check(a.Men == startA && b.Men == startB, "skirmish starts at full strength before ticking");
+
+        c.Tick(1.0f);
+        Check(c.S.Skirmishes.Any(s => s.Id == skId) && (a.Men < startA || b.Men < startB), "skirmish ticks down men incrementally over campaign hours");
+
+        // Save mid-skirmish and verify both continue and resolve cleanly.
+        var cLoad = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        for (int i = 0; i < 40 && c.S.Skirmishes.Any(s => s.Id == skId); i++) c.Tick(1.0f);
+        for (int i = 0; i < 40 && cLoad.S.Skirmishes.Any(s => s.Id == skId); i++) cLoad.Tick(1.0f);
+        Check(!c.S.Skirmishes.Any(s => s.Id == skId) && !cLoad.S.Skirmishes.Any(s => s.Id == skId), "skirmish finishes and clears from state");
+        Check(c.S.Parties.First(p => p.Id == a.Id).Men == cLoad.S.Parties.First(p => p.Id == a.Id).Men, "saved mid-skirmish resolves identically to unsaved run");
     }
 }

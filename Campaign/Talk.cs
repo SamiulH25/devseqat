@@ -154,7 +154,25 @@ public sealed partial class Campaign
         .Replace("{realm}", ch.Faction >= 0 && ch.Faction < FactionNames.Length ? FactionNames[ch.Faction] : "my people")
         .Replace("{you}", Captain.Contract >= 0 && this.Rank >= Ironfield.Rank.Lord ? "my lord" : "captain").Replace("{other}", other);
 
-    public string Greeting(Character ch) => Line(ch, "greet");
+    public string Greeting(Character ch)
+    {
+        string line = Line(ch, "greet");
+        string note = OriginReaction(ch);
+        return note == "" ? line : line == "" ? note : line + " " + note;
+    }
+
+    /// A short reaction to the captain's homeland, birth or past (PF2), empty when nothing special applies.
+    string OriginReaction(Character ch)
+    {
+        if (ch.Kind != "lord") return "";
+        if (Captain.Origin == "deserter" && ch.Faction == Captain.Homeland) return "Your old banner has not forgotten you.";
+        if (Captain.Origin == "outlaw") return "I know what roads you used to work.";
+        if (Captain.Birth == "highborn" || Captain.Origin == "disinherited") return "Your house's name still carries weight in the hall.";
+        if (Captain.Origin is "tourney" or "hedge_knight") return "I have heard of your lance in the lists.";
+        if (Captain.Birth == "cloister" || Captain.Origin == "pilgrim") return "A captain who keeps the faith is welcome at my fire.";
+        if (Captain.Homeland >= 0 && ch.Faction == Captain.Homeland && Captain.Contract != ch.Faction) return "You were born to our hills — you should fly our colours.";
+        return "";
+    }
 
     /// The topics that make sense with him now (what he can be asked; whether you can afford it is CannotAsk).
     public IEnumerable<TalkTopic> TopicsFor(Character ch)

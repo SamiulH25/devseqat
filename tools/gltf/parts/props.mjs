@@ -179,17 +179,38 @@ export function buildProps(root) {
     mesh(shadeVerts(new THREE.BoxGeometry(0.04, 0.56, 0.36), () => 0.92), M.cloth, [-0.26, 1.02, 0.10]);
   });
 
-  // lod_horse: X -0.32..0.32, Y 0.00..2.10, Z -0.88..1.18
+  // lod_horse: sculpted low-poly horse + rider silhouette (~90 tris)
   addPart(root, 'lod_horse', (mesh) => {
-    // Horse legs
-    mesh(shadeVerts(new THREE.BoxGeometry(0.46, 0.80, 0.22), () => 0.80), M.coatDark, [0, 0.40, 0.46]);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.46, 0.80, 0.22), () => 0.80), M.coatDark, [0, 0.40, -0.46]);
-    // Horse barrel
-    mesh(shadeVerts(new THREE.BoxGeometry(0.56, 0.54, 1.38), () => 0.92), M.coat, [0, 1.04, 0.02]);
-    // Horse neck + head (+Z)
-    mesh(shadeVerts(new THREE.BoxGeometry(0.28, 0.58, 0.48), () => 0.94), M.coat, [0, 1.48, 0.84], [0.35, 0, 0]);
+    // Tapered front & hind leg pairs
+    for (const sz of [0.48, -0.50]) {
+      const legs = loft(V(0, 0.0, sz), V(0, 0.84, sz), [
+        [0, 0.20, 0.09], [0.5, 0.22, 0.11], [1, 0.25, 0.15],
+      ], { segs: 5 });
+      mesh(heightShade(legs, 0, 0.84, 0.72, 0.88), M.coatDark);
+    }
+    // Tapered equine barrel
+    const barrel = loft(V(0, 0.94, -0.86), V(0, 0.98, 0.86), [
+      [0.0, 0.14, 0.14], [0.22, 0.30, 0.29], [0.78, 0.31, 0.29], [1.0, 0.15, 0.15],
+    ], { segs: 6, fwd: V(0, 1, 0) });
+    mesh(heightShade(barrel, 0.65, 1.30, 0.78, 1.0), M.coat);
+    // Arched neck + head + tail
+    const neck = loft(V(0, 1.04, 0.68), V(0, 1.66, 1.10), [
+      [0, 0.18, 0.22], [1, 0.11, 0.14],
+    ], { segs: 5 });
+    mesh(heightShade(neck, 1.04, 1.66, 0.82, 1.0), M.coat);
+    const head = loft(V(0, 1.64, 1.08), V(0, 1.36, 1.50), [
+      [0, 0.12, 0.13], [1, 0.06, 0.07],
+    ], { segs: 5, fwd: V(0, 1, 0) });
+    mesh(shadeVerts(head, () => 0.92), M.coat);
+    const tail = loft(V(0, 1.04, -0.84), V(0, 0.42, -1.06), [
+      [0, 0.06, 0.06], [1, 0.03, 0.03],
+    ], { segs: 4 });
+    mesh(shadeVerts(tail, () => 0.76), M.coatDark);
     // Rider torso + helm
-    mesh(shadeVerts(new THREE.BoxGeometry(0.44, 0.56, 0.28), () => 0.96), M.cloth, [0, 1.62, 0.02]);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.24, 0.24, 0.24), () => 1.0), M.steel, [0, 1.98, 0.02]);
+    const torso = loft(V(0, 1.24, 0.0), V(0, 1.84, 0.0), [
+      [0, 0.20, 0.14], [0.65, 0.23, 0.16], [1, 0.18, 0.13],
+    ], { segs: 6 });
+    mesh(heightShade(torso, 1.24, 1.84, 0.84, 1.0), M.cloth);
+    mesh(shadeVerts(new THREE.OctahedronGeometry(0.14, 0), () => 1.0), M.steel, [0, 1.98, 0.0]);
   });
 }

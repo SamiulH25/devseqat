@@ -179,6 +179,10 @@ public sealed class Unit
     public int SoldierId;
     /// A named man out to avenge a brother or kin (docs/archive/COMPANY.md C3): his blows land harder, and he takes more risk.
     public bool Avenging;
+    /// A named man personally armed from camp baggage/loot (PF3): extra armour, HP and damage on the field.
+    public bool Armed;
+    /// Battle-hardened bonus from a named man's battles and banner mentions (PF3): scales his HP and damage.
+    public float VeteranBonus;
     /// Enemies he has killed this battle, and whether one was a captain or a hero.
     public int Kills;
     public bool FelledLeader;
@@ -271,7 +275,7 @@ public sealed class LooseHorse
 {
     public Mount Mount = null!;
     public Vector2 Pos;
-    public float Heading, Hp;
+    public float Heading, Hp, Speed, Anim;
     public int Team, Coat;
 }
 

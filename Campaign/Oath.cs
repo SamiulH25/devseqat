@@ -28,6 +28,7 @@ public sealed partial class Campaign
 
     internal void RaiseStanding(string order, float by)
     {
+        if (by > 0 && (Captain.Birth == "cloister" || Captain.Origin == "pilgrim")) by *= 1.25f;
         if (OrderById(order) is OrderState o) o.Standing = Math.Clamp(o.Standing + by, -100, 100);
     }
 

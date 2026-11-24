@@ -238,6 +238,45 @@ public static partial class SelfTest
         Check(f.SquadsOf(0).Sum(q => q.Units.Count(x => x.Dead)) > 0, "wolf riders ride down archers");
     }
 
+    /// Auto-resolve weighs great beasts as fought battles find them (docs in Rules.MightAgainst). The aim: a company of
+    /// 200-300 beats one of the map's beast parties and loses a good part of itself doing it. Each case is a typical company
+    /// (three tenths levies, a quarter bowmen, a quarter men-at-arms, a fifth horse) against the party as the map spawns it,
+    /// with the winner of four fought battles at that hour (Campaign.Edge: TrollNight, TrollDay).
+    static void BeastsWeighed()
+    {
+        Party Side(string troop, int n, int tier)
+        {
+            var p = new Party { Tier = tier };
+            p.Companies.Add(new CompanyRecord { Role = "infantry" });
+            p.Companies[0].Stack(troop).Men = n;
+            return p;
+        }
+        Party Company(int men)
+        {
+            var p = new Party { Tier = 2 };
+            foreach (var (t, r, k) in new[] { (Armies.LineTroop("infantry", 1), "infantry", men * 3 / 10), (Armies.LineTroop("archers", 2), "archers", men / 4),
+                                               (Armies.LineTroop("infantry", 3), "infantry", men / 4), (Armies.LineTroop("horse", 3), "horse", men / 5) })
+            { var c = new CompanyRecord { Role = r }; c.Stack(t).Men = k; p.Companies.Add(c); }
+            return p;
+        }
+        var bal = Balance.Get();
+        foreach (var (men, beast, n, night, win) in new[]
+        {
+            (120, "troll", 6, true, false), (120, "troll", 6, false, false), (200, "troll", 6, true, false), (200, "troll", 6, false, false), (300, "troll", 6, false, true),
+            (120, "wyvern", 3, false, false), (200, "wyvern", 3, false, true), (300, "wyvern", 3, false, true),
+            (120, "ogre", 6, false, false), (200, "ogre", 6, false, true), (300, "ogre", 6, false, true),
+            (120, "bear", 6, false, true),
+        })
+        {
+            var (a, b) = Rules.AutoWeights(new[] { Company(men) }, new[] { Side(beast, n, Troops.Get(beast).Tier) });
+            float hour = beast == "troll" ? (night ? bal.TrollNight : bal.TrollDay) : 1;
+            Check(a > b * hour == win, $"{men} men against {n} {beast}{(beast == "troll" ? night ? " by night" : " by day" : "")}: the field says {(win ? "a win" : "a loss")}, auto-resolve {a / (b * hour):0.00}");
+        }
+        var levies = Side("levies", 60, 1);
+        var foot = Side(Armies.LineTroop("infantry", 3), 40, 3);
+        Check(Math.Abs(Rules.MightAgainst(new[] { levies }, new[] { foot }) - Rules.Might(levies)) < 1e-3f, "men against men are weighed as before");
+    }
+
     /// Trolls in battle: a huge body whose blows sweep and throw men, that heals in the dark, never breaks,
     /// unnerves men near it, stands off horses, and goes slow and weak in sunlight.
     static void Trolls()

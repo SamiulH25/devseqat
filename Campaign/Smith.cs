@@ -15,8 +15,16 @@ public sealed partial class Campaign
     /// Whether a place's smith can work masterwork.
     public bool GreatSmith(Settlement s) => s.Kind == SettlementKind.Town && (s.Prosperity >= MasterworkProsperity || Level(s, "market") > 0);
 
-    /// Mending a battered piece: a tenth of its price.
+    /// Mending a battered piece: a tenth of its price (free for a forge-born captain, PF2).
     public static int MendCost(GearDef g) => Math.Max(5, g.Cost / 10);
+    public int MendPrice(GearDef g) => Captain.Birth == "forge" ? 0 : MendCost(g);
+    public (int Crowns, string Goods, int Lots) ImprovePrice(GearDef g, ItemQuality from)
+    {
+        var (crowns, goods, lots) = ImproveCost(g, from);
+        if (Captain.Birth == "forge") crowns = Math.Max(10, (int)MathF.Round(crowns * 0.75f));
+        return (crowns, goods, lots);
+    }
+    public int RemarkPrice(GearDef g) => Captain.Birth == "forge" ? Math.Max(10, (int)MathF.Round(RemarkCost(g) * 0.75f)) : RemarkCost(g);
 
     /// Raising a piece one make: the price difference between the two makes, and lots of arms or armour.
     public static (int Crowns, string Goods, int Lots) ImproveCost(GearDef g, ItemQuality from)
@@ -34,7 +42,7 @@ public sealed partial class Campaign
     {
         if (Smithy() == null) return "NO SMITH HERE";
         if (!i.Battered) return "IT IS WHOLE";
-        int cost = MendCost(Gear.Get(i.Def));
+        int cost = MendPrice(Gear.Get(i.Def));
         return S.Gold < cost ? $"NEEDS {cost} CROWNS" : null;
     }
 
@@ -42,7 +50,7 @@ public sealed partial class Campaign
     {
         if (CannotMend(i) is string why) return why;
         var g = Gear.Get(i.Def);
-        S.Gold -= MendCost(g);
+        S.Gold -= MendPrice(g);
         i.Battered = false;
         LogYours($"The smith mends your {ItemName(i, g).ToLowerInvariant()}.");
         AudioEngine.Current?.Play(Cue.AnvilRing, 0.6f);
@@ -58,7 +66,7 @@ public sealed partial class Campaign
         if (i.Quality >= ItemQuality.Masterwork) return "NO SMITH CAN BETTER IT";
         if (i.Battered) return "MEND IT FIRST";
         if (i.Quality == ItemQuality.Fine && !GreatSmith(s)) return "MASTERWORK NEEDS A GREAT TOWN'S SMITH";
-        var (crowns, goods, lots) = ImproveCost(g, i.Quality);
+        var (crowns, goods, lots) = ImprovePrice(g, i.Quality);
         if (S.Gold < crowns) return $"NEEDS {crowns} CROWNS";
         if (lots > 0 && S.Goods.GetValueOrDefault(goods) < lots) return $"NEEDS {lots} LOTS OF {goods.ToUpperInvariant()}";
         return null;
@@ -69,7 +77,7 @@ public sealed partial class Campaign
     {
         if (CannotImprove(i) is string why) return why;
         var g = Gear.Get(i.Def);
-        var (crowns, goods, lots) = ImproveCost(g, i.Quality);
+        var (crowns, goods, lots) = ImprovePrice(g, i.Quality);
         S.Gold -= crowns;
         if (lots > 0) { S.Goods[goods] -= lots; if (S.Goods[goods] <= 0) S.Goods.Remove(goods); }
         i.Quality++;
@@ -87,7 +95,7 @@ public sealed partial class Campaign
         if (i.Quality < ItemQuality.Fine) return "ONLY A FINE PIECE TAKES A MARK";
         if (!MarksFor(g.Slot).Any(e => e.Id == mark)) return "THAT MARK DOES NOT FIT IT";
         if (i.Marks.Contains(mark)) return "IT BEARS THAT MARK";
-        int cost = RemarkCost(g);
+        int cost = RemarkPrice(g);
         return S.Gold < cost ? $"NEEDS {cost} CROWNS" : null;
     }
 
@@ -96,7 +104,7 @@ public sealed partial class Campaign
     {
         if (CannotRemark(i, mark) is string why) return why;
         var g = Gear.Get(i.Def);
-        S.Gold -= RemarkCost(g);
+        S.Gold -= RemarkPrice(g);
         int most = i.Quality >= ItemQuality.Masterwork ? MostMarks : 1;
         if (i.Marks.Count >= most) i.Marks.RemoveAt(0);
         i.Marks.Add(mark);

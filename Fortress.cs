@@ -789,6 +789,60 @@ public sealed class Fortress
         return false;
     }
 
+    /// True if p lies on a raised ladder or docked siege-tower ramp; sets `climbY` to the smooth elevation along the climb.
+    public bool ClimbElevation(Vector2 p, Func<Vector2, float> groundOf, out float climbY)
+    {
+        climbY = 0;
+        bool hit = false;
+        foreach (var l in Ladders)
+        {
+            if (!l.Up) continue;
+            var seg = Segments[l.SegmentId];
+            float along = MathF.Abs(Vector2.Dot(p - l.Pos, seg.Along));
+            float outDist = Vector2.Dot(p - l.Pos, l.Out);
+            if (along > l.HalfWidth + 0.7f || outDist < -1.1f || outDist > 2.6f) continue;
+            float t = Math.Clamp((2.6f - outDist) / 2.6f, 0f, 1f);
+            float footY = groundOf(l.Foot);
+            float topY = MathF.Max(groundOf(l.Top), footY + seg.Height);
+            float y = MathHelper.Lerp(footY, topY, t);
+            if (!hit || y > climbY) { climbY = y; hit = true; }
+        }
+        foreach (var r in Ramps)
+        {
+            var seg = Segments[r.SegmentId];
+            float along = MathF.Abs(Vector2.Dot(p - r.Pos, seg.Along));
+            float outDist = Vector2.Dot(p - r.Pos, r.Out);
+            if (along > r.HalfWidth + 0.7f || outDist < -1.1f || outDist > 2.9f) continue;
+            float t = Math.Clamp((2.9f - outDist) / 2.9f, 0f, 1f);
+            float footY = groundOf(r.Foot);
+            float topY = MathF.Max(groundOf(r.Top), footY + seg.Height);
+            float y = MathHelper.Lerp(footY, topY, t);
+            if (!hit || y > climbY) { climbY = y; hit = true; }
+        }
+        return hit;
+    }
+
+    /// True if p is currently on a raised ladder or siege-tower ramp.
+    public bool OnClimb(Vector2 p)
+    {
+        foreach (var l in Ladders)
+        {
+            if (!l.Up) continue;
+            var seg = Segments[l.SegmentId];
+            float along = MathF.Abs(Vector2.Dot(p - l.Pos, seg.Along));
+            float outDist = Vector2.Dot(p - l.Pos, l.Out);
+            if (along <= l.HalfWidth + 0.7f && outDist >= -1.1f && outDist <= 2.6f) return true;
+        }
+        foreach (var r in Ramps)
+        {
+            var seg = Segments[r.SegmentId];
+            float along = MathF.Abs(Vector2.Dot(p - r.Pos, seg.Along));
+            float outDist = Vector2.Dot(p - r.Pos, r.Out);
+            if (along <= r.HalfWidth + 0.7f && outDist >= -1.1f && outDist <= 2.9f) return true;
+        }
+        return false;
+    }
+
     /// Terrain vertex height boost for the fortress wall walkways (smooth inner bank, sheer outer face, zero at gates).
     public float Raise(float x, float z)
     {
@@ -849,7 +903,7 @@ public sealed class Fortress
                 if (r.SegmentId == s.Id && Vector2.Distance(mid, r.Pos) <= r.HalfWidth + 0.8f) { isClimb = true; return true; }
             if (team == 0)
                 foreach (var l in Ladders)
-                    if (l.Up && l.SegmentId == s.Id && Vector2.Distance(mid, l.Pos) <= l.HalfWidth + 0.8f) { isClimb = true; return true; }
+                    if (l.Up && l.SegmentId == s.Id && Vector2.Distance(mid, l.Pos) <= l.HalfWidth + 1.0f) { isClimb = true; return true; }
         }
         return false;
     }

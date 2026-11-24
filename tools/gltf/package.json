@@ -8,6 +8,7 @@
     "blender": "node blender_unit.mjs",
     "render": "node render_unit.mjs",
     "build-parts": "node build_parts.mjs out/parts.glb",
+    "build-mounts": "node build_parts.mjs out/mounts.glb --only mounts && node export_imsh.mjs --out ../../Data/meshes/units3d.bin --merge ../../Data/meshes/units3d.bin out/mounts.glb",
     "build-all": "node build_parts.mjs out/parts.glb && node export_imsh.mjs --out ../../Data/meshes/units3d.bin out/parts.glb"
   },
   "dependencies": {

@@ -17,7 +17,7 @@ public partial class Campaign
         Map.SeaLanes.Where(l => l.A == s.Id || l.B == s.Id).Select(l => (SettlementById(l.A == s.Id ? l.B : l.A)!, l));
 
     /// The passage for the whole company: the master's fee, and so much a man for each hundred units of sea.
-    public int Fare(SeaLane l) => (int)MathF.Ceiling(B.ShipFare + Rules.PerMan(B.ShipFareMan) * (Player.Men + Player.Wounded) * l.Length / 100);
+    public int Fare(SeaLane l) => (int)MathF.Ceiling((B.ShipFare + Rules.PerMan(B.ShipFareMan) * (Player.Men + Player.Wounded) * l.Length / 100) * (Captain.Birth == "shore" ? 0.65f : 1));
 
     public float SailHours(SeaLane l) => l.Length / B.ShipSpeed;
 

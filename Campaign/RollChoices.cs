@@ -6,7 +6,7 @@ namespace Ironfield;
 public sealed partial class Campaign
 {
     /// A day to choose a sergeant before the risen man keeps the post; mentions that make a man "of the banner".
-    public const int SergeantPickDays = 1, BannerMentions = 3;
+    public const int SergeantPickDays = 5, BannerMentions = 3;
     /// A man you armed dies this much as often when he falls; age or wounds that let a man be pensioned.
     public const float ArmedSurvival = 0.8f;
     public const int PensionAge = 40, PensionWounds = 3;

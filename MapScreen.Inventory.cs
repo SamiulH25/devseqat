@@ -179,12 +179,12 @@ partial class MapScreen
         int bw = (r.Width - ui.U(12)) / 3, by = r.Y + ui.U(30), bh = ui.U(20);
         var b1 = new Rectangle(r.X, by, bw, bh); var b2 = new Rectangle(b1.Right + ui.U(6), by, bw, bh); var b3 = new Rectangle(b2.Right + ui.U(6), by, bw, bh);
         string? mend = C.CannotMend(i), up = C.CannotImprove(i);
-        if (i.Battered && ui.Button(b1, $"MEND {Campaign.MendCost(g)}", mend == null)) note = C.Mend(i) ?? "MENDED";
+        if (i.Battered && ui.Button(b1, $"MEND {C.MendPrice(g)}", mend == null)) note = C.Mend(i) ?? "MENDED";
         else if (!i.Battered) ui.Button(b1, "WHOLE", false);
-        var (crowns, goods, lots) = i.Quality < ItemQuality.Masterwork ? Campaign.ImproveCost(g, i.Quality) : (0, "", 0);
+        var (crowns, goods, lots) = i.Quality < ItemQuality.Masterwork ? C.ImprovePrice(g, i.Quality) : (0, "", 0);
         string upLabel = i.Quality >= ItemQuality.Masterwork || g.Slot == "horse" ? "IMPROVE" : $"MAKE {Campaign.QualityName(i.Quality + 1).ToUpperInvariant()}";
         string costs = up != null ? $"BETTER MAKE: {up}" : $"BETTER MAKE: {crowns} CROWNS" + (lots > 0 ? $" AND {lots} LOTS OF {goods.ToUpperInvariant()}" : "");
-        if (i.Battered) costs = mend != null ? $"MEND: {mend}" : $"MEND: {Campaign.MendCost(g)} CROWNS. " + costs;
+        if (i.Battered) costs = mend != null ? $"MEND: {mend}" : $"MEND: {C.MendPrice(g)} CROWNS. " + costs;
         ui.TextFit(costs, r.X, r.Y + ui.U(16), r.Width, up != null && (!i.Battered || mend != null) ? Style.Warn : Style.Text, 1);
         if (ui.Button(b2, ui.Fit(upLabel, bw - ui.U(8)), up == null))
         {
@@ -200,7 +200,7 @@ partial class MapScreen
             int nw = ui.U(38);
             if (ui.Button(new Rectangle(b3.X, b3.Y, b3.Width - nw - ui.U(4), bh), ui.Fit(m.Name.ToUpperInvariant(), b3.Width - nw - ui.U(12)), why == null)) note = C.Remark(i, m.Id) ?? $"MARKED {m.Name.ToUpperInvariant()}";
             if (ui.Button(new Rectangle(b3.Right - nw, b3.Y, nw, bh), "NEXT")) smithMark++;
-            if (ui.Hover(b3)) ui.Tooltip(b3.Center.X, b3.Y - ui.U(2), m.Name.ToUpperInvariant(), ui.Wrap(m.Line.ToUpperInvariant() + " " + (why ?? $"{Campaign.RemarkCost(g)} CROWNS."), ui.U(200)).ToArray());
+            if (ui.Hover(b3)) ui.Tooltip(b3.Center.X, b3.Y - ui.U(2), m.Name.ToUpperInvariant(), ui.Wrap(m.Line.ToUpperInvariant() + " " + (why ?? $"{C.RemarkPrice(g)} CROWNS."), ui.U(200)).ToArray());
         }
         if (mend != null && i.Battered && ui.Hover(b1)) ui.Tooltip(b1.Center.X, b1.Y - ui.U(2), "MEND", new[] { mend });
     }

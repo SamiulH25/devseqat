@@ -102,7 +102,7 @@ public partial class Battle
             else if (toSlot > 0.35f)
             {
                 var to = Via(u, u.Slot) - u.Pos;
-                u.Wish = to / MathF.Max(0.01f, to.Length()) * MathF.Min(u.Type.Speed, s.MarchSpeed);
+                u.Wish = to / MathF.Max(0.01f, to.Length()) * u.Type.Speed;
                 u.Face(to);
             }
             else u.Face(s.Front);

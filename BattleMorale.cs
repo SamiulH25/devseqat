@@ -45,7 +45,7 @@ public partial class Battle
             if (inspired) m += u.Routing ? 10 : 4;
             else if (led) m += u.Routing ? 3 : 1.5f; // a living general heartens the whole army, wherever he stands
             // A division's sergeant steadies the men around him.
-            if (!inspired && u.Squad?.Division?.Leader is { Active: true } sgt && sgt != u && Vector2.DistanceSquared(sgt.Pos, u.Pos) < 100) m += u.Routing ? 4 : 1.5f;
+            if (!inspired && u.Squad?.Division?.Leader is { Active: true } sgt && sgt != u && Vector2.DistanceSquared(sgt.Pos, u.Pos) < 225) m += u.Routing ? 4.5f : 2f;
             bool craven = u.Type.Has("craven");
             if (u.Routing)
             {

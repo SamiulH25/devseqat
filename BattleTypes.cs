@@ -105,6 +105,8 @@ public sealed class BattleOptions
     public string TideTradition = "";
     /// The captain's path (docs/archive/ARCANA.md AR6): "sword", "banner", "hearth", or "" (none chosen: as before).
     public string Path = "";
+    /// The captain's chosen road (sword, lance, bow, great, pole; PF2): personal battle & duel edge.
+    public string CaptainRoad = "";
 }
 
 /// When and in what weather a battle is fought (roadmap C4). The campaign passes its hour and season.

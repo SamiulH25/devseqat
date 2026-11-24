@@ -28,7 +28,9 @@ public static partial class SelfTest
         Check(c.S.Factions.Take(3).All(f => c.CharacterById(f.Ruler) is { Kind: "lord" } && c.CharacterById(f.Marshal) != null), "every realm has a ruler and a marshal");
         Check(!c.CanSwearFealty(out _), "a free company cannot swear fealty");
         c.S.Hours = Campaign.SwornDays * 24 + 1;
-        Check(c.Rank == Rank.SwornSword, "a month of service makes a sworn sword");
+        Check(c.Rank == Rank.FreeCompany, "waiting alone does not make a sworn sword without service deeds");
+        c.Captain.ServiceDeeds = Campaign.SwornDeeds;
+        Check(c.Rank == Rank.SwornSword, "service days and deeds make a sworn sword");
         var village = c.S.Settlements.First(s => s.Kind == SettlementKind.Village && s.Faction == 0);
         Check(c.RecruitPriceFactor(village) == 0.5f, "a sworn sword recruits at half price in his realm");
         c.Captain.Renown = 100;

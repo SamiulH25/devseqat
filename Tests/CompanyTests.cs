@@ -487,4 +487,26 @@ public static partial class SelfTest
         Check(c.S.DeadCaptains.Count == 2 && c.S.GameOver, "with no companion, his death ends the campaign");
         Check(CampaignState.Deserialize(c.S.Serialize()).DeadCaptains.Count == 2, "the dead captains are saved");
     }
+
+    /// PF3: named veterans, armed named men, and men of the banner visibly strengthen their unit and company in battle.
+    static void NamedMenAffectBattle()
+    {
+        var c = Campaign.New(44);
+        var co = c.Player.Companies[0];
+        var rawMorale = Rules.Army("raw", new[] { c.Player }).Companies[0].Morale;
+        var vet = new Soldier { Id = 901, Name = "Hal the Iron", Troop = co.Troop, Battles = 12, Mentions = Campaign.BannerMentions, Carries = "longsword", Nature = "Proud" };
+        co.Roll.Add(vet);
+        var army = Rules.Army("vet", new[] { c.Player });
+        var spec = army.Companies[0];
+        Check(spec.Morale > rawMorale, $"named banner veteran raises company starting morale ({spec.Morale:0.0} vs {rawMorale:0.0})");
+        var ns = spec.Named!.First(n => n.Id == vet.Id);
+        Check(ns.Armed && ns.Banner && ns.Battles == 12, "NamedSpec carries Armed, Banner and Battles");
+
+        var b = new Battle(77, army, new ArmySpec("foe", 1, new List<Company> { new("levies", 12, "infantry") }));
+        var sq = b.Squads.First(s => s.Team == 0);
+        var namedU = sq.Units.First(u => u.SoldierId == vet.Id);
+        var plainU = sq.Units.First(u => u.SoldierId == 0 && u.Type.Id == vet.Troop);
+        Check(namedU.Armed && namedU.VeteranBonus >= 0.199f, $"named veteran carries Armed and VeteranBonus ({namedU.VeteranBonus:0.00})");
+        Check(namedU.Hp > plainU.Hp * 1.25f, $"armed banner veteran spawns with higher HP ({namedU.Hp:0.0} vs {plainU.Hp:0.0})");
+    }
 }

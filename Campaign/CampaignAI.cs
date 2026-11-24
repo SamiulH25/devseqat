@@ -167,6 +167,11 @@ public partial class Campaign
         {
             p.Task = "follow"; p.ChaseId = -1; p.Goal = Player.Pos + new Vector2(-3, 3); p.Moving = true; p.TaskUntil = (float)S.Hours + 1;
         }
+        else if (!needsRefit && S.Skirmishes.FirstOrDefault(sk => sk.SideA.Concat(sk.SideB).Any(id => PartyById(id) is Party ally && !Hostile(p, ally) && ally.Kind == PartyKind.Lord)
+            && Vector2.Distance(sk.Pos, p.Pos) < B.Vision * Map.Spread) is MapSkirmish joinSk)
+        {
+            p.Task = "reinforce"; p.ChaseId = -1; p.Goal = joinSk.Pos; p.Moving = true; p.TaskUntil = (float)S.Hours + 2;
+        }
         else if (!needsRefit && TryBesiege(p)) { }
         else if (needsRefit || p.Task == "refit")
         {

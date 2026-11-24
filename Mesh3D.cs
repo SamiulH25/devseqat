@@ -45,10 +45,10 @@ sealed class MeshKit3D
     public Vert[] Quiver = Array.Empty<Vert>(), Arrow = Array.Empty<Vert>(), Javelin = Array.Empty<Vert>();
     public Vert[] WebSnare = Array.Empty<Vert>(), BannerPole = Array.Empty<Vert>();
     public Vert[][] Emblems = Array.Empty<Vert[]>();
-    public Vert[] HorseBody = Array.Empty<Vert>(), HorseBodyBarded = Array.Empty<Vert>(), HorseBodyScale = Array.Empty<Vert>(), HorseBodyFur = Array.Empty<Vert>();
+    public Vert[] HorseBody = Array.Empty<Vert>(), HorseBodyBarded = Array.Empty<Vert>(), HorseBodyHalf = Array.Empty<Vert>(), HorseBodyScale = Array.Empty<Vert>(), HorseBodyFur = Array.Empty<Vert>();
     public Vert[] HorseNeck = Array.Empty<Vert>(), HorseNeckBarded = Array.Empty<Vert>(), HorseNeckScale = Array.Empty<Vert>();
     public Vert[] HorseHead = Array.Empty<Vert>(), HorseHeadBarded = Array.Empty<Vert>(), HorseHeadScale = Array.Empty<Vert>();
-    public Vert[] HorseLegUp = Array.Empty<Vert>(), HorseLegLow = Array.Empty<Vert>(), HorseTail = Array.Empty<Vert>();
+    public Vert[] HorseLegUp = Array.Empty<Vert>(), HorseLegHindUp = Array.Empty<Vert>(), HorseLegLow = Array.Empty<Vert>(), HorseTail = Array.Empty<Vert>();
     public Vert[] CamelBody = Array.Empty<Vert>(), CamelNeck = Array.Empty<Vert>(), CamelHead = Array.Empty<Vert>();
     public Vert[] WolfBody = Array.Empty<Vert>(), WolfHead = Array.Empty<Vert>(), WolfLeg = Array.Empty<Vert>(), WolfTail = Array.Empty<Vert>();
     public Vert[] BearBody = Array.Empty<Vert>(), BearHead = Array.Empty<Vert>(), BearLeg = Array.Empty<Vert>();
@@ -129,10 +129,13 @@ sealed class MeshKit3D
         kit.Emblems[(int)Emblem.Fess] = kit.Get("emblem_fess");
         kit.Emblems[(int)Emblem.Sun] = kit.Get("emblem_sun");
         kit.HorseBody = kit.Get("horse_body"); kit.HorseBodyBarded = kit.Get("horse_body_barded");
+        kit.HorseBodyHalf = kit.Get("horse_body_half"); if (kit.HorseBodyHalf.Length == 0) kit.HorseBodyHalf = kit.HorseBodyBarded;
         kit.HorseBodyScale = kit.Get("horse_body_scale"); kit.HorseBodyFur = kit.Get("horse_body_fur");
         kit.HorseNeck = kit.Get("horse_neck"); kit.HorseNeckBarded = kit.Get("horse_neck_barded"); kit.HorseNeckScale = kit.Get("horse_neck_scale");
         kit.HorseHead = kit.Get("horse_head"); kit.HorseHeadBarded = kit.Get("horse_head_barded"); kit.HorseHeadScale = kit.Get("horse_head_scale");
-        kit.HorseLegUp = kit.Get("horse_leg_up"); kit.HorseLegLow = kit.Get("horse_leg_low"); kit.HorseTail = kit.Get("horse_tail");
+        kit.HorseLegUp = kit.Get("horse_leg_up");
+        kit.HorseLegHindUp = kit.Get("horse_leg_hind_up"); if (kit.HorseLegHindUp.Length == 0) kit.HorseLegHindUp = kit.HorseLegUp;
+        kit.HorseLegLow = kit.Get("horse_leg_low"); kit.HorseTail = kit.Get("horse_tail");
         kit.CamelBody = kit.Get("camel_body"); kit.CamelNeck = kit.Get("camel_neck"); kit.CamelHead = kit.Get("camel_head");
         kit.WolfBody = kit.Get("wolf_body"); kit.WolfHead = kit.Get("wolf_head"); kit.WolfLeg = kit.Get("wolf_leg"); kit.WolfTail = kit.Get("wolf_tail");
         kit.BearBody = kit.Get("bear_body"); kit.BearHead = kit.Get("bear_head"); kit.BearLeg = kit.Get("bear_leg");

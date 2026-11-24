@@ -37,7 +37,7 @@ sealed partial class World
         float h = seg.Height, d = Fortress.WalkwayDepth;
         // Centre of wall box sits d/2 behind the outer face along -seg.Out.
         var mid2 = seg.Mid - seg.Out * (d * 0.5f);
-        float baseY = t.Height(seg.Mid + seg.Out * 1.0f);
+        float baseY = t.BaseHeight(seg.Mid + seg.Out * 1.0f);
         float topY = baseY + h;
         var c = new Vector3(mid2.X, baseY - 2f, mid2.Y);
         float yaw = seg.Yaw; // Mesh.Box ax = (cos(yaw), 0, sin(yaw)) = seg.Along
@@ -186,9 +186,9 @@ sealed partial class World
     void FortressLadder(Mesh m, WallLadder l, Random r)
     {
         m.Tag = Vector2.Zero;
-        var foot = new Vector3(l.Foot.X, t.Height(l.Foot), l.Foot.Y);
+        var foot = new Vector3(l.Foot.X, t.BaseHeight(l.Foot), l.Foot.Y);
         var topPt = l.Pos - l.Out * 0.1f;
-        var top = new Vector3(topPt.X, t.Height(l.Foot) + Fortress.WallHeight + 0.5f, topPt.Y);
+        var top = new Vector3(topPt.X, t.BaseHeight(l.Foot) + Fortress.WallHeight + 0.5f, topPt.Y);
         var side = new Vector3(-l.Out.Y, 0, l.Out.X);
         foreach (float s in new[] { -0.4f, 0.4f })
             m.Frustum(foot + side * s, top + side * s, 0.06f, 0.06f, 4, Timber, r);

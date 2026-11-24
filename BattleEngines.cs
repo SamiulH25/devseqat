@@ -162,9 +162,9 @@ public sealed partial class Battle
                 var mg = Wall.MainGate;
                 at = def.Shot switch
                 {
-                    "ram" => mg.Pos + mg.Out * 32f + mg.Along * 6f,
-                    "tower" => mg.Pos + mg.Out * 40f + mg.Along * (side * (24 + 14 * (k / 2))),
-                    _ => mg.Pos + mg.Out * MathF.Min(def.Range * 0.7f, 95) + mg.Along * (side * (24 + 16 * (k / 2))),
+                    "ram" => mg.Pos + mg.Out * 44f + mg.Along * 6f,
+                    "tower" => mg.Pos + mg.Out * 48f + mg.Along * (side * (24 + 14 * (k / 2))),
+                    _ => mg.Pos + mg.Out * MathF.Min(def.Range * 0.75f, 105f) + mg.Along * (side * (24 + 16 * (k / 2))),
                 };
             }
             var crew = SplitNow(from, def.Crew, quiet: true);

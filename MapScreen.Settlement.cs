@@ -184,7 +184,19 @@ partial class MapScreen
             }
             int tx = px + ph * 2 + ui.U(44), tw = row.Right - ui.U(250) - tx;
             ui.TextFit($"{st.Men} {st.Type.Name.ToUpperInvariant()} {Style.Numerals[st.Type.Tier]}", tx, row.Y + ui.U(6), tw, Style.Text, 1);
-            ui.TextFit(c.Name.ToUpperInvariant(), tx, row.Y + ui.U(18), tw, Style.Dim, 1);
+            string sub = c.Name.ToUpperInvariant();
+            if (!top)
+            {
+                var nt = Troops.Get(nextIds[0]);
+                var gains = new List<string>();
+                if (nt.MaxHp > st.Type.MaxHp) gains.Add($"+{nt.MaxHp - st.Type.MaxHp:0} HP");
+                if (nt.Damage > st.Type.Damage) gains.Add($"+{nt.Damage - st.Type.Damage:0} DMG");
+                if (nt.Armor > st.Type.Armor) gains.Add($"+{nt.Armor - st.Type.Armor:0} ARM");
+                if (nt.Mount != null && st.Type.Mount == null) gains.Add("MOUNTED");
+                if (nt.Look.Shield is not ("" or "none") && st.Type.Look.Shield is "" or "none") gains.Add("SHIELD");
+                sub = $"{sub}  >  {nt.Name.ToUpperInvariant()} {Style.Numerals[nt.Tier]}" + (gains.Count > 0 ? $" ({string.Join(", ", gains.Take(3))})" : "");
+            }
+            ui.TextFit(sub, tx, row.Y + ui.U(18), tw, Style.Dim, 1);
             if (top) ui.Text("AT THE TOP OF ITS LINE", tx, row.Y + ui.U(31), Style.Dim, 1);
             else
             {

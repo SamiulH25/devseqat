@@ -3301,9 +3301,9 @@
       "upgradesTo": [],
       "cost": 130,
       "upgradeXp": 0,
-      "hp": 650,
-      "damage": 46,
-      "armor": 9,
+      "hp": 1500,
+      "damage": 60,
+      "armor": 12,
       "reach": 2.1,
       "windup": 0.75,
       "recover": 0.85,
@@ -3312,7 +3312,9 @@
       "size": 1.8,
       "traits": [
         "sweep",
-        "knockback"
+        "knockback",
+        "fearless",
+        "fear"
       ],
       "look": {
         "head": "kettle",

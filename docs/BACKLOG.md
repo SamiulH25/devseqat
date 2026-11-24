@@ -12,6 +12,9 @@ State at the time of writing: `main` builds, and the last full `--selftest` reco
 "Judged N/10" in older plans meant a visual judge. The owner dropped the judge on 2026-11-19: render the shots and look at
 them yourself (CLAUDE.md step 4); the scores in old notes are history only.
 
+> [!IMPORTANT]
+> **Core design note (owner, 2026-11-23):** Right now there are a lot of systems in the game, **but there is no real reason for the player to ever interact with any of them**. New pre-demo work (`PROGRESSION_FEEL.md`, `CHARACTER_IMPACT.md`, `THE_WILD.md`, `EVENTS.md`, `SIEGES.md`) should actively pull players into those systems instead of adding isolated mechanics.
+
 ## Plans still open
 
 | Plan | Open | Size | Notes |
@@ -20,9 +23,16 @@ them yourself (CLAUDE.md step 4); the scores in old notes are history only.
 | [`pre-demo/SIEGES.md`](pre-demo/SIEGES.md) | SE1-SE10: the siege overhaul: the field built from the place's plan, a fortress to move through, capture points and the heart, layered defence, equipment and assault plans, sieges on the map (sallies, relief, terms, sack), every kind of place | large | Owner's brief 2026-11-21. Nothing built. Four open questions for the owner at the end of the plan |
 | [`pre-demo/NOBILITY.md`](pre-demo/NOBILITY.md) | N3 knighting a named man; N4 AI lords' noble retinues and UI badge; N5 balance | medium | N1 and N2 built. Gap: northern, southern, steppe and league have no non-order noble T4 |
 | [`pre-demo/KIT.md`](pre-demo/KIT.md) | KT5 (price from kit) and KT7 (re-equip companies) only, both deferred until after the demo | — | **Not pre-demo work.** KT0–KT4 and KT6 built 2026-11-21 (`7cb10df`, `53b056e`, `471c168`); every man's numbers come from base + skills + worn kit |
+| [`pre-demo/THE_WILD.md`](pre-demo/THE_WILD.md) | WI1-WI9: wildness pressure, growing lairs, monster spoils & marks, contracts/hunts, new monsters, legendary apexes, world crisis endgame | large | Moved from post-demo 2026-11-23. Nothing built |
+| [`pre-demo/PROGRESSION_FEEL.md`](pre-demo/PROGRESSION_FEEL.md) | PF1-PF5: unified progression feel & character impact (Homeland != Sworn Sword, Total War scale, named men/camp/divisions in battle, arcane/order counters, origin on-ramps, tier jumps & sinks) | large | Owner's brief 2026-11-23 (merged `CHARACTER_IMPACT.md`). In progress |
 
 ## Left out of finished plans (pick up or drop)
 
+- **Great beasts on the map** (2026-11-23, after auto-resolve learned to weigh them, `Rules.MightAgainst`; aim: 200-300 men beat
+  six trolls, three wyverns or six ogres and lose a good part of themselves): AI lords alone almost never beat trolls (1 of 171
+  clashes in `CampaignRun`) or wyverns (0 of 298), so those live on and keep mauling passing lords. Lords could hunt them by day
+  in armies with bows, or beasts could tire and go to ground. The monster AI (`TrollThink`, `WyvernThink`, ...) still judges
+  prey by the old `Might`.
 - **The dressed map** (`archive/WORLD_DRESS.md` "Closed", 2026-11-21): WD5 (wild herds by land, gulls, waterfowl, storks, campfires), WD6 (cloud shadows, wind on grass, dawn mist, dust, blown snow), WD7 (every land per season, frame time at widest zoom).
 - **Holds** (`archive/HOLDS.md` "Closed", 2026-11-21): HD6 world size (keep, slow travel, or scale `DesignScale`; run `--pacing` first) and HD7 (README, CAMPAIGN.md, tips and landing page numbers for castles, muster and holders).
 - **Playtest fixes** (`archive/PLAYTEST.md` "Closed", 2026-11-21): PT5 (re-look at `pose-grips`, `pose-stances` and the clash gallery after the sprite overhaul) and PT6d (CK systems, waiting on the playtester).
@@ -52,6 +62,15 @@ them yourself (CLAUDE.md step 4); the scores in old notes are history only.
   battle-start autosave.
 - **Sprites** (`archive/SPRITE_HERO_SET.md`): the open question of 8 directions (three-quarter front and back views,
   `.q`/`.r`) is still the owner's call. Creatures, gilded and fur variants were left for a later pass.
+
+## Code health (shape, not defects)
+
+[`CODE_HEALTH.md`](CODE_HEALTH.md) (2026-11-22): the codebase is 349 files and 97,933 lines of C# (11,797 of them the
+selftest). Targets there, in order: delete the stale `.claude/worktrees/` copies (2.1 GB, and they make any line count
+wrong); move the ~1,500 lines of shot staging out of `ScreenHost`/`MapScreen`/`BattleScreen` into a `Shots/` folder;
+mechanical partial splits; name the steps inside `Puppet3D.TryDraw` (479 lines) and `CampaignBattle.Apply` (219);
+`TroopIds` consts for the 1,776 troop-id literals; dispatch tables for the `switch (kind)` painters; parameter structs;
+then break the town screens out of `MapScreen` (32 partials, 12,626 lines).
 
 ## Code debt (from the 2026-11-17 audit, `archive/ISSUES.md`)
 

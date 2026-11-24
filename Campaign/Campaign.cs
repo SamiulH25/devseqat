@@ -107,9 +107,14 @@ public sealed partial class Campaign
         var player = new Party { Id = s.NextId++, Kind = PartyKind.Player, Name = "Your company", Faction = realm, Pos = capital.Pos + new Vector2(2, 0), Tier = 2 };
         player.Goal = player.Pos;
         s.Parties.Add(player);
-        if (s.Captain.Contract >= 0) s.Captain.Contract = realm; // you start in the pay of the realm you chose
-        player.Companies.Add(c.NewCompany(Factions.Root(Factions.CultureOf(realm)), "infantry", c.Scaled(24), 0, capital));
-        player.Companies.Add(c.NewCompany("levies", "spears", c.Scaled(15), 0, capital));
+        s.Captain.Homeland = realm;
+        if (making != null) s.Captain.Contract = -1; // born in the homeland, but you start as an independent free company
+        else if (s.Captain.Contract >= 0) s.Captain.Contract = realm;
+        if (making == null)
+        {
+            player.Companies.Add(c.NewCompany(Factions.Root(Factions.CultureOf(realm)), "infantry", c.Scaled(24), 0, capital));
+            player.Companies.Add(c.NewCompany("levies", "spears", c.Scaled(15), 0, capital));
+        }
         c.MakeCaptainCharacter(capital.Culture);
         c.SeedBuildings();
         foreach (var v in s.Settlements)
@@ -136,14 +141,16 @@ public sealed partial class Campaign
         c.WanderersWeekly();
         c.EnsureRulers();
         c.SyncOrders();
-        // The guided first fight: a weak band close by, coming for you.
-        var first = new Party { Id = s.NextId++, Kind = PartyKind.Bandit, Name = "Ditch Wolves", Pos = player.Pos + new Vector2(0, 16), Tier = 1, ChaseId = player.Id, Moving = true, TaskUntil = 72 };
-        first.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(9), 0));
-        s.Parties.Add(first);
-        if (s.Captain.Contract >= 0) c.Log($"You sign on with the {c.FactionNames[realm]} as a free captain. Their steward pays 85% of your upkeep each week.");
-        else c.Log("You fly your own banner. No steward pays your upkeep: take contracts, loot and ransoms.");
-        c.Log("Levies earn promotion in a few battles: men rise to tier III in camp, higher at a town's training yard.");
         if (making != null) c.ApplyMaking(making, capital);
+        // The guided first fight: a weak band close by, scaled to your starting band when created without default levies.
+        var first = new Party { Id = s.NextId++, Kind = PartyKind.Bandit, Name = "Ditch Wolves", Pos = player.Pos + new Vector2(0, 16), Tier = 1, ChaseId = player.Id, Moving = true, TaskUntil = 72 };
+        int wolfMen = making == null ? c.Scaled(9) : Math.Clamp(Math.Max(6, player.Men), 6, c.Scaled(9));
+        first.Companies.Add(c.NewCompany("levies", "infantry", wolfMen, 0));
+        s.Parties.Add(first);
+        if (s.Captain.Contract >= 0) c.Log($"You sign on with the {c.FactionNames[realm]} as a free captain. Prove yourself in their service to earn Sworn Sword pay.");
+        else if (making != null && making.Past is not ("deserter" or "outlaw")) c.Log($"You were born in the {c.FactionNames[realm]}. Its lords and villages favour you, though you march under your own banner.");
+        else c.Log("You fly your own banner. No steward pays your upkeep: take contracts, loot and ransoms.");
+        if (making == null) c.Log("Levies earn promotion in a few battles: men rise to tier II in camp, higher at a castle or town's training yard.");
         return c;
     }
 
@@ -170,7 +177,7 @@ public sealed partial class Campaign
 
     public int SideOf(Party p) => p.Kind switch { PartyKind.Player => Captain.Contract, PartyKind.Bandit => -2, PartyKind.Monster => -3, _ => p.Faction };
     /// The palette the captain and their kit paint with: their realm's colours when serving a faction, else gold (free company).
-    public int PlayerPalette => Captain.Contract >= 0 ? Style.PaletteOf(Captain.Contract) : 2;
+    public int PlayerPalette => Captain.Contract >= 0 ? Style.PaletteOf(Captain.Contract) : Captain.Homeland >= 0 && Captain.Origin != "deserter" ? Style.PaletteOf(Captain.Homeland) : 2;
     /// Brigands and monsters: parties outside any realm, with no pay, no drill and no prisoners to ransom.
     public static bool Outlaw(Party p) => p.Kind is PartyKind.Bandit or PartyKind.Monster;
 
@@ -241,6 +248,7 @@ public sealed partial class Campaign
             Move(h);
             Probe?.Invoke(3);
             Encounters();
+            StepSkirmishes(h);
             Probe?.Invoke(4);
         }
     }
@@ -264,7 +272,7 @@ public sealed partial class Campaign
         float s = (mounted ? B.HorseSpeed : B.FootSpeed) * (Winter ? 0.75f : 1) * PaceOf(p) * (p.Breed == "wyvern" ? 1.25f : 1); // wings outpace any horse
         if (p.Kind == PartyKind.Player) s *= (1 - MathF.Min(0.25f, p.Prisoners.Sum(g => g.Count) / 400f)) * BaggageDrag() * (1 - TrainDrag * p.Train.Count); // an overloaded baggage (C9), engines (SiegeWorks.cs)
         if (p.Kind == PartyKind.Player)
-            s *= (1 + Skill("Logistics") / 2000f) * (Has("Horsemaster") ? 1.05f : 1) * (Has("Pathfinder") ? 1.05f : 1) * (Has("ForcedMarch") ? 1.1f : 1);
+            s *= (1 + Skill("Logistics") / 2000f) * (Has("Horsemaster") ? 1.05f : 1) * (Has("Pathfinder") ? 1.05f : 1) * (Has("ForcedMarch") ? 1.1f : 1) * (Captain.Birth == "marcher" ? 1.08f : 1);
         int men = p.Men, wounded = p.Wounded;
         if (men + wounded > 0) s *= 1 - MathF.Min(0.2f, wounded / (float)(men + wounded) * 0.5f);
         return s;
@@ -282,7 +290,7 @@ public sealed partial class Campaign
             p.Cooldown -= h;
             if (p.Voyage.Count > 0) { Sail(p, h); continue; } // at sea (Ships.cs)
             if (Map.Designed) p.Pos = Map.InLand(p.Pos); // one placed out at sea (spawns scatter) is put ashore
-            if (p.Down || (p.Kind == PartyKind.Player && p.Resting)) continue;
+            if (p.Down || p.BattleId >= 0 || (p.Kind == PartyKind.Player && p.Resting)) continue;
             Vector2? target = null;
             if (p.ChaseId >= 0)
             {
@@ -373,6 +381,7 @@ public sealed partial class Campaign
     internal void Clash(Party a, Party b)
     {
         if (a == b || a.Cooldown > 0 || b.Cooldown > 0) return;
+        if (a.BattleId >= 0 && a.BattleId == b.BattleId) return;
         bool playerInvolved = a.Kind == PartyKind.Player || b.Kind == PartyKind.Player;
         // Riding up to travellers who are not your enemy is a meeting, not a fight (S4).
         if (playerInvolved && (a.Kind == PartyKind.Player ? b : a) is { Kind: PartyKind.Caravan or PartyKind.Lord } trav && Player.ChaseId == trav.Id && !Hostile(a, b))
@@ -396,17 +405,11 @@ public sealed partial class Campaign
             Player.ChaseId = -1;
             return;
         }
+        if (a.BattleId >= 0 && b.BattleId < 0 && SkirmishOf(a) is MapSkirmish ska) { JoinSkirmish(ska, b, ska.SideA.Contains(a.Id) ? 1 : 0); return; }
+        if (b.BattleId >= 0 && a.BattleId < 0 && SkirmishOf(b) is MapSkirmish skb) { JoinSkirmish(skb, a, skb.SideA.Contains(b.Id) ? 1 : 0); return; }
+        if (a.BattleId >= 0 || b.BattleId >= 0) return;
         if (a.Lair || a.Breed is "troll" or "undead" or "wyvern") (a, b) = (b, a); // a holdout fights dug in, from side 1; so do a troll and the dead
-        // An army's lords close by fight beside the one who met the enemy.
-        var sideA = Comrades(a);
-        var sideB = Comrades(b);
-        var r = Rules.AutoResolve(sideA, sideB, rng, 1 + B.AuraWeight * ChampionAura(a), Edge(b));
-        var winner = r.Winner == 0 ? a : b;
-        var loser = r.Winner == 0 ? b : a;
-        AiBattles++;
-        Apply(r, sideA, sideB, "");
-        if (winner.Kind == PartyKind.Lord || loser.Kind == PartyKind.Lord)
-            LogAll($"{winner.Name} defeats {loser.Name} near {Map.ProvinceAt(loser.Pos).Name}.");
+        StartSkirmish(a, b);
     }
 
     /// How much harder a party fights than its strength says, on the defending side of an auto-resolve: a holdout dug in,
@@ -432,6 +435,7 @@ public sealed partial class Campaign
                 }
                 continue;
             }
+            if (p.BattleId >= 0) continue;
             if (S.Hours < p.TaskUntil && p.Task != "refit") continue;
             if (p.Kind == PartyKind.Lord) LordThink(p); else if (p.Kind == PartyKind.Monster) MonsterThink(p); else if (p.Kind == PartyKind.Caravan) CaravanThink(p); else BanditThink(p);
         }
@@ -460,7 +464,7 @@ public sealed partial class Campaign
                 {
                     if (st.Wounded > 0)
                     {
-                        float surgeon = p == Player ? (HasCompanion("Surgeon") ? 1.3f : 1) * (!town && Has("FieldHospital") ? 1.5f : 1) * (HasBuff("poultices") ? 1.5f : 1) : 1;
+                        float surgeon = p == Player ? (HasCompanion("Surgeon") ? 1.3f : 1) * (Captain.Origin == "surgeon" ? 1.25f : 1) * (!town && Has("FieldHospital") ? 1.5f : 1) * (HasBuff("poultices") ? 1.5f : 1) : 1;
                         int heal = Math.Min(st.Wounded, Math.Max(1, (int)MathF.Round(st.Wounded * (town ? B.HealTown : B.HealField) * (Winter ? 0.5f : 1) * surgeon)));
                         if (p == Player) Practise("Medicine", Rules.PerMan(heal * 0.1f));
                         st.Wounded -= heal;
@@ -469,14 +473,16 @@ public sealed partial class Campaign
                     // Daily drill: per fit man, into each pool (Old Hands drill harder).
                     if (!Outlaw(p) && st.Men > 0)
                         st.AddXp(st.Men * ((town ? B.DrillTown : B.DrillCamp) + (c.Traits.Contains("Drillmaster") ? 1 : 0)) * Honours.Of(c).DrillMul
-                            * (p == Player ? (HasCompanion("Drillmaster") ? 1.25f : 1) * (1 + Skill("Training") / 200f) * (Has("Academy") ? 1.5f : 1) : 1));
+                            * (p == Player ? (HasCompanion("Drillmaster") ? 1.25f : 1) * (Captain.Origin == "drillmaster" || Captain.Birth == "camp" ? 1.25f : 1) * (1 + Skill("Training") / 200f) * (Has("Academy") ? 1.5f : 1) : 1));
                 }
-                if (town && c.Cohesion < 20) c.Cohesion = MathF.Min(20, c.Cohesion + (SeniorNature(c) == "Merry" ? 2 : 1)); // a merry man lifts the camp (C2)
+                float cohCap = SeniorNature(c) == "Merry" ? 18 : 12;
+                if (town && c.Cohesion < cohCap) c.Cohesion = MathF.Min(cohCap, c.Cohesion + (SeniorNature(c) == "Merry" ? 2 : 1)); // free town rest caps low; Merry men, feasts and cairns lift it further (PF3)
             }
         }
         RefreshHeroes();
         RollDaily();
         CircleDaily();
+        if (Captain.Origin == "poacher" && Map.ProvinceAt(Player.Pos).Kind is "Forest" or "Taiga") Player.Food += 0.6f; // poachers forage meat in the woods (PF2)
         EatDaily();
         // A company bled out away from battle (rearguards, desertion, hunger) does not leave you with nothing to command:
         // a handful of loyal men gather at the nearest friendly town, as they do after a lost battle.
@@ -546,7 +552,8 @@ public sealed partial class Campaign
             {
                 if (Has("Quartermaster")) upkeep *= 0.9f;
                 if (HasCompanion("Quartermaster")) upkeep *= 0.95f;
-                float pay = Captain.Contract >= 0 && Rank != Rank.King ? upkeep * B.ContractPay * Settings.Current.PayFactor : 0;
+                float payRate = Rank >= Rank.SwornSword ? B.ContractPay : B.FreeContractPay;
+                float pay = Captain.Contract >= 0 && Rank != Rank.King ? upkeep * payRate * Settings.Current.PayFactor : 0;
                 // A sworn man's liege keeps him in the field (F9): a retainer that lets a beaten company rebuild.
                 pay += Retainer;
                 float fiefs = S.Settlements.Where(t => t.Owner == Player.Id).Sum(Income) * (HasCompanion("Steward") ? 1.15f : 1)

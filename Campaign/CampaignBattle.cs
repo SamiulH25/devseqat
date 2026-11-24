@@ -173,6 +173,7 @@ public partial class Campaign
             if (rich != null)
                 foreach (var k in new[] { "arms", "armour" })
                     if (worth.TryGetValue(k, out float w)) { worth[k] = w * 0.8f; worth[rich] = worth.GetValueOrDefault(rich) + w * 0.2f; }
+            if (Captain.Origin is "outlaw" or "deserter") foreach (var k in worth.Keys.ToList()) worth[k] *= 1.2f;
             (float coin, goods) = TakeLoot(worth);
             loot += coin;
             foreach (var e in losers)
@@ -184,6 +185,7 @@ public partial class Campaign
             horses = r.HorsesTaken;
             S.Gold += loot + ransom + bounty;
             foreach (var e in losers) S.LastBattleFoe = e.Id;
+            if (Captain.Contract >= 0 && losers.Any(e => FactionsAtWar(Captain.Contract, e.Faction) || (Outlaw(e) && Map.ProvinceAt(e.Pos).Faction == Captain.Contract))) Captain.ServiceDeeds++;
             Captain.Renown += renown - GoalRenown * r.GoalsMet.Count;
             Player.Horses += horses;
         }
@@ -267,9 +269,18 @@ public partial class Campaign
         var setup = new BattleSetup { EnemyName = enemy.Name, Field = BattleName(Player.Pos) };
         setup.Side0.Add(Player);
         setup.Side1.Add(enemy);
+        // If the enemy is locked in a live map skirmish, pull both sides' fighters into the battle at their current strength.
+        if (SkirmishOf(enemy) is MapSkirmish sk)
+        {
+            bool enemyInA = sk.SideA.Contains(enemy.Id);
+            foreach (int id in enemyInA ? sk.SideB : sk.SideA)
+                if (PartyById(id) is Party p && !p.Down && p != Player && !Hostile(p, Player) && !setup.Side0.Contains(p)) setup.Side0.Add(p);
+            foreach (int id in enemyInA ? sk.SideA : sk.SideB)
+                if (PartyById(id) is Party p && !p.Down && p != enemy && !setup.Side1.Contains(p)) setup.Side1.Add(p);
+        }
         foreach (var p in S.Parties)
         {
-            if (p == Player || p == enemy || p.Down || Vector2.Distance(p.Pos, Player.Pos) > B.JoinRadius) continue;
+            if (p == Player || p == enemy || p.Down || setup.Side0.Contains(p) || setup.Side1.Contains(p) || Vector2.Distance(p.Pos, Player.Pos) > B.JoinRadius) continue;
             if (Hostile(p, enemy) && !Hostile(p, Player)) setup.Side0.Add(p);
             else if (Hostile(p, Player) && !Hostile(p, enemy)) setup.Side1.Add(p);
         }
@@ -311,6 +322,7 @@ public partial class Campaign
         if (setup.Tournament >= 0) return FinishTournament(r, S.Settlements[setup.Tournament]);
         if (setup.Duel >= 0 && PartyById(setup.Duel) is Party foe) return FinishDuel(r, foe);
         if (setup.Trial != "") return FinishTrial(r, setup.Trial);
+        if (setup.Side1.FirstOrDefault(p => p.BattleId >= 0) is Party foeInSk && SkirmishOf(foeInSk) is MapSkirmish sk) CancelSkirmish(sk);
         Encounter = null;
         duelWith = -1;
         var report = Apply(r, setup.Side0, setup.Side1, setup.EnemyName, setup.SiegeOf >= 0);
@@ -325,9 +337,36 @@ public partial class Campaign
     {
         BreakVow("no_auto", "send your men to fight without you at their head");
         var setup = PrepareBattle(Encounter!);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, (1 + B.AuraWeight * AuraInBattle) * TacticsEdge * BuffEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed) * TideEdge(setup.Options.Tide, setup.Side0, setup.Side1) * TrainEdge(setup.Side0, setup.Side1), Edge(Encounter!));
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, AutoEdge(setup, Encounter!), Edge(Encounter!));
         if (r.Winner == 1 && S.Hours >= Captain.WoundedUntil && rng.Chance(0.5f)) r = r with { Captain = LeaderFate.Wounded };
         return FinishBattle(r, setup);
+    }
+
+    /// Your side's edge in auto-resolve: aura, tactics, buffs, the duel, the ground, the Tide and the engines.
+    float AutoEdge(BattleSetup setup, Party enemy) =>
+        (1 + B.AuraWeight * AuraInBattle) * TacticsEdge * BuffEdge * DuelEdge(enemy) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed)
+        * TideEdge(setup.Options.Tide, setup.Side0, setup.Side1) * TrainEdge(setup.Side0, setup.Side1);
+
+    /// What auto-resolve against this party would likely bring, for the encounter screen: the share of tries you win and the
+    /// range of your own men who fall (middle 80% of the tries), and each side's strength as auto-resolve weighs it (edges, the
+    /// tier gap and walls in). A dry run on its own dice: the campaign's stream is untouched.
+    public (float Win, int FewFall, int ManyFall, float Mine, float Theirs) AutoForecast(Party enemy, int tries = 40)
+    {
+        var setup = PrepareBattle(enemy);
+        float edge = AutoEdge(setup, enemy), wall = Edge(enemy);
+        var dice = new Rng(new CampaignState { Seed = Rng.Mix(S.Seed, enemy.Id, 0x5eed) });
+        var mine = Player.Companies.Select(c => c.Id).ToHashSet();
+        var fallen = new List<int>(tries);
+        int wins = 0;
+        for (int i = 0; i < tries; i++)
+        {
+            var r = Rules.AutoResolve(setup.Side0, setup.Side1, dice, edge, wall);
+            if (r.Winner == 0) wins++;
+            fallen.Add(r.Companies.Where(c => c.Team == 0 && mine.Contains(c.Id)).Sum(c => c.Fallen));
+        }
+        fallen.Sort();
+        var (w0, w1) = Rules.AutoWeights(setup.Side0, setup.Side1, edge, wall);
+        return (wins / (float)tries, fallen[tries / 10], fallen[tries - 1 - tries / 10], w0, w1);
     }
 
     public bool CanRetreat(out string why)

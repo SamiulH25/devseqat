@@ -22,14 +22,19 @@ sealed class CampStage
     Matrix view, proj;
     int w, h;
 
-    /// The camera: it stands on the near side of the field, a little over a man's height up, and looks across at the fires.
-    static readonly Vector3 Eye = new(0, 2.4f, 21f), Target = new(0, 1.85f, 0);
-    const float Fov = 0.52f;
+    /// The camera: by default (the camp's) it stands on the near side of the field, a little over a man's height up, and looks
+    /// across at the fires. The encounter's stage stands higher and farther back (`MapScreen.Encounter.cs`).
+    readonly Vector3 Eye = new(0, 2.4f, 21f), Target = new(0, 1.85f, 0);
+    readonly float Fov = 0.52f;
 
     public Texture2D? Texture => rt;
 
-    public CampStage(GraphicsDevice gd, Art art, Shading? shading = null, MeshKit3D? meshKit = null, Func<Quality>? qualityOf = null)
+    public CampStage(GraphicsDevice gd, Art art, Shading? shading = null, MeshKit3D? meshKit = null, Func<Quality>? qualityOf = null,
+        Vector3? eye = null, Vector3? target = null, float? fov = null)
     {
+        if (eye is Vector3 e) Eye = e;
+        if (target is Vector3 t) Target = t;
+        if (fov is float f) Fov = f;
         this.gd = gd;
         this.shading = shading;
         this.qualityOf = qualityOf;
@@ -52,6 +57,22 @@ sealed class CampStage
         var v = new Viewport(0, 0, Math.Max(1, w), Math.Max(1, h)).Project(p, proj, view, Matrix.Identity);
         return new Vector2(v.X, v.Y);
     }
+
+    /// The point of the ground (X, Z) under a pixel of the picture, or null where the pixel shows sky.
+    public Vector2? GroundAt(float px, float py)
+    {
+        var vp = new Viewport(0, 0, Math.Max(1, w), Math.Max(1, h));
+        var near = vp.Unproject(new Vector3(px, py, 0), proj, view, Matrix.Identity);
+        var far = vp.Unproject(new Vector3(px, py, 1), proj, view, Matrix.Identity);
+        var d = far - near;
+        if (d.Y >= -1e-5f) return null;
+        float t = -near.Y / d.Y;
+        var g = near + d * t;
+        return new Vector2(g.X, g.Z);
+    }
+
+    /// The camera's eye (for distances on the ground).
+    public Vector3 EyeAt => Eye;
 
     /// How many of the picture's pixels a metre is, standing at depth `z`.
     public float PerMetre(float z) => Project(new Vector3(0, 0, z)).Y - Project(new Vector3(0, 1, z)).Y;

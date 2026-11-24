@@ -19,8 +19,8 @@
       "shot": "stone", "range": 190, "minRange": 55, "damage": 120, "splash": 3.5, "armourPierce": 0.7, "reload": 30, "crew": 12, "hp": 400, "build": 48, "cost": 400,
       "speed": 34, "spread": 0.035, "shock": 22, "wallDamage": 140 },
     { "id": "ram", "name": "Ram", "line": "An iron-headed trunk under a hide roof: the crew under it are hard to shoot.",
-      "shot": "ram", "damage": 100, "crew": 10, "hp": 500, "move": 1.2, "build": 12, "cost": 60 },
+      "shot": "ram", "damage": 100, "crew": 10, "hp": 500, "move": 2.2, "build": 12, "cost": 60 },
     { "id": "tower", "name": "Siege tower", "line": "A tower on wheels, hides on its face: once at the wall, its bridge drops onto the walkway.",
-      "shot": "tower", "crew": 16, "hp": 700, "move": 0.8, "build": 36, "cost": 250 }
+      "shot": "tower", "crew": 16, "hp": 700, "move": 1.8, "build": 36, "cost": 250 }
   ]
 }

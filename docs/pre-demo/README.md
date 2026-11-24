@@ -9,3 +9,5 @@ ships, its "As built" note goes at its end and it moves to `docs/archive/`. Idea
 | [`SIEGES.md`](SIEGES.md) | The siege overhaul: the real place as the field, capture points, layered defence, sallies, relief and terms (SE1-SE10; nothing built) |
 | [`EVENTS.md`](EVENTS.md) | The events rework: storylets with conditions and a cast, a pacing director, choices with checks and an outcome page, the parchment book, new content (EV0-EV7; nothing built) |
 | [`KIT.md`](KIT.md) | Troops made of kit and skill: base man + Arms, Riding, Bowcraft + the gear they wear, for every troop (KT0-KT7; KT0-KT4 and KT6 built, KT5 and KT7 deferred until after the demo) |
+| [`THE_WILD.md`](THE_WILD.md) | Monsters as part of the game: wildness, growing lairs, spoils, new monsters, the world crisis (WI1-WI9; nothing built) |
+| [`PROGRESSION_FEEL.md`](PROGRESSION_FEEL.md) | Unified progression feel & character impact: Homeland vs. Contract, earned ranks, origin system on-ramps, named men/camp/divisions in battle, arcane/order counters, tier jumps & sinks (PF1-PF5; in progress) |

@@ -409,6 +409,13 @@ sealed partial class MapScreen
         if (inTavern) audio.SetBed(Bed.Tavern, 0.85f);
         if (inForge) audio.SetBed(Bed.Forge, 0.75f);
         if (panel == PanelKind.None && C.Player.Moving && speed > 0) audio.SetBed(Bed.March, 0.32f * Math.Clamp(1.2f - zoom / 420f, 0.35f, 1f));
+        float din = 0;
+        foreach (var sk in C.S.Skirmishes)
+        {
+            float d = Vector2.Distance(sk.Pos, ear);
+            if (d < 36f) din = MathF.Max(din, (1f - d / 36f) * Math.Clamp((sk.StartMenA + sk.StartMenB) / 140f, 0.35f, 1f));
+        }
+        if (din > 0.02f) audio.SetBed(Bed.Din, din * groundMix);
 
         // Occasional ambient world cues (distant thunder, wolf howls, crow swarms, town anvils).
         if (panel == PanelKind.None && !bare)
@@ -419,7 +426,8 @@ sealed partial class MapScreen
                 float h = (Rng.Mix(terrain?.Seed ?? 1, ++ambCueSeq) & 0xFFFF) / 65535f;
                 ambCueTimer = 9f + h * 11f;
                 float pan = ((Rng.Mix(ambCueSeq, 3) & 0xFFFF) / 65535f - 0.5f) * 1.4f;
-                if (Sky.Rain > 0.5f && !winter) audio.Play(Cue.Thunder, 0.28f + Sky.Rain * 0.22f, pan, distant: true);
+                if (din > 0.2f && groundMix > 0.3f) audio.Play(h > 0.5f ? Cue.Clash : Cue.Horn, 0.2f * din * groundMix, pan, distant: true);
+                else if (Sky.Rain > 0.5f && !winter) audio.Play(Cue.Thunder, 0.28f + Sky.Rain * 0.22f, pan, distant: true);
                 else if (omen > 0.35f && groundMix > 0.35f) audio.Play(Cue.CrowSwarm, 0.25f * groundMix, pan, distant: true);
                 else if (Sky.Night > 0.55f && prov.Kind is "Forest" or "Taiga" && groundMix > 0.35f) audio.Play(Cue.WolfHowl, 0.22f * groundMix, pan, distant: true);
                 else if (town > 0.45f && day > 0.4f && dry > 0.5f && groundMix > 0.45f) audio.Play(Cue.AnvilRing, 0.16f * town * groundMix, pan, distant: true);
@@ -918,6 +926,17 @@ sealed partial class MapScreen
             Ring(t, 2, pl.ChaseId >= 0 ? Style.Foe : Style.Accent);
         }
         Ring(pl.Pos, 3, Style.Accent);
+        foreach (var sk in C.S.Skirmishes)
+        {
+            Ring(sk.Pos, 3.2f, Kit.Gilt * 0.85f);
+            for (int i = 0; i < 6; i++)
+            {
+                float ph = (time * 3.2f + i * 0.37f + sk.Id * 0.19f) % 1f;
+                float ang = i * MathF.Tau / 6f + time * 1.4f;
+                var o = new Vector2(MathF.Cos(ang), MathF.Sin(ang)) * (0.6f + ph * 2.2f);
+                Line(G(sk.Pos + o, 0.8f + ph * 1.6f), G(sk.Pos + o * 1.15f, 1.2f + ph * 1.8f), Color.Lerp(Kit.Gilt, Color.White, 1f - ph) * (1f - ph));
+            }
+        }
         if (!bare) DrawMapAmbience(Line);
         if (lines.N == 0) return;
         gd.BlendState = BlendState.Opaque;

@@ -198,8 +198,8 @@ public sealed partial class Battle
 
     /// How much further back than the old 30 m line each side deploys, so the armies start about 130 m apart.
     public const float Stand = 35;
-    /// Stand on a field; assaults keep the old distance from the wall.
-    float Back => Options.Siege ? 0 : Stand;
+    /// Stand on a field; assaults start further back from the walls for a proper siege approach.
+    float Back => Options.Siege ? 20f : Stand;
     /// The widest a role's line may stand before its companies form a second line behind (the infantry's; flanks half).
     const float MaxLine = 110;
     /// How far each side's flanks were pushed out by a wide infantry line (the general keeps them there).
@@ -289,7 +289,15 @@ public sealed partial class Battle
         }
         // Named men (docs/archive/LEGACY.md L2) are the first men of their troop, so they stand in its front rank.
         foreach (var m in company?.Named ?? Array.Empty<NamedSpec>())
-            if (s.Units.FirstOrDefault(x => x.SoldierId == 0 && x.Type.Id == m.Troop) is Unit nu) { nu.SoldierId = m.Id; nu.Avenging = m.Avenging; anyNamed = true; }
+            if (s.Units.FirstOrDefault(x => x.SoldierId == 0 && x.Type.Id == m.Troop) is Unit nu)
+            {
+                nu.SoldierId = m.Id;
+                nu.Avenging = m.Avenging;
+                nu.Armed = m.Armed;
+                nu.VeteranBonus = MathF.Min(0.18f, (m.Battles / 3) * 0.03f) + (m.Banner ? 0.08f : 0);
+                nu.Hp *= 1 + nu.VeteranBonus + (m.Armed ? 0.12f : 0);
+                anyNamed = true;
+            }
         // A companion fights at the head of his company as a hero (CAMPAIGN_OVERHAUL.md 3.3): the captain's kit, the AI's hands.
         if (company is { Hero.Length: > 0 })
         {

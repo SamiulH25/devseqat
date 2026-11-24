@@ -154,9 +154,36 @@ partial class MapScreen
                 ui.Rect(new Rectangle((int)sp.X - r / 2, (int)sp.Y - r / 2, r, r), new Color(70, 66, 62) * (0.75f * (1 - ph)));
             }
         if (zoom < 240) Life();
+        foreach (var sk in C.S.Skirmishes)
+        {
+            if (Screen(G(sk.Pos, 10)) is not Vector2 sp) continue;
+            var sideA = sk.SideA.Select(C.PartyById).Where(x => x != null && !x.Down).Cast<Party>().ToList();
+            var sideB = sk.SideB.Select(C.PartyById).Where(x => x != null && !x.Down).Cast<Party>().ToList();
+            int mA = sideA.Sum(x => x.Men), mB = sideB.Sum(x => x.Men);
+            if (mA <= 0 && mB <= 0) continue;
+            string label = $"{mA} v {mB}";
+            int w = Math.Max(ui.U(56), ui.TW(label, 1) + ui.U(14));
+            Color colA = sideA.Count > 0 ? PartyColor(sideA[0]) : Style.Accent;
+            Color colB = sideB.Count > 0 ? PartyColor(sideB[0]) : Style.Foe;
+            all.Add(new Label
+            {
+                Pri = 1, Party = false, R = new Rectangle((int)sp.X - w / 2, (int)sp.Y - ui.U(16), w, ui.U(16)),
+                Draw = l =>
+                {
+                    ui.Rect(l.R, Kit.IronDark * 0.94f);
+                    ui.Frame(l.R, Kit.Gilt, ui.U(1));
+                    ui.TextC(label, l.R.Center.X, l.R.Y + ui.U(3), Kit.Gilt, 1);
+                    float frac = mA / MathF.Max(1f, mA + mB);
+                    var bar = new Rectangle(l.R.X + ui.U(2), l.R.Bottom - ui.U(4), l.R.Width - ui.U(4), ui.U(2));
+                    int split = (int)(bar.Width * frac);
+                    ui.Rect(new Rectangle(bar.X, bar.Y, split, bar.Height), colA);
+                    ui.Rect(new Rectangle(bar.X + split, bar.Y, bar.Width - split, bar.Height), colB);
+                },
+            });
+        }
         foreach (var p in C.S.Parties)
         {
-            if (p.Down || Screen(G(bearers.TryGetValue(p.Id, out var bu) ? bu.Pos : p.Pos, 9)) is not Vector2 sp) continue;
+            if (p.Down || p.BattleId >= 0 || Screen(G(bearers.TryGetValue(p.Id, out var bu) ? bu.Pos : p.Pos, 9)) is not Vector2 sp) continue;
             bool mine = p == pl || p.Id == target || p == C.Encounter;
             // Far out, travellers' labels drop out unless they are your business.
             if (!mine && zoom > 260 && p.Kind == PartyKind.Caravan) continue;

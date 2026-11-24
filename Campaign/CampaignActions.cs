@@ -178,6 +178,7 @@ public partial class Campaign
         if (Captain.Contract >= 0) LeaveRealm(Captain.Contract);
         Captain.Contract = faction;
         Captain.ContractSince = (float)S.Hours;
+        Captain.ServiceDeeds = 0;
         Me.Faction = faction;
         Log(faction < 0 ? "You are a free captain again." : $"You sign on with the {FactionNames[faction]}.");
         AudioEngine.Current?.Play(Cue.WaxSeal, 0.8f);

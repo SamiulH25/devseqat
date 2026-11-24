@@ -234,8 +234,23 @@ public partial class Battle
         if (!ranged && a.Squad is { Broken: true, Swarm: false } && Ranked(a.Squad) && !Overwhelms(a.Squad)) officer *= BrokenBlow; // a crowd has no room to swing (round a beast it needs none)
         float fury = a.Mods.Fury > 0 && a.Squad is { StartCount: > 0 } fs ? a.Mods.Fury * (1 - fs.Alive / (float)fs.StartCount) : 0; // battle fury: the fewer, the fiercer
         float headsman = !ranged && (t.IsLeader || t.Hero || t.Sergeant) ? a.Mods.Headsman : 0;                                    // headsmen seek the officers
+        // Division command (PF3): companies led by an active division officer fight more cohesively.
+        if (a.Squad?.Division?.Leader is { Active: true }) officer *= 1.05f;
+        // Captain's Road identity (PF2): distinct personal fighting edge in battles and duels.
+        if (a.IsPlayer)
+        {
+            officer *= Options.CaptainRoad switch
+            {
+                "sword" when !ranged && a.Type.Look.Shield is not ("" or "none") => 1.10f,
+                "lance" when !ranged && (lance || a.Mounted) => 1.15f,
+                "bow" when ranged => 1.15f,
+                "great" when !ranged && a.Type.Look.Shield is "" or "none" => 1.12f,
+                "pole" when !ranged => t.Mounted ? 1.20f : 1.08f,
+                _ => 1f,
+            };
+        }
         float saddle = !ranged && !lance && a.Mounted && !a.IsPlayer && !t.Mounted ? SaddleBlow : 1; // struck down from horseback
-        float mult = saddle * officer * (a.Avenging ? 1.1f : 1) * (t.Avenging ? 1.1f : 1) * (1 + a.Mods.Damage + fury + headsman) * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
+        float mult = saddle * officer * (a.Avenging ? 1.1f : 1) * (t.Avenging ? 1.1f : 1) * (1 + a.VeteranBonus + (a.Armed ? 0.15f : 0)) * (1 + a.Mods.Damage + fury + headsman) * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
             * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
             * (ranged && t.Type.Has("bones") ? 0.3f : 1) // arrows pass between a skeleton's ribs
             * (a.IsPlayer && AuraBlade && !ranged || FoeBlade(a, ranged) ? BladeDamage : 1) // the aura blade (K1; a champion's, K6)
@@ -279,7 +294,7 @@ public partial class Battle
     /// Armour, then hp, morale shock and interrupts. Returns the damage dealt.
     float Damage(Unit a, Unit t, float dmg, float extraShock, float pierce = 0, bool ranged = false)
     {
-        float armour = t.Type.Armor + t.Mods.Armour + (ranged ? t.Mods.ArrowArmour : 0); // iron skin, a pavise (BattleEffects.cs)
+        float armour = t.Type.Armor + t.Mods.Armour + (t.Armed ? 4 : 0) + (ranged ? t.Mods.ArrowArmour : 0); // iron skin, armed veteran, a pavise (BattleEffects.cs)
         float real = MathF.Max(dmg * 0.25f, dmg - armour * (1 - pierce)); // bolts punch through part of the armour
         if (a.IsPlayer || t.IsPlayer) real = AuraSoak(a, t, real, ranged); // aura armour (K1)
         if (FoeTier > 0 && (a == EnemyCaptain || t == EnemyCaptain)) real = FoeSoak(a, t, real, ranged); // a champion's (K6)

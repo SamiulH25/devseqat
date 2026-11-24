@@ -74,6 +74,10 @@ sealed class ScreenHost : Game
     /// event with two faces, a lord's, a check, a barred choice, the outcome pages, and one page for each painted scene.
     static readonly bool eventsOnly = Environment.GetEnvironmentVariable("IRONFIELD_EVENTS_ONLY") == "1";
     int eventShot;
+    /// Debug: with IRONFIELD_ENCOUNTER_ONLY=1 a campaign shots run saves only the encounter scene: brigands by day and night,
+    /// a lord, a troll, the dead, a holdout (`campaign-encounter-<name>.png`).
+    static readonly bool encounterOnly = Environment.GetEnvironmentVariable("IRONFIELD_ENCOUNTER_ONLY") == "1";
+    int encounterShot;
     int saveShot;
     /// Debug: IRONFIELD_PLACES=1 (or a filter: a style id's part, e.g. "steppe") with IRONFIELD_CAMPAIGN_SHOTS saves only the
     /// settlements close up, one of each style and kind, labels and parties hidden (docs/archive/SETTLEMENTS.md).
@@ -638,6 +642,30 @@ sealed class ScreenHost : Game
         pendingShot = "campaign-" + name; shotFrames = 0;
     }
 
+    /// The encounter scene's shots (IRONFIELD_ENCOUNTER_ONLY): `campaign-encounter-<name>.png`.
+    void EncounterShots(Campaign c)
+    {
+        var steps = new (string Name, int Hour, Func<Party?> Foe)[]
+        {
+            ("brigands", 11, () => c.S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Bandit)),
+            ("brigands-night", 23, () => c.S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Bandit)),
+            ("lord", 16, () => c.S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Lord && c.Hostile(p, c.Player)) ?? c.S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Lord && p.Faction != Math.Max(0, c.Captain.Contract))),
+            ("troll", 23, () => c.Rares.FirstOrDefault()),
+            ("dead", 22, () => c.RaiseHost(new Grave { Pos = c.Player.Pos + new Vector2(6, 4), Dead = 150, Hours = c.S.Hours })),
+            ("holdout", 13, () => c.Holdouts.OrderByDescending(h => h.Men).FirstOrDefault()),
+        };
+        if (encounterShot >= steps.Length) { Exit(); return; }
+        var (name, hour, foe) = steps[encounterShot++];
+        c.Encounter = null; c.S.Event = null; c.Beat = null;
+        c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + hour;
+        if (foe() is not Party e) { shotFrames = 0; return; }
+        if (encounterShot == 1) map.Stage("campmen"); // named companies with a mix of troops
+        e.Pos = c.Player.Pos + new Vector2(2, 0);
+        c.Encounter = e;
+        map.Stage("encounter");
+        pendingShot = "campaign-encounter-" + name; shotFrames = 0;
+    }
+
     /// The event book's shots (IRONFIELD_EVENTS_ONLY): `campaign-event-<name>.png`.
     void EventShots(Campaign c)
     {
@@ -694,6 +722,7 @@ sealed class ScreenHost : Game
         if (savesOnly) { SaveShots(c); return; }
         if (campOnly) { CampShots(c); return; }
         if (eventsOnly) { EventShots(c); return; }
+        if (encounterOnly) { EncounterShots(c); return; }
         if ((townOnly || streetOnly) && cStage < 56) cStage = 56;
         switch (cStage)
         {

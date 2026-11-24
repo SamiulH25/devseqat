@@ -35,6 +35,7 @@ public sealed partial class Campaign
     /// The road on any captain: the event above, and the character creator's preview (Origins.Shape).
     public static string TakeRoad(CaptainState c, string road)
     {
+        c.Road = road;
         var k = c.Kit;
         var curWep = Gear.Get(k.Weapon);
         string sidearm = !curWep.TwoHanded && !curWep.Ranged ? k.Weapon : "arming_sword";

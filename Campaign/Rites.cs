@@ -28,7 +28,8 @@ public sealed partial class Campaign
 
     /// Can someone in your company work this tradition: a companion of its calling, or a mage company that casts it?
     public bool CanWork(string tradition) =>
-        Companions.Any(k => S.Hours >= k.WoundedUntil && k.Calling == (tradition == "faith" ? "Priest" : "Cunning"))
+        (tradition == "faith" && (Captain.Birth == "cloister" || Captain.Origin == "pilgrim"))
+        || Companions.Any(k => S.Hours >= k.WoundedUntil && k.Calling == (tradition == "faith" ? "Priest" : "Cunning"))
         || Player.Companies.Any(c => c.Men > 0 && c.Stacks.Any(st => st.Men > 0 && st.Type.Spells.Any(id => Abilities.Get(id).Tradition == tradition)));
 
     /// Work a rite (one a day): null on success, else why not.

@@ -132,9 +132,12 @@ function extractPartsFromGlb(path) {
         const vTmp = new THREE.Vector3();
         const nTmp = new THREE.Vector3();
 
+        const flipWind = worldMat.determinant() < 0;
         const getIdx = i => idxAcc ? idxAcc.data[i] : i;
         for (let i = 0; i + 2 < triCount; i += 3) {
-          const i0 = getIdx(i), i1 = getIdx(i + 1), i2 = getIdx(i + 2);
+          const i0 = getIdx(i);
+          const i1 = getIdx(flipWind ? i + 2 : i + 1);
+          const i2 = getIdx(flipWind ? i + 1 : i + 2);
           // Fallback face normal if NORMAL missing
           let fn = null;
           if (!normAcc) {

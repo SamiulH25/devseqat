@@ -178,12 +178,15 @@ public sealed partial class Battle
     void UpdateCalledHorse(float dt)
     {
         if (called == null) return;
-        if (!LooseHorses.Contains(called) || Player.Mounted || !Player.Active) { called = null; return; }
+        if (!LooseHorses.Contains(called) || Player.Mounted || !Player.Active) { called.Speed = 0; called = null; return; }
         var d = Player.Pos - called.Pos;
         float l = d.Length();
-        if (l < 1.8f) { called = null; return; }
-        called.Pos += d / l * MathF.Min(l, 7 * dt);
+        if (l < 1.8f) { called.Speed = 0; called = null; return; }
+        float step = MathF.Min(l, 7 * dt);
+        called.Pos += d / l * step;
         called.Heading = MathF.Atan2(d.Y, d.X);
+        called.Speed = dt > 1e-4f ? step / dt : 0;
+        called.Anim += dt * StrideRate(called.Speed, true);
     }
 
     /// Men tire running and fighting (slower, weaker) and recover standing still. Horses and you are exempt (you have stamina).

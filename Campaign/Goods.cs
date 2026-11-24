@@ -28,6 +28,7 @@ public partial class Campaign
         if (s.Kind != SettlementKind.Town || Refuses(s)) return 0;
         float mul = 0.85f + s.Prosperity / 400f;
         if (WantedGoods(s) == k.Id) mul *= 1.3f;
+        if (Captain.Birth == "guild") mul *= 1.15f;
         return Math.Max(1, (int)MathF.Round(k.Value * mul));
     }
 

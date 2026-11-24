@@ -233,7 +233,12 @@ with mountain ridges you cross by road at the passes; the minimap and the realm 
   dervishes; steppe lancers, wolf scouts and tug bearers; League marines, pavise spears and free companions; the Order's hammer
   brothers and turcopoles. The upgrade panel shows only the branches your men's culture may enter.
 - **Encounters:** attack (the battle opens in a **deployment phase**: arrange your lines in your third of the field, then Space or START), auto-resolve,
-  retreat (a rearguard pays), or pay brigands off. Esc in a campaign battle lets you **withdraw**.
+  retreat (a rearguard pays), or pay brigands off. Esc in a campaign battle lets you **withdraw**. The encounter shows the field you would
+  fight on (its ground, the hour and the weather) with both sides drawn up on it, and under AUTO-RESOLVE its likely outcome (how often you
+  would win and how many of yours would fall, from forty tries on paper); the strength bar and the odds above weigh what auto-resolve weighs.
+  Auto-resolve weighs great beasts (ogres, trolls, bears, wyverns, the brood mother) as the battles go: drill buys foot little against them,
+  a crowd of foot adds little past ninety men (they break), and bows, horse and mages count far more. A company of 200-300 can beat
+  six ogres, three wyverns or (better by day) six trolls, and pays for it in men; ogres never break and unnerve men near them.
 - **Duels:** meeting a lord, **CHALLENGE** him to single combat between the armies (on foot, the two of you, a fall is a yield). A cautious lord refuses, and one whose army is half again as strong as yours sees no need unless he is reckless or honourable. Win: +10 renown and his men start the battle 15 morale down. Lose: you are wounded and lead the battle from the rear. One duel an encounter.
 - **Results:** the fallen split into killed and wounded (heavier armour survives more often). Then come XP, loot, ransom, bounty, renown and captured horses. Most loot comes as goods (arms, armour, harness, silver plate, trinkets, furs) to sell in a town's MARKET; each town pays a third more for one kind each week, and about a third of the loot comes as crowns at once. There is sometimes also a piece of the beaten leader's gear to take (sure if you cut down a lord; a tournament win may give a prize too).
   If you fall you are wounded, and command from the rear for a few days; if your army also loses, you are captured and ransomed.

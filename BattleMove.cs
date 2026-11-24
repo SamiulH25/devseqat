@@ -31,9 +31,10 @@ public partial class Battle
                 if (!u.IsPlayer) { var saved = u.Wish; u.Wish = wish; Steer(u, dt); u.Wish = saved; }
                 u.Vel = u.HeadingDir * u.Speed;
             }
-            else u.Vel = wish * (u.Squad is { } fs && !u.Routing && fs.Order != Order.Charge ? fs.Pace : 1) * (u.Mounted ? 1 : Fatigue(u));
-            u.Slope = Slope(Terrain, u.Pos, u.Vel);
-            float pace = u.Type.Flying ? 1 : SlopeFactor(u.Slope, u.Mounted) * GroundSpeed(u); // the ground and the slope set the pace (not a flyer's)
+            else u.Vel = wish * (u.Squad is { } fs && !u.Routing && fs.Order != Order.Charge && fs.Works == null ? fs.Pace : 1) * (u.Mounted ? 1 : Fatigue(u));
+            bool climbing = !u.Mounted && Wall != null && Wall.OnClimb(u.Pos);
+            u.Slope = climbing ? 0 : Slope(Terrain, u.Pos, u.Vel);
+            float pace = u.Type.Flying ? 1 : climbing ? 0.72f : SlopeFactor(u.Slope, u.Mounted) * GroundSpeed(u); // steady climb up ladders/ramps without vertical slope stall
             if (pace < 1) pace += (1 - pace) * u.Mods.Footing;              // sure-footed men shrug off part of it
             u.GroundPace = pace * (1 + u.Mods.Speed) * (Webbed(u) ? WebSlow : u.Poison > 0 ? 0.85f : 1); // a web holds him; poison slows
             if (u.Mounted) Stumble(u, dt);

@@ -108,7 +108,7 @@
     { "id": "mirage", "name": "Mirage", "icon": "star", "line": "A false company: the enemy's bows loose at it." },
     { "id": "craft_marks", "name": "Craft marks", "icon": "skull", "line": "Your aura blade leaves fever on those it strikes. One battle." },
     { "id": "bless_rite", "name": "Blessed company", "icon": "sun", "line": "Your priest blessed the company.", "tags": ["holy"],
-      "shock": -0.3, "moralePerSec": 0.5 },
+      "shock": -0.35, "moralePerSec": 0.7, "damage": 0.05 },
     // Laid by events (Data/events/*.json, the buff verb).
     { "id": "heartened", "name": "Heartened", "icon": "heart", "line": "Something went right for the company: steadier for a few days.",
       "shock": -0.15, "moralePerSec": 0.2 },
@@ -188,17 +188,17 @@
       "charge": 0.1 },
     // Natures of named men (docs/pre-demo/COMPANY.md C2): the senior man's nature, felt by his company (Campaign/Natures.cs).
     { "id": "nature_steady", "name": "Steady", "icon": "shield", "line": "A steady man in the ranks: the company keeps its nerve.", "tags": ["nature"],
-      "moralePerSec": 0.3 },
+      "moralePerSec": 0.6, "shock": -0.12 },
     { "id": "nature_bold", "name": "Bold", "icon": "horse", "line": "A bold man leads them in: the company charges harder.", "tags": ["nature"],
-      "charge": 0.12 },
+      "charge": 0.25, "damage": 0.05 },
     { "id": "nature_grim", "name": "Grim", "icon": "skull", "line": "A grim man beside them: losses and flank blows shake them less.", "tags": ["nature"],
-      "shock": -0.25 },
+      "shock": -0.4, "moralePerSec": 0.2 },
     { "id": "nature_pious", "name": "Pious", "icon": "sun", "line": "A pious man prays them on: they take heart in the thick of it.", "tags": ["nature"],
-      "moralePerSec": 0.15, "shock": -0.1 },
+      "moralePerSec": 0.35, "shock": -0.2, "damage": 0.04 },
     { "id": "nature_sly", "name": "Sly", "icon": "boot", "line": "A sly man knows the ground: the company moves a little quicker.", "tags": ["nature"],
-      "speed": 0.03 },
+      "speed": 0.08, "charge": 0.1 },
     { "id": "nature_proud", "name": "Proud", "icon": "flag", "line": "A proud man will not be outdone: the company strikes a little harder.", "tags": ["nature"],
-      "damage": 0.04 },
+      "damage": 0.12, "moralePerSec": 0.2 },
     { "id": "sure_footed_horse", "name": "Sure-footed", "icon": "horse", "line": "A sure-footed horse: rough ground slows it less.", "tags": ["mark", "horse"],
       "footing": 0.25 }
   ]

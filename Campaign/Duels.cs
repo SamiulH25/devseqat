@@ -7,7 +7,8 @@ public sealed partial class Campaign
     /// The lord you last met in single combat (party id, -1 = none) and whether you won; read by the battle that follows.
     int duelWith = -1;
     bool duelWon;
-    public const float DuelMorale = 15, DuelRenown = 10;
+    public const float DuelMorale = 20, DuelRenown = 15;
+    bool DuelFamed => Captain.Origin is "tourney" or "hedge_knight";
 
     /// Why this enemy will not meet you, or null. Only lords fight duels; a cautious one never does, and one whose army
     /// far outnumbers yours sees no need, unless he is reckless or honourable.
@@ -19,7 +20,7 @@ public sealed partial class Campaign
         if (duelWith == e.Id) return $"YOU HAVE MET {name} ALREADY";
         if (lord.Traits.Contains("Cautious")) return $"{name} WILL NOT RISK HIMSELF";
         bool bold = lord.Traits.Contains("Reckless") || lord.Traits.Contains("Honourable");
-        if (!bold && Rules.Strength(e) > Rules.Strength(Player) * 1.5f) return $"{name} HAS NO NEED TO FIGHT YOU HIMSELF";
+        if (!bold && Rules.Strength(e) > Rules.Strength(Player) * (DuelFamed ? 2f : 1.5f)) return $"{name} HAS NO NEED TO FIGHT YOU HIMSELF";
         return null;
     }
 
@@ -67,7 +68,7 @@ public sealed partial class Campaign
         if (won && ChampionAbove(e)) BreakThrough($"You beat {name}, a champion above you, in single combat."); // K5
         AuraAfterDuel(r, won, CharacterOf(e)?.Name ?? e.Name);
         FormsAfterBattle(r);
-        float renown = won ? DuelRenown * (Captain.AuraTier >= 3 ? 1.5f : 1) : 0; // an aura captain's duels are talked of more (MA8)
+        float renown = won ? (DuelRenown + (DuelFamed ? 5 : 0)) * (Captain.AuraTier >= 3 ? 1.5f : 1) : 0; // an aura captain's or famed duellist's duels are talked of more (MA8, PF2)
         Captain.Renown += renown;
         var fate = won ? LeaderFate.Unhurt : LeaderFate.Wounded;
         if (!won) Captain.WoundedUntil = MathF.Max(Captain.WoundedUntil, (float)S.Hours + 24 * 3);
@@ -78,6 +79,6 @@ public sealed partial class Campaign
     }
 
     /// What the duel does to the battle after it: his men shaken, or nothing (your wound is in WoundedUntil already).
-    float DuelMoraleFor(Party e) => duelWith == e.Id && duelWon ? -DuelMorale : 0;
-    float DuelEdge(Party e) => duelWith == e.Id ? (duelWon ? 1.1f : 0.95f) : 1;
+    float DuelMoraleFor(Party e) => duelWith == e.Id && duelWon ? -(DuelMorale + (DuelFamed ? 5 : 0)) : 0;
+    float DuelEdge(Party e) => duelWith == e.Id ? (duelWon ? 1.15f : 0.95f) : 1;
 }

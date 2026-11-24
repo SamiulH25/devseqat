@@ -31,6 +31,21 @@ sealed class TroopSheet
         Directory.CreateDirectory(dir);
         Sky.Set(new Weather(13, 0, 0));
         var sheet = new TroopSheet(gd, art, sh, kit);
+        var viewsOnly = Environment.GetEnvironmentVariable("IRONFIELD_TROOP_VIEWS");
+        if (!string.IsNullOrEmpty(viewsOnly))
+        {
+            var wanted = new HashSet<string>(viewsOnly.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            float[] angles = { 0f, 0.65f, MathHelper.PiOver2, MathHelper.Pi, -MathHelper.PiOver2, -0.65f };
+            int vCount = 0;
+            foreach (var t in Troops.All.Where(t => wanted.Contains(t.Id)))
+            {
+                for (int i = 0; i < angles.Length; i++)
+                    sheet.One(t, Path.Combine(dir, $"{t.Id}_v{i}.png"), angles[i]);
+                vCount++;
+            }
+            Console.WriteLine($"{vCount} troops x {angles.Length} views -> {dir}");
+            return;
+        }
         int n = 0;
         foreach (var t in Troops.All.Where(t => t.Culture != "wild"))
             try { sheet.One(t, Path.Combine(dir, t.Id + ".png")); n++; }
@@ -38,13 +53,13 @@ sealed class TroopSheet
         Console.WriteLine($"{n} troops -> {dir} ({(sheet.puppet3D != null ? "3D 2x" : "2D")})");
     }
 
-    void One(UnitType t, string path)
+    void One(UnitType t, string path, float angleOffset = 0.6f)
     {
         const float Facing = MathHelper.PiOver2;
         var u = new Unit { Index = 3, Palette = 0, Coat = 1, Type = t, Facing = Facing, ViewFacing = Facing, Heading = Facing, ViewHeading = Facing, EnemyDist = 2 };
         if (t.Mount != null) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; }
         bool rider = u.Mounted;
-        float dist = rider ? 9.2f : 4.6f, y = rider ? 1.85f : 1.0f, a = Facing + 0.6f;
+        float dist = rider ? 9.2f : 4.6f, y = rider ? 1.85f : 1.0f, a = Facing + angleOffset;
         var target = new Vector3(0, y, 0);
         var eye = target + new Vector3(MathF.Cos(a) * dist, 0.9f, MathF.Sin(a) * dist);
         var view = Matrix.CreateLookAt(eye, target, Vector3.Up);

@@ -113,6 +113,78 @@ public static class Rules
     public static float Might(Party p) => p.Companies.Sum(c => c.Stacks.Sum(s => Might(s.Type, s.Men)) * (Campaign.NatureEffect(c) != null ? 1 + B.NatureWeight : 1));
     public static float Strength(Party p) => p.Companies.Sum(Strength);
 
+    /// A great beast: a wild creature of a big man's size or more that is not the walking dead (ogres, trolls, bears, wyverns,
+    /// the brood mother, the alpha wolf).
+    public static bool Monstrous(UnitType t) => t.Wild && t.Size >= 1.4f && !t.Has("raised");
+
+    /// How much more a great beast is worth in a fight than its numbers say, against foes of drill 1x: a troll's healing and
+    /// a wyvern's wings nearly double it, and one that unnerves men near it is worth a quarter more. Calibrated from fought
+    /// battles: a company of 120, 200 and 300 against the map's parties of six trolls, three wyverns, six ogres, six bears
+    /// (test `BeastsWeighed`; the design aim is that 200-300 men beat one and lose a good part of themselves).
+    static float BeastWeight(UnitType t) => 1.15f * (t.Has("regen") ? 1.5f : t.Flying ? 1.9f : 1) * (t.Has("fear") ? 1.25f : 1);
+
+    /// What drill multiplies a side's men by in `Might` (its men's Might over their Strength; 1 for a side of beasts only).
+    static float DrillFactor(IEnumerable<Party> side)
+    {
+        float might = 0, strength = 0;
+        foreach (var s in side.SelectMany(p => p.Companies).SelectMany(c => c.Stacks).Where(s => s.Men > 0 && !Monstrous(s.Type)))
+        {
+            might += Might(s.Type, s.Men);
+            strength += Strength(s.Type, s.Men);
+        }
+        return strength > 0 ? might / strength : 1;
+    }
+
+    /// Foot past this many add little against great beasts: only so many can reach one, and the rest break from it.
+    const float BeastCrowd = 90;
+    /// Bows, horse and mages against great beasts: they strike from out of its reach (or ride away from it), and are worth
+    /// this much more than their Might says.
+    const float BeastReach = 2.5f;
+
+    /// Does this man fight a great beast on foot within its reach?
+    static bool FootFighter(UnitType t) => t.Mount == null && t.Class is not (UnitClass.Archer or UnitClass.Caster);
+
+    /// A side's Might in a fight against `foes`. Men are weighed by their drill as in `Might`; a great beast owes nothing to
+    /// drill, but its foes' drill buys them little against it (no shield wall stops a troll), so it is weighed by their drill
+    /// instead, and by `BeastWeight`. Against beasts, foot past `BeastCrowd` count as the 0.3 power of their number (fought:
+    /// 90, 180 and 360 men-at-arms beat two trolls about alike), and bows, horse and mages count `BeastReach` times. Without
+    /// this ninety men-at-arms were rated five times two trolls that break them. The hour is the caller's (`Campaign.Edge`:
+    /// a troll by night).
+    public static float MightAgainst(IEnumerable<Party> side, IEnumerable<Party> foes)
+    {
+        float d = DrillFactor(foes);
+        float foeAll = 0, foeBeasts = 0;
+        foreach (var s in foes.SelectMany(p => p.Companies).SelectMany(c => c.Stacks).Where(s => s.Men > 0))
+        {
+            float w = Strength(s.Type, s.Men);
+            foeAll += w;
+            if (Monstrous(s.Type)) foeBeasts += w;
+        }
+        int foot = side.SelectMany(p => p.Companies).SelectMany(c => c.Stacks).Where(s => !Monstrous(s.Type) && FootFighter(s.Type)).Sum(s => s.Men);
+        float share = foeAll > 0 ? foeBeasts / foeAll : 0; // the part of the foe that is beasts
+        float crowd = foot > BeastCrowd ? share * MathF.Pow(BeastCrowd / foot, 0.7f) + (1 - share) : 1, reach = share * BeastReach + (1 - share);
+        return side.Sum(p => p.Companies.Sum(c => c.Stacks.Sum(s => Monstrous(s.Type) ? Might(s.Type, s.Men) * d * BeastWeight(s.Type) : Might(s.Type, s.Men) * (FootFighter(s.Type) ? crowd : reach))
+            * (Campaign.NatureEffect(c) != null ? 1 + B.NatureWeight : 1)));
+    }
+
+    /// Has this party great beasts among it (`Monstrous`)?
+    public static bool HasBeasts(Party p) => p.Companies.Any(c => c.Stacks.Any(s => s.Men > 0 && Monstrous(s.Type)));
+
+    /// How many times `q` outweighs `p` in a fight as auto-resolve weighs them, great beasts and all (what a lord judges a
+    /// troll by before he hunts it or runs from it).
+    public static float Outweighs(Party q, Party p)
+    {
+        var (wq, wp) = AutoWeights(new[] { q }, new[] { p });
+        return wq / MathF.Max(1, wp);
+    }
+
+    /// The two sides' weights in auto-resolve before the dice: Might against each other, side 0's edge, the tier gap, walls.
+    public static (float Side0, float Side1) AutoWeights(IReadOnlyList<Party> side0, IReadOnlyList<Party> side1, float edge0 = 1, float wall = 1)
+    {
+        int t0 = side0.Max(p => p.Tier), t1 = side1.Max(p => p.Tier);
+        return (MightAgainst(side0, side1) * edge0 * (1 + 0.1f * (t0 - t1)), MightAgainst(side1, side0) * wall);
+    }
+
     /// What a man's wage is figured from (TI4): his cost bent toward `Balance.WageAnchor` by `WageCurve`, so the wage steps
     /// between tiers are flatter than the hire prices.
     public static float WageCost(UnitType t) => t.Cost <= 0 ? 0 : B.WageAnchor * MathF.Pow(t.Cost / B.WageAnchor, B.WageCurve);
@@ -235,6 +307,7 @@ public static class Rules
         o.OwnForm = c.OwnForm;
         o.AtWall = c.AuraWall;
         o.Path = c.AuraTier > 0 ? c.Path : ""; // the path walked (docs/archive/ARCANA.md AR6)
+        o.CaptainRoad = c.Road;
         o.PlayerType = CaptainType(c);
         o.PlayerSide = c.Kit.Side != "" ? CaptainType(c, side: true) : null;
         o.PlayerMount = CaptainMount(c);
@@ -260,10 +333,9 @@ public static class Rules
     /// `wall` multiplies side 1's strength: defenders behind walls (1.4 against ladders, more without them).
     public static BattleResult AutoResolve(IReadOnlyList<Party> side0, IReadOnlyList<Party> side1, Rng rng, float edge0 = 1, float wall = 1)
     {
-        float s0 = side0.Sum(Might) * edge0 * rng.Range(0.85f, 1.15f);
-        float s1 = side1.Sum(Might) * wall * rng.Range(0.85f, 1.15f);
-        int t0 = side0.Max(p => p.Tier), t1 = side1.Max(p => p.Tier);
-        s0 *= 1 + 0.1f * (t0 - t1);
+        var (w0, w1) = AutoWeights(side0, side1, edge0, wall);
+        float s0 = w0 * rng.Range(0.85f, 1.15f);
+        float s1 = w1 * rng.Range(0.85f, 1.15f);
         int winner = s0 >= s1 ? 0 : 1;
         float ratio = winner == 0 ? s1 / MathF.Max(1, s0) : s0 / MathF.Max(1, s1); // loser / winner
         float loserLoss = rng.Range(0.45f, 0.75f), winnerLoss = Math.Clamp(ratio * 0.45f, 0.03f, 0.6f);
@@ -321,12 +393,14 @@ public static class Rules
             {
                 var h = Honours.Of(c);
                 var mix = c.Stacks.Where(s => s.Men > 0).Select(s => new StackSpec(s.Troop, s.Men)).ToArray();
+                var fitNamed = c.Roll.Count > 0 ? c.Roll.Where(m => !m.Hurt).ToList() : null;
+                float rollMorale = fitNamed == null ? 0 : MathF.Min(9f, fitNamed.Count * 1.5f) + MathF.Min(12f, fitNamed.Count(Campaign.OfBanner) * 4f);
                 return new Company(c.Troop, c.Men, RoleOf(c), c.Id, c.Name,
-                    Math.Clamp(70 + c.Cohesion + moraleBonus + (c.Traits.Contains("Steady") ? 8 : 0) + h.Morale + (siege ? h.SiegeMorale : 0), 20, 100), c.Traits.ToArray(),
+                    Math.Clamp(70 + c.Cohesion + moraleBonus + rollMorale + (c.Traits.Contains("Steady") ? 8 : 0) + h.Morale + (siege ? h.SiegeMorale : 0), 20, 100), c.Traits.ToArray(),
                     Allied: parties.First(p => p.Companies.Contains(c)).Kind == PartyKind.Lord, Mix: mix.Length > 1 ? mix : null,
                     RoutBonus: h.RoutBonus, VsMounted: h.VsMounted, Banner: c.Banner, Hero: c.Hero,
                     Streamers: c.BattleHonours.Count, Fringe: c.Battles >= 10, Cohesion: c.Cohesion,
-                    Named: c.Roll.Count > 0 ? c.Roll.Where(m => !m.Hurt).Select(m => new NamedSpec(m.Id, m.Troop, m.Name, m.Wounds, Soldier.AgeOf(m), m.Avenging, m.Nature, m.Ties.Where(t => t.Kind is "Brothers" or "Kin").Select(t => t.Other).ToArray(), m.Ties.Any(t => t.Kind == "Lad"))).ToArray() : null,
+                    Named: fitNamed is { Count: > 0 } ? fitNamed.Select(m => new NamedSpec(m.Id, m.Troop, m.Name, m.Wounds, Soldier.AgeOf(m), m.Avenging, m.Nature, m.Ties.Where(t => t.Kind is "Brothers" or "Kin").Select(t => t.Other).ToArray(), m.Ties.Any(t => t.Kind == "Lad"), m.Carries != "", Campaign.OfBanner(m), m.Battles)).ToArray() : null,
                     Standing: Campaign.NatureEffect(c) is string n ? new[] { n } : null); // the senior man's nature (C2)
             }).ToList());
 }

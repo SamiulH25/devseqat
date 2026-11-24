@@ -53,11 +53,17 @@ public sealed partial class Campaign
     int BattleSeed(Party enemy) => Rng.Mix(S.Seed, (int)(S.Hours * 4), enemy.Id);
 
     /// One line for the encounter panel on the ground and who holds it: "YOU HOLD THE HIGH GROUND."
+    /// The field a fight with this party would be on now and its layout (the encounter screen paints it).
+    public (TerrainParams Ground, FieldLayout Layout) FieldOf(Party enemy)
+    {
+        var g = GroundFor(enemy, GroundChooser(enemy));
+        return (g, Terrain.LayoutFor(BattleSeed(enemy), g));
+    }
+
     public string GroundNote(Party enemy)
     {
-        int favour = GroundChooser(enemy);
-        var g = GroundFor(enemy, favour);
-        var layout = Terrain.LayoutFor(BattleSeed(enemy), g);
+        var (g, layout) = FieldOf(enemy);
+        int favour = g.Favour;
         string who = favour == 0 ? "YOU HOLD" : "THEY HOLD";
         string line = layout switch
         {
