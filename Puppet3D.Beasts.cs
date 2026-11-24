@@ -12,6 +12,15 @@ sealed partial class Puppet3D
 
     bool DrawBeast3D(Unit u, float ground, Color tint, Look look)
     {
+        switch (u.Type.Breed)
+        {
+            case "boar": DrawBoar3D(u, ground, tint); return true;
+            case "harpy": DrawHarpy3D(u, ground + u.Altitude * Scale, tint); return true;
+            case "griffon": DrawGriffon3D(u, ground + u.Altitude * Scale, tint); return true;
+            case "basilisk": DrawBasilisk3D(u, ground, tint); return true;
+            case "wurm": DrawSandWurm3D(u, ground, tint); return true;
+            case "werewolf": DrawWerewolf3D(u, ground, tint); return true;
+        }
         switch (look.Face)
         {
             case "spider": DrawSpider3D(u, ground, tint); return true;
@@ -233,5 +242,181 @@ sealed partial class Puppet3D
         EmitBone(kit.WyvernTail, t0, t1, Vector3.UnitY);
         EmitBone(kit.WyvernTail, t1, t2, Vector3.UnitY);
         EmitBone(kit.WyvernSting, t2, t3, Vector3.UnitY);
+    }
+
+    void DrawBoar3D(Unit u, float ground, Color tint)
+    {
+        Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
+        bool great = u.Type.Id == "great_boar", tusker = u.Type.Id == "tusker";
+        Color hide = great ? new Color(68, 56, 52) : tusker ? new Color(96, 68, 52) : new Color(112, 82, 62);
+        Color mane = great ? new Color(36, 30, 30) : new Color(56, 40, 34);
+        UnitMatTable.FillBeast(hide, mane, new Color(32, 26, 24), tint, palCols);
+        float speed = u.Vel.Length(), gait = Math.Clamp(speed / 7f, 0, 1);
+        float amp = speed < 0.3f ? 0 : 18 + 30 * gait;
+        float bob = MathF.Sin(u.Anim * MathF.Tau * 1.6f) * 0.04f * gait;
+        float rear = BeastRearing(u);
+        float y = 0.56f + bob;
+        ReadOnlySpan<float> phase = stackalloc float[] { 0, 0.25f, 0.55f, 0.80f };
+        for (int i = 0; i < 4; i++)
+        {
+            bool front = i < 2;
+            float sd = i % 2 == 0 ? -1 : 1;
+            float ang = Rad(amp) * MathF.Sin(u.Anim * MathF.Tau * 1.6f + phase[i] * MathF.Tau);
+            var hip = new Vector3(sd * 0.20f, y - 0.04f, front ? 0.34f : -0.34f);
+            var foot = hip + new Vector3(0, -0.52f * MathF.Cos(ang), 0.52f * MathF.Sin(ang));
+            EmitBone(kit.BoarLeg, hip, foot, Vector3.UnitZ);
+        }
+        EmitLocal(kit.BoarBody, new Vector3(0, y, 0), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
+        // Dip head & tusks forward on charge/strike!
+        float hPitch = u.Action == UnitAction.Recover ? -24f * rear : 14f * rear;
+        EmitLocal(kit.BoarHead, new Vector3(0, y + 0.04f, 0.48f + (u.Action == UnitAction.Recover ? 0.14f * rear : 0f)),
+            Vector3.UnitX, RotX(Vector3.UnitY, hPitch), RotX(Vector3.UnitZ, hPitch));
+    }
+
+    void DrawHarpy3D(Unit u, float ground, Color tint)
+    {
+        Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
+        UnitMatTable.FillBeast(new Color(122, 92, 84), new Color(68, 52, 62), new Color(42, 34, 32), tint, palCols);
+        bool aloft = u.Altitude > 0.3f;
+        float rear = BeastRearing(u);
+        float flap = MathF.Sin((Now * 2.4f + Ease.Hash(u.Index)) * MathF.Tau);
+        float y = aloft ? 0.92f - flap * 0.12f : 0.78f;
+        for (int sd = -1; sd <= 1; sd += 2)
+        {
+            Vector3 root = new(sd * 0.18f, y + 0.18f, 0.02f);
+            float span = aloft || rear > 0 ? 1.45f : 0.75f;
+            float roll = aloft || rear > 0 ? flap * 0.72f : 0.95f;
+            float cr = MathF.Cos(roll), sr = MathF.Sin(roll);
+            EmitLocal(kit.HarpyWing, root, new Vector3(sd * cr, sr, 0), new Vector3(-sd * sr, cr, 0), Vector3.UnitZ, span, 1f, 1.05f);
+            var hip = new Vector3(sd * 0.11f, y - 0.24f, -0.02f);
+            var foot = aloft ? new Vector3(sd * 0.14f, y - 0.56f, 0.14f + rear * 0.24f) : new Vector3(sd * 0.13f, 0, 0.02f);
+            EmitBone(kit.WyvernLeg, hip, foot, Vector3.UnitZ);
+        }
+        float pitch = aloft ? 24f : 10f;
+        EmitLocal(kit.HarpyBody, new Vector3(0, y, 0), Vector3.UnitX, RotX(Vector3.UnitY, pitch), RotX(Vector3.UnitZ, pitch));
+        EmitLocal(kit.HarpyHead, new Vector3(0, y + 0.44f, 0.12f), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
+    }
+
+    void DrawGriffon3D(Unit u, float ground, Color tint)
+    {
+        Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
+        // Warm golden-tawny lion body, deep bronze-brown eagle plumage, golden beak & eyes
+        UnitMatTable.FillBeast(new Color(176, 134, 78), new Color(92, 62, 40), new Color(44, 34, 26), tint, palCols);
+        bool aloft = u.Altitude > 0.4f;
+        float rear = BeastRearing(u);
+        float flap = MathF.Sin((Now * 1.8f + Ease.Hash(u.Index)) * MathF.Tau);
+        float speed = u.Vel.Length(), gait = Math.Clamp(speed / 7f, 0, 1);
+        float y = aloft ? 0.88f - flap * 0.14f : 0.66f;
+        for (int sd = -1; sd <= 1; sd += 2)
+        {
+            Vector3 root = new(sd * 0.24f, y + 0.22f, 0.22f);
+            float span = aloft || rear > 0 ? 1.85f : 0.82f;
+            float roll = aloft || rear > 0 ? flap * 0.65f : 1.0f;
+            float cr = MathF.Cos(roll), sr = MathF.Sin(roll);
+            EmitLocal(kit.HarpyWing, root, new Vector3(sd * cr, sr, -0.15f), new Vector3(-sd * sr, cr, 0), Vector3.UnitZ, span, 1.0f, 1.28f);
+            // Fore eagle legs + hind lion legs
+            float fAng = aloft ? -0.55f : Rad(22 * gait) * MathF.Sin(u.Anim * MathF.Tau * 1.4f + (sd > 0 ? 0.5f : 0f));
+            var fHip = new Vector3(sd * 0.20f, y - 0.02f, 0.36f);
+            var fFoot = fHip + new Vector3(0, -0.62f * MathF.Cos(fAng), 0.62f * MathF.Sin(fAng) + (aloft ? 0.25f * rear : 0f));
+            EmitBone(kit.WyvernLeg, fHip, fFoot, Vector3.UnitZ);
+            var hHip = new Vector3(sd * 0.19f, y - 0.04f, -0.40f);
+            var hFoot = aloft ? hHip + new Vector3(0, -0.42f, -0.34f) : hHip + new Vector3(0, -0.60f, 0.04f);
+            EmitBone(kit.WolfLeg, hHip, hFoot, Vector3.UnitZ);
+        }
+        EmitLocal(kit.GriffonBody, new Vector3(0, y, 0), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
+        EmitLocal(kit.GriffonHead, new Vector3(0, y + 0.32f, 0.56f), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
+        float wag = MathF.Sin(Now * 3f + u.Index) * 0.14f;
+        EmitBone(kit.WolfTail, new Vector3(0, y + 0.04f, -0.56f), new Vector3(wag, y - 0.14f, -1.04f), Vector3.UnitZ);
+    }
+
+    void DrawBasilisk3D(Unit u, float ground, Color tint)
+    {
+        Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
+        // Deep venomous jade-olive scales, dark mossy carapace plates, glowing amber-gold eyes & crest
+        UnitMatTable.FillBeast(new Color(64, 108, 66), new Color(36, 62, 42), new Color(28, 34, 24), tint, palCols);
+        float speed = u.Vel.Length(), gait = Math.Clamp(speed / 5f, 0, 1);
+        float sway = MathF.Sin(u.Anim * MathF.Tau * 1.4f + u.Index) * 0.08f;
+        float rear = BeastRearing(u);
+        float y = 0.38f;
+        // 6 splayed heavy lizard legs
+        for (int i = 0; i < 6; i++)
+        {
+            float sd = i % 2 == 0 ? -1 : 1;
+            int pair = i / 2;
+            float z = 0.36f - pair * 0.36f;
+            float swing = MathF.Sin(u.Anim * MathF.Tau * 1.4f + (pair + (sd > 0 ? 1 : 0)) * 1.6f) * 0.16f * gait;
+            var hip = new Vector3(sd * 0.24f, y, z);
+            var knee = new Vector3(sd * 0.48f, y + 0.06f, z + swing * 0.5f);
+            var foot = new Vector3(sd * 0.56f, 0f, z + swing);
+            EmitBone(kit.WyvernLeg, hip, knee, Vector3.UnitY);
+            EmitBone(kit.WyvernLeg, knee, foot, Vector3.UnitZ);
+        }
+        EmitLocal(kit.BasiliskBody, new Vector3(sway * 0.4f, y, 0), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
+        EmitLocal(kit.BasiliskHead, new Vector3(sway, y + 0.10f + rear * 0.14f, 0.62f + rear * 0.12f),
+            Vector3.UnitX, RotX(Vector3.UnitY, -rear * 16f), RotX(Vector3.UnitZ, -rear * 16f));
+        // Sweeping heavy reptile tail
+        var t0 = new Vector3(0, y, -0.60f);
+        var t1 = new Vector3(-sway * 1.8f, y * 0.65f, -1.12f);
+        var t2 = new Vector3(sway * 2.2f, y * 0.35f, -1.62f);
+        EmitBone(kit.WyvernTail, t0, t1, Vector3.UnitY);
+        EmitBone(kit.WyvernTail, t1, t2, Vector3.UnitY);
+    }
+
+    void DrawSandWurm3D(Unit u, float ground, Color tint)
+    {
+        Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
+        // Sun-baked ochre/sandstone carapace, burnt umber chitin rings, dark gullet & ivory teeth
+        UnitMatTable.FillBeast(new Color(184, 148, 96), new Color(118, 84, 52), new Color(46, 32, 22), tint, palCols);
+        float rear = BeastRearing(u);
+        float wave = MathF.Sin(Now * 2.2f + u.Index) * 0.18f;
+        float strike = u.Action == UnitAction.Recover ? rear : 0f;
+        // Multi-segment undulating colossus rising from the sand!
+        var s0 = new Vector3(-wave * 0.6f, 0.10f, -1.35f);
+        var s1 = new Vector3(wave * 0.8f, 0.24f, -0.82f);
+        var s2 = new Vector3(-wave * 0.5f, 0.46f, -0.32f);
+        var s3 = new Vector3(wave * 0.4f, 0.88f - strike * 0.24f, 0.08f + strike * 0.28f);
+        var s4 = new Vector3(0, 1.24f - strike * 0.42f, 0.42f + strike * 0.52f);
+        EmitBone(kit.WurmSeg, s0, s1, Vector3.UnitY);
+        EmitBone(kit.WurmSeg, s1, s2, Vector3.UnitY);
+        EmitBone(kit.WurmSeg, s2, s3, Vector3.UnitY);
+        EmitBone(kit.WurmSeg, s3, s4, Vector3.UnitY);
+        float hPitch = 18f + strike * 32f;
+        EmitLocal(kit.WurmHead, s4, Vector3.UnitX, RotX(Vector3.UnitY, hPitch), RotX(Vector3.UnitZ, hPitch));
+    }
+
+    void DrawWerewolf3D(Unit u, float ground, Color tint)
+    {
+        Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
+        // Ash-charcoal pelage, dark iron mane, amber glowing eyes & ivory claws/fangs
+        UnitMatTable.FillBeast(new Color(92, 88, 94), new Color(44, 42, 48), new Color(30, 28, 32), tint, palCols);
+        float speed = u.Vel.Length(), gait = Math.Clamp(speed / 7.5f, 0, 1);
+        float rear = BeastRearing(u);
+        float stride = MathF.Sin(u.Anim * MathF.Tau * 1.4f) * 0.34f * gait;
+        float bob = MathF.Abs(MathF.Sin(u.Anim * MathF.Tau * 1.4f)) * 0.05f * gait;
+        float hipY = 0.72f + bob;
+        // Digitigrade bipedal legs
+        for (int sd = -1; sd <= 1; sd += 2)
+        {
+            float s = sd > 0 ? stride : -stride;
+            var hip = new Vector3(sd * 0.16f, hipY, -0.04f);
+            var foot = new Vector3(sd * 0.18f, 0f, s);
+            EmitBone(kit.WolfLeg, hip, foot, Vector3.UnitZ);
+        }
+        // Hunched bipedal torso
+        float hunch = 18f + (u.Action == UnitAction.Recover ? 14f * rear : -8f * rear);
+        EmitLocal(kit.WerewolfBody, new Vector3(0, hipY - 0.04f, 0), Vector3.UnitX, RotX(Vector3.UnitY, hunch), RotX(Vector3.UnitZ, hunch));
+        // Long slashing clawed arms
+        for (int sd = -1; sd <= 1; sd += 2)
+        {
+            var sh = new Vector3(sd * 0.30f, hipY + 0.68f, 0.18f);
+            float slash = sd > 0 && u.Action == UnitAction.Recover ? rear : 0f;
+            float lift = sd > 0 && u.Action == UnitAction.Windup ? rear : 0f;
+            var hand = new Vector3(sd * (0.36f - slash * 0.24f), hipY + 0.06f + lift * 0.65f + slash * 0.25f, 0.34f + slash * 0.48f - lift * 0.10f);
+            EmitBone(kit.WerewolfArm, sh, hand, Vector3.UnitZ);
+        }
+        // Snarling wolf head + bushy tail
+        EmitLocal(kit.WolfHead, new Vector3(0, hipY + 0.88f, 0.30f), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
+        float wag = MathF.Sin(Now * 4f + u.Index) * 0.10f;
+        EmitBone(kit.WolfTail, new Vector3(0, hipY + 0.02f, -0.14f), new Vector3(wag, hipY - 0.28f, -0.62f), Vector3.UnitZ);
     }
 }

@@ -59,9 +59,10 @@ sealed class TroopSheet
         var u = new Unit { Index = 3, Palette = 0, Coat = 1, Type = t, Facing = Facing, ViewFacing = Facing, Heading = Facing, ViewHeading = Facing, EnemyDist = 2 };
         if (t.Mount != null) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; }
         bool rider = u.Mounted;
-        float dist = rider ? 9.2f : 4.6f, y = rider ? 1.85f : 1.0f, a = Facing + angleOffset;
+        float fit = MathF.Max(1f, t.Size * (t.Flying ? 1.25f : 1.05f));
+        float dist = (rider ? 9.2f : 4.6f) * fit, y = (rider ? 1.85f : 1.0f) * MathF.Max(1f, t.Size * 0.9f), a = Facing + angleOffset;
         var target = new Vector3(0, y, 0);
-        var eye = target + new Vector3(MathF.Cos(a) * dist, 0.9f, MathF.Sin(a) * dist);
+        var eye = target + new Vector3(MathF.Cos(a) * dist, 0.9f * fit, MathF.Sin(a) * dist);
         var view = Matrix.CreateLookAt(eye, target, Vector3.Up);
         var proj = Matrix.CreatePerspectiveFieldOfView(0.55f, W / (float)H, 0.1f, 100);
 

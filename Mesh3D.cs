@@ -55,6 +55,12 @@ sealed class MeshKit3D
     public Vert[] SpiderAbdomen = Array.Empty<Vert>(), SpiderHead = Array.Empty<Vert>(), SpiderLeg = Array.Empty<Vert>();
     public Vert[] WyvernBody = Array.Empty<Vert>(), WyvernNeck = Array.Empty<Vert>(), WyvernHead = Array.Empty<Vert>();
     public Vert[] WyvernWing = Array.Empty<Vert>(), WyvernLeg = Array.Empty<Vert>(), WyvernTail = Array.Empty<Vert>(), WyvernSting = Array.Empty<Vert>();
+    public Vert[] BoarBody = Array.Empty<Vert>(), BoarHead = Array.Empty<Vert>(), BoarLeg = Array.Empty<Vert>();
+    public Vert[] HarpyBody = Array.Empty<Vert>(), HarpyHead = Array.Empty<Vert>(), HarpyWing = Array.Empty<Vert>();
+    public Vert[] GriffonBody = Array.Empty<Vert>(), GriffonHead = Array.Empty<Vert>();
+    public Vert[] BasiliskBody = Array.Empty<Vert>(), BasiliskHead = Array.Empty<Vert>();
+    public Vert[] WurmHead = Array.Empty<Vert>(), WurmSeg = Array.Empty<Vert>();
+    public Vert[] WerewolfBody = Array.Empty<Vert>(), WerewolfArm = Array.Empty<Vert>();
     public Vert[] LodFoot = Array.Empty<Vert>(), LodHorse = Array.Empty<Vert>();
     // Pre-cached modular belt & shoulder pools for zero-alloc per-soldier variety within regiments!
     public Vert[][] BeltPoolLight = Array.Empty<Vert[]>(), BeltPoolHeavy = Array.Empty<Vert[]>(), BeltPoolNorth = Array.Empty<Vert[]>();
@@ -142,6 +148,12 @@ sealed class MeshKit3D
         kit.SpiderAbdomen = kit.Get("spider_abdomen"); kit.SpiderHead = kit.Get("spider_head"); kit.SpiderLeg = kit.Get("spider_leg");
         kit.WyvernBody = kit.Get("wyvern_body"); kit.WyvernNeck = kit.Get("wyvern_neck"); kit.WyvernHead = kit.Get("wyvern_head");
         kit.WyvernWing = kit.Get("wyvern_wing"); kit.WyvernLeg = kit.Get("wyvern_leg"); kit.WyvernTail = kit.Get("wyvern_tail"); kit.WyvernSting = kit.Get("wyvern_sting");
+        kit.BoarBody = kit.Get("boar_body"); kit.BoarHead = kit.Get("boar_head"); kit.BoarLeg = kit.Get("boar_leg");
+        kit.HarpyBody = kit.Get("harpy_body"); kit.HarpyHead = kit.Get("harpy_head"); kit.HarpyWing = kit.Get("harpy_wing");
+        kit.GriffonBody = kit.Get("griffon_body"); kit.GriffonHead = kit.Get("griffon_head");
+        kit.BasiliskBody = kit.Get("basilisk_body"); kit.BasiliskHead = kit.Get("basilisk_head");
+        kit.WurmHead = kit.Get("wurm_head"); kit.WurmSeg = kit.Get("wurm_seg");
+        kit.WerewolfBody = kit.Get("werewolf_body"); kit.WerewolfArm = kit.Get("werewolf_arm");
         kit.LodFoot = kit.Get("lod_foot"); kit.LodHorse = kit.Get("lod_horse");
         kit.BeltPoolLight = new[] { kit.Get("belt_leather"), kit.Get("belt_pouch"), kit.Get("belt_baldric") };
         kit.BeltPoolHeavy = new[] { kit.Get("belt_plate"), kit.Get("belt_leather"), kit.Get("belt_baldric"), kit.Get("belt_gilded") };
