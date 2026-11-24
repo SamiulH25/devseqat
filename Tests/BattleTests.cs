@@ -216,6 +216,46 @@ public static partial class SelfTest
         Check(behind >= drilled + 5, $"a drilled line taken from behind does not hold them ({behind} vs {drilled} head-on)");
     }
 
+    /// Melee cavalry on Charge consistently charge, break through or disengage, turn around, and recharge until the enemy
+    /// company is broken/eliminated — never getting stuck in CavState.Melee.
+    static void CavalryCycleCharge()
+    {
+        (int recharges, int meleeTicks, int enemyLeft, int rallied) Sim(float drill)
+        {
+            var b = Battle.Empty(61);
+            var foot = b.AddSquad(0, Troops.Get("shieldmen"), 24, new(0, 0), 8, Vector2.UnitY);
+            foot.Order = Order.Hold;
+            var horse = b.AddSquad(1, Troops.Get("lancers"), 16, new(0, 45), 8, -Vector2.UnitY);
+            horse.Drill = drill;
+            horse.Order = Order.Charge;
+            horse.Target = foot;
+            var prev = horse.Units.Select(u => u.Cav).ToArray();
+            int recharges = 0, meleeTicks = 0;
+            for (int i = 0; i < 60 * 50 && foot.Alive > 0 && horse.Alive > 0; i++)
+            {
+                b.Update(1 / 60f);
+                for (int k = 0; k < horse.Units.Count; k++)
+                {
+                    var u = horse.Units[k];
+                    if (!u.Active || u.Routing) continue;
+                    if (u.Cav == CavState.Melee) meleeTicks++;
+                    if (prev[k] == CavState.Withdraw && u.Cav == CavState.Charge) recharges++;
+                    prev[k] = u.Cav;
+                }
+            }
+            return (recharges, meleeTicks, foot.Alive, horse.Rallied);
+        }
+        var trained = Sim(0.45f);
+        var vet = Sim(0.75f);
+        Console.WriteLine($"cav cycle: trained {trained.recharges} recharges, {trained.meleeTicks} melee ticks, {trained.enemyLeft} foot left; veteran {vet.recharges} recharges ({vet.rallied} rallies), {vet.meleeTicks} melee ticks, {vet.enemyLeft} foot left");
+        Check(trained.meleeTicks == 0, $"trained cav on Charge never get stuck in Melee ({trained.meleeTicks} ticks)");
+        Check(trained.recharges >= 12, $"trained cav repeatedly break through, turn around and recharge ({trained.recharges})");
+        Check(trained.enemyLeft < 12, $"trained cav cycle-charging wear down and break foot ({trained.enemyLeft} left)");
+        Check(vet.meleeTicks == 0, $"veteran cav on Charge never get stuck in Melee ({vet.meleeTicks} ticks)");
+        Check(vet.recharges >= 8 && vet.rallied >= 1, $"veteran cav rally and recharge together ({vet.recharges} recharges, {vet.rallied} rallies)");
+        Check(vet.enemyLeft < 12, $"veteran cav cycle-charging wear down and break foot ({vet.enemyLeft} left)");
+    }
+
     static void CavalryBalance()
     {
         // A rider's reach in a standing fight is a man's reach, not its lance's: foot can hit back.

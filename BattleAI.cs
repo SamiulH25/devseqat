@@ -191,35 +191,48 @@ public partial class Battle
         if (t == null) { (t, td) = (enemy, d); }
         if (t == null) { Ride(u, u.Slot, h.Trot); return; }
 
-        if (s.Rallying && u.Cav != CavState.Withdraw && td > 6 && Rallies(s)) u.Cav = CavState.Withdraw; // the company is rallying: off the chase, back to it
+        var targetCenter = t.Squad != null ? t.Squad.Center : t.Pos;
+        if (s.Rallying && u.Cav != CavState.Withdraw && (td > 6 || u.Bogged > 0.4f) && Rallies(s) && s.Units.Count(x => x.Active && !x.Routing && x.Cav == CavState.Withdraw) * 2 >= s.Alive) { u.Cav = CavState.Withdraw; u.Contact = false; u.Bogged = 0; } // most of the company is rallying: stragglers rejoin it
         switch (u.Cav)
         {
             case CavState.Withdraw:
             {
                 if (Rallies(s)) { RideToRally(u, s); return; } // veterans re-form as a body before they go again
-                // Ride out, away from the enemy mass, then turn for another charge.
+                // Ride out to charge distance away from the target company, then wheel round and charge again.
                 u.CavTimer -= dt;
                 u.Couched = false;
-                var away = u.Pos - centroid[1 - u.Team];
-                away = away.LengthSquared() > 1e-3f ? Vector2.Normalize(away) : hd;
-                var dir = hd + away * 1.5f;
+                var fromTarget = u.Pos - targetCenter;
+                Vector2 dir;
+                if (fromTarget.LengthSquared() > 9f)
+                {
+                    var away = Vector2.Normalize(fromTarget);
+                    dir = Vector2.Dot(hd, away) > -0.25f ? hd * 0.4f + away * 1.6f : away;
+                }
+                else dir = hd; // still inside the formation: push straight out instead of U-turning in place
                 if (u.Pos.Length() > MapRadius - 25) dir -= Vector2.Normalize(u.Pos) * 3; // stay on the field
-                u.Wish = Vector2.Normalize(dir) * h.Gallop;
-                if (u.CavTimer <= 0 || (enemy != null && d > 20)) u.Cav = CavState.Charge;
+                dir = dir.LengthSquared() > 1e-4f ? Vector2.Normalize(dir) : hd;
+                var outAt = Via(u, u.Pos + dir * 14);
+                u.Wish = (outAt - u.Pos).LengthSquared() > 1e-4f ? Vector2.Normalize(outAt - u.Pos) * h.Gallop : dir * h.Gallop;
+                float clearDist = enemy != null ? MathF.Min(d, td) : td;
+                if (clearDist >= 18f || u.CavTimer <= 0) { u.Cav = CavState.Charge; u.Contact = false; u.Bogged = 0; }
                 return;
             }
             case CavState.Melee:
             {
-                // Bogged down: stand and hack, then break off.
+                // Brief disengage fallback: never stay bogged in a standing fight on Charge.
                 u.CavTimer -= dt;
-                var aimM = Via(u, t.Pos) - u.Pos;
-                u.Wish = td > MountedMeleeReach && aimM.LengthSquared() > 1e-4f ? Vector2.Normalize(aimM) * h.Trot * 0.6f : Vector2.Zero;
-                if (u.CavTimer <= 0) { u.Cav = CavState.Withdraw; u.CavTimer = 4f; }
+                u.Couched = false;
+                if (u.CavTimer <= 0) { u.Cav = CavState.Withdraw; u.CavTimer = 7f; u.Contact = false; u.Bogged = 0; }
+                else
+                {
+                    var aimM = Via(u, t.Pos) - u.Pos;
+                    u.Wish = td > MountedMeleeReach && aimM.LengthSquared() > 1e-4f ? Vector2.Normalize(aimM) * h.Trot * 0.6f : Vector2.Zero;
+                }
                 return;
             }
             default:
             {
-                // Charge: aim a few metres past the target to ride through it.
+                // Charge: aim past the target, punch straight through once in contact, and pull out immediately if stalled.
                 if (!u.Contact && ChargeLane(u, s, t) is Vector2 lane)
                 {
                     // Round to its open side first: a charge lands on a flank, not on its points.
@@ -227,20 +240,45 @@ public partial class Battle
                     Ride(u, Via(u, lane), h.Gallop, lane);
                     return;
                 }
-                var to = (t.Pos - u.Pos) / MathF.Max(td, 0.01f);
-                var past = t.Pos + to * 6;
-                var aimAt = Via(u, Terrain.House(past, 1.0f) ? t.Pos : past);
+                Vector2 goal;
+                if (u.Contact && td < 6f)
+                {
+                    // Commit to punching straight through along current heading instead of swerving at adjacent men.
+                    var through = u.Pos + hd * 12;
+                    if (through.Length() > MapRadius - 15) through = Vector2.Normalize(through) * (MapRadius - 15);
+                    goal = Terrain.House(through, 1.0f) ? t.Pos : through;
+                }
+                else
+                {
+                    var to = (t.Pos - u.Pos) / MathF.Max(td, 0.01f);
+                    var past = t.Pos + to * 6;
+                    goal = Terrain.House(past, 1.0f) ? t.Pos : past;
+                }
+                var aimAt = Via(u, goal);
                 u.Wish = (aimAt - u.Pos).LengthSquared() > 1e-4f ? Vector2.Normalize(aimAt - u.Pos) * h.Gallop : Vector2.Zero;
                 if (u.Type.Class == UnitClass.Cavalry && u.Speed > 6.5f && td < 30 && u.Cooldown <= 0) u.Couched = true;
                 if (td < 4) u.Contact = true;
-                if (u.Contact && td > 4 && Vector2.Dot(t.Pos - u.Pos, hd) < 0)
+                float targetR = t.Squad != null ? t.Squad.Radius : 2f;
+                bool cleared = u.Contact && (
+                    (td > 4.5f && Vector2.Dot(t.Pos - u.Pos, hd) < 0) ||
+                    (Vector2.Distance(u.Pos, targetCenter) > targetR + 4f && Vector2.Dot(targetCenter - u.Pos, hd) < 0));
+                if (cleared)
                 {
-                    u.Cav = CavState.Withdraw; // rode through: wheel away
-                    u.CavTimer = 4f;
+                    u.Cav = CavState.Withdraw; // broke through: ride out to recharge distance
+                    u.CavTimer = 7f;
                     u.Contact = false;
+                    u.Bogged = 0;
+                    return;
                 }
-                u.Bogged = u.Speed < 2.5f && td < 4 ? u.Bogged + dt : 0;
-                if (u.Bogged > 1.2f) { u.Cav = CavState.Melee; u.CavTimer = MeleeTime(s); u.Bogged = 0; u.Couched = false; }
+                u.Bogged = u.Speed < 2.5f && (td < 4.5f || d < 3.5f) ? u.Bogged + dt : 0;
+                if (u.Bogged > 1.0f)
+                {
+                    u.Cav = CavState.Withdraw; // stalled in the press: pull out immediately instead of sticking in melee
+                    u.CavTimer = 7f;
+                    u.Bogged = 0;
+                    u.Contact = false;
+                    u.Couched = false;
+                }
                 return;
             }
         }
@@ -276,7 +314,7 @@ public partial class Battle
         }
         else if (MathF.Abs(u.Speed) < 1.5f)
             u.Heading += Math.Clamp(MathHelper.WrapAngle(u.Facing - u.Heading), -rate * 0.6f * dt, rate * 0.6f * dt); // turn on the spot
-        if (Time < u.BoggedUntil) ws = MathF.Min(ws, h.Trot * 0.4f); // caught in a company's press
+        if (Time < u.BoggedUntil) ws = MathF.Min(ws, u.Cav == CavState.Withdraw ? h.Trot * 0.85f : h.Trot * 0.4f); // caught in a company's press; withdrawing riders can still pull free
         u.Speed = Approach(u.Speed, ws * Mud, (ws > u.Speed ? h.Accel : h.Accel * 1.8f) * dt);
         if (u.Action == UnitAction.None && (ws > 0.05f || u.Speed > 1.5f)) u.Facing = u.Heading;
     }

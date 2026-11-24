@@ -80,8 +80,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Field** (class, L18)
 - **Battle** (class, L31): LearnSpells:41, IsCaster:61, WillCap:64, WillCost:66, CasterCompany:69, SpellPower:73, Speaker:82, AddCast:85, MarkCast:88, UpdateAbilities:94, ThinkSpells:109, WouldOverreach:149, CannotCast:152, OrderedCast:167, DropCast:208, Target:216, Own:291, Foe:305, FoeGap:318, Engaged:326, Carries:327, Covered:328, OwnNear:329, Losing:332, Ready:344, Dry:351, Raining:353, Fire:357, Blast:425, AddTimed:432, AddField:442, UpdateFields:450, FieldsOn:470, TimedOn:482, Unweave:492
 
-## BattleAI.cs (403 lines)
-- **Battle** (class, L6): PackApproach:11, HeightRange:25, Think:27, ThinkCav:135, Ride:251, Approach:259, TurnRate:261, Steer:264, Led:287, General:291, Opposite:387
+## BattleAI.cs (441 lines)
+- **Battle** (class, L6): PackApproach:11, HeightRange:25, Think:27, ThinkCav:135, Ride:289, Approach:297, TurnRate:299, Steer:302, Led:325, General:329, Opposite:425
 
 ## BattleAlerts.cs (58 lines)
 - **Alert** (record, L6)
@@ -221,8 +221,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Arrows.cs (129 lines)
 - **BattleScreen** (class, L10): Landed:13, ResetArrows:25, TrackArrows:29, Steep:51, Puff:61, DrawMissiles:78, MissileLines:103
 
-## BattleScreen.Controls.cs (392 lines)
-- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:94, CapSector:95, Sector:96, CommandControls:103, CommandCursor:300, BoxOf:318, OnScreen:320, PickSquad:327, GroundUnderMouse:341, GroundUnder:343, UpdateCamera:355
+## BattleScreen.Controls.cs (406 lines)
+- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:94, CapSector:95, Sector:96, CommandControls:103, CommandCursor:300, BoxOf:318, OnScreen:320, PickSquad:327, GroundUnderMouse:341, GroundUnder:343, UpdateCamera:369
 
 ## BattleScreen.cs (724 lines)
 - **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:130, Load:144, QuickGround:175, BeginCampaign:185, StartDeployment:222, StageCommandView:237, BenchStage:247, FinishCampaignBattle:288, BeginQuickBattle:304, NewBattle:331, WithMages:376, SetWorld:384, SetCommand:399, Pressed:411, Update:419, PlaySounds:529, PlayPlayerSounds:558, Soundscape:580, SyncHud:674, MenuChoice:706
@@ -309,8 +309,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleUrge.cs (102 lines)
 - **Battle** (class, L11): TemperOf:17, ImpulsiveCompany:28, UpdateUrge:36, TipCompany:75
 
-## BattleWings.cs (152 lines)
-- **Battle** (class, L10): MeleeTime:13, Rallies:16, RallyPoint:19, Broke:31, HorseReinIn:42, RideToRally:54, HorseWits:67, HorsePrey:87, ChargeLane:104, HoldsFire:118, BowsWits:122, Focus:151
+## BattleWings.cs (164 lines)
+- **Battle** (class, L10): Rallies:13, RallyPoint:16, Broke:28, HorseReinIn:39, RideToRally:51, HorseWits:79, HorsePrey:99, ChargeLane:116, HoldsFire:130, BowsWits:134, Focus:163
 
 ## Bench.cs (83 lines)
 - **Bench** (class, L7): Run:9, Campaign:43, World:66
@@ -1117,8 +1117,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/AudioTests.cs (256 lines)
 - **SelfTest** (class, L5): MapMusicSteady:17, SoundsMade:79, CombatCuesEmitted:192, CreatureAndMagicCues:216, BedFollows:239
 
-## Tests/BattleTests.cs (2193 lines)
-- **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, KeysLabelled:127, LineScreensBows:138, KeepsDeployedFormation:169, HorseByWeight:192, CavalryBalance:219, Flanks:279, Parry:295, BlowsShown:323, FightsRead:345, Formations:361, HorseFollowsRider:393, CaptainCombat:415, CaptainKit:441, SkillBouts:499, Bout:549, Fight:563, BattleGoals:597, BannerAndLastStand:619, DuelFight:656, RangedRoles:677, FatigueAndSupply:697, GroundLayer:715, GroundMoves:740, GroundFights:771, Layouts:808, HedgesAndBridges:839, EveryLayoutResolves:887, SightAndCover:908, Rivers:950, HoldsTheCrest:978, HorseAvoidsBadGround:1004, TakesTheFord:1021, GroundForThePlayer:1043, Stakes:1062, Pathfinder:1117, GoesToFord:1137, FilesThroughGap:1166, RoundTheNearFence:1191, OutOfTheYard:1205, ChargeFindsCaptain:1223, FlowCacheBound:1238, Generals:1253, HorseDown:1270, Ground:1279, HoldFire:1303, Power:1318, TroopTree:1321, SpritesBaked:1345, Sprites:1366, TroopVariety:1403, BigBattle:1439, StackBattle:1469, NamedMenFight:1504, AutoResolveNamedMen:1546, PullBack:1572, NamedInTheFight:1604, ReplayExact:1635, FoldCompanies:1669, AdvanceSteps:1713, RelieveAndSplit:1728, QueuedAndStanding:1765, AlertsRaise:1824, DeploymentMemory:1849, SpearsStopHorse:1882, CommandCap:1893, ScaleBattle:1912, DivisionGoals:1949, LodFollowsFrameRate:2101, ChargeAroundBuilding:2141, BattleLabPresets:2179
+## Tests/BattleTests.cs (2233 lines)
+- **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, KeysLabelled:127, LineScreensBows:138, KeepsDeployedFormation:169, HorseByWeight:192, CavalryCycleCharge:221, CavalryBalance:259, Flanks:319, Parry:335, BlowsShown:363, FightsRead:385, Formations:401, HorseFollowsRider:433, CaptainCombat:455, CaptainKit:481, SkillBouts:539, Bout:589, Fight:603, BattleGoals:637, BannerAndLastStand:659, DuelFight:696, RangedRoles:717, FatigueAndSupply:737, GroundLayer:755, GroundMoves:780, GroundFights:811, Layouts:848, HedgesAndBridges:879, EveryLayoutResolves:927, SightAndCover:948, Rivers:990, HoldsTheCrest:1018, HorseAvoidsBadGround:1044, TakesTheFord:1061, GroundForThePlayer:1083, Stakes:1102, Pathfinder:1157, GoesToFord:1177, FilesThroughGap:1206, RoundTheNearFence:1231, OutOfTheYard:1245, ChargeFindsCaptain:1263, FlowCacheBound:1278, Generals:1293, HorseDown:1310, Ground:1319, HoldFire:1343, Power:1358, TroopTree:1361, SpritesBaked:1385, Sprites:1406, TroopVariety:1443, BigBattle:1479, StackBattle:1509, NamedMenFight:1544, AutoResolveNamedMen:1586, PullBack:1612, NamedInTheFight:1644, ReplayExact:1675, FoldCompanies:1709, AdvanceSteps:1753, RelieveAndSplit:1768, QueuedAndStanding:1805, AlertsRaise:1864, DeploymentMemory:1889, SpearsStopHorse:1922, CommandCap:1933, ScaleBattle:1952, DivisionGoals:1989, LodFollowsFrameRate:2141, ChargeAroundBuilding:2181, BattleLabPresets:2219
 
 ## Tests/CampaignTests.cs (2167 lines)
 - **SelfTest** (class, L6): CampaignMap:8, BanditsNearPlayer:42, CampaignPersistence:51, CampaignRun:62, Progression:104, CampPromotion:131, CastleMuster:152, VillagesFeedCastle:186, CaravansTownToTown:220, Economy:237, Bridge:253, Calibration:275, LordsFightAsTheyAre:300, RiverRoadGivesBridge:329, RainMakesMud:355, DefenderChoosesGround:382, AutoResolveGroundEdge:398, EncounterForecast:410, SiegeBattle:427, CampaignWar:465, RefuseOldSave:529, SaveFolders:555, RollEarnsNames:624, FallenRemembered:694, RisesFromRanks:739, BannerHonours:778, FameDraws:817, RetireAndSucceed:843, BuryNamed:873, Stacks:901, UpgradeTreeVisibility:946, Cultures:960, Characters:1041, CampaignDivisions:1146, Armoury:1201, Duels:1272, RidingAndBowcraft:1305, PerkTiers:1354, SkillRises:1381, LastingWounds:1434, CaptainTraits:1457, HouseholdGuard:1496, RankRewards:1524, StartingRoad:1552, SkillTree:1572, BalanceMatchesData:1655, HousesAndKin:1669, PortraitsVary:1704, TalkBondsWants:1725, LordArmies:1784, HorsesCostGold:1831, GoodsSell:1841, SaveMidRun:1859, Drive:1882, CheckSound:1895, ReportMatchesRecord:1910, StableMix:1953, LogLevels:1961, NobleBirth:1978, NobleRecruits:2003, PlaytestHarness:2064, FirstCampaignTutorial:2095, LiveSkirmishes:2141

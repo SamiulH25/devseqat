@@ -9,9 +9,6 @@ namespace Ironfield;
 /// Your horse sent at a company rein in once it breaks (`HorseReinIn`).
 public partial class Battle
 {
-    /// How long a bogged rider hacks before breaking off: rabble stay stuck longer.
-    static float MeleeTime(Squad s) => s.Grade == Grade.Rabble ? 8 : 5;
-
     /// Veteran horse and better (not horse archers) rally as a body between charges.
     static bool Rallies(Squad s) => s.Grade >= Grade.Veteran && s.Units.Count > 0 && s.Units[0].Type.Ammo == 0;
 
@@ -56,7 +53,22 @@ public partial class Battle
         if (!s.Rallying) { s.Rallying = true; s.RallySince = Time; s.RallyAt = RallyPoint(s); }
         u.Couched = false;
         float far = Vector2.Distance(u.Pos, s.RallyAt);
-        if (far > 6) { Ride(u, Via(u, s.RallyAt), far > 15 ? u.Horse!.Gallop : u.Horse!.Trot, s.RallyAt); return; }
+        if (far > 6)
+        {
+            var dest = s.RallyAt;
+            // If the rider broke through to the far side of the target, loop around its flank instead of riding back through it.
+            if (s.Target is { Alive: > 0 } ts && DistToSegment(ts.Center, u.Pos, s.RallyAt) < ts.Radius + 4 && Vector2.Distance(u.Pos, ts.Center) < far)
+            {
+                var toRally = s.RallyAt - u.Pos;
+                var dir = toRally.LengthSquared() > 1e-4f ? Vector2.Normalize(toRally) : s.Front;
+                var perp = new Vector2(-dir.Y, dir.X);
+                float sign = Vector2.Dot(u.Pos - ts.Center, perp) >= 0 ? 1 : -1;
+                dest = ts.Center + perp * sign * (ts.Radius + 10);
+                if (dest.Length() > MapRadius - 20) dest = Vector2.Normalize(dest) * (MapRadius - 20);
+            }
+            Ride(u, Via(u, dest), far > 15 ? u.Horse!.Gallop : u.Horse!.Trot, s.RallyAt);
+            return;
+        }
         u.Wish = Vector2.Zero;
         var toE = centroid[1 - s.Team] - u.Pos;
         if (toE.LengthSquared() > 1) u.Face(toE);
@@ -77,7 +89,7 @@ public partial class Battle
         if (all == 0 || near < all * 0.7f && Time - s.RallySince < 15) return;
         s.Rallying = false;
         s.Rallied++;
-        foreach (var u in s.Units) if (u.Active && u.Cav == CavState.Withdraw) { u.Cav = CavState.Charge; u.Contact = false; }
+        foreach (var u in s.Units) if (u.Active && u.Cav == CavState.Withdraw) { u.Cav = CavState.Charge; u.Contact = false; u.Bogged = 0; }
         if (s.Target == null || !s.Target.InContact) s.Target = HorsePrey(s) ?? s.Target;
         SetPlan(s, Plan.Advance);
     }
