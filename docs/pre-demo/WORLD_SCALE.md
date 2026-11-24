@@ -13,6 +13,8 @@ This settles `archive/HOLDS.md` HD6 (world size): the land grows, travel slows.
 3. **Redraw the current continent** (Roven), do not start a new one: keep its realms, places and shape, and fill the new room.
 4. **Lower settlement density**: the 4x spread does it (the same ~420 places on 16x the land); more places only where the
    owner draws or agrees to them.
+5. **Things on the map shrink too, parties most** (later the same day): the land still grows 4x, and on it towns and
+   castles are drawn smaller and parties smaller again (see "Smaller things" below).
 
 ## Where things stood (layout 5, `Data/world.json` revision 17)
 
@@ -49,13 +51,23 @@ at 0.6 he is a speck and needs a closer camera or a marker. Shrinking the riders
   stay fine, but close views need a finer grid near the camera (a local patch, far cheaper than streaming all the land),
   and cliffs stay crisp because they are their own meshes (WS4).
 
-**Proposal: a hybrid.** Keep the 4x draft as drawn (the geography: room, uplands, cliffs), build it at **2x** in the game
-(`DesignScale` 1.33 to 0.67 for layout 6), and **halve everything on the map** (one `MapScale` 0.5 read by the figures,
-footprints, models, trees, road and river widths, radii, camera). The land then feels 4x as large; the terrain is about
-825 x 825 cells (4x today's ~170k cells, not 16x), likely one bake with LOD instead of chunk streaming. Town to town in
-units is ~435; for 2 real minutes the clock goes to about 2 s a game hour, or speeds drop a little (choose with `--pacing`).
-With men this small a party can be a **column** (a few riders and foot, longer with more men) instead of one giant, and a
-**banner marker** keeps it readable when zoomed out.
+**Decided (owner, 2026-11-24): both.** The land still grows 4x (the draft as drawn, built at `DesignScale` 1.33 as now),
+*and* everything on it shrinks, parties more than places. Starting numbers, to tune by shots:
+
+| On the map | Now | Scale | Then |
+|---|---|---|---|
+| Party rider (`FigureScale`) | 2.5 (~6 units tall) | x0.3 | 0.75 (~1.8 units) |
+| Town / great castle / castle / tower house / village footprint (`FootprintOf`) and its model | 13 / 9 / 6.2 / 4.2 / 5.5 | x0.5 | 6.5 / 4.5 / 3.1 / 2.1 / 2.75 |
+| Trees and map dress (`MapTreeScale`) | 0.72 | x0.5 | 0.36 (a tree never outgrows a keep) |
+| Road and river widths, doorsteps, the place click radius | as drawn | x0.5 | |
+| Camera zoom range (25-620) and near plane | | close end x0.4 | 10-620 |
+
+What that gives: town to town is 4x as far, 8x as far measured in towns, about 13x measured in riders. Encounter, join and
+sight radii (3.5, 10, 55) are game rules, not looks: they are tuned in WS7 with the 4x land (contacts must not get rare),
+not shrunk with the figures. Time is unchanged by this: `HourSeconds` ~1.0 for 2 real minutes town to town (WS6). The
+terrain cost is still the 4x land's (WS4 streaming), plus a finer grid near the camera so 1.8-unit riders do not walk on
+4-unit facets. Small riders need help to read: a party is a **column** (riders and foot, longer with more men) close up,
+and a **banner marker** with its plate further out (WS5b).
 
 ## The draft (WS0, built)
 
@@ -104,6 +116,14 @@ terrain, foliage and places into chunks (e.g. 256 units), bake them on the worke
 and the far ones coarse, and stream as the camera moves (`World.Upload` per chunk). Cliffs get their own rock-face meshes
 (strata, scree at the foot) along the line, so a cliff is crisp whatever the grid. `--world-bench` reports per chunk; frame
 time at the widest zoom must not fall.
+
+### WS5b: Things on the map at scale
+One `MapScale` table (above) read by everything drawn on the map. Places: plans are laid in model space (today's sizes,
+so the town plans, lots and works keep working) and the built mesh is scaled about the place's centre, its ground heights
+sampled where the shrunk pieces stand; walls, gates and the doorstep follow. Parties: `FigureScale` 0.75, a column of
+figures by party size and kind (lords' horse, levy foot, a caravan's wagons, a monster pack), and a banner marker that
+takes over as the camera pulls back. Trees, dress and map life shrink with the places. Shots: `campaign-close`, `-road`,
+`-holds`, `-village`, `place-*` at each step; the rider must stay readable at the default camera.
 
 ### WS5: The camera and the map at scale
 Zoom bands: local (as now), regional (a province or two, places as models), strategic (the realm map M folded into the
