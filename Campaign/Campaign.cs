@@ -78,10 +78,16 @@ public sealed partial class Campaign
 
     /// A new campaign; `realm` is the realm you start in (docs/archive/WORLD.md W5): its capital, its villages' recruits.
     /// A new campaign; `making` is the captain from the character creator (null: the plain captain, who picks a road by event).
-    /// `layout` = the map's layout (-1: WorldMap.CurrentLayout, or IRONFIELD_MAP_LAYOUT when set: 5 = the designed world).
+    /// `layout` = the map's layout (-1: `NewLayout`).
+    /// The layout a new campaign gets: IRONFIELD_MAP_LAYOUT when set, else `TestLayout` (the self-test sets it), else
+    /// `WorldMap.CurrentLayout` (6, the 4x draft).
+    public static int NewLayout => int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_MAP_LAYOUT"), out int l) ? l : TestLayout ?? WorldMap.CurrentLayout;
+    /// The self-test's campaigns play on the drawn world (layout 5), where its numbers were tuned and a map builds in a
+    /// second; the 4x draft has its own tests (ReliefRaised, CliffsBar, MarchTakesMinutes, RoadsideStops).
+    public static int? TestLayout;
     public static Campaign New(int seed, int realm = 0, CaptainMaking? making = null, int layout = -1)
     {
-        if (layout < 0) layout = int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_MAP_LAYOUT"), out int l) ? l : WorldMap.CurrentLayout;
+        if (layout < 0) layout = NewLayout;
         var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, CaptainDeath = Settings.Current.CaptainDeath, MapExtent = WorldMap.Extent,
             Layout = layout, DataRealms = Factions.All.Count };
         s.Captain.Renown = B.StartRenown;

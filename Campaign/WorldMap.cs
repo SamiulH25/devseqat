@@ -100,10 +100,11 @@ public sealed partial class WorldMap
     /// How the map is laid out: 0 = the original three realms by fixed bands (every save from before docs/archive/WORLD.md W1 keeps it),
     /// 1 = each data realm grows from its home in Data/factions.json, 2 = that plus climates, ridges and more rivers (W2),
     /// 3 = all the data realms (seven, W3) at their homes in the data, 4 = that plus roads routed over the land, lakes and
-    /// village ponds (docs/archive/WORLD_LIFE.md WL1-WL2), 5 = the drawn world (docs/archive/WORLDMAP.md), what new campaigns play on since WM4.
+    /// village ponds (docs/archive/WORLD_LIFE.md WL1-WL2), 5 = the drawn world (docs/archive/WORLDMAP.md), what new campaigns played on
+    /// from WM4, 6 = the 4x draft with uplands and cliffs (docs/pre-demo/WORLD_SCALE.md), what new campaigns play on since 2026-11-24.
     /// Layouts 1-2 keep the three homes they were made with. `GeneratedLayout` is the newest map made from a seed: what
     /// `Generate` makes when no layout is named (the generator's own tests ask for it).
-    public const int LegacyLayout = 0, GeneratedLayout = 4, CurrentLayout = 5;
+    public const int LegacyLayout = 0, GeneratedLayout = 4, CurrentLayout = DraftLayout;
     /// The three realms' homes (x, z, reach) on layout 1-2 maps, as factions.json had them before the realms became seven.
     static readonly (float X, float Z, float Reach)[] ThreeRealmHomes = { (-0.8f, 0.45f, 0), (0.8f, 0.45f, 0), (0, -0.85f, -20) };
     public int Layout;

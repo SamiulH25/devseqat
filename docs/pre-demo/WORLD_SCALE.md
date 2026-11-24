@@ -1,6 +1,7 @@
 # World scale: a land four times as wide, with height and cliffs (WS0-WS8)
 
-Status: **WS0, WS1, WS2 and most of WS3 built 2026-11-24** (the 4x draft and its first relief in the world page; layout 6 builds it with its heights; cliffs bar the way; all headless), and a first WS7 pass (party counts, the two worst costs). WS1, the rest of WS3 (the AI and choke points), WS4-WS8 open. Owner's brief 2026-11-24.
+Status: **layout 6 is the default for new campaigns since 2026-11-24** (the owner's call; the self-test still plays on
+layout 5, `Campaign.TestLayout`, and the draft has its own tests). **WS0, WS1, WS2 and most of WS3 built 2026-11-24** (the 4x draft and its first relief in the world page; layout 6 builds it with its heights; cliffs bar the way; all headless), and a first WS7 pass (party counts, the two worst costs). WS1, the rest of WS3 (the AI and choke points), WS4-WS8 open. Owner's brief 2026-11-24.
 This settles `archive/HOLDS.md` HD6 (world size): the land grows, travel slows.
 
 > "A major world overhaul including elevation, cliffs, and a massive increase in scale of the world. There's no reason for

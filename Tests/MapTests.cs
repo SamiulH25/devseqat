@@ -134,7 +134,7 @@ public static partial class SelfTest
             var w = c.WarBetween(Factions.IndexOf(r.A), Factions.IndexOf(r.B));
             Check(w != null && w.Active == r.War && (r.War || MathF.Abs(w.TruceUntil - r.TruceDays * 24) < 1e-3f), $"{r.A} and {r.B} open as the data says");
         }
-        Check(c.S.Layout == WorldMap.CurrentLayout && c.S.DataRealms == Factions.All.Count, "a new campaign records its layout and realms");
+        Check(c.S.Layout == Campaign.NewLayout && c.S.DataRealms == Factions.All.Count, "a new campaign records its layout and realms");
         var states = Enumerable.Range(0, 2).Select(f => new FactionState { Id = f, Name = "x" }).ToList();
         states[1].Founded = true; states[1].Name = "Realm of Testford"; states[1].Palette = 2; states[1].Culture = "azure";
         Factions.Bind(states);

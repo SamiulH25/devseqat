@@ -875,7 +875,10 @@ sealed class ScreenHost : Game
                 c.S.Characters.Add(w);
                 c.S.Characters.Add(new Character { Id = c.S.NextId++, Kind = "wanderer", Name = "Wynn Ashdown", Culture = t.Culture, Role = "Surgeon", AtSettlement = t.Id + 1000 });
                 c.HireWanderer(t);
-                foreach (var extra in c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && s.Faction != c.Captain.Contract).Take(1)) { extra.Faction = c.Captain.Contract; extra.Owner = c.Player.Id; }
+                // Enough seats and renown to raise a vassal, whatever the earlier stages left on this map (the 4x draft's realm
+                // shots leave a vassal with one seat).
+                c.Captain.Renown = MathF.Max(c.Captain.Renown, Campaign.LordRenown);
+                foreach (var extra in c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && s.Faction != c.Captain.Contract).Take(Math.Max(1, Campaign.LordFiefs - c.FiefSeats))) { extra.Faction = c.Captain.Contract; extra.Owner = c.Player.Id; }
                 c.RaiseVassal(c.Companions.First());
                 c.SetOrder(c.Vassals.First(), "follow");
                 var w2 = c.S.Characters.First(k => k.Name == "Wynn Ashdown"); w2.AtSettlement = t.Id; c.HireWanderer(t);

@@ -9,7 +9,7 @@ new campaign plays on (layout 5) from this file (plan and status: `docs/archive/
 | `Data/world.json` | The map. The only source of truth. Both authors edit it; the game reads it. |
 | `docs/world/index.html` | The person's page: the map from above, its layers, editing tools and the notes. No build, no libraries. |
 | `tools/world.py` | Serves the page, validates the file, prints what waits for an author, saves it in the page's layout. |
-| `Data/world6.json` | The 4x draft (`docs/pre-demo/WORLD_SCALE.md`): the same world four times as wide, with uplands and cliffs. Map layout 6 builds it (`IRONFIELD_MAP_LAYOUT=6`); new campaigns do not get it yet. The owner left its relief and redraw to the model (2026-11-24). Open it with `tools/world.py --file Data/world6.json` (every switch takes `--file`). |
+| `Data/world6.json` | The 4x draft (`docs/pre-demo/WORLD_SCALE.md`): the same world four times as wide, with uplands and cliffs. Map layout 6 builds it: what new campaigns play on since 2026-11-24 (`IRONFIELD_MAP_LAYOUT=5` gives the old size). The owner left its relief and redraw to the model (2026-11-24). Open it with `tools/world.py --file Data/world6.json` (every switch takes `--file`). |
 
 ## Using it (the person)
 

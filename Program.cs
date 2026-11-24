@@ -146,6 +146,7 @@ if (args.Contains("--replay"))
     Ironfield.Replay.Run(args.SkipWhile(a => a != "--replay").Skip(1).FirstOrDefault() ?? Path.Combine(Ironfield.Replay.Folder, "last-battle.json"));
     return;
 }
+if (args.Contains("--selftest-shard") || args.Contains("--selftest")) Ironfield.Campaign.TestLayout = Ironfield.WorldMap.DesignLayout;
 if (args.Contains("--selftest-shard"))
 {
     Ironfield.SelfTest.RunShard(args.SkipWhile(a => a != "--selftest-shard").Skip(1).First()); // one core's share of --selftest
