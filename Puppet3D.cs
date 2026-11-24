@@ -311,7 +311,7 @@ sealed partial class Puppet3D
         if (u.Poison > 0 && u.HitFlash <= 0) tint = Color.Lerp(tint, new Color(150, 230, 110), 0.4f);
         unitIdHash = Ease.Hash(u.Index * 37 + 11);
 
-        if (look.Beast) return DrawBeast3D(u, ground, tint, look);
+        if (look.Beast || u.Type.Breed is "troll" or "ogre" or "giant") return DrawBeast3D(u, ground, tint, look);
 
         bool camel = u.Mounted && u.Horse?.Barding == "camel";
         if (!ShadowOnly) UnitMatTable.Fill(palIdx, look.Visage, u.Coat, camel, tint, palCols, look.Face);

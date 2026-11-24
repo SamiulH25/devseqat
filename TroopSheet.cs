@@ -56,7 +56,7 @@ sealed class TroopSheet
     void One(UnitType t, string path, float angleOffset = 0.6f)
     {
         const float Facing = MathHelper.PiOver2;
-        var u = new Unit { Index = 3, Palette = 0, Coat = 1, Type = t, Facing = Facing, ViewFacing = Facing, Heading = Facing, ViewHeading = Facing, EnemyDist = 2 };
+        var u = new Unit { Index = 3, Palette = t.Culture == "wild" ? 5 : 0, Coat = 1, Type = t, Facing = Facing, ViewFacing = Facing, Heading = Facing, ViewHeading = Facing, EnemyDist = 2 };
         if (t.Mount != null) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; }
         bool rider = u.Mounted;
         float fit = MathF.Max(1f, t.Size * (t.Flying ? 1.25f : 1.05f));

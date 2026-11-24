@@ -936,9 +936,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Upgrade.cs (353 lines)
 - **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:186, Leads:341
 
-## Mesh3D.cs (456 lines)
-- **MeshKit3D** (class, L9): TryLoad:70, Load:80, Get:168, Resolve:170, MapLimb:302, MapHelm:310, MapWeapon:354, MapShield:381
-- **UnitMatTable** (struct, L396): Fill:409, FillBeast:447
+## Mesh3D.cs (462 lines)
+- **MeshKit3D** (class, L9): TryLoad:73, Load:83, Get:174, Resolve:176, MapLimb:308, MapHelm:316, MapWeapon:360, MapShield:387
+- **UnitMatTable** (struct, L402): Fill:415, FillBeast:453
 
 ## MusicDirector.cs (129 lines)
 - **MusicDirector** (class, L12): Cue:17, MusicDirector:28, Pool:36, Reset:51, Adopt:59, Update:68, BackToMap:99, Next:109, Start:121
@@ -993,8 +993,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Puppet.cs (1102 lines)
 - **Puppet** (class, L13): PalOf:31, SetPal:114, GetLook:120, Puppet:126, Begin:128, Rad:137, W:138, Awed:164, Lean:181, Frame:188, View:198, Draw:218, Crossbow:355, Bow:379, HorseScale:407, Horse:415, sp_breathe:520, static:522, Beast:530, WolfBody:542, Warg:572, BeastCorpse:590, DrawLooseHorse:605, DrawDeadHorse:615, RotY:646, Shoulder:657, Arm:661, ArmTo:668, Elbow:680, Sink:707, Leg:716, SpanRect:728, Fallen:737, SpiritAscent:805, Corpse:846, Haze:886, Particle:898, Banner:913, Decal:972, Quad:985, PlumeY:999, HelmTop:1002, HeadBill:1018, BillRect:1021, Missile:1032, AxialSrc:1052, LongRect:1063, PlaneRect:1075, FlatRect:1085, FlatRot:1094
 
-## Puppet3D.Beasts.cs (422 lines)
-- **Puppet3D** (class, L7): BeastRearing:9, DrawBeast3D:13, DrawWolfUnit3D:33, DrawWolfRig:51, DrawWarg3D:95, DrawBear3D:103, DrawSpider3D:148, DrawWyvern3D:184, DrawBoar3D:247, DrawHarpy3D:276, DrawGriffon3D:300, DrawBasilisk3D:332, DrawSandWurm3D:365, DrawWerewolf3D:387
+## Puppet3D.Beasts.cs (526 lines)
+- **Puppet3D** (class, L7): BeastRearing:9, DrawBeast3D:13, DrawWolfUnit3D:34, DrawWolfRig:52, DrawWarg3D:99, DrawBear3D:107, DrawSpider3D:156, DrawWyvern3D:192, DrawBoar3D:256, DrawHarpy3D:286, DrawGriffon3D:312, DrawBasilisk3D:351, DrawSandWurm3D:382, DrawWerewolf3D:403, DrawBrute3D:441
 
 ## Puppet3D.cs (1464 lines)
 - **Puppet3D** (class, L12): BuildPatAlpha:41, Puppet3D:58, BeginCamera:64, Rad:71, Frame:73, WorldFrame:82, Lean:91, W:100, WDir:111, EmitLocal:126, EmitBone:195, EmitDir:211, EmitWeapon:223, RotX:248, RotZ:254, RotY:260, Elbow:266, Sink:288, TryDraw:297, EmblemOf:778, EmitSlashArc:788, EmitShield:861, DrawFallen3D:906, Banner:1011, DrawMissile:1149, HorseScale:1167, Joint:1177, DrawHorse3D:1191, DrawLooseHorse:1344, DrawDeadHorse:1358, Bench:1402
