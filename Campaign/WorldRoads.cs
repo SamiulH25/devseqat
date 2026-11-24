@@ -55,14 +55,30 @@ public sealed partial class WorldMap
     void LayRoads(bool route)
     {
         var villages = Settlements.Where(s => s.Kind == SettlementKind.Village).Select(s => s.Pos).ToHashSet();
-        var lines = new List<RoadLine>();
-        var router = route ? new Router(this) : null;
-        foreach (var (a, b) in Roads)
+        var lineArr = new RoadLine[Roads.Count];
+        if (route)
         {
-            bool village = villages.Contains(a) || villages.Contains(b);
-            var pts = router?.Route(a, b) ?? new[] { a, b };
-            lines.Add(new RoadLine(pts, village ? 1.7f : 2.6f, village));
+            _ = Index;
+            _ = RidgeIndex;
+            OnCliff(Vector2.Zero, 3);
+            using var router = new Router(this);
+            Parallel.For(0, Roads.Count, i =>
+            {
+                var (a, b) = Roads[i];
+                bool village = villages.Contains(a) || villages.Contains(b);
+                lineArr[i] = new RoadLine(router.Route(a, b), village ? 1.7f : 2.6f, village);
+            });
         }
+        else
+        {
+            for (int i = 0; i < Roads.Count; i++)
+            {
+                var (a, b) = Roads[i];
+                bool village = villages.Contains(a) || villages.Contains(b);
+                lineArr[i] = new RoadLine(new[] { a, b }, village ? 1.7f : 2.6f, village);
+            }
+        }
+        var lines = lineArr;
         RoadLines.AddRange(lines);
         if (route)
         {
@@ -86,7 +102,7 @@ public sealed partial class WorldMap
 
     /// Routes a road over the land: A* on a 4 m grid whose step cost grows with slope; lakes and rivers (away from the
     /// crossings it must keep) are barred. Heights are cached per cell across all roads.
-    sealed class Router
+    sealed class Router : IDisposable
     {
         const float C = 4;
         readonly WorldMap m;
@@ -95,6 +111,9 @@ public sealed partial class WorldMap
         readonly float[] height;
         readonly sbyte[] barred; // 0 unknown, 1 open, -1 barred
         readonly float riverHalf;
+        sealed class Scratch { public float[] Cost = Array.Empty<float>(); public int[] Prev = Array.Empty<int>(); public readonly PriorityQueue<(int X, int Z), float> Open = new(); }
+        readonly System.Threading.ThreadLocal<Scratch> scratch = new(() => new Scratch());
+        public void Dispose() => scratch.Dispose();
 
         public Router(WorldMap map)
         {
@@ -123,7 +142,7 @@ public sealed partial class WorldMap
             if (b == 0)
             {
                 var p = At(x, z);
-                b = (sbyte)(m.InLake(p, 2.5f) || m.RiverDist(p) < riverHalf + 1.5f || m.Landness(p) < 0.45f || m.OnCliff(p, 3) ? -1 : 1); // and the sea, on a designed map, and a cliff (WS3)
+                b = (sbyte)(m.Landness(p) < 0.45f || m.OnCliff(p, 3) || m.InLake(p, 2.5f) || m.RiverDist(p) < riverHalf + 1.5f ? -1 : 1); // and the sea, on a designed map, and a cliff (WS3)
             }
             return b < 0;
         }
@@ -181,13 +200,16 @@ public sealed partial class WorldMap
             float pad = MathF.Max(16, len * spread);
             var lo = Cell(Vector2.Min(from, to) - new Vector2(pad));
             var hi = Cell(Vector2.Max(from, to) + new Vector2(pad));
-            int w = hi.Item1 - lo.Item1 + 1, d = hi.Item2 - lo.Item2 + 1;
-            var cost = new float[w * d];
-            var prev = new int[w * d];
-            Array.Fill(cost, float.MaxValue);
-            Array.Fill(prev, -1);
+            int w = hi.Item1 - lo.Item1 + 1, d = hi.Item2 - lo.Item2 + 1, len2d = w * d;
+            var sc = scratch.Value!;
+            if (sc.Cost.Length < len2d) { sc.Cost = new float[len2d]; sc.Prev = new int[len2d]; }
+            var cost = sc.Cost;
+            var prev = sc.Prev;
+            Array.Fill(cost, float.MaxValue, 0, len2d);
+            Array.Fill(prev, -1, 0, len2d);
             int Id(int x, int z) => (z - lo.Item2) * w + (x - lo.Item1);
-            var open = new PriorityQueue<(int X, int Z), float>();
+            var open = sc.Open;
+            open.Clear();
             cost[Id(sx, sz)] = 0;
             open.Enqueue((sx, sz), 0);
             int budget = w * d * 2;

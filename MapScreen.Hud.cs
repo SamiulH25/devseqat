@@ -213,7 +213,8 @@ partial class MapScreen
                     var r = l.More > 0 ? new Rectangle(l.R.X, l.R.Y, ui.TW(text, 1) + ui.U(8), l.R.Height) : l.R;
                     r.X = Math.Min(r.X, Math.Max(ui.U(4), ui.W - ui.U(4) - r.Width));
                     ui.Rect(r, seen ? PartyColor(p) * 0.85f : Color.Black * 0.5f);
-                    ui.TextC(text, r.Center.X, r.Y + ui.U(3), seen ? Color.Black : Style.Dim, 1);
+                    if (seen) ui.TextPlainC(text, r.Center.X, r.Y + ui.U(3), Color.Black, 1);
+                    else ui.TextC(text, r.Center.X, r.Y + ui.U(3), Style.Dim, 1);
                 },
             });
         }

@@ -596,6 +596,16 @@ public sealed partial class WorldMap
     }
 
     /// The renderable terrain: heights, roads, map-scale trees and the settlements as 3D models.
+    Func<Vector2, (float Dist, Settlement? Place)>? nearestSettlement;
+    (float Dist, Settlement? Place) NearestSettlement(Vector2 p)
+    {
+        if (nearestSettlement != null) return nearestSettlement(p);
+        Settlement? best = null; float bd = float.MaxValue;
+        foreach (var st in Settlements) if (Vector2.Distance(st.Pos, p) is float d && d < bd) { bd = d; best = st; }
+        return (bd, best);
+    }
+    float NearestSettlementDist(Vector2 p) => NearestSettlement(p).Dist;
+
     public Terrain BuildTerrain()
     {
         var rng = new Random(Seed + 7);
@@ -616,11 +626,69 @@ public sealed partial class WorldMap
         var fieldCells = FieldCells(fields);
         var standRng = new Random(Seed * 5 + 3); // layout 4 woods: their own dice
         float keepOff = 9 * (Designed ? MathF.Sqrt(span) : span); // the drawn map's places stand close: woods come within half the generated maps' margin
+        const float Cell = 32f;
+        int gridSide = (int)MathF.Ceiling(2 * GroundHalf / Cell) + 1;
+        int CellOf(float v) => Math.Clamp((int)MathF.Floor((v + GroundHalf) / Cell), 0, gridSide - 1);
+        List<T>?[] MakeGrid<T>(IEnumerable<T> items, Func<T, Vector2> pos, Func<T, float> rad)
+        {
+            var g = new List<T>?[gridSide * gridSide];
+            foreach (var item in items)
+            {
+                var p = pos(item); float r = rad(item);
+                int x0 = CellOf(p.X - r), x1 = CellOf(p.X + r), z0 = CellOf(p.Y - r), z1 = CellOf(p.Y + r);
+                for (int z = z0; z <= z1; z++)
+                    for (int x = x0; x <= x1; x++)
+                        (g[z * gridSide + x] ??= new List<T>()).Add(item);
+            }
+            return g;
+        }
+        var siteGrid = MakeGrid(Sites, s => s.Pos, _ => 5.5f);
+        var lakeGrid = MakeGrid(Lakes, l => l.Center, l => l.Radius + 2.5f);
+        bool NearLake(Vector2 p)
+        {
+            if (lakeGrid[CellOf(p.Y) * gridSide + CellOf(p.X)] is not { } list) return false;
+            foreach (var l in list) if (l.Inside(p, 2)) return true;
+            return false;
+        }
+        var settleGrid = MakeGrid(Settlements, s => s.Pos, _ => keepOff + 0.5f);
+        var settleExactGrid = MakeGrid(Settlements, s => s.Pos, _ => 0f);
+        bool NearSite(Vector2 p)
+        {
+            if (siteGrid[CellOf(p.Y) * gridSide + CellOf(p.X)] is not { } list) return false;
+            foreach (var s in list) if (Vector2.Distance(s.Pos, p) <= 5) return true;
+            return false;
+        }
+        bool NearSettlement(Vector2 p)
+        {
+            if (settleGrid[CellOf(p.Y) * gridSide + CellOf(p.X)] is not { } list) return false;
+            foreach (var s in list) if (Vector2.Distance(s.Pos, p) <= keepOff) return true;
+            return false;
+        }
+        nearestSettlement = p =>
+        {
+            int cx = CellOf(p.X), cz = CellOf(p.Y);
+            Settlement? best = null; float bd = float.MaxValue;
+            for (int r = 0; r < gridSide; r++)
+            {
+                if (best != null && (r - 1) * Cell > bd) break;
+                int x0 = Math.Max(0, cx - r), x1 = Math.Min(gridSide - 1, cx + r);
+                int z0 = Math.Max(0, cz - r), z1 = Math.Min(gridSide - 1, cz + r);
+                for (int z = z0; z <= z1; z++)
+                    for (int x = x0; x <= x1; x++)
+                    {
+                        if (r > 0 && x != x0 && x != x1 && z != z0 && z != z1) continue;
+                        if (settleExactGrid[z * gridSide + x] is not { } list) continue;
+                        foreach (var s in list)
+                            if (Vector2.Distance(s.Pos, p) is float d && d < bd) { bd = d; best = s; }
+                    }
+            }
+            return (bd, best);
+        };
         // Ground anything may stand on, road or shore aside: no site, river, lake or field, inside the map.
-        bool Ground(Vector2 p) => Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RiverDist(p) > 3 && !InLake(p, 2)
-            && MathF.Abs(p.X) < half && MathF.Abs(p.Y) < half && !InField(fieldCells, p, 1.5f);
+        bool Ground(Vector2 p) => MathF.Abs(p.X) < half && MathF.Abs(p.Y) < half && !NearSite(p) && RiverDist(p) > 3 && !NearLake(p)
+            && !InField(fieldCells, p, 1.5f);
         bool Open(Vector2 p) => Landness(p) > 0.95f && RoadDist(p) > 2.5f && Ground(p);
-        bool Clear(Vector2 p) => Open(p) && Settlements.All(s => Vector2.Distance(s.Pos, p) > keepOff);
+        bool Clear(Vector2 p) => Open(p) && !NearSettlement(p);
         foreach (var f in fields.Where(f => f.Kind == FieldKind.Orchard)) // rows of small round fruit trees
         {
             var orng = new Random(f.Seed);
@@ -672,12 +740,13 @@ public sealed partial class WorldMap
                 if (d > r.Width * 0.45f && d < r.Width && Clear(pos))
                 {
                     // On the drawn map woods come close to towns: these shrink by a town as the stands' trees do, not tower over it.
-                    float town = Designed ? Settlements.Min(st => Vector2.Distance(st.Pos, pos)) : float.MaxValue;
+                    float town = Designed ? NearestSettlementDist(pos) : float.MaxValue;
                     float near = Designed ? 0.45f + 0.55f * Math.Clamp((town - 12 * span) / (30 * span), 0, 1) : 1;
                     foliage.Add(new Foliage(FoliageKind.Pine, pos, (2.2f + rng.NextSingle()) * grow0 * near, 0, rng.Next()));
                 }
             }
         if (Designed) DressEdges(grow0, Ground, foliage); // the shore and the roadsides (WorldEdges.cs), before the cover so it keeps clear of them
+        _ = RidgeIndex;
         if (Designed) Dress(grow0, Open, foliage); // woods and small cover between the stands (WorldDress.cs)
         for (int i = 0; i < (Designed ? 0 : 260); i++) // pines on the mountain rim (a designed map has the sea instead)
         {
@@ -690,8 +759,16 @@ public sealed partial class WorldMap
         placeTrees = TreeCells(foliage);
         var plans = PlanPlaces(); // the places' footprints (docs/archive/SETTLEMENTS.md): nothing else grows inside them
         var outer = plans.SelectMany(pl => pl.Lots.Where(l => l.W > 0 && l.Use is not (LotUse.Camp or LotUse.Fire or LotUse.Engine) && Vector2.Distance(l.Pos, pl.Pos) > pl.Radius - 1)).ToList(); // sheds, yurts, mills, suburbs and works out past the footprint (a siege camp pitches round the trees)
-        foliage.RemoveAll(f => f.Kind is not (FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village)
-            && (plans.Any(pl => Vector2.DistanceSquared(pl.Pos, f.Pos) < (pl.Radius + 0.8f) * (pl.Radius + 0.8f)) || outer.Any(l => Vector2.Distance(l.Pos, f.Pos) < (l.W + l.D) / 2 + 0.8f)));
+        var planGrid = MakeGrid(plans, pl => pl.Pos, pl => pl.Radius + 0.8f);
+        var outerGrid = MakeGrid(outer, l => l.Pos, l => (l.W + l.D) / 2 + 0.8f);
+        foliage.RemoveAll(f =>
+        {
+            if (f.Kind is FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village) return false;
+            int idx = CellOf(f.Pos.Y) * gridSide + CellOf(f.Pos.X);
+            if (planGrid[idx] is { } pls) foreach (var pl in pls) if (Vector2.DistanceSquared(pl.Pos, f.Pos) < (pl.Radius + 0.8f) * (pl.Radius + 0.8f)) return true;
+            if (outerGrid[idx] is { } ots) foreach (var l in ots) if (Vector2.Distance(l.Pos, f.Pos) < (l.W + l.D) / 2 + 0.8f) return true;
+            return false;
+        });
         var terrain = new Terrain(Seed, GroundHalf, ExtentUsed < Extent ? LegacyStep : Step, Height, RoadDist, foliage, Tint, Rivers) { Own = OwnColour, ThingScale = ThingScale };
         terrain.Places.AddRange(plans);
         terrain.RoadLines.AddRange(RoadLines);

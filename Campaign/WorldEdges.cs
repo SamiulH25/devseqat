@@ -21,10 +21,8 @@ public sealed partial class WorldMap
     /// Nearest place and how far its houses reach (a village's 11 m, a town's or castle's 14 m).
     (float Dist, float Houses, Settlement? Place) NearestPlace(Vector2 p)
     {
-        (float, float, Settlement?) best = (float.MaxValue, 0, null);
-        foreach (var st in Settlements)
-            if (Vector2.Distance(st.Pos, p) is var d && d < best.Item1) best = (d, st.Kind == SettlementKind.Village ? 11 : 14, st);
-        return best;
+        var (d, st) = NearestSettlement(p);
+        return (d, st == null ? 0 : st.Kind == SettlementKind.Village ? 11 : 14, st);
     }
 
     /// Near a port's pier (from the beach out to the ship at its head).

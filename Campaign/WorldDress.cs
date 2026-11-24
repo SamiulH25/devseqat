@@ -11,7 +11,10 @@ public sealed partial class WorldMap
 {
     /// What grows loose on a kind of country. `Wood`: how readily it grows woods (0 none; 0.7 = wood with glades in it).
     /// `Fill`: the share of its open cells that hold something. `Dry`: how parched its plants are. `Mix`: what stands there, by weight.
-    sealed record Cover(float Wood, float Fill, float Dry, params (FoliageKind Kind, int Weight)[] Mix);
+    sealed record Cover(float Wood, float Fill, float Dry, params (FoliageKind Kind, int Weight)[] Mix)
+    {
+        public readonly int TotalWeight = Mix.Sum(m => m.Weight);
+    }
 
     static readonly Dictionary<string, Cover> Covers = new()
     {
@@ -36,15 +39,25 @@ public sealed partial class WorldMap
     /// water, field or site). Small cover comes up to a place's houses; trees stand a few metres further off.
     void Dress(float grow, Func<Vector2, bool> open, List<Foliage> foliage)
     {
-        var taken = new HashSet<(int, int)>();
-        foreach (var f in foliage) taken.Add(((int)MathF.Floor(f.Pos.X / DressCell), (int)MathF.Floor(f.Pos.Y / DressCell)));
-        int n = (int)(ExtentUsed / DressCell);
-        for (int x = -n; x < n; x++)
-            for (int z = -n; z < n; z++)
+        int n = (int)(ExtentUsed / DressCell), side = 2 * n;
+        var taken = new bool[side * side];
+        foreach (var f in foliage)
+        {
+            int tx = (int)MathF.Floor(f.Pos.X / DressCell) + n, tz = (int)MathF.Floor(f.Pos.Y / DressCell) + n;
+            if ((uint)tx < (uint)side && (uint)tz < (uint)side) taken[tx * side + tz] = true;
+        }
+        var rows = new List<Foliage>?[side];
+        Parallel.For(0, side, xi =>
+        {
+            int x = xi - n;
+            List<Foliage>? row = null;
+            for (int zi = 0; zi < side; zi++)
             {
+                if (taken[xi * side + zi]) continue;
+                int z = zi - n;
                 var rng = new Random(Rng.Mix(Seed, 17, x, z)); // each cell its own dice: what else stands on the map never moves the cover
                 var p = new Vector2(x + 0.15f + rng.NextSingle() * 0.7f, z + 0.15f + rng.NextSingle() * 0.7f) * DressCell;
-                if (taken.Contains((x, z)) || !open(p) || OnRidge(p)) continue;
+                if (!open(p) || OnRidge(p)) continue;
                 var land = Lands.Of(ProvinceAt(p).Kind);
                 if (!Covers.TryGetValue(land.Kind, out var c)) continue;
                 var (town, houses, place) = NearestPlace(p);
@@ -70,7 +83,7 @@ public sealed partial class WorldMap
                     // Cover gathers in drifts and leaves open lawns between them.
                     float drift = 0.5f + 0.5f * Terrain.Noise(p.X * 0.045f, p.Y * 0.045f, Seed + 85);
                     if (rng.NextSingle() > c.Fill * (0.3f + 1.4f * drift)) continue;
-                    int roll = rng.Next(c.Mix.Sum(m => m.Weight)), i = 0;
+                    int roll = rng.Next(c.TotalWeight), i = 0;
                     while (roll >= c.Mix[i].Weight) roll -= c.Mix[i++].Weight;
                     kind = c.Mix[i].Kind;
                     if (kind is Broadleaf or Pine or Palm or DeadTree && !trees) kind = Shrub;
@@ -84,7 +97,10 @@ public sealed partial class WorldMap
                     Flowers => grow,
                     _ => (0.9f + rng.NextSingle() * 0.8f) * grow,
                 };
-                foliage.Add(new Foliage(kind, p, size, 0, rng.Next(), dry));
+                (row ??= new List<Foliage>()).Add(new Foliage(kind, p, size, 0, rng.Next(), dry));
             }
+            rows[xi] = row;
+        });
+        foreach (var row in rows) if (row != null) foliage.AddRange(row);
     }
 }

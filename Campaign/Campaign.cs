@@ -47,10 +47,12 @@ public sealed partial class Campaign
     public int BanditsWanted => (int)MathF.Round(B.BanditsMax * ProvinceScale);
     int BanditSpawnsWanted => Math.Max(1, (int)MathF.Round(B.BanditSpawnsPerDay * ProvinceScale));
 
-    public Campaign(CampaignState state)
+    public Campaign(CampaignState state) : this(state, null) { }
+
+    internal Campaign(CampaignState state, WorldMap? map)
     {
         S = state;
-        Map = WorldMap.Generate(state.Seed, state.MapExtent, state.Layout, state.DataRealms);
+        Map = map ?? WorldMap.Generate(state.Seed, state.MapExtent, state.Layout, state.DataRealms);
         rng = new Rng(state);
         Factions.Bind(S.Factions);
         RegisterOwnForm(); // your own form is made in play (MA6)
@@ -105,7 +107,7 @@ public sealed partial class Campaign
             if (a < 0 || b < 0 || a >= factions || b >= factions) continue;
             s.Wars.Add(r.War ? new War { A = a, B = b } : new War { A = a, B = b, Active = false, TruceUntil = r.TruceDays * 24 });
         }
-        var c = new Campaign(s);
+        var c = new Campaign(s, map);
         realm = Math.Clamp(realm, 0, factions - 1);
         // The Crown's westernmost town (as it always was); another realm's town nearest the middle of its land.
         var towns = s.Settlements.Where(t => t.Kind == SettlementKind.Town && t.Faction == realm).ToList();

@@ -175,6 +175,12 @@ sealed class Ui
         if (Overflow.On) Overflow.Text(s, MathF.Floor(x), MathF.Floor(y), TW(s, scale));
         font.Draw(Sb, s, new Vector2(MathF.Floor(x), MathF.Floor(y)), c, scale * S);
     }
+    /// Text without the built-in black drop shadow (for dark letters on a bright background, where a shadow smears them).
+    public void TextPlain(string s, float x, float y, Color c, int scale = 2)
+    {
+        if (Overflow.On) Overflow.Text(s, MathF.Floor(x), MathF.Floor(y), TW(s, scale));
+        font.DrawPlain(Sb, s, new Vector2(MathF.Floor(x), MathF.Floor(y)), c, scale * S);
+    }
     /// Writing in ink on paper: no black shadow (it would be the colour of the letters), a pale edge under each stroke
     /// instead, so dark words stand clear of the sheet. `cx` centres the line on x.
     public void Ink(string s, float x, float y, Color c, int scale = 1, bool cx = false)
@@ -195,6 +201,7 @@ sealed class Ui
     }
     public int TW(string s, int scale = 2) => PixelFont.Width(s, scale * S);
     public void TextC(string s, float cx, float y, Color c, int scale = 2) => Text(s, cx - TW(s, scale) / 2f, y, c, scale);
+    public void TextPlainC(string s, float cx, float y, Color c, int scale = 2) => TextPlain(s, cx - TW(s, scale) / 2f, y, c, scale);
     public void TextR(string s, float rx, float y, Color c, int scale = 2) => Text(s, rx - TW(s, scale), y, c, scale);
 
     /// A bar on a dark trough, the fill shaded top to bottom with a lit top line once it is tall enough to show one.

@@ -120,14 +120,13 @@ public sealed partial class WorldMap
             {
                 float ta = rng.NextSingle() * MathF.Tau, td = rng.NextSingle() * sr; // thickest at the heart
                 var pos = centre + new Vector2(MathF.Cos(ta), MathF.Sin(ta)) * td;
-                if (!clear(pos) || ProvinceAt(pos) != p || OnRidge(pos)) continue;
-                if (Terrain.Noise(pos.X * 0.06f, pos.Y * 0.06f, Seed + 77) < 0.28f) continue; // a clearing
+                if (ProvinceAt(pos) != p || Terrain.Noise(pos.X * 0.06f, pos.Y * 0.06f, Seed + 77) < 0.28f || OnRidge(pos) || !clear(pos)) continue;
                 float edge = td / sr;
                 if (rng.NextSingle() < edge * edge * 0.55f) continue; // the stand thins out toward its edge
                 if (edge > 0.85f) { foliage.Add(new Foliage(FoliageKind.Bush, pos, (1.8f + rng.NextSingle()) * grow, 0, rng.Next())); continue; }
                 bool pine = Lands.Of(p.Kind).Conifer || p.Kind == "Forest" && rng.NextSingle() < 0.35f || rng.NextSingle() < 0.15f;
                 bool birch = !pine && !Lands.Of(p.Kind).Conifer && rng.NextSingle() < 0.12f;
-                float town = Settlements.Min(st => Vector2.Distance(st.Pos, pos)), near = 0.45f + 0.55f * Math.Clamp((town - 12 * grow * grow) / (30 * grow * grow), 0, 1);
+                float town = NearestSettlementDist(pos), near = 0.45f + 0.55f * Math.Clamp((town - 12 * grow * grow) / (30 * grow * grow), 0, 1);
                 float size = (1.7f + rng.NextSingle() * 1.3f) * grow * near * (1.0f - 0.3f * edge); // three sizes in a stand, smaller at its edge
                 foliage.Add(new Foliage(pine ? FoliageKind.Pine : birch ? FoliageKind.Birch : FoliageKind.Broadleaf, pos, size, 0, rng.Next()));
             }

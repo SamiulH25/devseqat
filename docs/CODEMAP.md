@@ -341,8 +341,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Camp.cs (48 lines)
 - **Campaign** (class, L4): MoodOfCamp:10, CampFires:18, static:23, StageCamp:28
 
-## Campaign/Campaign.cs (636 lines)
-- **Campaign** (class, L7): LordsWantedOf:41, Campaign:50, New:88, Log:166, Classify:173, LogYours:177, LogAll:179, PartyById:181, SettlementById:182, SideOf:186, Outlaw:190, Hostile:192, WarBetween:201, FactionsAtWar:202, AtWarWithAnyone:203, Score:206, Refuses:217, InSight:222, SettlementAt:224, InTown:235, Tick:240, Speed:269, PaceOf:273, BaseSpeed:277, Move:295, SeaRoute:347, Encounters:364, Clash:392, Edge:429, EdgeOfKind:430, Hourly:432, Daily:458, Weekly:565, Desert:626
+## Campaign/Campaign.cs (638 lines)
+- **Campaign** (class, L7): LordsWantedOf:41, Campaign:50, Campaign:52, New:90, Log:168, Classify:175, LogYours:179, LogAll:181, PartyById:183, SettlementById:184, SideOf:188, Outlaw:192, Hostile:194, WarBetween:203, FactionsAtWar:204, AtWarWithAnyone:205, Score:208, Refuses:219, InSight:224, SettlementAt:226, InTown:237, Tick:242, Speed:271, PaceOf:275, BaseSpeed:279, Move:297, SeaRoute:349, Encounters:366, Clash:394, Edge:431, EdgeOfKind:432, Hourly:434, Daily:460, Weekly:567, Desert:628
 
 ## Campaign/CampaignActions.cs (196 lines)
 - **Campaign** (class, L6): MoveTo:11, Chase:12, GoTo:13, RecruitLevies:18, RecruitLevies:21, LevyPrice:66, MercenaryPrice:68, Hire:74, BuyHorses:92, RaiseHounds:107, Merge:131, Split:134, Disband:159, MoveUp:161, SignContract:169, Rest:189
@@ -685,23 +685,23 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/WorldDesigned.cs (526 lines)
 - **WorldMap** (class, L9): Drawn:14, Drawn:15, Cell:43, InSea:51, Landness:54, DesignProvinceAt:64, Roadside:68, FromDesign:89, BuildGrid:167, OntoLand:224, InExtent:234, Blur:240, LinkNeighbours:268, PlanAroundSea:304, PlanBySea:307, PlanOver:311, OverLand:414, DesignRoads:424, DesignRiver:469, CliffCalm:489, Meander:506
 
-## Campaign/WorldDress.cs (90 lines)
-- **WorldMap** (class, L10): Cover:14, Dress:37
+## Campaign/WorldDress.cs (106 lines)
+- **WorldMap** (class, L10): Cover:14, Dress:40
 
-## Campaign/WorldEdges.cs (177 lines)
-- **WorldMap** (class, L10): DressEdges:13, ByQuay:31, Shore:44, Boats:77, Roadside:119
+## Campaign/WorldEdges.cs (175 lines)
+- **WorldMap** (class, L10): DressEdges:13, ByQuay:29, Shore:42, Boats:75, Roadside:117
 
-## Campaign/WorldLand.cs (136 lines)
+## Campaign/WorldLand.cs (135 lines)
 - **WorldMap** (class, L8): LayFields:12, BitCount:71, FieldClear:74, InField:105, GrowStands:110
 
-## Campaign/WorldMap.cs (741 lines)
-- **WorldMap** (class, L8): InLand:84, WorldMap:96, readonly:109, Generate:113, Climate:230, RaiseRidges:244, AddRidge:275, RidgeDist:287, RidgeHeight:290, OnRidge:308, HomeOf:311, ReachOf:313, GrowRealms:318, SiteKindsFor:360, PlaceSites:364, Cross:389, RiverDist:398, RiverScan:399, ProvinceAt:403, ProvinceScan:406, RoadDist:419, NearRoad:421, RoadScan:423, SpeedFactor:436, BattleGround:441, Height:462, LandHeight:475, DesignedHeight:499, RimAt:524, Ridged:526, Tint:529, OwnColour:573, NearSea:576, KindTint:584, BuildTerrain:599
-- **PlaceNamer** (class, L715): PlaceNamer:722, Pool:724, Next:730
+## Campaign/WorldMap.cs (818 lines)
+- **WorldMap** (class, L8): InLand:84, WorldMap:96, readonly:109, Generate:113, Climate:230, RaiseRidges:244, AddRidge:275, RidgeDist:287, RidgeHeight:290, OnRidge:308, HomeOf:311, ReachOf:313, GrowRealms:318, SiteKindsFor:360, PlaceSites:364, Cross:389, RiverDist:398, RiverScan:399, ProvinceAt:403, ProvinceScan:406, RoadDist:419, NearRoad:421, RoadScan:423, SpeedFactor:436, BattleGround:441, Height:462, LandHeight:475, DesignedHeight:499, RimAt:524, Ridged:526, Tint:529, OwnColour:573, NearSea:576, KindTint:584, NearestSettlementDist:607, BuildTerrain:609
+- **PlaceNamer** (class, L792): PlaceNamer:799, Pool:801, Next:807
 
 ## Campaign/WorldRelief.cs (244 lines)
 - **WorldMap** (class, L10): CliffLine:13, UplandArea:15, CliffReach:23, SkirtOf:25, DesignRelief:27, Bound:43, Ragged:52, Unit01:57, Relief:60, CliffLift:87, Taper:97, Climb:105, OnCliff:119, FaceGap:133, BuildFaces:143, FaceGapExact:177, CrossesCliff:191, InsideDistance:230
 
-## Campaign/WorldRoads.cs (264 lines)
+## Campaign/WorldRoads.cs (286 lines)
 - **WorldMap** (class, L9): InLake:19, PlaceLakes:26, LayRoads:55
 
 ## Campaign/WorldSea.cs (72 lines)
@@ -894,8 +894,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Fallen.cs (105 lines)
 - **MapScreen** (class, L8): OpenBook:14, BookHead:18, BookCaptain:19, BookRow:20, BookPanel:22, FallenCard:85
 
-## MapScreen.Hud.cs (664 lines)
-- **MapScreen** (class, L8): SideColor:12, Allegiance:14, PartyColor:25, DrawUi:30, Screen:101, Flags:117, Life:238, TopBar:268, Feed:287, Overview:319, CaptainPanel:348, NextChip:405, HudZones:424, BuffChips:436, RenownStep:453, Cards:455, Card:470, TierStrip:500, Hints:514, HelpPanel:537, Tooltip:571, Modal:646, Note:660
+## MapScreen.Hud.cs (665 lines)
+- **MapScreen** (class, L8): SideColor:12, Allegiance:14, PartyColor:25, DrawUi:30, Screen:101, Flags:117, Life:239, TopBar:269, Feed:288, Overview:320, CaptainPanel:349, NextChip:406, HudZones:425, BuffChips:437, RenownStep:454, Cards:456, Card:471, TierStrip:501, Hints:515, HelpPanel:538, Tooltip:572, Modal:647, Note:661
 
 ## MapScreen.Inventory.cs (600 lines)
 - **MapScreen** (class, L8): InventoryPanel:24, MakeColour:41, KitDoll:48, PieceDetail:75, SmithRow:174, KitSlot:214, StorageEntry:253, BuildStorageEntries:255, BaggageGrid:314, StorageCell:366, StorageActions:455, BaggageTrainFooter:558
@@ -1245,8 +1245,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## TroopSheet.cs (129 lines)
 - **TroopSheet** (class, L9): TroopSheet:20, Write:29, One:56
 
-## Ui.cs (355 lines)
-- **Ui** (class, L8): Hovered:28, Hovered:36, FrameEnd:46, Ui:50, Anim:69, static:80, Since:93, Count:103, Key:110, Reset:113, Begin:115, End:125, Blocks:128, Block:129, U:130, Rect:132, Clip:142, Frame:158, Panel:167, Dim:170, Text:173, Ink:180, InkProse:189, TW:196, TextC:197, TextR:198, Bar:202, Hover:215, Clicked:218, Button:227, Face:256, FaceHead:266, HasSprite:278, Sprite:280, SpriteFit:292, GearSprite:305, GoodsSprite:349, StoreSprite:352, Portrait:354
+## Ui.cs (362 lines)
+- **Ui** (class, L8): Hovered:28, Hovered:36, FrameEnd:46, Ui:50, Anim:69, static:80, Since:93, Count:103, Key:110, Reset:113, Begin:115, End:125, Blocks:128, Block:129, U:130, Rect:132, Clip:142, Frame:158, Panel:167, Dim:170, Text:173, TextPlain:179, Ink:186, InkProse:195, TW:202, TextC:203, TextPlainC:204, TextR:205, Bar:209, Hover:222, Clicked:225, Button:234, Face:263, FaceHead:273, HasSprite:285, Sprite:287, SpriteFit:299, GearSprite:312, GoodsSprite:356, StoreSprite:359, Portrait:361
 
 ## UiKit.cs (620 lines)
 - **Kit** (class, L9): Mul:17, N:19, VGrad:24, HGrad:31, Line:38, Disc:45, Vignette:56, Hills:70, HillY:81, Stars:88, Castle:101, Plate:124, PlateBody:135, Fit:157, FitScale:170, TextFit:173, TextFitC:175, Inset:178, Shine:182, Ribbon:195, Divider:214, Shield:225, Banner:265, Icon:337, IconFlat:353, Ring:366, Pips:385, Gauge:399, TugBar:408, Chart:419, WordTabs:442, Chip:459, Gilded:470, Toggle:491, Check:504, Slider:515, Stepper:531, Tabs:545, Toast:567, OrderKey:577, Tooltip:592, Wrap:607
