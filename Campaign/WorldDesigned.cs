@@ -64,6 +64,28 @@ public sealed partial class WorldMap
     Province DesignProvinceAt(Vector2 p) => Provinces[cellProvince![Cell(p, out _, out _)]];
 
     /// The map of layout 5: everything from the design, then the same finishing as layout 4 (roads routed over the land).
+    /// An inn or a toll bridge (WS1) beside the road nearest to where it was drawn: 5 units off it, on dry land.
+    Vector2 Roadside(Vector2 p)
+    {
+        Vector2 best = p, dir = Vector2.UnitX;
+        float bd = float.MaxValue;
+        foreach (var (a, b) in Roads)
+        {
+            var ab = b - a;
+            float len2 = ab.LengthSquared();
+            float t = len2 > 0 ? Math.Clamp(Vector2.Dot(p - a, ab) / len2, 0, 1) : 0;
+            var q = a + ab * t;
+            float d = Vector2.DistanceSquared(p, q);
+            if (d < bd && len2 > 0) { bd = d; best = q; dir = Vector2.Normalize(ab); }
+        }
+        if (bd == float.MaxValue) return p;
+        var side = new Vector2(-dir.Y, dir.X);
+        if (Vector2.Dot(p - best, side) < 0) side = -side; // the side it was drawn on first
+        foreach (var at in new[] { best + side * 5, best - side * 5 })
+            if (!InSea(at) && RiverDist(at) > 4 && !OnCliff(at, 3)) return at;
+        return best + side * 5;
+    }
+
     static WorldMap FromDesign(WorldDesign d, int realms, int layout = DesignLayout)
     {
         var m = new WorldMap(DesignSeed) { ExtentUsed = d.Extent * DesignScale, Layout = layout, DesignCell = 2 * MathF.Sqrt(MathF.Max(1, d.Warp)), SeaCell = 6 * MathF.Sqrt(MathF.Max(1, d.Warp)), drawnWarp = MathF.Max(1, d.Warp) };
@@ -132,6 +154,7 @@ public sealed partial class WorldMap
         foreach (var s in d.Sites)
         {
             var pos = Drawn(s.X, s.Y);
+            if (Campaign.RoadSiteKinds.Contains(s.Kind)) pos = m.Roadside(pos); // the roads were routed since they were drawn
             m.Sites.Add(new Site { Id = m.Sites.Count, Province = m.DesignProvinceAt(pos).Id, Kind = s.Kind, Pos = pos, Name = s.Name });
         }
         _ = m.Index; // build the look-up grid now, behind the loading screen: the generated maps' site placing builds it, this map's

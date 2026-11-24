@@ -7,7 +7,8 @@ namespace Ironfield;
 public sealed class Site
 {
     public int Id, Province;
-    /// "ruin", "shrine", "stones", "battlefield", "mine", "hermit", "watchtower", "spring", "mill" or "monument".
+    /// "ruin", "shrine", "stones", "battlefield", "mine", "hermit", "watchtower", "spring", "mill" or "monument"; on the 4x
+    /// draft also the roads' "inn" and "toll" (`Campaign.RoadSiteKinds`).
     public string Kind = "", Name = "", LegendId = "";
     public Vector2 Pos;
 
@@ -25,6 +26,8 @@ public sealed class Site
         "hermit" => $"Hermit of {province}",
         "watchtower" => $"{province} Watch",
         "spring" => $"{province} Spring",
+        "inn" => $"The {province} Inn",
+        "toll" => $"{province} Bridge",
         _ => $"{province} Mill",
     };
 
@@ -39,6 +42,8 @@ public sealed class Site
         "hermit" => "A HERMIT'S HUT. HE KNOWS THINGS",
         "watchtower" => "AN OLD WATCHTOWER. SEE FAR FROM THE TOP",
         "spring" => "A HEALING SPRING. REST THE WOUNDED",
+        "inn" => "AN INN ON THE ROAD. BEDS, BREAD AND NEWS",
+        "toll" => "A TOLL BRIDGE. PAY TO CROSS, HEAR THE ROAD'S NEWS",
         "monument" => "A MONUMENT TO A PAST LEGEND. PAY RESPECTS OR SEEK THEIR HEIRLOOM",
         _ => "A WATERMILL. FLOUR FOR SALE",
     };
@@ -48,6 +53,8 @@ public sealed class Site
 public sealed partial class Campaign
 {
     public static readonly string[] SiteKinds = { "ruin", "shrine", "stones", "battlefield", "mine", "hermit", "watchtower", "spring", "mill" };
+    /// Sites drawn on the roads of the 4x draft only (WS1), never placed on generated maps.
+    public static readonly string[] RoadSiteKinds = { "inn", "toll" };
 
     public IReadOnlyList<Site> Sites => Map.Sites;
     public Site? SiteById(int id) => id >= 0 && id < Map.Sites.Count ? Map.Sites[id] : null;

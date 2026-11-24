@@ -1,6 +1,6 @@
 # World scale: a land four times as wide, with height and cliffs (WS0-WS8)
 
-Status: **WS0, WS2 and most of WS3 built 2026-11-24** (the 4x draft and its first relief in the world page; layout 6 builds it with its heights; cliffs bar the way; all headless), and a first WS7 pass (party counts, the two worst costs). WS1, the rest of WS3 (the AI and choke points), WS4-WS8 open. Owner's brief 2026-11-24.
+Status: **WS0, WS1, WS2 and most of WS3 built 2026-11-24** (the 4x draft and its first relief in the world page; layout 6 builds it with its heights; cliffs bar the way; all headless), and a first WS7 pass (party counts, the two worst costs). WS1, the rest of WS3 (the AI and choke points), WS4-WS8 open. Owner's brief 2026-11-24.
 This settles `archive/HOLDS.md` HD6 (world size): the land grows, travel slows.
 
 > "A major world overhaul including elevation, cliffs, and a massive increase in scale of the world. There's no reason for
@@ -96,6 +96,23 @@ Answer the relief notes; then fill the new room: split big provinces where the g
 reads as empty), wild land between realms (forest, moor, waste: no settlement, monster country), waypoints about a day
 apart on the roads (inns, ferries, toll bridges, watchtowers: as sites), and river crossings (fords and bridges as named
 points). Every addition goes in as a note first (docs/world/README.md). Ends when the owner calls the draft settled.
+
+**As built (2026-11-24): settled by the model.** The owner left the relief notes and the redraw to the model. All seven
+relief notes are kept (built and tested). Revision 4 of `Data/world6.json`:
+- **Provinces split**: every land province over ~60,000 square units (draft) is cut into pieces by k-means on its cells'
+  warped points (the page's own warp, so borders keep their look), the old centre fixed. A piece is refused or pushed
+  inland when it would move the coast by more than 8 cells of 8 units, or take a settlement from another province's
+  family. 81 -> **167 land provinces**; the coast moved by 131 such cells in all (small nicks).
+- **Wild land**: a new piece with no settlement turns to monster country: lowland to Forest (Marsh by a river), Steppe to
+  Badlands, Oasis to Desert; 17 such.
+- **Inns** (site kind `inn`, `Campaign.RoadSiteKinds`): one every ~150 draft units of drawn road (~200 game units, a long
+  day on foot), not within 55 of a settlement, 90 of another site, 25 of a cliff or 12 of a river: **39**. Named by the
+  people round them (Caravanserai of X in the south, Yam of X on the steppe, The Raven Hall in the north, The Red Lion
+  elsewhere). **Toll bridges** (`toll`) where a drawn road crosses a drawn river, on the near bank: **3** (the draft has
+  five rivers). Both are moved onto the routed road when the map is built (`WorldMap.Roadside`), with a model
+  (`World.SiteModel`), an event (`site_inn`: news, beds, bread; `site_toll`: news, pay, talk your way across), a vignette
+  in the event book and a tavern rumour. Shot `campaign-inn.png` (map-only shots, draft only). Test `RoadsideStops`.
+- Not done: named fords and ferries beyond the tolls, and waypoints on the AI's or the player's off-road ways.
 
 ### WS2: Height in the game's land (headless)
 `WorldDesign` reads `warp`, `uplands` and `cliffs`. The height function adds uplands (plateau: a flat top with a steep

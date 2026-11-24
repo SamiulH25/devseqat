@@ -101,6 +101,28 @@
       ]
     },
     {
+      "id": "site_inn", "moments": ["site"], "when": ["at_site:inn"], "cooldown": 0, "scene": "site_inn",
+      "title": "{site}",
+      "text": "Smoke from the chimney, horses in the yard, and the innkeeper counting your men from the doorway. There is room in the barn for most of them, and beds for the rest if you pay.",
+      "choices": [
+        { "label": "Ask the innkeeper for the road's news", "outcome": { "text": "He has heard everything, and he tells it for the price of a cup.", "do": ["spy", "spent:2"] } },
+        { "label": "Take beds and a hot meal for the night", "cost": ["gold:40"], "outcome": { "text": "One night under a roof. The wounded sleep, and the column marches out fed.", "do": ["heal:15", "food:3", "cohesion:4", "spent:4"] } },
+        { "label": "Buy bread and ride on", "cost": ["gold:30"], "outcome": { "text": "He sells you three days of bread. It is still warm.", "do": ["food:3", "spent:4"] } }
+      ]
+    },
+    {
+      "id": "site_toll", "moments": ["site"], "when": ["at_site:toll"], "cooldown": 0, "scene": "site_toll",
+      "title": "{site}",
+      "text": "A bar across the road and a toll-keeper behind it. Traders wait on both banks, and every one of them has news from the other side.",
+      "choices": [
+        { "label": "Listen to the traders waiting to cross", "outcome": { "text": "Who is on the road, who is at war, what bread costs downstream.", "do": ["spy", "spent:3"] } },
+        { "label": "Pay the toll for the column", "cost": ["gold:25"], "outcome": { "text": "He lifts the bar and counts your men as they cross. The traders cheer you through.", "do": ["renown:1", "spent:3"] } },
+        { "label": "Talk him out of the toll", "check": { "skill": "Charm", "against": 30 }, "hint": "If he refuses, you will pay double.",
+          "pass": { "text": "He lifts the bar and says nothing more about money.", "do": ["spent:3"] },
+          "fail": { "text": "He calls the guard and doubles the price. You pay it.", "do": ["gold:-50", "spent:3"] } }
+      ]
+    },
+    {
       "id": "site_mill", "moments": ["site"], "when": ["at_site:mill"], "cooldown": 0, "scene": "site_mill",
       "title": "{site}",
       "text": "The mill wheel turns, and the miller is standing in his door. He has flour to sell, and the price goes up as he counts how many men you have.",

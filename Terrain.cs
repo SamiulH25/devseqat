@@ -11,7 +11,9 @@ public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wa
     // The water's edge and the roadside (docs/archive/WORLD_DRESS.md WD4).
     Driftwood, Milestone, Wayside, Well, Rowboat, Marram,
     // An assault field's keep (a castle's) or landmark (a town's), behind the wall (docs/archive/SETTLEMENTS.md SM6).
-    Keep, Landmark }
+    Keep, Landmark,
+    // Waypoints on the 4x draft's roads (docs/pre-demo/WORLD_SCALE.md WS1): an inn, a toll bridge's gate.
+    Inn, Toll }
 
 /// A river (roadmap C5): a centre line, its width, and the fords where it runs shallow.
 public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float Depth = 1.3f)

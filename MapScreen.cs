@@ -1088,6 +1088,10 @@ sealed partial class MapScreen
                 panel = PanelKind.None; follow = false; zoom = 95; pitch = 0.85f;
                 focus = C.S.Settlements.Where(s => s.Kind == SettlementKind.Village).OrderBy(s => Vector2.Distance(s.Pos, C.Player.Pos)).First().Pos;
                 break;
+            case "inn": // the roadside inn nearest your company (WS1)
+                panel = PanelKind.None; follow = false; zoom = 22; pitch = 0.7f;
+                focus = C.Map.Sites.Where(x => x.Kind == "inn").OrderBy(x => Vector2.Distance(x.Pos, C.Player.Pos)).First().Pos;
+                break;
             case "near": // the camera as close as it comes, on your company (docs/pre-demo/WORLD_SCALE.md WS5)
                 panel = PanelKind.None; follow = false; zoom = C.Map.CloseZoom; pitch = 0.7f; focus = C.Player.Pos;
                 break;

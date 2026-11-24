@@ -566,7 +566,8 @@ sealed partial class World : IDisposable
             case FoliageKind.Landmark: FieldLandmark(m, FieldStyle ?? Architecture.Of("azure_heart"), f, rng); break;
             case FoliageKind.Wagon: Wagon(m, b, rng); break;
             case FoliageKind.Ruin or FoliageKind.Shrine or FoliageKind.Stones or FoliageKind.Field or FoliageKind.Mine
-                or FoliageKind.Hut or FoliageKind.Watch or FoliageKind.Spring or FoliageKind.Mill: SiteModel(m, f.Kind, b, f.Scale, rng); break;
+                or FoliageKind.Hut or FoliageKind.Watch or FoliageKind.Spring or FoliageKind.Mill
+                or FoliageKind.Inn or FoliageKind.Toll: SiteModel(m, f.Kind, b, f.Scale, rng); break;
             default: Rock(m, b, f.Scale, rng, f.Dry); break;
         }
     }
@@ -880,6 +881,30 @@ sealed partial class World : IDisposable
                     m.Blob(b + new Vector3(MathF.Cos(a) * 1.3f, 0.05f, MathF.Sin(a) * 1.05f) * s, new Vector3(0.3f, 0.2f, 0.3f) * s, new Color(132, 130, 124), r, 0.25f);
                 }
                 break;
+            case FoliageKind.Inn: // a long two-storey house, a stable lean-to, a sign on a post and a trough
+            {
+                s *= 1.6f; // a waypoint should read from the road, beside the beasts and boulders
+                float yaw = r.NextSingle() * MathF.Tau;
+                var ax = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
+                House(m, b, 2.2f * s, 1.1f * s, 1.5f * s, yaw, Jitter(Wattle, r, 0.06f), Jitter(Thatch, r, 0.08f));
+                House(m, b + ax * 1.7f * s, 1.1f * s, 0.9f * s, 0.8f * s, yaw, Jitter(Timber, r, 0.06f), Jitter(Thatch, r, 0.1f));
+                var post = b - ax * 1.5f * s + new Vector3(-ax.Z, 0, ax.X) * 0.9f * s;
+                m.Box(post, 0.1f * s, 0.1f * s, 1.3f * s, yaw, Timber);
+                m.Box(post + Vector3.Up * 1.0f * s + ax * 0.25f * s, 0.45f * s, 0.06f * s, 0.32f * s, yaw, new Color(150, 40, 34));
+                m.Box(b + new Vector3(ax.Z, 0, -ax.X) * 0.9f * s, 0.7f * s, 0.25f * s, 0.25f * s, yaw, Timber);
+                break;
+            }
+            case FoliageKind.Toll: // a gate across the way: two stone piers, a bar, a toll-keeper's hut
+            {
+                s *= 1.6f; // a waypoint should read from the road, beside the beasts and boulders
+                float yaw = r.NextSingle() * MathF.Tau;
+                var ax = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
+                m.Box(b + ax * 1.1f * s, 0.4f * s, 0.4f * s, 1.3f * s, yaw, Jitter(Stone, r, 0.06f));
+                m.Box(b - ax * 1.1f * s, 0.4f * s, 0.4f * s, 1.3f * s, yaw, Jitter(Stone, r, 0.06f));
+                m.Box(b + Vector3.Up * 0.9f * s, 2.0f * s, 0.12f * s, 0.12f * s, yaw, new Color(170, 40, 34));
+                House(m, b + new Vector3(-ax.Z, 0, ax.X) * 1.4f * s, 0.9f * s, 0.8f * s, 0.9f * s, yaw, Jitter(Stone, r, 0.06f), Slate);
+                break;
+            }
             default: // the mill: a house with a big wheel on its side
                 House(m, b, 1.4f * s, 1.0f * s, 1.0f * s, 0, Wattle, Thatch);
                 for (int i = 0; i < 12; i++) // the wheel's rim, standing against the end wall

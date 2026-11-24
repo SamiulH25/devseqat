@@ -547,6 +547,21 @@ partial class MapScreen
                 ui.Rect(new Rectangle(p.X, ground, p.Width, p.Bottom - ground), c);
                 for (int i = 0; i < 8; i++) ui.Disc(new Vector2(cx - 56 * u + i * 16 * u, ground), 8 * u, c);
                 break;
+            case "inn": // a long house with a lit window, a sign hung from a post
+                Block(-70, 110, 42);
+                for (int k = 0; k < 30; k++) Block(-70 + k, 110 - 2 * k, 42 + k);
+                ui.Rect(new Rectangle(cx - 40 * u, ground - 30 * u, 12 * u, 10 * u), Kit.Ember * (0.7f + 0.2f * MathF.Sin(t * 3)));
+                ui.Rect(new Rectangle(cx + 10 * u, ground - 30 * u, 12 * u, 10 * u), Kit.Ember * 0.75f);
+                Block(60, 4, 56);
+                Block(60, 24, 4);
+                ui.Rect(new Rectangle(cx + 70 * u, ground - 52 * u + (int)(MathF.Sin(t * 1.5f) * 2 * u), 12 * u, 14 * u), new Color(150, 40, 34));
+                break;
+            case "toll": // a bridge's hump, two piers and the bar across
+                for (int i = -60; i < 60; i += 4) Block(i, 4, 14 + (int)(10 * MathF.Cos(i / 60f * MathF.PI / 2)));
+                Block(-80, 14, 40);
+                Block(66, 14, 40);
+                ui.Rect(new Rectangle(cx - 66 * u, ground - 34 * u, 132 * u, 4 * u), new Color(170, 40, 34));
+                break;
             default: // mill
                 Block(-40, 60, 40);
                 for (int k = 0; k < 30; k++) Block(-40 + k, 60 - 2 * k, 40 + k / 2);

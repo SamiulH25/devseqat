@@ -385,6 +385,31 @@ public static partial class SelfTest
         Check(WorldMap.Generate(7).HourScale == 1, "the drawn world keeps its clock");
     }
 
+    /// WS1: the 4x draft's roads have inns about a day apart and toll bridges at river crossings, and both are sites you
+    /// can visit.
+    static void RoadsideStops()
+    {
+        var c = Campaign.New(7, layout: WorldMap.DraftLayout);
+        var stops = c.Sites.Where(x => Campaign.RoadSiteKinds.Contains(x.Kind)).ToList();
+        int inns = stops.Count(x => x.Kind == "inn"), tolls = stops.Count(x => x.Kind == "toll");
+        float far = stops.Max(x => c.Map.RoadDist(x.Pos));
+        Console.WriteLine($"roadside: {inns} inns, {tolls} toll bridges, {c.Map.Provinces.Count} provinces; farthest from a road {far:0}");
+        Check(inns >= 30 && tolls >= 1, "the draft's roads have inns and toll bridges");
+        Check(far < 40, "they stand by the roads");
+        Check(!WorldMap.Generate(11).Sites.Any(x => Campaign.RoadSiteKinds.Contains(x.Kind)), "generated maps place none");
+        foreach (var k in Campaign.RoadSiteKinds)
+        {
+            Check(Campaign.Events.Any(e => e.Moments.Contains("site") && e.When.Contains("at_site:" + k)), $"a {k} has an event");
+            var site = stops.First(x => x.Kind == k);
+            c.S.Event = null;
+            c.Player.Pos = site.Pos + new Vector2(5, 0);
+            c.GoTo(site);
+            for (int i = 0; i < 40 && c.S.Event == null; i++) { c.Tick(0.5f); c.Encounter = null; }
+            Check(c.S.Event?.Site == site.Id, $"a {k} raises its event");
+            Check(c.Choose(0) == null && c.S.Event == null, $"a {k}'s first choice can be taken");
+        }
+    }
+
     static void CliffsBar()
     {
         var m = WorldMap.Generate(7, layout: WorldMap.DraftLayout);

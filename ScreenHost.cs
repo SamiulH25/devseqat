@@ -730,6 +730,7 @@ sealed class ScreenHost : Game
         if (placesOnly != null) { PlaceShots(c); return; }
         string[] stages = { "farm", "life", "village", "road", "night", "map", "river", "lands-Desert", "lands-Tundra", "lands-Taiga", "lands-Highlands",
             "lands-Steppe", "lands-Coast", "lands-Hills", "lands-Meadow", "lands-Oasis", "lands-Forest", "lands-Badlands", "port", "sail", "harbour", "holds", "near" }; // and its ports and ships (WM7), a tower house (HD5), the camera at its closest (WS5)
+        if (c.Map.Sites.Any(x => x.Kind == "inn")) stages = stages.Append("inn").ToArray(); // the draft's roadside inns (WS1)
         if (cStage == 2 && lifeShots < (c.Map.Designed ? stages.Length : 7)) // the land and its life (docs/archive/WORLD_LIFE.md WL3-WL5), in spring before the year turns; on the drawn map each kind of country (WM3, docs/archive/WORLD_DRESS.md)
         {
             if (lifeShots == 4) { dayHours = c.S.Hours; c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 22.5; } // lamplight

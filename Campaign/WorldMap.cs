@@ -607,7 +607,8 @@ public sealed partial class WorldMap
             foliage.Add(new Foliage(site.Kind switch
             {
                 "ruin" => FoliageKind.Ruin, "shrine" => FoliageKind.Shrine, "stones" => FoliageKind.Stones, "battlefield" => FoliageKind.Field,
-                "mine" => FoliageKind.Mine, "hermit" => FoliageKind.Hut, "watchtower" => FoliageKind.Watch, "spring" => FoliageKind.Spring, _ => FoliageKind.Mill,
+                "mine" => FoliageKind.Mine, "hermit" => FoliageKind.Hut, "watchtower" => FoliageKind.Watch, "spring" => FoliageKind.Spring,
+                "inn" => FoliageKind.Inn, "toll" => FoliageKind.Toll, _ => FoliageKind.Mill,
             }, site.Pos, 2.0f, 0, site.Id * 53 + Seed));
         float half = GroundHalf - 6;
         var fields = Layout >= 4 ? LayFields(span) : new List<FieldPlot>();
