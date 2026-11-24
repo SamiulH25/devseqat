@@ -183,7 +183,7 @@ partial class MapScreen
                 if (nextIds.Count > 1) ui.Text($"+{nextIds.Count - 1}", next.Right + ui.U(3), next.Bottom - ui.U(9), Style.Dim, 1);
             }
             int tx = px + ph * 2 + ui.U(44), tw = row.Right - ui.U(250) - tx;
-            ui.TextFit($"{st.Men} {st.Type.Name.ToUpperInvariant()} {Style.Numerals[st.Type.Tier]}", tx, row.Y + ui.U(6), tw, Style.Text, 1);
+            ui.TextFit($"{st.Men} {st.Type.Name.ToUpperInvariant()} {Style.Numerals[st.Type.Tier]}{(st.Type.Noble ? " [NOBLE]" : "")}", tx, row.Y + ui.U(6), tw, st.Type.Noble ? Kit.Gilt : Style.Text, 1);
             string sub = c.Name.ToUpperInvariant();
             if (!top)
             {
@@ -197,7 +197,8 @@ partial class MapScreen
                 sub = $"{sub}  >  {nt.Name.ToUpperInvariant()} {Style.Numerals[nt.Tier]}" + (gains.Count > 0 ? $" ({string.Join(", ", gains.Take(3))})" : "");
             }
             ui.TextFit(sub, tx, row.Y + ui.U(18), tw, Style.Dim, 1);
-            if (top) ui.Text("AT THE TOP OF ITS LINE", tx, row.Y + ui.U(31), Style.Dim, 1);
+            bool nobleBlocked = top && st.Type.UpgradesTo.Any(to => !C.CanEnterLine(C.Player, c, st.Troop, to, out var rsn) && rsn == "NOBLE BIRTH ONLY");
+            if (top) ui.TextFit(nobleBlocked ? "NOBLE BIRTH ONLY — KNIGHT NAMED VETERANS ON THE ROLL" : "AT THE TOP OF ITS LINE", tx, row.Y + ui.U(31), tw, nobleBlocked ? Kit.Gilt * 0.85f : Style.Dim, 1);
             else
             {
                 ui.Gauge(new Rectangle(tx, row.Y + ui.U(32), Math.Min(tw, ui.U(260)), ui.U(6)), st.PoolCap <= 0 ? 0 : st.Xp / st.PoolCap, ready ? Kit.Gilt : Style.Friendly);

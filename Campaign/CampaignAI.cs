@@ -23,8 +23,19 @@ public partial class Campaign
         int tier = Math.Clamp(1 + rng.Next(2) + Day / 30, 1, Troops.MaxTier);
         foreach (var role in new[] { "infantry", "archers", rng.Next(2) == 0 ? "spears" : "horse" })
         {
-            string troop = Armies.LineTroop(role, Math.Clamp(tier + rng.Next(-1, 1), 1, Troops.MaxTier), faction);
+            int t = Math.Clamp(tier + rng.Next(-1, 1), 1, Troops.MaxTier);
+            string troop = Armies.LineTroop(role, t, faction);
+            // Common levy/line companies stay common; noble retinues ride in their own company (NOBILITY.md N4).
+            for (int lower = t; Troops.Get(troop).Noble && lower > 1;) troop = Armies.LineTroop(role, --lower, faction);
             lord.Companies.Add(NewCompany(troop, role, (int)(Rules.CapOf(troop, role) * rng.Range(0.7f, 1f)), 0, home));
+        }
+        // High-tier lords bring a dedicated noble household retinue alongside their common levies (N4).
+        if (tier >= 4)
+        {
+            string nRole = rng.Next(2) == 0 ? "horse" : "infantry";
+            string noble = Armies.LineTroop(nRole, tier, faction);
+            if (!Troops.Get(noble).Noble) noble = nRole == "horse" ? EsquireHorse : EsquireFoot;
+            lord.Companies.Add(NewCompany(noble, nRole, Math.Max(Scaled(3), (int)(Rules.CapOf(noble, nRole) * 0.45f)), 0, home));
         }
         // Mages are super units: only a great lord brings a circle of his realm's mages, as many in four as his realm's arcana
         // (docs/archive/ARCANA.md AR5; E1); no dice, so the campaign's draws stay as they were.

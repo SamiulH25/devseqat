@@ -2040,6 +2040,23 @@ public static partial class SelfTest
         var lost = Troops.All.Where(t => t.Noble && t.Order == "" && t.Culture != "order" && !reach.Contains(t.Id)).Select(t => t.Id).ToList();
         Console.WriteLine($"nobles: {rooted.Count} from the castle roots, {knighted.Count} by knighting, {reach.Count} in all, unreachable: {string.Join(", ", lost)}");
         Check(lost.Count == 0, "every noble troop has a way in: " + string.Join(", ", lost));
+
+        // N3: knighting one named veteran bypasses the stock gate for that man alone.
+        var kc = Campaign.New(97);
+        var comp = kc.NewCompany("men_at_arms", "infantry", 5, 0, kc.S.Settlements.First(t => t.Faction == 0));
+        kc.Player.Companies.Add(comp);
+        var vet = new Soldier { Id = kc.S.NextId++, Name = "Alden", Troop = "men_at_arms", Battles = 2, Company = comp.Id };
+        comp.Roll.Add(vet);
+        kc.S.Gold = 1000; kc.Captain.Renown = 200;
+        Check(kc.CannotKnight(comp, vet)!.Contains("BATTLES"), "knighting requires veteran battles or of the banner");
+        vet.Battles = Campaign.KnightingBattles;
+        string? target = kc.KnightTarget(comp, vet);
+        Check(target != null && Troops.Get(target).Noble, $"knighting finds noble upgrade ({target})");
+        int beforeGold = (int)kc.S.Gold;
+        Check(kc.KnightMan(comp, vet) == null, "knighting succeeds");
+        Check(vet.Troop == target && vet.Knight && comp.Stacks.Any(s => s.Troop == target && s.Men == 1) && comp.Stacks.First(s => s.Troop == "men_at_arms").Men == 4 && kc.S.Gold < beforeGold,
+            "knighted veteran moves one man into the noble stack and spends gold");
+        Check(kc.CannotKnight(comp, vet)!.Contains("ALREADY OF NOBLE"), "cannot knight an already noble man");
     }
     /// The agent playtest harness (docs/PLAYTEST_HARNESS.md): commands read, act and fight; nonsense is refused, never thrown;
     /// a broken number is filed; a fought battle goes back to the campaign.

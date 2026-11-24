@@ -220,23 +220,25 @@ partial class MapScreen
     {
         ui.Divider(x, y - ui.U(22), w, Kit.Gilt * 0.4f);
         ui.TextFitC($"FOR {m.Name.ToUpperInvariant()}, {Troops.Get(m.Troop).Name.ToUpperInvariant()}" + (m.Carries != "" ? $". CARRIES {m.Carries.ToUpperInvariant()}" : ""), x + w / 2f, y - ui.U(14), w, Kit.Gilt, 1);
-        int bw = (w - ui.U(24)) / 4, bh = ui.U(28);
-        Rectangle B(int i) => new(x + i * (bw + ui.U(8)), y, bw, bh);
+        int bw = (w - ui.U(24)) / 5, bh = ui.U(28);
+        Rectangle B(int i) => new(x + i * (bw + ui.U(6)), y, bw, bh);
         var gift = C.Givable().OrderByDescending(g => g.Quality).FirstOrDefault();
         if (gift != null && C.CannotArm(m, gift) != null) gift = null;
         var to = C.Player.Companies.FirstOrDefault(k => C.CannotMoveMan(c, m, k) == null);
         string? moveWhy = to == null ? C.Player.Companies.Where(k => k != c).Select(k => C.CannotMoveMan(c, m, k)).FirstOrDefault() ?? "NO OTHER COMPANY" : null;
-        var acts = new (string Label, string? Why, string Says, Func<string?> Do)[]
+        string? kTarget = C.KnightTarget(c, m);
+        var acts = new (string Label, string? Why, string Says, Func<string?> Do, bool Leaves)[]
         {
-            ("MENTION", C.CannotMention(m), $"A PURSE OF {Balance.Get().MentionPurse} CROWNS AND +1 COHESION. THREE MENTIONS MAKE HIM ONE OF THE BANNER.", () => C.Mention(m)),
-            ("ARM", C.CannotArm(m, gift), $"GIVE HIM {(gift != null ? Campaign.ItemName(gift, Gear.Get(gift.Def)).ToUpperInvariant() : "A LOT OF LOOTED ARMS")}. HE DIES LESS OFTEN WHEN HE FALLS; IF HE DIES, IT IS LOST.", () => C.Arm(m, gift)),
-            ("SEND HOME", C.CannotPension(m), $"A PENSION OF {Balance.Get().PensionCost} CROWNS. HIS VILLAGE'S RECRUITS COME READIER.", () => C.Pension(m)),
-            ("MOVE", moveWhy, to != null ? $"TO {to.Name.ToUpperInvariant()}, WITH HIS PLACE IN THE RANKS." : "", () => C.MoveMan(c, m, to!)),
+            ("MENTION", C.CannotMention(m), $"A PURSE OF {Balance.Get().MentionPurse} CROWNS AND +1 COHESION. THREE MENTIONS MAKE HIM ONE OF THE BANNER.", () => C.Mention(m), false),
+            ("ARM", C.CannotArm(m, gift), $"GIVE HIM {(gift != null ? Campaign.ItemName(gift, Gear.Get(gift.Def)).ToUpperInvariant() : "A LOT OF LOOTED ARMS")}. HE DIES LESS OFTEN WHEN HE FALLS; IF HE DIES, IT IS LOST.", () => C.Arm(m, gift), false),
+            ("KNIGHT", C.CannotKnight(c, m), $"KNIGHT HIM AS {(kTarget != null ? Troops.Get(kTarget).Name.ToUpperInvariant() : "A NOBLE")} FOR {Campaign.KnightCost} CROWNS (NEEDS {Campaign.KnightingBattles} BATTLES & {Campaign.KnightRenown:0} RENOWN).", () => C.KnightMan(c, m), false),
+            ("SEND HOME", C.CannotPension(m), $"A PENSION OF {Balance.Get().PensionCost} CROWNS. HIS VILLAGE'S RECRUITS COME READIER.", () => C.Pension(m), true),
+            ("MOVE", moveWhy, to != null ? $"TO {to.Name.ToUpperInvariant()}, WITH HIS PLACE IN THE RANKS." : "", () => C.MoveMan(c, m, to!), true),
         };
         for (int i = 0; i < acts.Length; i++)
         {
-            var (label, why, says, act) = acts[i];
-            if (ui.Button(B(i), label, why == null)) { note = act() ?? ""; if (i >= 2 && note == "") gone(); }
+            var (label, why, says, act, leaves) = acts[i];
+            if (ui.Button(B(i), label, why == null)) { note = act() ?? ""; if (leaves && note == "") gone(); }
             if (ui.Hover(B(i))) ui.Tooltip(B(i).X, B(i).Y - ui.U(4), label, ui.Wrap(why ?? says, ui.U(240)).ToArray());
         }
     }

@@ -66,4 +66,59 @@ public partial class Campaign
         Log($"{took} {Troops.Get(troop).Name.ToLowerInvariant()} ride out of {s.Name} under your banner.");
         return null;
     }
+
+    // ---------- N3: knighting a named veteran ----------
+
+    public const int KnightingBattles = 6, KnightCost = 350;
+    public const float KnightRenown = 120;
+
+    /// The noble upgrade a named commoner can be knighted into (ignores the common->noble stock gate, keeps culture/barracks/order gates).
+    public string? KnightTarget(CompanyRecord c, Soldier m)
+    {
+        var cur = Troops.Get(m.Troop);
+        if (cur.Noble) return null;
+        foreach (var to in cur.UpgradesTo)
+        {
+            var nt = Troops.Get(to);
+            if (!nt.Noble || nt.Order != "") continue;
+            string man = ManCulture(c, m.Troop);
+            if (nt.Culture != Factions.Common && man != Factions.Common && !Factions.Open(man, nt.Culture)) continue;
+            if (nt.Tier >= 5 && nt.Culture != Factions.Common && !HasBarracks(Player, nt.Culture) && !(man != nt.Culture && man != Factions.Common && HasBarracks(Player, man))) continue;
+            return to;
+        }
+        return null;
+    }
+
+    /// Why this named veteran cannot be knighted now; null if he can (N3).
+    public string? CannotKnight(CompanyRecord c, Soldier m)
+    {
+        if (!c.Roll.Contains(m) || m.Hurt) return "HE MUST BE FIT AND ON THE ROLL";
+        if (Troops.Get(m.Troop).Noble) return "HE IS ALREADY OF NOBLE RANK";
+        if (KnightTarget(c, m) == null) return "NO NOBLE UPGRADE FROM THIS TROOP";
+        if (!c.Stacks.Any(s => s.Troop == m.Troop && s.Men > 0)) return "HE IS NOT IN THE RANKS";
+        if (m.Battles < KnightingBattles && !OfBanner(m)) return $"NEEDS {KnightingBattles} BATTLES (OR OF THE BANNER)";
+        if (Captain.Renown < KnightRenown) return $"NEEDS {KnightRenown:0} RENOWN";
+        if (S.Gold < KnightCost) return $"NEEDS {KnightCost} CROWNS";
+        return null;
+    }
+
+    /// Knight one named veteran into his noble upgrade (N3): bypasses the common->noble gate for that man alone.
+    public string? KnightMan(CompanyRecord c, Soldier m)
+    {
+        if (CannotKnight(c, m) is string why) return why;
+        string target = KnightTarget(c, m)!;
+        var st = c.Stacks.First(s => s.Troop == m.Troop && s.Men > 0);
+        S.Gold -= KnightCost;
+        st.Take(1);
+        Rules.AddMen(c, target, 1);
+        c.Prune();
+        m.Troop = target;
+        m.Knight = true;
+        string title = Troops.Get(target).Name;
+        m.Deed($"Knighted as {title} on day {Day}.");
+        c.Cohesion = MathF.Min(30, c.Cohesion + 2);
+        Deed($"Knighted {m.Name} of {c.Name} as {title}.", "company");
+        LogYours($"You knight {m.Name} of {c.Name} as {title}.");
+        return null;
+    }
 }
