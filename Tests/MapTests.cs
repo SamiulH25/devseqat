@@ -289,7 +289,7 @@ public static partial class SelfTest
             (250, 250, 241.62467547669448, 261.09049112777546), (-400.9, -120.6, -395.81745496762647, -114.54276686343474),
         })
         {
-            var (ax, ay) = WorldDesign.Warp(x, y);
+            var (ax, ay) = WorldDesign.PageWarp(x, y);
             Check(Math.Abs(ax - wx) < 1e-9 && Math.Abs(ay - wy) < 1e-9, $"the warp at {x}, {y} is the page's ({ax}, {ay} against {wx}, {wy})");
         }
         var w = WorldDesign.Get();
@@ -300,6 +300,66 @@ public static partial class SelfTest
         Check(land > 0 && w.Realms.All(r => w.Settlements.Any(s => s.Realm == r.Id && s.Kind == "town")), "every realm has a town");
         Check(w.Realms.All(r => Factions.All.Any(f => f.Culture == r.Culture)), "every realm's culture is a realm culture of factions.json");
         Check(w.Subcultures.All(c => Factions.Culture(c.Id) != null), "every subculture is a culture in factions.json");
+    }
+
+    /// WS2 (docs/pre-demo/WORLD_SCALE.md): layout 6 builds the 4x draft, and its uplands and cliffs stand in the land: a
+    /// plateau's middle is lifted by its height, each cliff is a step of most of its height at its middle, and no
+    /// settlement stands on a cliff's edge. Layout 5 carries no relief.
+    static void ReliefRaised()
+    {
+        var d = WorldDesign.Draft();
+        var errs = d.Validate().ToList();
+        Check(errs.Count == 0, "world6.json is sound: " + string.Join("; ", errs.Take(5)));
+        var t0 = DateTime.UtcNow;
+        var m = WorldMap.Generate(7, layout: WorldMap.DraftLayout);
+        Console.WriteLine($"layout 6: built in {(DateTime.UtcNow - t0).TotalSeconds:0.0} s, {m.ExtentUsed * 2:0} units across, {m.Provinces.Count} provinces, {m.Settlements.Count} places, {m.Cliffs.Count} cliffs, {m.Uplands.Count} uplands");
+        Check(m.Layout == WorldMap.DraftLayout && m.Cliffs.Count == d.Cliffs.Length && m.Uplands.Count == d.Uplands.Length, "layout 6 carries the draft's cliffs and uplands");
+        Check(m.ExtentUsed > 3000, "layout 6 is the 4x land");
+        foreach (var u in m.Uplands.Where(u => u.Kind == "plateau"))
+        {
+            var mid = u.Outline.Aggregate(Vector2.Zero, (a, b) => a + b) / u.Outline.Length;
+            float r = m.Relief(mid.X, mid.Y);
+            Check(r > u.Height * 0.8f, $"a plateau's middle is lifted ({r:0.0} of {u.Height})");
+        }
+        foreach (var c in m.Cliffs)
+        {
+            // Points along the middle of the line, and either side of each by more than the relief's ragged shift
+            // (WorldMap.RagAmp), so the step lies between the two samples. A river cutting through the rim makes a few low:
+            // the median must be a step.
+            var steps = new List<float>();
+            float off = WorldMap.RagAmp * 1.5f + 4;
+            for (float f = 0.2f; f < 0.81f; f += 0.05f)
+            {
+                float want = c.Length * f, run = 0;
+                for (int i = 1; i < c.Points.Length; i++)
+                {
+                    float seg = Vector2.Distance(c.Points[i - 1], c.Points[i]);
+                    if (run + seg >= want && seg > 0)
+                    {
+                        var dir = (c.Points[i] - c.Points[i - 1]) / seg;
+                        var at = c.Points[i - 1] + dir * (want - run);
+                        var left = new Vector2(dir.Y, -dir.X);
+                        steps.Add(m.Height((at + left * off).X, (at + left * off).Y) - m.Height((at - left * off).X, (at - left * off).Y));
+                        break;
+                    }
+                    run += seg;
+                }
+            }
+            steps.Sort();
+            float step = steps[steps.Count / 2];
+            Check(step > c.Height * 0.5f, $"a cliff is a step ({step:0.0} of {c.Height} at its middle, {c.Length:0} units long)");
+            foreach (var s in m.Settlements)
+                for (int i = 1; i < c.Points.Length; i++)
+                    Check(SegmentGap(s.Pos, c.Points[i - 1], c.Points[i]) > WorldMap.RagAmp * 1.42f + 4, $"{s.Name} stands clear of a cliff's edge");
+        }
+        Check(WorldMap.Generate(7, layout: WorldMap.DesignLayout).Cliffs.Count == 0, "layout 5 has no cliffs");
+    }
+
+    static float SegmentGap(Vector2 p, Vector2 a, Vector2 b)
+    {
+        var ab = b - a;
+        float l2 = ab.LengthSquared(), t = l2 > 0 ? Math.Clamp(Vector2.Dot(p - a, ab) / l2, 0, 1) : 0;
+        return Vector2.Distance(p, a + ab * t);
     }
 
     /// WM1 (docs/archive/WORLDMAP.md): layout 5 is the drawn world, the same for every seed: its land provinces with invented names,

@@ -122,6 +122,13 @@ if (args.Contains("--campaign-bench"))
     Ironfield.Bench.Campaign(n > 0 ? n : 30);
     return;
 }
+if (args.Contains("--relief"))
+{
+    var rest = args.SkipWhile(a => a != "--relief").Skip(1).ToArray();
+    int Num(int i, int def) => rest.Length > i && int.TryParse(rest[i], out var v) ? v : def;
+    Ironfield.ReliefDump.Run(rest.Length > 0 ? rest[0] : "relief.png", Num(1, Ironfield.WorldMap.DraftLayout), Num(2, 1600));
+    return;
+}
 if (args.Contains("--world-bench"))
 {
     int n = args.SkipWhile(a => a != "--world-bench").Skip(1).Select(a => int.TryParse(a, out var v) ? v : 0).FirstOrDefault();

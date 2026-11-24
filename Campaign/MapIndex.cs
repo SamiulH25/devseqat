@@ -18,8 +18,12 @@ public sealed class MapIndex
     readonly List<(Vector2 A, Vector2 B)> roadList;
     readonly List<River> riverList;
 
+    /// River.Skip of the rivers indexed (all the same): how far off a bend's ends River.Dist still measures it.
+    readonly float skip;
+
     public MapIndex(List<Province> provinces, List<(Vector2 A, Vector2 B)> roads, List<River> rivers, float half)
     {
+        skip = rivers.Count > 0 ? rivers[0].Skip : 40;
         provinceList = provinces; roadList = roads; riverList = rivers;
         origin = -half;
         n = Math.Max(1, (int)MathF.Ceiling(2 * half / Cell));
@@ -28,43 +32,83 @@ public sealed class MapIndex
         roadNear = new float[n * n];
         this.rivers = new (int, int)[n * n][];
         float h = Cell * 0.70711f + 0.01f; // half the cell's diagonal, and a hair for rounding
-        // Each distance is worked out once per cell (the nearest, then everything within reach of it), in plain loops.
-        var pd = new float[provinces.Count];
-        var rd = new float[roads.Count];
         var segs = new List<(int River, int Seg, Vector2 A, Vector2 B)>();
         for (int r = 0; r < rivers.Count; r++)
             for (int i = 0; i + 1 < rivers[r].Path.Length; i++) segs.Add((r, i, rivers[r].Path[i], rivers[r].Path[i + 1]));
-        var keep = new List<int>();
-        var cand = new List<(float D, int Order)>();
-        for (int cy = 0; cy < n; cy++)
-            for (int cx = 0; cx < n; cx++)
+        // Cells are worked out a block of Block x Block at a time, in parallel (each cell's lists are its own, so the result is
+        // the same in any order). A block first keeps the roads that could matter to any of its cells: a road nearest some
+        // cell centre, or within 2h of that nearest, is within (block's nearest + 2 x the block's half diagonal + 2h) of the
+        // block's middle, so the cells' lists are exactly the full scan's (WS2: the 4x map has ~180k cells and many roads).
+        int blocks = (n + Block - 1) / Block;
+        float bh = Block * Cell * 0.70711f + 0.01f;
+        Parallel.For(0, blocks * blocks, b =>
+        {
+            int bx = b % blocks, by = b / blocks;
+            var bc = new Vector2(origin + (bx * Block + Block / 2f) * Cell, origin + (by * Block + Block / 2f) * Cell);
+            var near = new List<int>();
+            if (roads.Count > 0)
             {
-                int k = cy * n + cx;
-                var lo = new Vector2(origin + cx * Cell, origin + cy * Cell);
-                var cc = lo + new Vector2(Cell / 2);
-                // The nearest centre to a point in the cell is within (nearest to the cell's centre) + 2h of the cell's centre.
-                float near = provinces.Count == 0 ? 0 : float.MaxValue;
-                for (int i = 0; i < pd.Length; i++) near = MathF.Min(near, pd[i] = Vector2.Distance(provinces[i].Center, cc));
-                keep.Clear();
-                for (int i = 0; i < pd.Length; i++) if (pd[i] <= near + 2 * h) keep.Add(i);
-                this.provinces[k] = keep.ToArray();
-                float road = roads.Count == 0 ? 0 : float.MaxValue;
-                for (int i = 0; i < rd.Length; i++) road = MathF.Min(road, rd[i] = SegDist(cc, roads[i].A, roads[i].B));
-                keep.Clear();
-                for (int i = 0; i < rd.Length; i++) if (rd[i] <= road + 2 * h) keep.Add(i);
-                this.roads[k] = keep.ToArray();
-                roadNear[k] = road;
-                // River.Dist skips a bend whose ends are more than 40 away on both axes; keep every bend it might not skip
-                // for some point in the cell, nearest first (ties in river order), so the look-up can stop once no bend can come closer.
-                cand.Clear();
-                for (int i = 0; i < segs.Count; i++)
-                    if (Within(segs[i].A, lo, 40) || Within(segs[i].B, lo, 40)) cand.Add((SegDist(cc, segs[i].A, segs[i].B), i));
-                cand.Sort((x, y) => x.D != y.D ? x.D.CompareTo(y.D) : x.Order.CompareTo(y.Order));
-                var list = new (int, int)[cand.Count];
-                for (int i = 0; i < list.Length; i++) list[i] = (segs[cand[i].Order].River, segs[cand[i].Order].Seg);
-                this.rivers[k] = list;
+                var bd = new float[roads.Count];
+                float best = float.MaxValue;
+                for (int i = 0; i < bd.Length; i++) best = MathF.Min(best, bd[i] = SegDist(bc, roads[i].A, roads[i].B));
+                for (int i = 0; i < bd.Length; i++) if (bd[i] <= best + 2 * bh + 2 * h) near.Add(i);
             }
+            var pd = new float[provinces.Count];
+            var rd = new float[near.Count];
+            var keep = new List<int>();
+            var cand = new List<(float D, int Order)>();
+            for (int cy = by * Block; cy < Math.Min(n, by * Block + Block); cy++)
+                for (int cx = bx * Block; cx < Math.Min(n, bx * Block + Block); cx++)
+                    Fill(cy * n + cx, cx, cy, h, provinces, roads, near, segs, pd, rd, keep, cand);
+        });
     }
+
+    /// Cells a side of the blocks the index is built in.
+    const int Block = 8;
+
+    /// One cell's lists: the provinces, roads (from the block's `near` ones, in road order) and river bends that can answer
+    /// for some point in it.
+    void Fill(int k, int cx, int cy, float h, List<Province> provinces, List<(Vector2 A, Vector2 B)> roads, List<int> near,
+        List<(int River, int Seg, Vector2 A, Vector2 B)> segs, float[] pd, float[] rd, List<int> keep, List<(float D, int Order)> cand)
+    {
+        var lo = new Vector2(origin + cx * Cell, origin + cy * Cell);
+        var cc = lo + new Vector2(Cell / 2);
+        // The nearest centre to a point in the cell is within (nearest to the cell's centre) + 2h of the cell's centre.
+        float nearest = provinces.Count == 0 ? 0 : float.MaxValue;
+        for (int i = 0; i < pd.Length; i++) nearest = MathF.Min(nearest, pd[i] = Vector2.Distance(provinces[i].Center, cc));
+        keep.Clear();
+        for (int i = 0; i < pd.Length; i++) if (pd[i] <= nearest + 2 * h) keep.Add(i);
+        this.provinces[k] = keep.ToArray();
+        float road = roads.Count == 0 ? 0 : float.MaxValue;
+        for (int j = 0; j < near.Count; j++) road = MathF.Min(road, rd[j] = SegDist(cc, roads[near[j]].A, roads[near[j]].B));
+        keep.Clear();
+        for (int j = 0; j < near.Count; j++) if (rd[j] <= road + 2 * h) keep.Add(near[j]);
+        this.roads[k] = keep.ToArray();
+        roadNear[k] = road;
+        // River.Dist skips a bend whose ends are more than 40 away on both axes; keep every bend it might not skip
+        // for some point in the cell, nearest first (ties in river order), so the look-up can stop once no bend can come closer.
+        // A bend no point of the cell skips (an end within 40 of the whole cell on an axis) bounds the answer: bends further
+        // than that bound plus 2h can never be reached before the look-up stops, so they are left out (same answers, far
+        // smaller lists on a big map).
+        cand.Clear();
+        float bound = float.MaxValue;
+        for (int i = 0; i < segs.Count; i++)
+            if (Within(segs[i].A, lo, skip) || Within(segs[i].B, lo, skip))
+            {
+                float d = SegDist(cc, segs[i].A, segs[i].B);
+                cand.Add((d, i));
+                if (Always(segs[i].A, lo, skip) || Always(segs[i].B, lo, skip)) bound = MathF.Min(bound, d + h);
+            }
+        cand.Sort((x, y) => x.D != y.D ? x.D.CompareTo(y.D) : x.Order.CompareTo(y.Order));
+        int count = 0;
+        while (count < cand.Count && cand[count].D - h <= bound) count++;
+        var list = new (int, int)[count];
+        for (int i = 0; i < count; i++) list[i] = (segs[cand[i].Order].River, segs[cand[i].Order].Seg);
+        this.rivers[k] = list;
+    }
+
+    /// True when every point of the cell starting at lo is within d of p on the X or the Y axis (River.Dist never skips it).
+    static bool Always(Vector2 p, Vector2 lo, float d) => p.X >= lo.X + Cell - d && p.X <= lo.X + d || p.Y >= lo.Y + Cell - d && p.Y <= lo.Y + d;
 
     /// True when some point of the cell starting at lo is within d of p on the X or the Y axis.
     static bool Within(Vector2 p, Vector2 lo, float d) => p.X >= lo.X - d && p.X <= lo.X + Cell + d || p.Y >= lo.Y - d && p.Y <= lo.Y + Cell + d;
@@ -142,7 +186,7 @@ public sealed class MapIndex
             var path = riverList[r].Path;
             Vector2 a = path[i], b = path[i + 1];
             if (best < float.MaxValue && SegDist(cc, a, b) - h > best) break; // nearest first: nothing further on can beat it
-            if (MathF.Abs(p.X - a.X) > 40 && MathF.Abs(p.X - b.X) > 40 && MathF.Abs(p.Y - a.Y) > 40 && MathF.Abs(p.Y - b.Y) > 40) continue;
+            if (MathF.Abs(p.X - a.X) > skip && MathF.Abs(p.X - b.X) > skip && MathF.Abs(p.Y - a.Y) > skip && MathF.Abs(p.Y - b.Y) > skip) continue;
             var ab = b - a;
             float t = Math.Clamp(Vector2.Dot(p - a, ab) / ab.LengthSquared(), 0, 1);
             best = MathF.Min(best, Vector2.Distance(p, a + ab * t));

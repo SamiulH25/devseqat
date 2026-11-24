@@ -8,6 +8,8 @@ namespace Ironfield;
 public sealed class WorldDesign
 {
     public const string FileName = "Data/world.json";
+    /// The 4x draft (docs/pre-demo/WORLD_SCALE.md): layout 6 builds from it.
+    public const string DraftName = "Data/world6.json";
 
     public sealed class Realm { public int Id; public string Name = "", Culture = "", Colour = ""; }
     public sealed class Province { public int Id, Realm = -1; public string Name = "", Kind = ""; public float X, Y; public string? Subculture; }
@@ -16,10 +18,16 @@ public sealed class WorldDesign
     public sealed class Line { public int Id; public float Width; public bool Minor; public float[][] Points = Array.Empty<float[]>(); }
     public sealed class Lake { public int Id; public float X, Y, Radius; }
     public sealed class Subculture { public string Id = "", Parent = "", Name = "", Colour = "", Flavour = ""; }
+    /// A sheer drop (WS0): the high ground lies on the left as the line runs (x east, y south); `Height` in world units.
+    public sealed class Cliff { public int Id; public float Height; public float[][] Points = Array.Empty<float[]>(); }
+    /// Raised land (WS0): a closed area, `Kind` plateau, massif or hills, `Height` in world units.
+    public sealed class Upland { public int Id; public string Kind = ""; public float Height; public float[][] Points = Array.Empty<float[]>(); }
 
     public int Version, Revision;
     public string Title = "";
     public float Extent;
+    /// The border warp's scale (1 on the live map; the 4x draft sets 4 so borders keep their shape: warp(p / s) * s).
+    public float Warp = 1;
     public string[] Kinds = Array.Empty<string>();
     public Realm[] Realms = Array.Empty<Realm>();
     public Province[] Provinces = Array.Empty<Province>();
@@ -28,10 +36,15 @@ public sealed class WorldDesign
     public Line[] Rivers = Array.Empty<Line>(), Ridges = Array.Empty<Line>(), Roads = Array.Empty<Line>(), Sealanes = Array.Empty<Line>();
     public Lake[] Lakes = Array.Empty<Lake>();
     public Subculture[] Subcultures = Array.Empty<Subculture>();
+    public Cliff[] Cliffs = Array.Empty<Cliff>();
+    public Upland[] Uplands = Array.Empty<Upland>();
 
     static WorldDesign? loaded;
     /// The file, read once.
     public static WorldDesign Get() => loaded ??= Load(Path.Combine(AppContext.BaseDirectory, FileName));
+    static WorldDesign? draft;
+    /// The 4x draft, read once.
+    public static WorldDesign Draft() => draft ??= Load(Path.Combine(AppContext.BaseDirectory, DraftName));
 
     public static WorldDesign Load(string path)
     {
@@ -46,7 +59,7 @@ public sealed class WorldDesign
     /// Returns an index into `Provinces`.
     public int ProvinceAt(Vector2 p)
     {
-        var (wx, wy) = Warp(p.X, p.Y);
+        var (wx, wy) = WarpAt(p.X, p.Y);
         int best = -1;
         double bd = double.MaxValue;
         for (int i = 0; i < Provinces.Length; i++)
@@ -81,8 +94,16 @@ public sealed class WorldDesign
         return (a * (1 - ux) + b * ux) * (1 - uy) + (c * (1 - ux) + d * ux) * uy - .5;
     }
 
+    /// This design's warp: the page's at its scale (`warp`), the same numbers as the page at 1.
+    public (double X, double Y) WarpAt(double x, double y)
+    {
+        if (Warp == 1) return PageWarp(x, y);
+        var (a, b) = PageWarp(x / Warp, y / Warp);
+        return (a * Warp, b * Warp);
+    }
+
     /// index.html `warp`: where a point is looked up, so province borders wander like coasts.
-    public static (double X, double Y) Warp(double x, double y) =>
+    public static (double X, double Y) PageWarp(double x, double y) =>
         (x + Noise(x / 65, y / 65) * 24 + Noise(x / 24 + 17, y / 24 - 9) * 9 + Noise(x / 9 - 3, y / 9 + 5) * 3.5,
          y + Noise(x / 65 + 31, y / 65 + 13) * 24 + Noise(x / 24 - 7, y / 24 + 23) * 9 + Noise(x / 9 + 11, y / 9 - 13) * 3.5);
 
@@ -110,5 +131,11 @@ public sealed class WorldDesign
         }
         foreach (var l in Rivers.Concat(Ridges).Concat(Roads).Concat(Sealanes))
             if (l.Points.Length < 2 || l.Points.Any(q => q.Length != 2)) yield return $"line {l.Id}: needs two or more [x, y] points";
+        if (Warp <= 0) yield return "warp must be above 0";
+        foreach (var c in Cliffs)
+            if (c.Points.Length < 2 || c.Points.Any(q => q.Length != 2) || c.Height <= 0) yield return $"cliff {c.Id}: needs two or more points and a height";
+        foreach (var u in Uplands)
+            if (u.Points.Length < 3 || u.Points.Any(q => q.Length != 2) || u.Height <= 0 || u.Kind is not ("plateau" or "massif" or "hills"))
+                yield return $"upland {u.Id}: needs three or more points, a height and a kind (plateau, massif, hills)";
     }
 }

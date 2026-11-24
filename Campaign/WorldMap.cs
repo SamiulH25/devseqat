@@ -93,7 +93,8 @@ public sealed partial class WorldMap
     /// `realms` = how many data realms the map shares out (a save's DataRealms; 0 = all of them, as a new campaign has).
     public static WorldMap Generate(int seed, float extent = Extent, int layout = GeneratedLayout, int realms = 0)
     {
-        if (layout >= DesignLayout) return FromDesign(WorldDesign.Get(), realms); // layout 5: the drawn world (WorldDesigned.cs)
+        if (layout >= DesignLayout) return layout >= DraftLayout ? FromDesign(WorldDesign.Draft(), realms, DraftLayout) // layout 6: the 4x draft (WS2)
+            : FromDesign(WorldDesign.Get(), realms); // layout 5: the drawn world (WorldDesigned.cs)
         var m = new WorldMap(seed) { ExtentUsed = extent, Layout = layout };
         int realmCount = layout < 3 ? 3 : realms > 0 ? Math.Min(realms, Factions.All.Count) : Factions.All.Count;
         var rng = new Random(seed);
@@ -484,8 +485,11 @@ public sealed partial class WorldMap
         // drawn coast (land 0.5), then a bank up to the land's own height.
         float Up(float a, float b) => MathHelper.SmoothStep(0, 1, Math.Clamp((land - a) / (b - a), 0, 1));
         if (land < 0.25f) return MathHelper.Lerp(-SeaDepth, BeachLow, Up(0.03f, 0.25f));
-        if (land < 0.86f) return MathHelper.Lerp(BeachLow, BeachHigh, (land - 0.25f) / 0.61f);
-        return MathHelper.Lerp(BeachHigh, h + LandRise, Up(0.86f, 0.99f));
+        // Uplands and cliffs (layout 6) stand on whatever the shore made, from just past the water's edge: a sea cliff drops
+        // sheer to its beach.
+        float lift = cliffs.Count + uplands.Count > 0 ? Relief(x, z) * Up(0.3f, 0.5f) : 0;
+        if (land < 0.86f) return MathHelper.Lerp(BeachLow, BeachHigh, (land - 0.25f) / 0.61f) + lift;
+        return MathHelper.Lerp(BeachHigh, h + LandRise, Up(0.86f, 0.99f)) + lift;
     }
 
     /// How deep the sea floor lies below a designed map's land.

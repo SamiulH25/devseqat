@@ -1,6 +1,6 @@
 # World scale: a land four times as wide, with height and cliffs (WS0-WS8)
 
-Status: **WS0 built 2026-11-24** (the 4x draft and its first relief, in the world page). WS1-WS8 open. Owner's brief 2026-11-24.
+Status: **WS0 and WS2 built 2026-11-24** (the 4x draft and its first relief in the world page; layout 6 builds it with its heights, headless). WS1, WS3-WS8 open. Owner's brief 2026-11-24.
 This settles `archive/HOLDS.md` HD6 (world size): the land grows, travel slows.
 
 > "A major world overhaul including elevation, cliffs, and a massive increase in scale of the world. There's no reason for
@@ -103,6 +103,28 @@ skirt; massif: ridged peaks; hills: rolling noise) and cliffs as **a step, not a
 low right up to the line. Heights scale up with the land: map heights today stay under ~25 units. New map **layout 6**
 (`WorldMap.CurrentLayout`); layout 5 keeps building from `Data/world.json` so saves on it keep their map. Test: a layout 6
 map builds, its heights match the uplands, the step at a cliff is at least its height.
+
+**As built (2026-11-24).** `WorldDesign` reads `warp`, `cliffs`, `uplands` (`WorldDesign.Draft()` reads `Data/world6.json`);
+`WorldMap.Generate(seed, layout: WorldMap.DraftLayout)` (6) builds it via `FromDesign(d, realms, 6)` in **2.5 s** headless;
+`CurrentLayout` stays 5 until WS4 can draw it. Relief in `Campaign/WorldRelief.cs` (`DesignRelief`, `Relief`, `CliffLift`,
+`Ragged`), added in `DesignedHeight` after the shore so a sea cliff drops sheer to its beach. Uplands: plateau a flat top on a
+30-unit skirt, massif peaks on 140, hills swells on 90. Cliffs: the full height on the high side up to the line (a step ~2
+units wide), easing out over `CliffReach` (4 x height, at least 40) inland, tapering to nothing toward its ends (a pass is a
+ramp). Both are read at a point moved by a smooth noise up to `RagAmp` (8) a side, so drawn straight edges come out ragged and
+a cliff stays on its plateau's rim. `--relief out.png [layout] [pixels]` (`ReliefDump.cs`) draws any layout as shaded relief
+with roads, cliffs and places: the way to look at heights until WS4 draws the land. Test `ReliefRaised`.
+Found on the way:
+- `MapIndex` took 20 s on the 4x map (every cell against every road bend): now built a block of 8x8 cells at a time in
+  parallel, each block keeping only the roads within (its nearest + 2 half diagonals + 2h), and river lists cut where no
+  bend can still be reached. Same answers (`MapIndexMatches`, the `--world-bench` checksum unchanged): 0.2 s.
+- `River.Dist` skips bends more than 40 units off on both axes (kept for old seeds): the draft's ~100-wide ridges came out
+  clipped square. `River.Skip` (default 40; layout 6 ridges their width + 8), read by `MapIndex` too.
+- A river's berth round places and its bends grew with the map's span (150 units at 4x) and pushed rivers off their drawn
+  lines through the gorge walls: on the draft they use layout 5's span, and rivers keep straight within 30-80 units of a
+  cliff (`CliffCalm`).
+- The draft's upland heights had been written 4x too high (fixed to 22, 26, 16, 10, 9, 7).
+Left for WS1/WS8 tuning: the province hills (`hills`, radius by span) are 270-500 units wide domes at 4x and stack on the
+Vespran hills into one white dome; scale them by span / warp when the redraw settles.
 
 ### WS3: Cliffs bar the way
 Cliffs are barriers like the sea: `PlanRoute` and the AI's routes (`Campaign.SeaRoute` and friends) go round them or

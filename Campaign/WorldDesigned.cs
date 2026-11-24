@@ -16,10 +16,14 @@ public sealed partial class WorldMap
 
     /// The layout built from Data/world.json.
     public const int DesignLayout = 5;
+    /// The layout built from the 4x draft, Data/world6.json, with its uplands and cliffs (docs/pre-demo/WORLD_SCALE.md WS2).
+    /// Not yet what new campaigns get: the map's terrain and drawing at this size wait for WS4.
+    public const int DraftLayout = 6;
     /// The seed every designed map's own noise uses (ground, hills, ponds, invented names): the same land for every campaign.
     public const int DesignSeed = 1105;
-    /// The size of a cell of the province grid on a designed map (world units).
-    const float DesignCell = 2;
+    /// The size of a cell of the province grid on a designed map (world units): 2 on layout 5; the draft's grid is as fine
+    /// against its warp as layout 5's (2 x the square root of the warp: 4 at 4x), or it would hold 11 million cells.
+    float DesignCell = 2;
 
     /// Built from the design (layout 5 and on).
     public bool Designed => Layout >= DesignLayout;
@@ -60,9 +64,9 @@ public sealed partial class WorldMap
     Province DesignProvinceAt(Vector2 p) => Provinces[cellProvince![Cell(p, out _, out _)]];
 
     /// The map of layout 5: everything from the design, then the same finishing as layout 4 (roads routed over the land).
-    static WorldMap FromDesign(WorldDesign d, int realms)
+    static WorldMap FromDesign(WorldDesign d, int realms, int layout = DesignLayout)
     {
-        var m = new WorldMap(DesignSeed) { ExtentUsed = d.Extent * DesignScale, Layout = DesignLayout };
+        var m = new WorldMap(DesignSeed) { ExtentUsed = d.Extent * DesignScale, Layout = layout, DesignCell = 2 * MathF.Sqrt(MathF.Max(1, d.Warp)) };
         var rng = new Random(DesignSeed);
         var namer = new PlaceNamer(Names.Get(), DesignSeed);
         foreach (var s in d.Settlements) namer.Used.Add(s.Name); // invented province names never repeat a settlement's
@@ -98,8 +102,11 @@ public sealed partial class WorldMap
             });
         }
         m.DesignRoads(d);
+        m.DesignRelief(d);
         m.DesignSeaLanes(d);
-        foreach (var r in d.Rivers) m.Rivers.Add(m.DesignRiver(r, rng, span));
+        // A river's bends and its berth round places are in plain units, as on layout 5 (span / warp = layout 5's span): on the
+        // 4x draft, span-sized berths (150 units) pushed rivers off their drawn lines and through the gorges' walls.
+        foreach (var r in d.Rivers) m.Rivers.Add(m.DesignRiver(r, rng, span / MathF.Max(1, d.Warp)));
         foreach (var p in m.Provinces.Where(p => p.Kind is "Hills" or "Highlands"))
             for (int i = 0, n = p.Kind == "Highlands" ? 5 : 3; i < n; i++)
             {
@@ -115,7 +122,8 @@ public sealed partial class WorldMap
             for (int i = 0; i + 1 < pts.Count; i++)
                 foreach (var (ra, rb) in m.Roads)
                     if (Cross(pts[i], pts[i + 1], ra, rb) is Vector2 x) passes.Add(x);
-            m.Ridges.Add(new River(pts.ToArray(), r.Width * DesignScale, passes.ToArray(), 18 + rng.NextSingle() * 6));
+            // On the draft (layout 6) a ridge is wider than River.Dist's 40-unit reach: measure it out to its own width.
+            m.Ridges.Add(new River(pts.ToArray(), r.Width * DesignScale, passes.ToArray(), 18 + rng.NextSingle() * 6) { Skip = d.Warp > 1 ? r.Width * DesignScale + 8 : 40 });
         }
         m.ridgeIndex = null;
         foreach (var l in d.Lakes) m.Lakes.Add(new Lake(Drawn(l.X, l.Y), l.Radius * DesignScale, DesignSeed * 31 + l.Id));
@@ -380,7 +388,7 @@ public sealed partial class WorldMap
             for (int j = i + 1; j < seats.Count; j++)
             {
                 float dd = Vector2.Distance(seats[i].Pos, seats[j].Pos);
-                if (dd < 160 * DesignScale) pairs.Add((dd, seats[i], seats[j]));
+                if (dd < 160 * DesignScale * d.Warp) pairs.Add((dd, seats[i], seats[j]));
             }
         foreach (var (_, a, b) in pairs.OrderBy(p => p.D))
             if (Find(a.Id) != Find(b.Id) && OverLand(a.Pos, b.Pos)) { Roads.Add((a.Pos, b.Pos)); Join(a.Id, b.Id); }
@@ -392,7 +400,7 @@ public sealed partial class WorldMap
                 for (int j = i + 1; j < Settlements.Count; j++)
                 {
                     float dd = Vector2.Distance(Settlements[i].Pos, Settlements[j].Pos);
-                    if (dd < 90 * DesignScale) hops.Add((dd, Settlements[i], Settlements[j]));
+                    if (dd < 90 * DesignScale * d.Warp) hops.Add((dd, Settlements[i], Settlements[j]));
                 }
             foreach (var (_, a, b) in hops.OrderBy(p => p.D))
                 if (Find(a.Id) != Find(b.Id) && OverLand(a.Pos, b.Pos)) { Roads.Add((a.Pos, b.Pos)); Join(a.Id, b.Id); }
@@ -402,7 +410,8 @@ public sealed partial class WorldMap
     /// A drawn river as the map carries it: its few drawn points wander between, kept clear of settlements.
     River DesignRiver(WorldDesign.Line r, Random rng, float span)
     {
-        var pts = Meander(r.Points.Select(Drawn).ToList(), 6 * MathF.Sqrt(span), rng);
+        // Near a cliff (a gorge's walls, WS2) the river keeps to its drawn line, or its bends would cut through the walls.
+        var pts = Meander(r.Points.Select(Drawn).ToList(), 6 * MathF.Sqrt(span), rng, cliffs.Count == 0 ? null : CliffCalm);
         for (int i = 0; i < pts.Count; i++)
             foreach (var st in Settlements)
             {
@@ -418,8 +427,25 @@ public sealed partial class WorldMap
         return new River(path, r.Width, bridges.ToArray(), 1.5f) { Widen = 2 };
     }
 
+    /// How freely a river may swing at p: 0 within 30 units of a cliff, all of it past 80.
+    float CliffCalm(Vector2 p)
+    {
+        float near = float.MaxValue;
+        foreach (var c in cliffs)
+        {
+            if (p.X < c.Min.X || p.Y < c.Min.Y || p.X > c.Max.X || p.Y > c.Max.Y) continue;
+            for (int i = 1; i < c.Points.Length; i++)
+            {
+                Vector2 a = c.Points[i - 1], ab = c.Points[i] - a;
+                float l2 = ab.LengthSquared(), t = l2 > 0 ? Math.Clamp(Vector2.Dot(p - a, ab) / l2, 0, 1) : 0;
+                near = MathF.Min(near, Vector2.Distance(p, a + ab * t));
+            }
+        }
+        return MathHelper.SmoothStep(0, 1, Math.Clamp((near - 30) / 50, 0, 1));
+    }
+
     /// A drawn line's points every 4 units, swinging up to `swing` to either side between its drawn points (not at them).
-    static List<Vector2> Meander(List<Vector2> drawn, float swing, Random rng)
+    static List<Vector2> Meander(List<Vector2> drawn, float swing, Random rng, Func<Vector2, float>? calm = null)
     {
         var pts = new List<Vector2>();
         float ph = rng.NextSingle() * MathF.Tau;
@@ -433,7 +459,8 @@ public sealed partial class WorldMap
             {
                 float t = i / (float)steps, s = t * len;
                 float w = MathF.Sin(MathF.PI * t) * (MathF.Sin(s * 0.05f + ph) + 0.4f * MathF.Sin(s * 0.13f + ph * 2)) * swing;
-                pts.Add(Vector2.Lerp(a, b, t) + side * w);
+                var on = Vector2.Lerp(a, b, t);
+                pts.Add(on + side * (calm == null ? w : w * calm(on)));
             }
         }
         return pts;

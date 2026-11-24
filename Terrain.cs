@@ -20,6 +20,8 @@ public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float D
     /// Extra bed width for coarse ground (the campaign map's 4 m grid): the cut is wider and its banks gentler, so a grid
     /// vertex always lands in the channel and the water sheet never floats over uncut ground.
     public float Widen { get; init; }
+    /// How far off a bend's ends `Dist` still measures it (40 kept from the first maps; layout 6's ridges, ~100 wide, need more).
+    public float Skip { get; init; } = 40;
     /// How far from the centre line the ground is touched by the cut.
     public float CarveReach => Width / 2 + 3 + 2 * Widen;
     /// Bridges on a battlefield river: where each crosses and the way its deck runs (TerrainFeatures.cs `BridgeTheRoad`).
@@ -49,7 +51,7 @@ public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float D
     float SegmentDist(Vector2 p, int i)
     {
         var a = Path[i]; var ab = Path[i + 1] - a;
-        if (MathF.Abs(p.X - a.X) > 40 && MathF.Abs(p.X - Path[i + 1].X) > 40 && MathF.Abs(p.Y - a.Y) > 40 && MathF.Abs(p.Y - Path[i + 1].Y) > 40) return float.MaxValue;
+        if (MathF.Abs(p.X - a.X) > Skip && MathF.Abs(p.X - Path[i + 1].X) > Skip && MathF.Abs(p.Y - a.Y) > Skip && MathF.Abs(p.Y - Path[i + 1].Y) > Skip) return float.MaxValue;
         float k = Math.Clamp(Vector2.Dot(p - a, ab) / ab.LengthSquared(), 0, 1);
         return Vector2.Distance(p, a + ab * k);
     }
