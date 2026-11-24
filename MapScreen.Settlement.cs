@@ -465,7 +465,8 @@ partial class MapScreen
         else ui.Icon("flag", c.X + ui.U(6), c.Y + ui.U(8), Style.Dim, 5);
         int tx = c.X + ui.U(58), tw = c.Right - tx;
         ui.Text(cur >= 0 ? "YOU SERVE" : "YOU SERVE NO ONE", tx, c.Y + ui.U(6), Style.Dim, 1);
-        string who = cur >= 0 ? "THE " + C.FactionNames[cur].ToUpperInvariant() : "A FREE CAPTAIN";
+        static string TheRealm(string name) => name.StartsWith("The ", StringComparison.OrdinalIgnoreCase) ? name.ToUpperInvariant() : "THE " + name.ToUpperInvariant();
+        string who = cur >= 0 ? TheRealm(C.FactionNames[cur]) : "A FREE CAPTAIN";
         ui.TextFit(who, tx, c.Y + ui.U(20), tw, cur >= 0 ? SideColor(cur) : Style.Text, ui.FitScale(who, tw));
         if (cur < 0) ui.TextFit("NO PAY, NO ENEMIES BUT BRIGANDS", tx, c.Y + ui.U(42), tw, Style.Dim, 1);
         string welcome = C.SettlementWelcome(s);
@@ -478,7 +479,7 @@ partial class MapScreen
         int bw = Math.Min(c.Width, ui.U(420));
         if (cur != s.Faction)
         {
-            if (BigButton(new Rectangle(c.X, y, bw, ui.U(38)), "scroll", $"SIGN WITH THE {C.FactionNames[s.Faction].ToUpperInvariant()}")) note = C.SignContract(s.Faction) ?? "";
+            if (BigButton(new Rectangle(c.X, y, bw, ui.U(38)), "scroll", $"SIGN WITH {TheRealm(C.FactionNames[s.Faction])}")) note = C.SignContract(s.Faction) ?? "";
             y += ui.U(46);
         }
         if (cur >= 0 && ui.Button(new Rectangle(c.X, y, bw, ui.U(26)), C.Captain.Fealty ? "RENOUNCE YOUR OATH" : "END YOUR CONTRACT")) note = C.SignContract(-1) ?? "";
@@ -489,7 +490,7 @@ partial class MapScreen
         {
             ui.Icon("chain", board.Center.X - ui.U(17), board.Y + ui.U(40), Style.Dim, 5);
             int ly = board.Y + ui.U(90);
-            foreach (var line in ui.Wrap($"THE BOARD IS FOR THOSE WHO SERVE THE {C.FactionNames[s.Faction].ToUpperInvariant()}. SIGN WITH THEM TO SEE IT.", board.Width - ui.U(40)))
+            foreach (var line in ui.Wrap($"THE BOARD IS FOR THOSE WHO SERVE {TheRealm(C.FactionNames[s.Faction])}. SIGN WITH THEM TO SEE IT.", board.Width - ui.U(40)))
             { ui.TextC(line, board.Center.X, ly, Style.Dim, 1); ly += ui.U(12); }
         }
     }
@@ -726,18 +727,22 @@ partial class MapScreen
         // Prosperity.
         var a = Card(new Rectangle(body.X, body.Y, third, ch), Style.Ok);
         float pd = C.ProsperityDrift(s);
+        float pdShow = MathF.Abs(pd) < 0.005f ? 0 : pd;
         ui.Ring(new Vector2(a.X + ui.U(28), a.Y + ui.U(30)), ui.U(26), s.Prosperity / 100f, Style.Ok, $"{s.Prosperity:0}");
         ui.Text("PROSPERITY", a.X + ui.U(64), a.Y, Style.Text, 2);
-        ui.Text($"{pd:+0.00;-0.00} A DAY", a.X + ui.U(64), a.Y + ui.U(20), pd >= 0 ? Style.Ok : Style.Warn, 1);
+        ui.Text($"{pdShow:+0.00;-0.00;0.00} A DAY", a.X + ui.U(64), a.Y + ui.U(20), pdShow >= 0 ? Style.Ok : Style.Warn, 1);
         Price(a.X + ui.U(64), a.Y + ui.U(36), income, "A WEEK");
         ui.TextFit("WITH ITS VILLAGES", a.X + ui.U(64), a.Y + ui.U(48), a.Width - ui.U(64), Style.Dim, 1);
+        float pw = C.WildnessOf(s.Province);
+        ui.TextFit($"WILDNESS: {Campaign.WildnessWord(pw)} ({pw:0}%)", a.X + ui.U(64), a.Y + ui.U(60), a.Width - ui.U(64), pw >= 50 ? Style.Bad : pw >= 25 ? Style.Warn : Style.Dim, 1);
         // Unrest.
         bool revolt = s.Unrest >= Campaign.RevoltAt;
         var (drift, why) = C.UnrestDrift(s);
+        float dShow = MathF.Abs(drift) < 0.005f ? 0 : drift;
         var b = Card(new Rectangle(body.X + third + ui.U(10), body.Y, third, ch), revolt ? Style.Bad : Style.Warn);
         ui.Ring(new Vector2(b.X + ui.U(28), b.Y + ui.U(30)), ui.U(26), s.Unrest / 100f, revolt ? Style.Bad : Style.Warn, $"{s.Unrest:0}");
         ui.Text(revolt ? "REVOLT" : "UNREST", b.X + ui.U(64), b.Y, revolt ? Style.Bad : Style.Text, 2);
-        ui.Text($"{drift:+0.00;-0.00} A DAY", b.X + ui.U(64), b.Y + ui.U(20), drift > 0 ? Style.Warn : Style.Ok, 1);
+        ui.Text($"{dShow:+0.00;-0.00;0.00} A DAY", b.X + ui.U(64), b.Y + ui.U(20), dShow > 0 ? Style.Warn : Style.Ok, 1);
         int wy = b.Y + ui.U(36);
         foreach (var line in ui.Wrap(why.Count == 0 ? "THE PEOPLE ARE CONTENT." : string.Join("  ", why), b.Width - ui.U(64)).Take(3)) { ui.Text(line, b.X + ui.U(64), wy, Style.Dim, 1); wy += ui.U(11); }
         if (C.Rebels(s) is Party reb) ui.TextFit($"{reb.Men} REBELS IN THE FIELD: BEAT THEM", b.X, b.Bottom - ui.U(8), b.Width, Style.Bad, 1);

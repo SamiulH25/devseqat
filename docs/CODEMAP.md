@@ -892,8 +892,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Report.cs (300 lines)
 - **MapScreen** (class, L7): ResultsPanel:9, MentionRow:40, Well:57, Tally:68, Spoils:123, ReportCompanies:166, Progress:224
 
-## MapScreen.Settlement.cs (778 lines)
-- **MapScreen** (class, L9): TabBody:12, TownTabs:41, HarbourTab:59, TownRow:88, PortraitWell:91, TroopStats:99, TroopOffer:107, RecruitTab:132, NoblesTab:147, TrainTab:165, RestTab:216, FoodTab:273, WorkshopTab:309, ForageTab:348, CaptivesTab:366, GarrisonTab:419, ContractTab:458, EldersTab:498, TavernTab:508, Goblet:571, TavernRow:589, MercenariesTab:596, MarketTab:619, GoodsList:665, Contracts:691, FiefTab:722
+## MapScreen.Settlement.cs (783 lines)
+- **MapScreen** (class, L9): TabBody:12, TownTabs:41, HarbourTab:59, TownRow:88, PortraitWell:91, TroopStats:99, TroopOffer:107, RecruitTab:132, NoblesTab:147, TrainTab:165, RestTab:216, FoodTab:273, WorkshopTab:309, ForageTab:348, CaptivesTab:366, GarrisonTab:419, ContractTab:458, EldersTab:499, TavernTab:509, Goblet:572, TavernRow:590, MercenariesTab:597, MarketTab:620, GoodsList:666, Contracts:692, FiefTab:723
 
 ## MapScreen.Street.Art.cs (568 lines)
 - **MapScreen** (class, L6): Keep:10, KeepBase:172, EldersHall:220, CobbleStreet:322, VillageLane:366, Tree:393, Haystack:422, SplitFence:434, HarbourMasts:446, Guard:470, Warhorse:498
@@ -933,8 +933,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Townscape.Houses.cs (356 lines)
 - **MapScreen** (class, L7): Glass:41, TimberHouse:50, Openings:82, WhiteHouse:108, LogHouse:127, Yurt:140, Turf:159, Edges:175, Dome:183, HeroWall:218, TavernWindow:221, TavernDoor:233, Lantern:249, TavernSign:257
 
-## MapScreen.Upgrade.cs (352 lines)
-- **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:185, Leads:340
+## MapScreen.Upgrade.cs (353 lines)
+- **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:186, Leads:341
 
 ## Mesh3D.cs (444 lines)
 - **MeshKit3D** (class, L9): TryLoad:64, Load:74, Get:156, Resolve:158, MapLimb:290, MapHelm:298, MapWeapon:342, MapShield:369

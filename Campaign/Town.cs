@@ -113,7 +113,7 @@ public sealed partial class Campaign
                 "battlefield" => $"Swords rust in the grass at the {site.Name}, to the {Bearing(t.Pos, site.Pos)}.",
                 "spring" => $"The water of the {site.Name}, to the {Bearing(t.Pos, site.Pos)}, closes wounds.",
                 "hermit" => $"The {site.Name}, to the {Bearing(t.Pos, site.Pos)}, sees what others do not.",
-                _ => $"Have you seen the {site.Name}? Ride {Bearing(t.Pos, site.Pos)} and you will find it.",
+                _ => $"Have you seen {(site.Name.StartsWith("St ", StringComparison.OrdinalIgnoreCase) || site.Name.StartsWith("The ", StringComparison.OrdinalIgnoreCase) ? site.Name : "the " + site.Name)}? Ride {Bearing(t.Pos, site.Pos)} and you will find it.",
             }, site.Pos, site.Id));
         foreach (var l in S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && Captain.Contract >= 0 && FactionsAtWar(p.Faction, Captain.Contract) && Vector2.Distance(p.Pos, t.Pos) < far).Take(1))
             all.Add(new Rumour($"{l.Name} was seen with {l.Men} men to the {Where(l.Pos)}.", l.Pos));

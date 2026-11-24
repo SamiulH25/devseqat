@@ -19,7 +19,7 @@ public partial class Campaign
         bool ours = s.Owner == Player.Id || Captain.Contract >= 0 && s.Faction == Captain.Contract;
         if (!ours) return "THE HOUSE SENDS ESQUIRES ONLY WITH ITS OWN CAPTAINS";
         float need = MathF.Max(40, B.NobleRenown - (Captain.Birth == "highborn" || Captain.Origin == "disinherited" ? 40 : 0));
-        if (Captain.Renown < need) return $"NEEDS {need:0} RENOWN";
+        if (Captain.Renown < need) return $"NEEDS {need:0} RENOWN (YOU HAVE {Captain.Renown:0})";
         if (s.Nobles <= 0) return "NO ESQUIRES READY";
         return null;
     }

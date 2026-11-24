@@ -463,8 +463,8 @@ partial class MapScreen
         ui.Text($"{index}", r.X + ui.U(5), r.Y + ui.U(5), Style.Dim, 1);
         ui.Text(Style.Numerals[Math.Clamp(c.Type.Tier, 0, 7)], r.X + ui.U(5), r.Y + ui.U(16), Style.Accent, 1);
         ui.Portrait(c.Type, new Rectangle(r.X + ui.U(20), r.Y + ui.U(4), r.Width - ui.U(40), ui.U(44)));
-        string name = c.Name.ToUpperInvariant();
-        ui.TextC(name.Length > 15 ? name[..15] : name, r.X + r.Width / 2f, r.Y + ui.U(50), Style.Text, 1);
+        string name = ui.Fit(c.Name.ToUpperInvariant(), r.Width - ui.U(10));
+        ui.TextC(name, r.X + r.Width / 2f, r.Y + ui.U(50), Style.Text, 1);
         ui.TextC(c.Stacks.Count > 1 ? $"{c.Type.Name.ToUpperInvariant()} +{c.Stacks.Count - 1}" : c.Type.Name.ToUpperInvariant(), r.X + r.Width / 2f, r.Y + ui.U(60), Style.Dim, 1);
         ui.TextC(c.Wounded > 0 ? $"{c.Men}+{c.Wounded}W" : $"{c.Men}", r.X + r.Width / 2f, r.Y + ui.U(71), Style.Text);
         TierStrip(c, new Rectangle(r.X + ui.U(6), r.Y + ui.U(86), r.Width - ui.U(12), ui.U(3)));

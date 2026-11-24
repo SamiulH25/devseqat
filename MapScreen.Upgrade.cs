@@ -170,7 +170,8 @@ partial class MapScreen
             ui.TextFit(string.Join(" ", nameLines.Skip(1)), tx, b.Y + ui.U(17), tw, root || picked ? Kit.Gilt : Style.Text, 1);
         }
         else ui.TextFit(n.T.Name.ToUpperInvariant(), tx, b.Y + (two ? ui.U(5) : (b.Height - ui.U(7)) / 2), tw, root || picked ? Kit.Gilt : Style.Text, 1);
-        if (two && nameLines is not { Count: > 1 }) ui.TextFit(root ? $"{st.Men} MEN" : $"{n.T.Class.ToString().ToUpperInvariant()}{(own ? " . " + n.T.Culture.ToUpperInvariant() : "")}", tx, b.Y + ui.U(17), tw, own && !root ? Kit.Mul(Style.Accent, 0.85f) : Style.Dim, 1);
+        string cultName = (Factions.Culture(n.T.Culture)?.Name ?? n.T.Culture).ToUpperInvariant();
+        if (two && nameLines is not { Count: > 1 }) ui.TextFit(root ? $"{st.Men} MEN" : $"{n.T.Class.ToString().ToUpperInvariant()}{(own ? " . " + cultName : "")}", tx, b.Y + ui.U(17), tw, own && !root ? Kit.Mul(Style.Accent, 0.85f) : Style.Dim, 1);
         if (n.Locked) ui.Icon("chain", b.Right - ui.U(11), b.Y + (b.Height - ui.U(7)) / 2, Style.Bad, 1);
         if (!root && !onPath) ui.Rect(b, Kit.IronDark * 0.5f); // not on the way to or from the troop in focus
         else if (!root && !n.Option && !focus) ui.Rect(b, Kit.IronDark * 0.22f);

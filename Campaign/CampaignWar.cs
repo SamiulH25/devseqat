@@ -239,7 +239,7 @@ public sealed partial class Campaign
         var enemyTown = S.Settlements.Where(t => t.Kind == SettlementKind.Town && FactionsAtWar(f, t.Faction)).OrderBy(t => Vector2.Distance(t.Pos, s.Pos)).FirstOrDefault();
         if (enemyTown != null) s.Offers.Add(Make("scout", enemyTown.Id, 160, $"Scout {enemyTown.Name} (ride within sight of it)."));
         var castle = S.Settlements.Where(t => t.Kind != SettlementKind.Village && FactionsAtWar(f, t.Faction)).OrderBy(t => Vector2.Distance(t.Pos, s.Pos)).FirstOrDefault();
-        if (castle != null) s.Offers.Add(Make("take", castle.Id, 1200, $"Take {castle.Name} for the {FactionNames[f]}."));
+        if (castle != null) s.Offers.Add(Make("take", castle.Id, 1200, $"Take {castle.Name} for {(FactionNames[f].StartsWith("The ", StringComparison.OrdinalIgnoreCase) ? FactionNames[f] : "the " + FactionNames[f])}."));
         MoreTownOffers(s, Make);
     }
 
