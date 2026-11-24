@@ -267,6 +267,7 @@ public partial class Battle
         if (a.IsPlayer && !ranged) BladeLanded();
         if (foeBlade) FoeAura = MathF.Max(0, FoeAura - BladeHitCost);
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);
+        if (!ranged && a.Type.Has("trample")) Knock(a, t, 1.8f, 1.3f, 2f); // WI5: charging boars bowl shield lines over
         if (!ranged && a.Type.Wild && a.Type.Has("poison")) Envenom(a, t, dmg * mult); // a bite or sting keeps working
         StyleLanded(a, t, dmg, ranged, lance);
         if (a.IsPlayer) CountDeed(t, ranged, lance);
@@ -296,6 +297,7 @@ public partial class Battle
     {
         float armour = t.Type.Armor + t.Mods.Armour + (t.Armed ? 4 : 0) + (ranged ? t.Mods.ArrowArmour : 0); // iron skin, armed veteran, a pavise (BattleEffects.cs)
         float real = MathF.Max(dmg * 0.25f, dmg - armour * (1 - pierce)); // bolts punch through part of the armour
+        real *= WildCombatMult(a, t, ranged); // WI5-WI6: spectral, silver_weak, damp, seize, burrow, trample
         if (a.IsPlayer || t.IsPlayer) real = AuraSoak(a, t, real, ranged); // aura armour (K1)
         if (FoeTier > 0 && (a == EnemyCaptain || t == EnemyCaptain)) real = FoeSoak(a, t, real, ranged); // a champion's (K6)
         t.Hp -= real;

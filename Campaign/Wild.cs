@@ -244,9 +244,111 @@ public partial class Campaign
         };
         barrow.Companies.Add(NewCompany("skeleton", "infantry", bones, 0));
         barrow.Companies.Add(NewCompany("wight", "infantry", Math.Max(1, bones / 8), 0));
-        barrow.Companies.Add(NewCompany("necromancer", "casters", 1, 0));
+        barrow.Companies.Add(NewCompany("wraith", "infantry", Math.Max(1, bones / 14), 0));
+        barrow.Companies.Add(NewCompany("barrow_king", "infantry", 1, 0));
         S.Parties.Add(barrow);
         Deed($"The grave field in {prov.Title} has become a barrow.", "wild");
         return barrow;
     }
+
+    /// Daily (WI5-WI6): populate regional wild monsters (boars, hill giants, harpies, griffons, basilisks, sand wurms,
+    /// drowned dead, werewolves, wraiths) in their native countries.
+    internal void SpawnWildRosterDaily()
+    {
+        void TrySpawn(string breed, string troop, string name, int tier, Func<Province, bool> land, int maxCount, int minMen, int maxMen, string? apex = null)
+        {
+            if (S.Parties.Count(p => !p.Down && p.Breed == breed) >= maxCount || !rng.Chance(0.12f)) return;
+            var pool = S.Provinces.Where(land).ToList();
+            if (pool.Count == 0) return;
+            var prov = rng.Pick(pool);
+            var at = prov.Center + new Vector2(rng.Range(-14, 14), rng.Range(-14, 14)) * Map.Spread;
+            if (Map.ProvinceAt(at).Id != prov.Id || Vector2.Distance(Player.Pos, at) < 30 * Map.Spread) return;
+            var p = new Party
+            {
+                Id = S.NextId++, Kind = PartyKind.Monster, Breed = breed, Name = $"{name} of {prov.Name}",
+                Pos = at, Goal = at, Task = "roam", PatrolProvince = prov.Id, Tier = tier,
+            };
+            p.Companies.Add(NewCompany(troop, "infantry", Scaled(minMen + rng.Next(Math.Max(1, maxMen - minMen + 1))), 0));
+            if (apex != null) p.Companies.Add(NewCompany(apex, "infantry", 1, 0));
+            S.Parties.Add(p);
+        }
+        TrySpawn("boar", "boar", "Sounder", 2, pr => pr.Kind == "Forest", 3, 4, 8, "great_boar");
+        TrySpawn("giant", "hill_giant", "Hill Giants", 5, pr => pr.Kind is "Hills" or "Highlands", 2, 1, 2);
+        TrySpawn("harpy", "harpy", "Harpy Flock", 3, pr => pr.Kind == "Highlands", 2, 4, 7);
+        TrySpawn("griffon", "griffon", "Crag-Griffon", 5, pr => pr.Kind == "Highlands", 1, 1, 1);
+        TrySpawn("basilisk", "basilisk", "Basilisk", 4, pr => pr.Kind is "Desert" or "Oasis", 2, 1, 2);
+        TrySpawn("wurm", "sand_wurm", "Sand Wurm", 6, pr => pr.Kind is "Desert" or "Badlands", 1, 1, 1);
+        TrySpawn("werewolf", "werewolf", "Skinchangers", 4, pr => pr.Kind is "Taiga" or "Tundra" or "Forest", 2, 2, 4);
+        if (S.Parties.Count(p => !p.Down && p.Breed == "undead" && p.Name.StartsWith("Drowned")) < 2 && rng.Chance(0.1f))
+        {
+            var coasts = S.Provinces.Where(pr => pr.Kind == "Coast").ToList();
+            if (coasts.Count > 0)
+            {
+                var prov = rng.Pick(coasts);
+                var at = prov.Center + new Vector2(rng.Range(-10, 10), rng.Range(-10, 10)) * Map.Spread;
+                if (Map.ProvinceAt(at).Id == prov.Id && Vector2.Distance(Player.Pos, at) >= 30 * Map.Spread)
+                {
+                    var d = new Party { Id = S.NextId++, Kind = PartyKind.Monster, Breed = "undead", Name = $"Drowned Dead of {prov.Name}", Pos = at, Goal = at, Task = "walk", PatrolProvince = prov.Id, Tier = 3 };
+                    d.Companies.Add(NewCompany("drowned_dead", "infantry", Scaled(8), 0));
+                    S.Parties.Add(d);
+                }
+            }
+        }
+        if (S.Parties.Count(p => !p.Down && p.Breed == "undead" && p.Name.StartsWith("Wraiths")) < 2 && rng.Chance(0.1f))
+        {
+            var fens = S.Provinces.Where(pr => pr.Kind == "Marsh").ToList();
+            if (fens.Count > 0)
+            {
+                var prov = rng.Pick(fens);
+                var at = prov.Center + new Vector2(rng.Range(-10, 10), rng.Range(-10, 10)) * Map.Spread;
+                if (Map.ProvinceAt(at).Id == prov.Id && Vector2.Distance(Player.Pos, at) >= 30 * Map.Spread)
+                {
+                    var w = new Party { Id = S.NextId++, Kind = PartyKind.Monster, Breed = "undead", Name = $"Wraiths of {prov.Name}", Pos = at, Goal = at, Task = "walk", PatrolProvince = prov.Id, Tier = 4 };
+                    w.Companies.Add(NewCompany("wraith", "infantry", Scaled(4), 0));
+                    S.Parties.Add(w);
+                }
+            }
+        }
+    }
+
+    // ---------- WI4: monster contracts and the hunt ----------
+
+    /// Plain-words stake for a monster contract (WI4).
+    public string MonsterStake(Party p, Settlement near) => p.Breed switch
+    {
+        "troll" when p.Stage >= 1 => $"The road to {near.Name} is closed by {p.Name}. Slay it to reopen trade.",
+        "spider" when p.Stage >= 2 => $"Spider webs choke the roads near {near.Name}. Burn out {p.Name}.",
+        "undead" when p.Lair => $"The dead walk from {p.Name} every night. Lay the barrow to rest.",
+        "goblin" when p.Stage >= 1 => $"{p.Name} threatens every village around {near.Name}. Break it.",
+        "wyvern" or "griffon" or "harpy" => $"{p.Name} stoops on the herds near {near.Name}. Bring it down.",
+        "giant" => $"{p.Name} hurls boulders onto the passes near {near.Name}. Rush it down.",
+        "basilisk" or "wurm" => $"{p.Name} has closed the desert tracks near {near.Name}. Hunt it down.",
+        "werewolf" => $"{p.Name} stalks the night roads near {near.Name}. Hunt it with fire or faith.",
+        "boar" => $"{p.Name} tramples the fields around {near.Name}. Set spears and break the herd.",
+        _ => $"{p.Name} plagues the country around {near.Name}. Clear it out.",
+    };
+
+    /// Tactical hint for a tracked quarry (WI4): knowing your quarry tells you how and when to fight it.
+    public static string QuarryHint(Party p) => p.Breed switch
+    {
+        "troll" => "FIGHT BY DAYLIGHT — THE SUN STOPS ITS HEALING.",
+        "wyvern" => "CATCH IT ON ITS ROOST AT NIGHT, OR BRING BOWS.",
+        "harpy" => "COVER YOUR ARCHERS — HARPIES PICK OFF BOWS AND THE WOUNDED.",
+        "griffon" => "KEEP TIGHT RANKS AND BRING BOWS — IT SEIZES ISOLATED MEN.",
+        "boar" => "BRACE SPEARS OR STAKES — BOARS BOWL SHIELD LINES OVER.",
+        "giant" => "SPREAD OUT AND RUSH IT — ITS BOULDERS SHATTER MASSES.",
+        "basilisk" => "FLANK IT — ITS GAZE FREEZES MEN WHO FACE IT HEAD-ON.",
+        "wurm" => "KEEP SPREAD OUT — IT BURSTS UP UNDER BUNCHED RANKS.",
+        "werewolf" => "BRING HOLY BLESSING, AURA OR CRAFT MARKS TO STOP ITS HEALING.",
+        "undead" => p.Companies.Any(c => c.Troop == "wraith") ? "WRAITHS SHRUG OFF STEEL — BRING MAGIC, AURA OR FAITH BLESSING."
+            : "FIGHT IN OPEN DAYLIGHT AND KILL THE NECROMANCER OR BARROW KING.",
+        _ => "KNOW THE GROUND AND STRIKE ON YOUR TERMS.",
+    };
+
+    public void TrackQuarry(int partyId) { if (partyId >= 0) S.TrackedQuarries.Add(partyId); }
+
+    public bool KnowsQuarry(Party p) => p.Kind == PartyKind.Monster && (S.TrackedQuarries.Contains(p.Id) || S.Contracts.Any(c => c.Target == p.Id));
+
+    /// Knowing your quarry gives a 10% edge in auto-resolve (and the `quarry_known` buff in fought battles, WI4).
+    public float HuntEdge(Party enemy) => KnowsQuarry(enemy) ? 1.1f : 1f;
 }

@@ -207,6 +207,9 @@
     { "id": "troll_hide_lining", "name": "Troll-hide", "icon": "shield", "line": "Lined with troll hide: stout protection that steadies the bearer.", "tags": ["mark", "body", "helm"],
       "armour": 3, "moralePerSec": 0.25 },
     { "id": "silk_padding", "name": "Silk-padded", "icon": "boot", "line": "Spun spider silk under steel: light, swift and tireless.", "tags": ["mark", "body", "helm"],
-      "armour": 1, "tire": -0.18, "speed": 0.04 }
+      "armour": 1, "tire": -0.18, "speed": 0.04 },
+    // WI4: knowing your quarry before the hunt gives a tactical edge in battle
+    { "id": "quarry_known", "name": "Quarry tracked", "icon": "arrow", "line": "You know the beast and its ground: steadier and deadlier in the hunt.",
+      "damage": 0.1, "shock": -0.15 }
   ]
 }

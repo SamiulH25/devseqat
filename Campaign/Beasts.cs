@@ -17,9 +17,16 @@ public partial class Campaign
         "wolf" => "alpha_wolf",
         "troll" => "troll_elder",
         "spider" => p.Lair ? "brood_mother" : "spider",
-        "bear" => "bear",
+        "bear" => "bear_king",
         "wyvern" => "wyvern",
-        "undead" => "wight",
+        "undead" => p.Lair ? "barrow_king" : "wight",
+        "boar" => "great_boar",
+        "giant" => "giant_chief",
+        "harpy" => "harpy",
+        "griffon" => "griffon",
+        "basilisk" => "basilisk",
+        "wurm" => "sand_wurm",
+        "werewolf" => "werewolf",
         _ => "",
     };
 

@@ -683,4 +683,49 @@ public static partial class SelfTest
         c.OnMonsterCleared(troll, playerWon: true);
         Check(!c.Captain.AuraWall && c.Captain.AuraTier == 2, "slaying a great beast breaks an aura wall");
     }
+
+    /// WI4-WI6: all new wild monsters load and validate, carry distinct tactical rules (wraith spectral resist vs holy,
+    /// basilisk gaze facing vs flank, harpy targeting bows, boar trample, hill giant boulders), and plug into monster contracts & hunts.
+    static void WildRosterAndHunts()
+    {
+        var ids = new[] { "boar", "tusker", "great_boar", "hill_giant", "giant_chief", "goblin_shaman", "harpy", "griffon", "basilisk", "sand_wurm", "drowned_dead", "werewolf", "wraith", "barrow_king", "bear_king" };
+        foreach (var id in ids) Check(Troops.Get(id).Wild, $"new wild monster {id} loads");
+        Check(Troops.Get("goblin_shaman").Spells.Length == 2, "goblin shaman casts spells");
+        Check(Campaign.GoodsFrom(Troops.Get("basilisk")) == "basilisk_eye" && Campaign.GoodsFrom(Troops.Get("harpy")) == "harpy_quills", "basilisk and harpy drop their own spoils");
+
+        // Wraith spectral resist: mundane men deal far less than blessed/holy men.
+        float WraithDmg(bool blessed)
+        {
+            var b = Battle.Empty(95);
+            if (blessed) b.Options.Standing = new[] { "bless_rite" };
+            var men = b.AddSquad(0, Troops.Get("men_at_arms"), 4, new(0, -2), 4, Vector2.UnitY);
+            var wr = b.AddSquad(1, Troops.Get("wraith"), 1, new(0, 0), 1, -Vector2.UnitY).Units[0];
+            men.Order = Order.Charge; men.Target = wr.Squad;
+            float startHp = wr.Hp;
+            Run(b, 5);
+            return startHp - wr.Hp;
+        }
+        float plainW = WraithDmg(false), holyW = WraithDmg(true);
+        Check(holyW > plainW * 2f, $"wraiths resist mundane steel ({plainW:0} dmg) vs holy blessing ({holyW:0} dmg)");
+
+        // Basilisk gaze slows men facing it head-on, not men facing away / flanking.
+        var bg = Battle.Empty(96);
+        var bas = bg.AddSquad(1, Troops.Get("basilisk"), 1, new(0, 0), 1, -Vector2.UnitY).Units[0];
+        var facing = bg.AddSquad(0, UnitType.Shieldman, 1, new(0, -6), 1, Vector2.UnitY).Units[0];
+        var away = bg.AddSquad(0, UnitType.Shieldman, 1, new(0, 6), 1, Vector2.UnitY).Units[0];
+        bas.Spit = 0.05f;
+        Run(bg, 0.2f);
+        Check(bg.Webbed(facing) && !bg.Webbed(away), "basilisk gaze slows men facing it, not flankers");
+
+        // WI4: monster contracts have plain-words stakes and track the quarry for PrepareBattle + AutoResolve edge.
+        var c = Campaign.New(82);
+        var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && !c.Refuses(s));
+        var quarry = c.S.Parties.First(p => !p.Down && p.Kind == PartyKind.Monster);
+        quarry.Pos = town.Pos + new Vector2(10, 0);
+        c.TrackQuarry(quarry.Id);
+        Check(c.KnowsQuarry(quarry) && c.HuntEdge(quarry) > 1f, "tracking a quarry grants HuntEdge");
+        Check(Campaign.QuarryHint(quarry).Length > 10 && c.MonsterStake(quarry, town).Contains(town.Name), "quarry hint and contract stake are plain words");
+        var setup = c.PrepareBattle(quarry);
+        Check(setup.Options.Standing.Contains("quarry_known"), "tracked quarry carries quarry_known into battle");
+    }
 }

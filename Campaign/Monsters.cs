@@ -177,6 +177,7 @@ public partial class Campaign
         for (int n = Math.Max(1, NestsWanted / 6); n > 0; n--)
             if (Nests.Count() < NestsWanted && rng.Chance(B.NestSpawnChance)) SpawnNest();
         LairsGrowDaily();
+        SpawnWildRosterDaily();
         WildnessDaily();
     }
 
@@ -196,6 +197,7 @@ public partial class Campaign
         if (lair.Men >= cap) return;
         if (lair.Men >= cap / 3 && rng.Chance(0.4f)) Recruit(lair, "goblin_archer", "archers", Scaled(1));
         if (lair.Men >= cap / 2 && rng.Chance(0.3f)) Recruit(lair, "hobgoblin", "infantry", Scaled(1));
+        if (lair.Stage >= 1 && rng.Chance(0.2f) && lair.Companies.Where(c => c.Troop == "goblin_shaman").Sum(c => c.Men) < 2) Recruit(lair, "goblin_shaman", "casters", 1); // WI5: shamans in warrens & holds
         if (lair.Men >= cap * 2 / 3 && rng.Chance(0.25f)) Recruit(lair, "goblin_wolf_rider", "horse", Scaled(1)); // a big holdout tames wargs
         if (lair.Men >= Scaled(B.HoldoutBossMen) && !lair.Companies.Any(c => c.Stacks.Any(st => st.Troop == "goblin_boss" && st.Men > 0)))
         {
@@ -247,7 +249,9 @@ public partial class Campaign
         if (p.Breed == "troll") { TrollThink(p); return; }
         if (p.Breed == "undead") { UndeadThink(p); return; }
         if (p.Breed == "bear") { BearThink(p); return; }
-        if (p.Breed == "wyvern") { WyvernThink(p); return; }
+        if (p.Breed is "wyvern" or "harpy" or "griffon") { WyvernThink(p); return; }
+        if (p.Breed is "boar" or "giant" or "basilisk" or "wurm") { BearThink(p); return; }
+        if (p.Breed == "werewolf") { WolfThink(p); return; }
         if (p.Breed == "spider" && !Night) { p.ChaseId = -1; p.Moving = false; p.TaskUntil = (float)S.Hours + 2; return; } // a brood lies still by day
         float me = Rules.Might(p);
         var near = Visible(p, 25).Where(q => Hostile(p, q) && !q.Lair).ToList();

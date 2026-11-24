@@ -31,13 +31,78 @@ public partial class Battle
     public static bool Airborne(Unit u) => u.Altitude > Aloft;
     static bool Raging(Unit u) => u.Type.Wild && u.Hp < u.Type.MaxHp * 0.5f && u.Type.Has("rage");
 
-    /// Each tick, for a poisoned man or a creature: the poison works, a spider spits, a flyer rises or dives.
+    /// Each tick, for a poisoned man or a creature: the poison works, a spider spits, a giant hurls boulders,
+    /// a basilisk gazes, a flyer rises or dives (WI5-WI6).
     void UpdateBeast(Unit u, float dt)
     {
         if (u.Poison > 0) Poisoned(u, dt);
         if (!u.Active || !u.Type.Wild) return;
         if (u.Type.Has("web")) SpitWeb(u, dt);
+        if (u.Type.Has("boulder")) HurlBoulder(u, dt);
+        if (u.Type.Has("gaze")) BasiliskGaze(u, dt);
         if (u.Type.Flying) Fly(u, dt);
+    }
+
+    /// A hill giant hurls a boulder into a distant crowd (WI5: spread out and rush it).
+    void HurlBoulder(Unit u, float dt)
+    {
+        if ((u.Spit -= dt) > 0 || u.Routing || u.Action != UnitAction.None) return;
+        var (t, d) = Nearest(u);
+        if (t == null || d < 8 || d > 48) { u.Spit = 0.6f; return; }
+        u.Spit = 5.5f + rng.NextSingle() * 2.5f;
+        u.Face(t.Pos - u.Pos);
+        int hit = 0;
+        foreach (var m in Near(t.Pos, 2.6f, nearBeast).ToList())
+            if (m.Active && m.Team != u.Team && !Airborne(m) && Vector2.DistanceSquared(m.Pos, t.Pos) < 6.76f && hit++ < 4)
+            {
+                Damage(u, m, u.Type.Damage * 0.75f, 4, 0.25f, ranged: true);
+                Knock(u, m, 1.5f, 1.1f, 2f);
+            }
+        Flash("web", t.Pos, 2.6f, u.Team, "", t.Pos - u.Pos);
+        Sound(Cue.Hit, t.Pos);
+    }
+
+    /// A basilisk's gaze slows and freezes men who face it head-on (WI6: flank or hit from behind).
+    void BasiliskGaze(Unit u, float dt)
+    {
+        if ((u.Spit -= dt) > 0 || u.Routing || u.Action != UnitAction.None || u.EnemyDist > 12) return;
+        u.Spit = 4.5f + rng.NextSingle() * 2f;
+        foreach (var m in Near(u.Pos, 12, nearBeast))
+        {
+            if (!m.Active || m.Team == u.Team || m.Type.Huge || Airborne(m)) continue;
+            var toBas = u.Pos - m.Pos;
+            float l = toBas.Length();
+            if (l < 0.1f || l > 12) continue;
+            if (Vector2.Dot(m.Dir, toBas / l) > 0.45f) m.WebbedUntil = MathF.Max(m.WebbedUntil, Time + 2.5f);
+        }
+    }
+
+    /// True when an attacker carries holy, arcane or aura power that bites spectral/silver-weak monsters (WI6).
+    bool ArcaneOrHoly(Unit a, bool ranged) =>
+        a.Type.Class == UnitClass.Caster || (a.IsPlayer && AuraBlade) || FoeBlade(a, ranged)
+        || Options.Standing.Any(id => Effects.Has(id) && Effects.Get(id).Tags.Contains("holy"))
+        || a.Squad?.Company?.Standing?.Any(id => Effects.Has(id) && Effects.Get(id).Tags.Contains("holy")) == true;
+
+    /// Distinct combat rules for WI5-WI6 monsters: wraith spectral resist, werewolf silver/holy weakness,
+    /// drowned dead weather/daylight, griffon seizing isolated men, sand wurm bursting under crowds, boar trample.
+    float WildCombatMult(Unit a, Unit t, bool ranged)
+    {
+        float m = 1f;
+        if (t.Type.Has("spectral") && !ArcaneOrHoly(a, ranged)) m *= 0.25f; // WI6: wraiths shrug off mundane steel
+        if (t.Type.Has("silver_weak") && ArcaneOrHoly(a, ranged)) { m *= 1.5f; t.HurtAt = Time + 5f; } // WI6: holy/aura/fire stops werewolf regen
+        if (a.Type.Has("damp")) m *= Options.Weather.Night || Options.Weather.Rain > 0.2f ? 1.25f : Sunlit ? 0.7f : 1f; // WI6: drowned dead
+        if (!ranged && a.Type.Has("seize")) // WI5: griffon punishes isolated men
+        {
+            bool alone = !Near(t.Pos, 2.5f, nearBeast).Any(o => o != t && o.Active && o.Team == t.Team && Vector2.DistanceSquared(o.Pos, t.Pos) < 6.25f);
+            if (alone) m *= 1.6f;
+        }
+        if (!ranged && a.Type.Has("burrow")) // WI6: sand wurm punishes bunched formations
+        {
+            int crowd = Near(t.Pos, 3f, nearBeast).Count(o => o.Active && o.Team == t.Team && Vector2.DistanceSquared(o.Pos, t.Pos) < 9f);
+            if (crowd >= 3) m *= 1.45f;
+        }
+        if (!ranged && a.Type.Has("trample") && !t.Mounted) m *= 1.2f;
+        return m;
     }
 
     /// Poison eats a man's hp (armour is no help) until it is worked off; it can kill him.
@@ -89,6 +154,12 @@ public partial class Battle
         if (u.Action is UnitAction.Windup or UnitAction.Recover) { u.Wish = u.Dir * u.Type.Speed * 0.3f; return; } // it glides through its strike
         if (u.Action != UnitAction.None && u.Action != UnitAction.Block) { u.Wish = Vector2.Zero; return; }
         var (enemy, d) = s.Target != null && s.Order == Order.Charge ? Nearest(u, s.Target) : Nearest(u);
+        if (u.Type.Has("prey_bows")) // WI5: harpies pick off archers and wounded men
+        {
+            var soft = Units.Where(o => o.Active && o.Team != u.Team && (o.Type.Class == UnitClass.Archer || o.Hp < o.Type.MaxHp * 0.7f))
+                .OrderBy(o => Vector2.DistanceSquared(o.Pos, u.Pos)).FirstOrDefault();
+            if (soft != null) { enemy = soft; d = Vector2.Distance(u.Pos, soft.Pos); }
+        }
         if (enemy == null) (enemy, d) = Nearest(u);
         u.EnemyDist = d;
         if (enemy == null || s.Order != Order.Charge && d > 30 && !u.IsLeader || u.IsLeader && s.Order != Order.Charge && d > 18)

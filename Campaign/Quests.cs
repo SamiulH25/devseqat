@@ -26,7 +26,9 @@ public sealed partial class Campaign
         Party? Nearest(IEnumerable<Party> ps) => ps.Where(p => !p.Down && Vector2.Distance(p.Pos, v.Pos) < reach).OrderBy(p => Vector2.Distance(p.Pos, v.Pos)).FirstOrDefault();
         if (Nearest(WolfPacks) is Party pack) jobs.Add(Job("clear", pack.Id, 80 + Rules.PerMan(Rules.Strength(pack) / 3), $"Drive off the {pack.Name} that take {v.Name}'s sheep."));
         if (Nearest(S.Parties.Where(p => p.Breed == "goblin")) is Party gob)
-            jobs.Add(Job("clear", gob.Id, 100 + Rules.PerMan(Rules.Strength(gob) / 3), gob.Lair ? $"Burn out {gob.Name} for {v.Name}." : $"Drive off the {gob.Name} for {v.Name}."));
+            jobs.Add(Job("clear", gob.Id, 100 + Rules.PerMan(Rules.Strength(gob) / 3), gob.Lair ? MonsterStake(gob, v) : $"Drive off the {gob.Name} for {v.Name}."));
+        if (Nearest(S.Parties.Where(p => p.Kind == PartyKind.Monster && p.Breed is not ("goblin" or "wolf"))) is Party beast)
+            jobs.Add(Job("clear", beast.Id, 140 + Rules.PerMan(Rules.Strength(beast) / 2), MonsterStake(beast, v))); // WI4: monster contracts with stakes
         if (Nearest(S.Parties.Where(p => p.Kind == PartyKind.Bandit && p.CharId < 0 && p.HomeId < 0)) is Party band)
             jobs.Add(Job("rescue", band.Id, 120 + Rules.PerMan(Rules.Strength(band) / 3), $"The {band.Name} took the headman's daughter from {v.Name}. Bring her home."));
         if (S.Settlements.Where(t => t.Kind == SettlementKind.Town && !FactionsAtWar(t.Faction, v.Faction) && !Refuses(t)).OrderBy(t => Vector2.Distance(t.Pos, v.Pos)).FirstOrDefault() is Settlement market)
@@ -51,11 +53,21 @@ public sealed partial class Campaign
             var t = rng.Pick(far);
             s.Offers.Add(make("deliver", t.Id, 100 + Vector2.Distance(t.Pos, s.Pos) * 0.8f, $"Carry a ransom to {t.Name} and bring the captive's thanks."));
         }
+        // WI4: town monster hunt contract for the nearest major monster or lair.
+        if (S.Parties.Where(p => !p.Down && p.Kind == PartyKind.Monster && (p.Lair || p.Tier >= 3) && Vector2.Distance(p.Pos, s.Pos) < 120 * Map.Spread)
+                .OrderByDescending(p => p.Stage).ThenBy(p => Vector2.Distance(p.Pos, s.Pos)).FirstOrDefault() is Party quarry)
+            s.Offers.Add(make("clear", quarry.Id, 200 + Rules.PerMan(Rules.Strength(quarry) * 0.6f), MonsterStake(quarry, s)));
     }
 
-    /// Accepting a job may set it up in the world: an escort gets its caravan. Returns why it cannot be taken, else null.
+    /// Accepting a job may set it up in the world: an escort gets its caravan, a monster hunt tracks its quarry (WI4).
     string? SetUp(Settlement s, Contract c)
     {
+        if (c.Kind == "clear" && PartyById(c.Target) is { Kind: PartyKind.Monster } m)
+        {
+            TrackQuarry(m.Id);
+            LogYours($"Quarry tracked: {QuarryHint(m)}");
+            return null;
+        }
         if (c.Kind != "escort") return null;
         if (s.Besieged || SpawnCaravan(s) is not Party car) return "NO CARAVAN IS LEAVING";
         c.Target = car.Id;

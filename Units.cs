@@ -122,7 +122,8 @@ public sealed class UnitType
     /// blades while aloft, it dives to strike and climbs away). Men's: "stakes" (longbowmen carry stakes to plant before their line, docs/archive/TERRAIN.md T6).
     public string[] Traits = Array.Empty<string>();
     public static readonly string[] KnownTraits = { "craven", "boss", "pack", "sweep", "knockback", "fear", "regen", "daylight", "fearless", "bones", "raised", "raise", "feed", "stakes",
-        "poison", "web", "brood", "rage", "flying" };
+        "poison", "web", "brood", "rage", "flying",
+        "trample", "boulder", "prey_bows", "seize", "gaze", "burrow", "damp", "silver_weak", "spectral" };
     /// A body big enough to take more room, shove men aside and stand up to a horse (a troll).
     public bool Huge => Size >= 1.6f;
     /// Bound to its boss: loses heart when he falls.

@@ -14,6 +14,7 @@ public partial class Campaign
         // WI3: spoils of the wild (trophies & reagents)
         new("troll_hide", "Troll hide", 65), new("wyvern_sting", "Wyvern sting", 85), new("spider_silk", "Spider silk", 55),
         new("bear_pelt", "Bear pelt", 40), new("dire_fang", "Dire fang", 35), new("grave_dust", "Grave dust", 45),
+        new("basilisk_eye", "Basilisk eye", 75), new("harpy_quills", "Harpy quills", 35),
     };
 
     public static GoodsKind GoodsOf(string id) => GoodsKinds.First(k => k.Id == id);
@@ -24,9 +25,11 @@ public partial class Campaign
         "troll" => "troll_hide",
         "wyvern" => "wyvern_sting",
         "spider" => "spider_silk",
-        "bear" => "bear_pelt",
+        "bear" or "boar" or "werewolf" => "bear_pelt",
         "wolf" => t.Tier >= 3 ? "dire_fang" : "furs",
         "undead" => "grave_dust",
+        "basilisk" or "wurm" => "basilisk_eye",
+        "harpy" or "griffon" => "harpy_quills",
         "goblin" => "trinkets",
         _ => "furs",
     } : t.Mount != null ? "harness" : t.Tier >= 3 ? "armour" : "arms";

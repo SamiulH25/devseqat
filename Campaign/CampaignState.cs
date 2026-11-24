@@ -681,6 +681,8 @@ public sealed class CampaignState
     public List<FactionState> Factions = new();
     /// Ongoing AI-vs-AI battles simulated incrementally on the map (Campaign/Skirmishes.cs).
     public List<MapSkirmish> Skirmishes = new();
+    /// Monster parties you have tracked via contracts or rumours (docs/pre-demo/THE_WILD.md WI4: quarry edge in battle).
+    public HashSet<int> TrackedQuarries = new();
     public List<LogEntry> Log = new();
     public List<Contract> Contracts = new();   // the contracts you have accepted
     /// The quests screen (docs/archive/PLAYTEST.md PT3): finished and failed quests, oldest first; and the one pinned to the HUD (-1: none).

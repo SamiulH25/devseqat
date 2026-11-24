@@ -314,7 +314,7 @@ public partial class Campaign
             EnemyAura = ChampionAura(enemy), EnemyForms = ChampionFormsOf(enemy), Madness = MadnessInBattle, // an order knight leads with his aura (K6)
             Weather = WeatherFor(enemy),
             Palette = new[] { PlayerPalette, Style.PaletteOf(SideOf(enemy)) },
-            Standing = ActiveBuffs.Concat(RelicReady ? new[] { "relic" } : Array.Empty<string>()).ToArray(), // a shrine's blessing, a feast, hunger (Buffs.cs); your relic (Rites.cs)
+            Standing = ActiveBuffs.Concat(RelicReady ? new[] { "relic" } : Array.Empty<string>()).Concat(KnowsQuarry(enemy) ? new[] { "quarry_known" } : Array.Empty<string>()).ToArray(), // a shrine's blessing, a feast, hunger (Buffs.cs); your relic (Rites.cs); tracked quarry (WI4)
         }.WithCaptain(Captain);
         setup.Options.Engines = EnginesFor(setup, assault: false); // the trains (SiegeWorks.cs)
         return setup;
@@ -347,7 +347,7 @@ public partial class Campaign
 
     /// Your side's edge in auto-resolve: aura, tactics, buffs, the duel, the ground, the Tide and the engines.
     float AutoEdge(BattleSetup setup, Party enemy) =>
-        (1 + B.AuraWeight * AuraInBattle) * TacticsEdge * BuffEdge * DuelEdge(enemy) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed)
+        (1 + B.AuraWeight * AuraInBattle) * TacticsEdge * BuffEdge * DuelEdge(enemy) * HuntEdge(enemy) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed)
         * TideEdge(setup.Options.Tide, setup.Side0, setup.Side1) * TrainEdge(setup.Side0, setup.Side1);
 
     /// What auto-resolve against this party would likely bring, for the encounter screen: the share of tries you win and the

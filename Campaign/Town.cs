@@ -127,7 +127,12 @@ public sealed partial class Campaign
     public void Follow(Rumour r)
     {
         if (SiteById(r.Site) is Site s) GoTo(s);
-        else MoveTo(r.At);
+        else
+        {
+            if (S.Parties.FirstOrDefault(p => !p.Down && p.Kind == PartyKind.Monster && Vector2.Distance(p.Pos, r.At) < 4 * Map.Spread) is Party q)
+                TrackQuarry(q.Id); // WI4: following a monster rumour tracks the quarry
+            MoveTo(r.At);
+        }
     }
 
     /// One line on what a town is like: its people, its wealth, its mood and who holds it.
