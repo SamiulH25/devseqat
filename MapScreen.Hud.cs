@@ -16,7 +16,9 @@ partial class MapScreen
         PartyKind.Bandit => "BRIGANDS",
         PartyKind.Player => "YOU",
         PartyKind.Caravan => p.Breed == "pilgrims" ? "PILGRIMS" : $"MERCHANTS OF THE {C.FactionNames[p.Faction].ToUpperInvariant()}",
-        PartyKind.Monster => p.Lair ? $"{p.Breed.ToUpperInvariant()} {Campaign.LairWord(p.Breed)}" : Campaign.Plural(p.Breed).ToUpperInvariant(),
+        PartyKind.Monster => p.Crisis ? $"CRISIS — {(p.Lair ? "SEAT" : "HOST")}"
+            : p.Legendary ? $"LEGENDARY {p.Breed.ToUpperInvariant()}"
+            : p.Lair ? $"{p.Breed.ToUpperInvariant()} {Campaign.LairWord(p.Breed)}" : Campaign.Plural(p.Breed).ToUpperInvariant(),
         _ when C.OrderOf(p) is OrderDef o => $"{o.Name.ToUpperInvariant()}, FOR THE {C.FactionNames[p.Faction].ToUpperInvariant()}",
         _ => C.FactionNames[p.Faction].ToUpperInvariant(),
     };
@@ -39,6 +41,14 @@ partial class MapScreen
             {
                 Flags();
                 TopBar();
+                if (C.CrisisBannerText() is { Length: > 0 } cb)
+                {
+                    int bw = Math.Min(ui.W - ui.U(40), ui.TW(cb, 1) + ui.U(24));
+                    var br = new Rectangle((ui.W - bw) / 2, ui.U(44), bw, ui.U(18));
+                    ui.Rect(br, new Color(76, 18, 22) * 0.92f);
+                    ui.Frame(br, new Color(210, 82, 74), ui.U(1));
+                    ui.TextC(cb, br.Center.X, br.Y + ui.U(5), new Color(255, 228, 210), 1);
+                }
                 Feed();
                 NextChip();
                 Overview();

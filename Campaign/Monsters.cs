@@ -178,7 +178,9 @@ public partial class Campaign
             if (Nests.Count() < NestsWanted && rng.Chance(B.NestSpawnChance)) SpawnNest();
         LairsGrowDaily();
         SpawnWildRosterDaily();
+        SpawnLegendariesDaily();
         WildnessDaily();
+        CrisisDaily();
     }
 
     /// A holdout breeds goblins up to its cap; a big one gains hobgoblins, archers and, once, a boss.
@@ -245,6 +247,8 @@ public partial class Campaign
     internal void MonsterThink(Party p)
     {
         if (p.Lair) { p.Moving = false; p.ChaseId = -1; p.TaskUntil = (float)S.Hours + 24; return; }
+        if (p.Crisis) { CrisisHostThink(p); return; }
+        if (p.Legendary) { LegendaryThink(p); return; }
         if (p.Breed == "wolf") { WolfThink(p); return; }
         if (p.Breed == "troll") { TrollThink(p); return; }
         if (p.Breed == "undead") { UndeadThink(p); return; }

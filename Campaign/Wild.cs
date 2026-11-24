@@ -126,6 +126,8 @@ public partial class Campaign
             : p.Breed is "troll" or "wyvern" or "undead" ? 12f
             : 6f;
         prov.Wildness = MathF.Max(0, prov.Wildness - cut);
+        if (p.Id == S.Crisis.SeatId) OnCrisisSeatFallen(p, playerWon);
+        else if (p.Legendary) OnLegendarySlain(p, prov, playerWon);
         if (!playerWon) return;
 
         // People and lords remember who cleared their lands (WI3).

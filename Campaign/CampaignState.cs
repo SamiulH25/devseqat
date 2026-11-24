@@ -253,6 +253,13 @@ public sealed class LordArmy
     public List<int> Members = new();
 }
 
+/// Endgame world crisis state (docs/pre-demo/THE_WILD.md WI8). Stage: 0 dormant, 1 omens, 2 active, 3 ended.
+public sealed class WorldCrisis
+{
+    public string Kind = "";
+    public int Stage, SeatId = -1, StartedDay, EndedDay, TownsFallen;
+}
+
 public sealed class Party
 {
     public int Id, Faction = -1, HomeId = -1, ChaseId = -1, GoalSettlement = -1, PatrolProvince = -1, Horses, Wagons, Tier = 1;
@@ -302,6 +309,8 @@ public sealed class Party
     public int BattleId = -1;
     /// Growth stage for monster lairs and bridge trolls (docs/pre-demo/THE_WILD.md WI2): 0 base, 1 warren/brood/ford, 2 hold/webbed/barrow.
     public int Stage;
+    /// Named regional apex monster (WI7) and world crisis seat/host (WI8).
+    public bool Legendary, Crisis;
 
     public int Men => Companies.Sum(c => c.Men);
     public int Wounded => Companies.Sum(c => c.Wounded);
@@ -739,6 +748,9 @@ public sealed class CampaignState
     public int CaptainChar = -1;
     /// Your divisions (docs/archive/COMBAT_OVERHAUL.md 1.5): who leads each and the goal it starts a battle with.
     public List<DivisionRecord> Divisions = new();
+    /// World crisis state (docs/pre-demo/THE_WILD.md WI8) and regions that have spawned a legendary apex (WI7).
+    public WorldCrisis Crisis = new();
+    public HashSet<string> LegendRegions = new();
 
     static readonly JsonSerializerOptions Json = new() { IncludeFields = true, WriteIndented = true };
 

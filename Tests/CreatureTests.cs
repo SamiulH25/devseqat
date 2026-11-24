@@ -728,4 +728,45 @@ public static partial class SelfTest
         var setup = c.PrepareBattle(quarry);
         Check(setup.Options.Standing.Contains("quarry_known"), "tracked quarry carries quarry_known into battle");
     }
+
+    /// WI7-WI8: legendary named apexes spawn per region, hunt lords, drop top spoils & banner honours;
+    /// world crisis progresses from omens -> outbreak (coalition truce + crisis seat/hosts) -> victory when seat falls, and round-trips through save/load.
+    static void LegendaryAndCrisis()
+    {
+        var c = Campaign.New(84);
+        var widow = c.SpawnLegendary("spider_wood");
+        Check(widow != null && widow.Legendary && widow.Name.Contains("Grey Widow") && widow.Companies.Any(co => co.Troop == "brood_mother"), "legendary apex spawns with named brood mother");
+        Check(c.SpawnLegendary("spider_wood") == null, "same region does not spawn a duplicate legendary");
+
+        // Slaying a legendary pays top spoils, renown, chronicle entry, and a banner honour.
+        int beforeHonours = c.Player.Companies.Sum(co => co.BattleHonours.Count);
+        float beforeRenown = c.Captain.Renown;
+        c.OnMonsterCleared(widow!, playerWon: true);
+        Check(c.S.Goods.GetValueOrDefault("spider_silk") >= 3, "legendary drops top monster spoils");
+        Check(c.Captain.Renown >= beforeRenown + 80, "legendary grants renown");
+        Check(c.Player.Companies.Sum(co => co.BattleHonours.Count) > beforeHonours, "legendary sews a banner honour");
+
+        // WI8: World Crisis lifecycle (omens -> outbreak -> coalition truce -> seat falls -> victory & calm).
+        if (c.S.Wars.Count > 0) c.S.Wars[0].Active = true;
+        c.TriggerCrisis("long_night");
+        Check(c.S.Crisis.Stage == 1 && c.S.Crisis.Kind == "long_night" && c.CrisisBannerText().Contains("OMEN"), "crisis enters stage 1 omens");
+        var seat = c.BreakOutCrisis();
+        Check(c.S.Crisis.Stage == 2 && seat.Crisis && seat.Lair && seat.Name == "The Lich's Citadel", "crisis breaks out with its seat");
+        Check(c.S.Wars.All(w => !w.Active), "realms call a coalition truce when the crisis breaks out");
+        Check(c.S.Parties.Any(p => !p.Down && p.Crisis && !p.Lair), "crisis seat launches a crisis host");
+        Check(c.CrisisBannerText().Contains("LICH'S CITADEL"), "crisis banner names the crisis seat");
+
+        // Save/load preserves legendary & crisis state.
+        var round = CampaignState.Deserialize(c.S.Serialize());
+        Check(round.Crisis.Stage == 2 && round.Crisis.SeatId == seat.Id && round.LegendRegions.Contains("spider_wood"), "crisis and legend regions survive save/load");
+
+        // Destroying the crisis seat ends the crisis, scatters hosts, calms wildness, and grants victory & standing.
+        foreach (var pr in c.S.Provinces) pr.Wildness = 50;
+        float renownBefore = c.Captain.Renown;
+        c.OnMonsterCleared(seat, playerWon: true);
+        Check(c.S.Crisis.Stage == 3 && c.S.Won, "destroying the crisis seat ends the crisis with victory");
+        Check(c.S.Parties.Where(p => p.Crisis && p.Id != seat.Id).All(p => p.Down), "crisis hosts scatter when the seat falls");
+        Check(c.S.Provinces.All(pr => pr.Wildness <= 25.01f), "ending the crisis calms wildness across the world");
+        Check(c.Captain.Renown >= renownBefore + 250 && c.CrisisBannerText() == "", "ending the crisis awards great standing and clears banner");
+    }
 }
