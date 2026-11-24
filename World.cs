@@ -103,7 +103,7 @@ sealed partial class World : IDisposable
         int placeVerts = placeTiles.Sum(x => x.Tris * 3);
         int tileVerts = tiles.Sum(x => x.Tris * 3) + grassTiles.Sum(x => x.Tris * 3) + placeVerts;
         long bytes = (b.Terrain.Length + b.Foliage.Length + placeVerts) * 36L + b.Indices.Length * 4L + b.Sky.Length * 16L;
-        return (tiles.Count + grassTiles.Count + placeTiles.Count, tileVerts, alwaysTris * 3, bytes);
+        return (tiles.Count + grassTiles.Count + placeTiles.Count + plantTiles.Count, tileVerts, alwaysTris * 3, bytes);
     }
 
     /// How long each part of the CPU build took and the vertices it made (`--world-bench`).
@@ -161,6 +161,8 @@ sealed partial class World : IDisposable
     /// Build the foliage meshes again (after the gate of a besieged town breaks).
     public void RebuildFoliage()
     {
+        try { plantTask?.Wait(); } catch (AggregateException) { }
+        foreach (var tile in plantTiles) tile.Vb?.Dispose();
         foliageVb.Dispose();
         foliageVb = FoliageBuffer(BuildFoliage());
     }
@@ -199,6 +201,7 @@ sealed partial class World : IDisposable
         gd.SamplerStates[0] = DetailSampler;
         terrainFx.View = view; terrainFx.Projection = proj;
         terrainFx.CurrentTechnique.Passes[0].Apply();
+        plantEye = camPos;
         drawFrustum.Matrix = view * proj;
         DrawTerrain(drawFrustum);
 
@@ -238,6 +241,7 @@ sealed partial class World : IDisposable
         var fx = sh.World;
         sh.Setup(fx, view * proj, camPos, time, shadows, 0.15f + sh.ShadowTexelMetres);
         fx.Parameters["Detail"].SetValue(detail);
+        plantEye = camPos;
         drawFrustum.Matrix = view * proj;
         DrawGeometry(fx, "Terrain", "Foliage", drawFrustum, false);
     }
@@ -295,6 +299,8 @@ sealed partial class World : IDisposable
     public void Dispose()
     {
         terrainVb?.Dispose(); terrainIb?.Dispose(); foliageVb?.Dispose(); skyVb?.Dispose(); extraVb?.Dispose();
+        try { plantTask?.Wait(); } catch (AggregateException) { }
+        foreach (var tile in plantTiles) tile.Vb?.Dispose();
         try { placeTask?.Wait(); } catch (AggregateException) { }
         foreach (var tile in placeTiles) tile.Vb?.Dispose();
         detail?.Dispose(); Minimap?.Dispose(); GroundMap?.Dispose();
@@ -482,7 +488,7 @@ sealed partial class World : IDisposable
         const float TileSize = 48;
         markVerts = 0;
         // Each tile is built on its own (in parallel), then laid into the one mesh in tile order, as it always was.
-        var groups = t.Foliage.GroupBy(f => ((int)MathF.Floor(f.Pos.X / TileSize), (int)MathF.Floor(f.Pos.Y / TileSize))).ToArray();
+        var groups = LayPlants().GroupBy(f => ((int)MathF.Floor(f.Pos.X / TileSize), (int)MathF.Floor(f.Pos.Y / TileSize))).ToArray();
         var parts = new Mesh[groups.Length];
         Parallel.For(0, groups.Length, g =>
         {
@@ -521,45 +527,46 @@ sealed partial class World : IDisposable
         Chimneys.AddRange(m.Chimneys);
         Mark("to array", m.V.Count);
         return all;
+    }
 
-        void Item(Mesh m, Foliage f)
+    /// One item of foliage (a plant, a rock, a site or a place) into m.
+    void Item(Mesh m, Foliage f)
+    {
+        if (t.Places.Count > 0 && f.Kind is FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village) return; // built as places (World.Places.cs)
+        var rng = new Random(f.Seed);
+        var b = new Vector3(f.Pos.X, t.Height(f.Pos), f.Pos.Y);
+        switch (f.Kind)
         {
-            if (t.Places.Count > 0 && f.Kind is FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village) return; // built as places (World.Places.cs)
-            var rng = new Random(f.Seed);
-            var b = new Vector3(f.Pos.X, t.Height(f.Pos), f.Pos.Y);
-            switch (f.Kind)
-            {
-                case FoliageKind.Broadleaf: Broadleaf(m, b, f.Scale * treeScale, rng); break;
-                case FoliageKind.Pine: Pine(m, b, f.Scale * treeScale, rng); break;
-                case FoliageKind.Bush: Bush(m, b, f.Scale * treeScale, rng); break;
-                case FoliageKind.Birch: Birch(m, b, f.Scale * treeScale, rng); break;
-                case FoliageKind.Shrub: Shrub(m, b, f.Scale * treeScale, f.Dry, rng); break;
-                case FoliageKind.Tussock: Tussock(m, b, f.Scale * treeScale, f.Dry, rng); break;
-                case FoliageKind.Heather: Heather(m, b, f.Scale * treeScale, rng); break;
-                case FoliageKind.Reed: ReedClump(m, b, f.Scale * treeScale, rng); break;
-                case FoliageKind.DeadTree: DeadTree(m, b, f.Scale * treeScale, rng); break;
-                case FoliageKind.Palm: Palm(m, b, f.Scale * treeScale, rng); break;
-                case FoliageKind.Flowers: Flowers(m, f.Pos, f.Scale, rng); break;
-                case FoliageKind.Marram: Marram(m, b, f.Scale * treeScale, f.Dry, rng); break;
-                case FoliageKind.Driftwood: Driftwood(m, b, f.Scale, rng); break;
-                case FoliageKind.Milestone: Milestone(m, b, f.Scale, rng); break;
-                case FoliageKind.Wayside: Wayside(m, b, f.Scale, rng); break;
-                case FoliageKind.Well: Well(m, b, f.Scale, rng); break;
-                case FoliageKind.Rowboat: Rowboat(m, f.Pos, f.Scale, rng); break;
-                case FoliageKind.Village: Village(m, b, f.Scale, rng); break;
-                case FoliageKind.Town: Town(m, b, f.Scale, rng); break;
-                case FoliageKind.Castle when f.Dry == 1: TowerHouse(m, b, f.Scale, rng); break; // hold sizes (docs/archive/HOLDS.md HD5)
-                case FoliageKind.Castle when f.Dry == 3: GreatCastle(m, b, f.Scale, rng); break;
-                case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;
-                case FoliageKind.House when FieldStyle is PlaceStyle fs: FieldHouse(m, fs, f, rng, t.Wall == null); break;
-                case FoliageKind.House: TownHouse(m, b, f.Scale, rng); break;
-                case FoliageKind.Keep: FieldKeep(m, FieldStyle ?? Architecture.Of("azure_heart"), f, rng); break;
-                case FoliageKind.Landmark: FieldLandmark(m, FieldStyle ?? Architecture.Of("azure_heart"), f, rng); break;
-                case FoliageKind.Wagon: Wagon(m, b, rng); break;
-                case FoliageKind.Ruin or FoliageKind.Shrine or FoliageKind.Stones or FoliageKind.Field or FoliageKind.Mine
-                    or FoliageKind.Hut or FoliageKind.Watch or FoliageKind.Spring or FoliageKind.Mill: SiteModel(m, f.Kind, b, f.Scale, rng); break;
-                default: Rock(m, b, f.Scale, rng, f.Dry); break;
-            }
+            case FoliageKind.Broadleaf: Broadleaf(m, b, f.Scale * treeScale, rng); break;
+            case FoliageKind.Pine: Pine(m, b, f.Scale * treeScale, rng); break;
+            case FoliageKind.Bush: Bush(m, b, f.Scale * treeScale, rng); break;
+            case FoliageKind.Birch: Birch(m, b, f.Scale * treeScale, rng); break;
+            case FoliageKind.Shrub: Shrub(m, b, f.Scale * treeScale, f.Dry, rng); break;
+            case FoliageKind.Tussock: Tussock(m, b, f.Scale * treeScale, f.Dry, rng); break;
+            case FoliageKind.Heather: Heather(m, b, f.Scale * treeScale, rng); break;
+            case FoliageKind.Reed: ReedClump(m, b, f.Scale * treeScale, rng); break;
+            case FoliageKind.DeadTree: DeadTree(m, b, f.Scale * treeScale, rng); break;
+            case FoliageKind.Palm: Palm(m, b, f.Scale * treeScale, rng); break;
+            case FoliageKind.Flowers: Flowers(m, f.Pos, f.Scale, rng); break;
+            case FoliageKind.Marram: Marram(m, b, f.Scale * treeScale, f.Dry, rng); break;
+            case FoliageKind.Driftwood: Driftwood(m, b, f.Scale, rng); break;
+            case FoliageKind.Milestone: Milestone(m, b, f.Scale, rng); break;
+            case FoliageKind.Wayside: Wayside(m, b, f.Scale, rng); break;
+            case FoliageKind.Well: Well(m, b, f.Scale, rng); break;
+            case FoliageKind.Rowboat: Rowboat(m, f.Pos, f.Scale, rng); break;
+            case FoliageKind.Village: Village(m, b, f.Scale, rng); break;
+            case FoliageKind.Town: Town(m, b, f.Scale, rng); break;
+            case FoliageKind.Castle when f.Dry == 1: TowerHouse(m, b, f.Scale, rng); break; // hold sizes (docs/archive/HOLDS.md HD5)
+            case FoliageKind.Castle when f.Dry == 3: GreatCastle(m, b, f.Scale, rng); break;
+            case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;
+            case FoliageKind.House when FieldStyle is PlaceStyle fs: FieldHouse(m, fs, f, rng, t.Wall == null); break;
+            case FoliageKind.House: TownHouse(m, b, f.Scale, rng); break;
+            case FoliageKind.Keep: FieldKeep(m, FieldStyle ?? Architecture.Of("azure_heart"), f, rng); break;
+            case FoliageKind.Landmark: FieldLandmark(m, FieldStyle ?? Architecture.Of("azure_heart"), f, rng); break;
+            case FoliageKind.Wagon: Wagon(m, b, rng); break;
+            case FoliageKind.Ruin or FoliageKind.Shrine or FoliageKind.Stones or FoliageKind.Field or FoliageKind.Mine
+                or FoliageKind.Hut or FoliageKind.Watch or FoliageKind.Spring or FoliageKind.Mill: SiteModel(m, f.Kind, b, f.Scale, rng); break;
+            default: Rock(m, b, f.Scale, rng, f.Dry); break;
         }
     }
 
@@ -625,6 +632,8 @@ sealed partial class World : IDisposable
         if (!shadow) foreach (var (start, tris, box) in grassTiles) if (view.Intersects(box)) Range(start, tris);
         if (alwaysTris > 0) Range(alwaysStart, alwaysTris);
         if (runStart >= 0) Flush();
+        var plants = DrawPlants(view, shadow);
+        drawn += plants.Tris; calls += plants.Calls; seen += plants.Tiles;
         FoliageDrawn = drawn;
         if (shadow) { ShadowCost = (seen, calls, drawn); TerrainCost = (TerrainCost.Camera, TerrainDrawn); }
         else { CameraCost = (seen, calls, drawn); TerrainCost = (TerrainDrawn, TerrainCost.Shadow); }

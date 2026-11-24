@@ -312,7 +312,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleWings.cs (164 lines)
 - **Battle** (class, L10): Rallies:13, RallyPoint:16, Broke:28, HorseReinIn:39, RideToRally:51, HorseWits:79, HorsePrey:99, ChargeLane:116, HoldsFire:130, BowsWits:134, Focus:163
 
-## Bench.cs (83 lines)
+## Bench.cs (84 lines)
 - **Bench** (class, L7): Run:9, Campaign:43, World:66
 
 ## Campaign/Armoury.cs (280 lines)
@@ -1275,9 +1275,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Verts.cs (45 lines)
 - **Verts<T>** (class, L6): Reserve:13, Add:22, Draw:28, Dispose:44
 
-## World.cs (1343 lines)
+## World.cs (1352 lines)
 - **VertexPNCT** (struct, L7): VertexPNCT:19
-- **World** (class, L25): Baked:50, World:59, World:63, Checksum:81, Mark:113, Upload:122, Image:147, FoliageBuffer:154, RebuildFoliage:162, Lit:168, Draw:186, SetFog:212, DrawShaded:219, DrawShadowCasters:246, DrawGeometry:256, SetExtra:293, Dispose:295, Smooth:306, GroundColor:313, BuildDetail:394, WorldToMinimap:448, MinimapToWorld:449, BuildSky:453, BuildFoliage:475, DrawTerrain:573, DrawFoliage:606, Jitter:633, Broadleaf:639, Pine:656, Bush:670, Rock:680, House:692, Windows:721, Chimney:751, Village:759, Town:772, SiteModel:808, Wheel:893, Wagon:928, TownHouse:990, TowerHouse:999, GreatCastle:1024, Castle:1062, Grass:1080, Skirt:1136
+- **World** (class, L25): Baked:50, World:59, World:63, Checksum:81, Mark:113, Upload:122, Image:147, FoliageBuffer:154, RebuildFoliage:162, Lit:170, Draw:188, SetFog:215, DrawShaded:222, DrawShadowCasters:250, DrawGeometry:260, SetExtra:297, Dispose:299, Smooth:312, GroundColor:319, BuildDetail:400, WorldToMinimap:454, MinimapToWorld:455, BuildSky:459, BuildFoliage:481, Item:533, DrawTerrain:580, DrawFoliage:613, Jitter:642, Broadleaf:648, Pine:665, Bush:679, Rock:689, House:701, Windows:730, Chimney:760, Village:768, Town:781, SiteModel:817, Wheel:902, Wagon:937, TownHouse:999, TowerHouse:1008, GreatCastle:1033, Castle:1071, Grass:1089, Skirt:1145
 
 ## World.Dress.cs (207 lines)
 - **World** (class, L7): Parched:13, Shrub:16, Tussock:26, ReedClump:35, Blades:46, Heather:59, DeadTree:69, Palm:84, Flowers:108, Driftwood:128, Marram:146, Milestone:154, Wayside:163, Well:177, Rowboat:190
@@ -1300,6 +1300,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## World.Places.cs (428 lines)
 - **World** (class, L9): PublishSmoke:32, BuildPlaces:51, BuildPlaceTile:67, UpdatePlaces:82, FlushPlaces:104, DrawPlaces:121, Place:138, Enclosure:163, Flags:178, YardHouse:185, MidHold:189, GreatHold:219, SmallHold:264, MotteAndBailey:361, Shorten:427
+
+## World.Plants.cs (154 lines)
+- **World** (class, L11): Plant:36, LayPlants:41, BuildPlantTile:64, FlushPlants:72, Evict:93
 
 ## World.Siege.cs (212 lines)
 - **World** (class, L8): Broken:13, CapOf:16, TopOf:19, BreachEdge:22, Curtain:26, Rubble:41, TowerHeaps:55, BatteredHeaps:65, Siege:79, Tent:119, Mangonel:134, Trebuchet:146, SiegeTower:167, Ram:185, Beam:196

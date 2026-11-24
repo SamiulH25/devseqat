@@ -161,6 +161,15 @@ field, 199k foliage items, **50M vertices in 15k tiles, 1,881 MB of buffers** (l
 terrain 6.7 s and world meshes 5.1 s to build. Next in WS4: foliage by tile on demand (build a tile's trees and dress when it
 first comes near the camera, drop it far away) and fewer, larger far trees; then the terrain's far tiles coarser.
 
+**As built (2026-11-24), plants streamed.** `World.Plants.cs`: on a map with `World.StreamFrom` (40,000) foliage items or
+more, plants and rocks (`Plant(kind)`) go into 96-unit tiles with a box sure to hold them, and are built on a worker the
+first time the camera's view meets a tile (48 nearest a batch), sent to the tile's own buffer (1.5M vertices a frame), and
+let go, longest unseen first, past `PlantBudget` (8M vertices, ~290 MB). Shots (`Ui.Instant`) build what they see at once.
+Sites, places and roadside pieces still build at load (they carry chimneys). The drawn world is under the threshold and
+builds exactly as before (checksum unchanged). Layout 6: buffers at load **1,881 -> 466 MB**, world meshes 5.4 -> 2.5 s,
+the map shots run 121 -> 42 s and look the same. Left in WS4: the terrain (2.8M vertices, the 1,678^2 field) and its far
+tiles coarser, cliff rock meshes, and the frame rate with the map in motion on real hardware.
+
 ### WS5b: Things on the map at scale
 One `MapScale` table (above) read by everything drawn on the map. Places: plans are laid in model space (today's sizes,
 so the town plans, lots and works keep working) and the built mesh is scaled about the place's centre, its ground heights
