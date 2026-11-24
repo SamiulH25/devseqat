@@ -47,7 +47,7 @@ public sealed partial class Campaign
         if (others.Count == 0) { c.SergeantPick.Clear(); return; }
         c.SergeantPick = new List<int> { risen.Id }.Concat(others.Select(o => o.Id)).ToList();
         c.SergeantPickUntil = Day + SergeantPickDays;
-        Beat ??= ($"A SERGEANT FOR {c.Name.ToUpperInvariant()}", new[] { $"{risen.Name.ToUpperInvariant()} STEPS UP. {N(others.Count, "OTHER MAN").ToUpperInvariant()} COULD TAKE THE POST.", "CHOOSE ON THE COMPANY'S ROLL BEFORE TOMORROW IS OUT, OR HE KEEPS IT." });
+        Beat ??= ($"A SERGEANT FOR {c.Name.ToUpperInvariant()}", new[] { $"{risen.Name.ToUpperInvariant()} STEPS UP. {N(others.Count, "OTHER MAN").ToUpperInvariant()} COULD TAKE THE POST.", $"CHOOSE ON THE COMPANY'S ROLL WITHIN {SergeantPickDays} DAYS, OR HE KEEPS IT." });
     }
 
     public string? CannotChooseSergeant(CompanyRecord c, Soldier m)
@@ -100,7 +100,7 @@ public sealed partial class Campaign
         S.MentionPool.Clear();
         m.Mentions++;
         var c = Player.Companies.First(k => k.Roll.Contains(m));
-        c.Cohesion = MathF.Min(30, c.Cohesion + 1);
+        c.Cohesion = MathF.Min(30, c.Cohesion + (OfBanner(m) && m.Mentions == BannerMentions ? 3 : 1));
         m.Deed(OfBanner(m) && m.Mentions == BannerMentions ? "Mentioned a third time: one of the banner." : $"Mentioned by the captain on day {Day}.");
         LogYours($"You mention {m.Name} of {c.Name} before the company.");
         return null;
@@ -140,6 +140,7 @@ public sealed partial class Campaign
             m.CarriesDef = what.Def;
             m.Deed($"Carries {m.Carries}.");
         }
+        if (Player.Companies.FirstOrDefault(k => k.Roll.Contains(m)) is CompanyRecord ac) ac.Cohesion = MathF.Min(30, ac.Cohesion + 2); // arming a veteran lifts the company's heart (PF3)
         LogYours($"{m.Name} is armed with {m.Carries}.");
         return null;
     }

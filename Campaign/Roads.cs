@@ -27,7 +27,7 @@ public sealed partial class Campaign
     /// A caravan from a town to another town of a realm at peace with it, far enough to be worth the road.
     internal Party? SpawnCaravan(Settlement? fromTown = null)
     {
-        var towns = S.Settlements.Where(t => t.Kind == SettlementKind.Town && !t.Besieged && t.Faction >= 0).ToList();
+        var towns = S.Settlements.Where(t => t.Kind == SettlementKind.Town && !t.Besieged && t.Faction >= 0 && !RoadClosedByWild(t.Province)).ToList();
         if (towns.Count < 2) return null;
         List<Settlement> Dests(Settlement from) => towns.Where(t => t != from && !FactionsAtWar(t.Faction, from.Faction))
             .Where(t => Vector2.Distance(t.Pos, from.Pos) is var d && d > 50 * Map.Spread && d < 260 * Map.Spread).ToList();

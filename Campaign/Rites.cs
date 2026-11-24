@@ -49,7 +49,15 @@ public sealed partial class Campaign
         S.Gold -= r.Gold;
         if (r.Tradition == "craft") BreakVow("no_craft", "work the craft");
         float prevOmen = S.Omen;
-        S.Omen += r.Omen;
+        float omenAdd = r.Omen;
+        if (omenAdd > 0 && S.Goods.GetValueOrDefault("grave_dust") > 0)
+        {
+            S.Goods["grave_dust"]--;
+            if (S.Goods["grave_dust"] <= 0) S.Goods.Remove("grave_dust");
+            omenAdd *= 0.5f;
+            LogYours("Grave dust absorbs half the omen of the working.");
+        }
+        S.Omen += omenAdd;
         if (prevOmen < OmenStirs && S.Omen >= OmenStirs) AudioEngine.Current?.PlayStinger("sting_omen");
         S.RiteDay = Day + 1;
         switch (id)

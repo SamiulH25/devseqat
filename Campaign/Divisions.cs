@@ -73,10 +73,18 @@ public partial class Campaign
         return c?.Traits.Contains("Hothead") == true ? "Bold" : c?.Traits.Contains("Stubborn") == true || c?.Traits.Contains("Steady") == true ? "Steady" : "Cautious";
     }
 
-    /// His skill at it: a companion's Command; a sergeant's grows with the battles he has seen (at most 6).
-    public int CommandOf(DivisionRecord d) =>
-        S.Characters.FirstOrDefault(k => k.Id == d.LeaderChar) is Character ch ? ch.Command
-        : Math.Min(6, 1 + (Player.Companies.FirstOrDefault(x => x.Id == d.LeaderCompany)?.OfficerBattles ?? 0) / 3);
+    /// True when this division is led by a Companion or an "of the banner" Sergeant (PF3).
+    public bool IsDistinguished(DivisionRecord d) =>
+        d.LeaderChar >= 0 || (LeaderCompanyOf(d)?.OfficerMan is Soldier sm && OfBanner(sm));
+
+    /// His skill at it: a companion's Command; a sergeant's grows with the battles he has seen (at most 6, or 8 if of the banner).
+    public int CommandOf(DivisionRecord d)
+    {
+        if (S.Characters.FirstOrDefault(k => k.Id == d.LeaderChar) is Character ch) return ch.Command;
+        var lead = Player.Companies.FirstOrDefault(x => x.Id == d.LeaderCompany);
+        bool banner = lead?.OfficerMan is Soldier sm && OfBanner(sm);
+        return Math.Min(banner ? 8 : 6, 1 + (lead?.OfficerBattles ?? 0) / 3 + (banner ? 2 : 0));
+    }
 
     /// Drop divisions whose leader is gone (fallen, wounded, left with his company); their companies return to you.
     public void PruneDivisions()
@@ -103,7 +111,7 @@ public partial class Campaign
         {
             var lead = LeaderCompanyOf(d);
             string hero = d.LeaderChar >= 0 && lead?.Hero == DivisionName(d) && lead.Division == d.Id ? lead.Hero : "";
-            return new DivisionSpec(d.Id, DivisionName(d), TemperOf(d), CommandOf(d), GoalOf(d).Name, hero, lead?.Division == d.Id ? lead.Id : 0);
+            return new DivisionSpec(d.Id, DivisionName(d), TemperOf(d), CommandOf(d), GoalOf(d).Name, hero, lead?.Division == d.Id ? lead.Id : 0, Distinguished: IsDistinguished(d));
         }).ToList();
         return army with
         {
@@ -112,8 +120,8 @@ public partial class Campaign
         };
     }
 
-    /// Auto-resolve edge from your divisions: each leader past command 3 adds 1%, at most 8% in all.
-    public float DivisionEdge => MathF.Min(0.08f, S.Divisions.Where(d => CompaniesOf(d).Any(c => c.Men > 0)).Sum(d => Math.Max(0, CommandOf(d) - 3)) * 0.01f);
+    /// Auto-resolve edge from your divisions: each leader past command 3 adds 1% (plus 2% for a Companion or banner sergeant), at most 12% in all.
+    public float DivisionEdge => MathF.Min(0.12f, S.Divisions.Where(d => CompaniesOf(d).Any(c => c.Men > 0)).Sum(d => Math.Max(0, CommandOf(d) - 3) * 0.01f + (IsDistinguished(d) ? 0.02f : 0)));
 
     /// After a battle: every companion who led a division that took the field gets better at it.
     internal void DivisionsAfterBattle(BattleResult r)

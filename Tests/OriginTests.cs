@@ -95,7 +95,14 @@ public static partial class SelfTest
         var high = Campaign.New(94, 0, new CaptainMaking { Realm = 0, Birth = "highborn", Past = "tourney", Road = "lance" });
         var lord0 = high.S.Characters.First(x => x.Kind == "lord" && !x.Dead && x.Faction == 0);
         Check(high.Greeting(lord0).Contains("house's name"), "lords acknowledge highborn origin in greetings");
+        Check(high.SettlementWelcome(high.S.Settlements.First(s => s.Faction == 0)).Contains("HOMELAND FAVOUR"), "homeland settlement welcomes its own");
         Check(new BattleOptions().WithCaptain(high.Captain).CaptainRoad == "lance", "Road carries into BattleOptions");
+        var poach = Campaign.New(95, 0, new CaptainMaking { Realm = 0, Birth = "marcher", Past = "poacher", Road = "bow" });
+        var foe = poach.S.Parties.First(p => p.Kind == PartyKind.Bandit && p.Men > 0);
+        foe.ChaseId = -1;
+        Check(poach.GroundChooser(foe) == 0, "poacher/marcher wildcraft wins ground choice even when attacking");
+        var comp = new Character { Id = 9999, Kind = "companion", Name = "Bram", Faction = -1 };
+        Check(poach.Greeting(comp).Contains("Steady eye on the bow"), "companions acknowledge the captain's road");
 
         // Without the creator nothing changes.
         var plain = Campaign.New(77);

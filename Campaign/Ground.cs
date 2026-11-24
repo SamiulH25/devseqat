@@ -41,7 +41,8 @@ public sealed partial class Campaign
         bool theyCame = enemy.ChaseId == Player.Id;
         bool myScouts = (side0 ?? new[] { Player }).SelectMany(p => p.Companies).Any(c => c.Men > 0 && c.Type.Mount != null);
         bool theirScouts = enemy.Companies.Any(c => c.Men > 0 && c.Type.Mount != null);
-        int mine = (theyCame ? 2 : 0) + (myScouts ? 1 : 0) + (Has("Tactician") ? 1 : 0), theirs = (theyCame ? 0 : 2) + (theirScouts ? 1 : 0);
+        bool wildcraft = Captain.Origin is "poacher" or "outlaw" or "deserter" || Captain.Birth == "marcher"; // PF2: scouting & ambush ground edge
+        int mine = (theyCame ? 2 : 0) + (myScouts ? 1 : 0) + (Has("Tactician") ? 1 : 0) + (wildcraft ? 1 : 0), theirs = (theyCame ? 0 : 2) + (theirScouts ? 1 : 0);
         return mine >= theirs ? 0 : 1;
     }
 

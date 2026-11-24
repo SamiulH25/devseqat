@@ -8,7 +8,7 @@ public enum Rank { FreeCompany, SwornSword, Vassal, Lord, Marshal, King }
 /// Career ranks, the realm council, founding a realm, and winning or losing the campaign (step F5).
 public sealed partial class Campaign
 {
-    public const float SwornDays = 14, VassalRenown = 120, VassalOpinion = 10, LordRenown = 350, MarshalRenown = 500, CouncilDays = 14, WinShare = 0.6f;
+    public const float SwornDays = 14, VassalRenown = 150, VassalOpinion = 10, LordRenown = 480, MarshalRenown = 750, CouncilDays = 14, WinShare = 0.6f;
     public const int SwornDeeds = 3, LordFiefs = 2, MarshalTerm = 4;
 
     /// A career beat or the council's word for the map screen to show once (not saved): a title and a few lines.
@@ -48,7 +48,7 @@ public sealed partial class Campaign
         (Rank.SwornSword, $"SERVE ONE REALM {SwornDays:0} DAYS AND {SwornDeeds} DEEDS", "FULL REALM PAY (85%), HALF-PRICE RECRUITS, A PERK"),
         (Rank.Vassal, $"SWEAR FEALTY: {VassalRenown:0} RENOWN, LIEGE OPINION {VassalOpinion:+0}", "LAND FOR YOUR MEN, A VOTE, A GUARD"),
         (Rank.Lord, $"HOLD {LordFiefs} FIEFS, {LordRenown:0} RENOWN", "A HALL FOR THE COMPANY, WARS, GUARD 25"),
-        (Rank.Marshal, "500 RENOWN, THE COUNCIL'S VOTE", "THE REALM MARCHES WITH YOU, A MOUNTED GUARD"),
+        (Rank.Marshal, $"{MarshalRenown:0} RENOWN, THE COUNCIL'S VOTE", "THE REALM MARCHES WITH YOU, A MOUNTED GUARD"),
         (Rank.King, "FOUND A REALM", "A REALM FOR THE COMPANY, KING'S CHARGE"),
     };
 

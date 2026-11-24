@@ -468,8 +468,10 @@ partial class MapScreen
         string who = cur >= 0 ? "THE " + C.FactionNames[cur].ToUpperInvariant() : "A FREE CAPTAIN";
         ui.TextFit(who, tx, c.Y + ui.U(20), tw, cur >= 0 ? SideColor(cur) : Style.Text, ui.FitScale(who, tw));
         if (cur < 0) ui.TextFit("NO PAY, NO ENEMIES BUT BRIGANDS", tx, c.Y + ui.U(42), tw, Style.Dim, 1);
+        string welcome = C.SettlementWelcome(s);
+        if (welcome != "") ui.TextFit(welcome, c.X, c.Y + ui.U(56), c.Width, C.Captain.Origin is "deserter" or "outlaw" ? Style.Warn : Kit.Gilt, 1);
         int y = Heading(c.X, c.Y + ui.U(70), c.Width, "WHAT A CONTRACT MEANS");
-        y = Outcome(c.X, y, c.Width, "coin", "PAYS 85% OF YOUR UPKEEP, EVERY WEEK", 1);
+        y = Outcome(c.X, y, c.Width, "coin", "PAYS 35% OF UPKEEP (85% AS SWORN SWORD)", 1);
         y = Outcome(c.X, y, c.Width, "skull", "BOUNTIES FOR BRIGANDS AND ENEMY LORDS", 1);
         y = Outcome(c.X, y, c.Width, "sword", "YOUR EMPLOYER'S ENEMIES BECOME YOURS", -1);
         y += ui.U(10);

@@ -118,6 +118,9 @@ public sealed partial class Campaign
         if (s.Kind == SettlementKind.Castle && Demesne(s).Any() && HeldShare(s) >= 1) Add(-0.1f, "VILLAGES HELD"); // HD3
         if (Level(s, "chapel") > 0) Add(-0.25f, "CHAPEL");
         if (s.Prosperity < 25) Add(0.2f, "POVERTY");
+        float wild = WildnessOf(s.Province);
+        if (wild >= 75) Add(0.4f, "WILDNESS");
+        else if (wild >= 50) Add(0.2f, "WILDNESS");
         if (s.Owner == Player.Id)
         {
             if (Has("JustRuler")) Add(-0.2f, "JUST RULER");

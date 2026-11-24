@@ -20,7 +20,7 @@ public sealed partial class Battle
         if (s.Company?.Has("Hothead") == true) t += 0.25f;
         if (s.Company?.Has("Stubborn") == true) t -= 0.1f;
         if (s.Company?.Named is { Length: > 0 } nm) t -= MathF.Min(0.18f, nm.Length * 0.03f + nm.Count(x => x.Banner) * 0.05f);
-        if (s.Division?.Leader is { Active: true }) t -= 0.12f; // division officer holds the wing steady (PF3)
+        if (s.Division is { Leader.Active: true } div) t -= div.Distinguished || div.Leader.Hero ? 0.16f : 0.12f; // division officer holds the wing steady (PF3)
         return Math.Clamp(t, 0, 1);
     }
 

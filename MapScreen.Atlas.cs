@@ -49,6 +49,8 @@ sealed partial class MapScreen
                     else if (ids[j] != ids[i]) provEdge = true;
                 }
                 var c = SideColor(f);
+                float wild = C.S.Provinces[ids[i]].Wildness / 100f;
+                if (wild > 0.15f) c = Color.Lerp(c, new Color(195, 34, 24), MathF.Min(0.75f, (wild - 0.15f) * 0.9f)); // WI1: red wildness wash
                 data[i] = coast ? new Color(38, 30, 22, 240) : realmEdge ? new Color(16, 12, 10, 235) : provEdge ? Color.Lerp(c, Color.Black, 0.35f) * 0.7f : c * 0.5f;
             }
         atlasTex ??= new Texture2D(gd, AtlasSize, AtlasSize);

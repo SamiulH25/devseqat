@@ -401,6 +401,7 @@ public static class Rules
                     RoutBonus: h.RoutBonus, VsMounted: h.VsMounted, Banner: c.Banner, Hero: c.Hero,
                     Streamers: c.BattleHonours.Count, Fringe: c.Battles >= 10, Cohesion: c.Cohesion,
                     Named: fitNamed is { Count: > 0 } ? fitNamed.Select(m => new NamedSpec(m.Id, m.Troop, m.Name, m.Wounds, Soldier.AgeOf(m), m.Avenging, m.Nature, m.Ties.Where(t => t.Kind is "Brothers" or "Kin").Select(t => t.Other).ToArray(), m.Ties.Any(t => t.Kind == "Lad"), m.Carries != "", Campaign.OfBanner(m), m.Battles)).ToArray() : null,
-                    Standing: Campaign.NatureEffect(c) is string n ? new[] { n } : null); // the senior man's nature (C2)
+                    Standing: Campaign.NatureEffect(c) is string n ? new[] { n } : null, // the senior man's nature (C2)
+                    HasSergeant: c.Officer != "");
             }).ToList());
 }

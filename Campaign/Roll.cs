@@ -155,7 +155,8 @@ public sealed partial class Campaign
         }
         string against = foe != "" ? $" against {foe}" : "";
         // In a fought battle the best unnamed man earns his name by his own hand; else by what the company did.
-        if (cr.Named != null && cr.BestTroop != "" && (cr.BestFelledLeader || cr.BestKills >= 4)
+        bool fastRise = Captain.Origin is "drillmaster" or "sellsword" || Captain.Birth == "camp"; // PF2: faster named-man rising
+        if (cr.Named != null && cr.BestTroop != "" && (cr.BestFelledLeader || cr.BestKills >= (fastRise ? 3 : 4))
             && NameMan(c, cr.BestFelledLeader ? $"Cut down a captain{against}." : $"Killed {cr.BestKills}{against}.", cr.BestTroop) is Soldier hand)
         {
             hand.Battles = 1; hand.Kills = cr.BestKills;
@@ -163,11 +164,12 @@ public sealed partial class Campaign
             rollNews.Add(("NAMED", $"{hand.Name}, {Troops.Get(hand.Troop).Name}, {c.Name}.{Known(hand)}"));
             return;
         }
+        float riseBoost = fastRise ? 0.2f : 0;
         string? deed = siege && won ? $"First over the wall{against}."
-            : cr.HorseKills > 0 && RollRng.Chance(0.6f) ? $"Brought down a horseman{against}."
+            : cr.HorseKills > 0 && RollRng.Chance(MathF.Min(0.95f, 0.6f + riseBoost)) ? $"Brought down a horseman{against}."
             : bloodied ? $"Stood when half the company fell{against}."
-            : !won && RollRng.Chance(0.5f) ? $"Came home from the lost field{against}."
-            : won && cr.Kills > 0 && RollRng.Chance(0.35f) ? $"Fought in the front rank{against}."
+            : !won && RollRng.Chance(MathF.Min(0.95f, 0.5f + riseBoost)) ? $"Came home from the lost field{against}."
+            : won && cr.Kills > 0 && RollRng.Chance(MathF.Min(0.95f, 0.35f + riseBoost)) ? $"Fought in the front rank{against}."
             : null;
         if (deed != null && NameMan(c, deed) is Soldier named)
         {

@@ -40,7 +40,7 @@ public partial class Campaign
             bool teamWon = r.Winner == team;
             int menBefore = c.Men;
             string foe = team == 0 ? side1.FirstOrDefault()?.Name ?? "" : side0.FirstOrDefault()?.Name ?? "";
-            float surgeon = (p == Player ? Skill("Medicine") / 1000f + (Has("Surgeon") ? 0.1f : 0) : 0) + (c.Traits.Contains("Surgeon") ? 0.1f : 0);
+            float surgeon = (p == Player ? Skill("Medicine") / 1000f + (Has("Surgeon") ? 0.1f : 0) + (Captain.Origin == "surgeon" ? 0.08f : 0) : 0) + (c.Traits.Contains("Surgeon") ? 0.1f : 0);
             int killedAll = 0, woundedAll = 0, capturedAll = 0, fledLostAll = 0;
             // Casualties come off each stack by its own armour (2.3); a battle without a breakdown counts as the company's face.
             var parts = cr.Stacks ?? new[] { new StackResult(c.Troop, cr.Start, cr.Standing, cr.Fled, cr.Fallen) };
@@ -72,7 +72,8 @@ public partial class Campaign
             }
             if (cr.Deployed) { c.Battles++; c.Kills += cr.Kills; }
             float lostFrac = menBefore > 0 ? (menBefore - c.Men) / (float)menBefore : 0;
-            c.Cohesion = Math.Clamp(c.Cohesion + (teamWon ? 5 : -5) - lostFrac * 10, 0, 30);
+            float steady = 1 - MathF.Min(0.4f, c.Roll.Count(m => !m.Hurt && (OfBanner(m) || m.Carries != "")) * 0.1f); // armed & banner veterans steady post-battle cohesion (PF3)
+            c.Cohesion = Math.Clamp(c.Cohesion + (teamWon ? 5 : -5) - lostFrac * 10 * steady, 0, 30);
             if (cr.Deployed) OfficerAfterBattle(c, teamWon, lostFrac, foe);
             if (cr.HeroFell && p == Player) HeroFell(c, foe);
             Chronicle(c, cr, teamWon, menBefore - c.Men, foe, siegeBattle, p, field);
@@ -110,6 +111,7 @@ public partial class Campaign
             if (p.Kind == PartyKind.Monster)
             {
                 p.Down = true;
+                OnMonsterCleared(p, playerIn && won);
                 if (p.Breed == "troll") LogAll($"{p.Name} is slain near {Map.ProvinceAt(p.Pos).Name}.");
                 if (p.Breed == "undead") LogAll($"{p.Name} are laid to rest.");
                 if (p.Lair) { var taker = winners.FirstOrDefault(w => w.Kind is PartyKind.Player or PartyKind.Lord); if (taker != null && taker != Player) taker.Gold += p.Gold; HoldoutCleared(p, taker); }
@@ -181,6 +183,7 @@ public partial class Campaign
                     : e.Lair ? B.BountyHoldout + Rules.PerMan(Rules.Strength(e) / 10)
                     : Outlaw(e) ? B.BountyBandits + Rules.PerMan(Rules.Strength(e) / 10)
                     : Captain.Contract >= 0 ? B.BountyLord + Rules.PerMan((startStrength1 + startStrength0) / 20) : 0;
+            if (Captain.Origin == "sellsword") bounty *= 1.15f; // veteran sellsword negotiates better head-money (PF2)
             renown += B.RenownPerVictory + (playerTeam == 0 ? startStrength1 : startStrength0) / (B.RenownStrengthDivisor * B.ArmyScale);
             horses = r.HorsesTaken;
             S.Gold += loot + ransom + bounty;

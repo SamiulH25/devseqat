@@ -88,8 +88,18 @@ public sealed partial class Campaign
         var all = new List<Rumour>();
         float far = 160 * Map.Spread;
         string Where(Vector2 p) => Map.ProvinceAt(p).Id == t.Province ? $"{Bearing(t.Pos, p)}, not far from here" : $"{Bearing(t.Pos, p)}, in {Map.ProvinceAt(p).Title}";
-        foreach (var h in Holdouts.Where(h => Vector2.Distance(h.Pos, t.Pos) < far))
-            all.Add(new Rumour($"Goblins have dug in to the {Where(h.Pos)}. They come down at night for sheep and children.", h.Pos));
+        foreach (var h in Lairs.Where(h => Vector2.Distance(h.Pos, t.Pos) < far))
+        {
+            string msg = h.Breed == "spider"
+                ? h.Stage >= 2 ? $"Spider webs choke the roads to the {Where(h.Pos)}. Caravans will not pass." : $"Giant spiders nest to the {Where(h.Pos)}."
+                : h.Breed == "undead" ? $"A barrow wakes to the {Where(h.Pos)} — the dead walk from it every night."
+                : h.Stage >= 2 ? $"A goblin hold has risen to the {Where(h.Pos)} — a whole warhost gathers there."
+                : h.Stage == 1 ? $"Goblins have dug a warren to the {Where(h.Pos)}."
+                : $"Goblins have dug in to the {Where(h.Pos)}. They come down at night for sheep and children.";
+            all.Add(new Rumour(msg, h.Pos));
+        }
+        foreach (var pr in S.Provinces.Where(pr => pr.Wildness >= 55 && Vector2.Distance(pr.Center, t.Pos) < far).OrderByDescending(pr => pr.Wildness).Take(1))
+            all.Add(new Rumour($"{pr.Title} is growing {WildnessWord(pr.Wildness).ToLowerInvariant()} — monsters stalk the roads.", pr.Center));
         foreach (var w in WolfPacks.Where(w => Vector2.Distance(w.Pos, t.Pos) < far))
             all.Add(new Rumour($"A wolf pack hunts to the {Where(w.Pos)}. The shepherds will not go out alone.", w.Pos));
         foreach (var b in S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down && p.CharId >= 0 && Vector2.Distance(p.Pos, t.Pos) < far * 1.5f))

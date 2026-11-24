@@ -270,6 +270,7 @@ public sealed partial class Campaign
     {
         bool mounted = p.Breed is "wolf" or "wyvern" || p.Companies.Count > 0 && p.Companies.All(c => c.Men == 0 || c.Type.Mount != null); // wolves run as fast as horses
         float s = (mounted ? B.HorseSpeed : B.FootSpeed) * (Winter ? 0.75f : 1) * PaceOf(p) * (p.Breed == "wyvern" ? 1.25f : 1); // wings outpace any horse
+        if (p.Breed != "spider" && p.Breed != "wyvern" && IsProvinceWebbed(Map.ProvinceAt(p.Pos).Id)) s *= 0.7f; // webbed woods slow travel (WI2)
         if (p.Kind == PartyKind.Player) s *= (1 - MathF.Min(0.25f, p.Prisoners.Sum(g => g.Count) / 400f)) * BaggageDrag() * (1 - TrainDrag * p.Train.Count); // an overloaded baggage (C9), engines (SiegeWorks.cs)
         if (p.Kind == PartyKind.Player)
             s *= (1 + Skill("Logistics") / 2000f) * (Has("Horsemaster") ? 1.05f : 1) * (Has("Pathfinder") ? 1.05f : 1) * (Has("ForcedMarch") ? 1.1f : 1) * (Captain.Birth == "marcher" ? 1.08f : 1);
@@ -475,14 +476,19 @@ public sealed partial class Campaign
                         st.AddXp(st.Men * ((town ? B.DrillTown : B.DrillCamp) + (c.Traits.Contains("Drillmaster") ? 1 : 0)) * Honours.Of(c).DrillMul
                             * (p == Player ? (HasCompanion("Drillmaster") ? 1.25f : 1) * (Captain.Origin == "drillmaster" || Captain.Birth == "camp" ? 1.25f : 1) * (1 + Skill("Training") / 200f) * (Has("Academy") ? 1.5f : 1) : 1));
                 }
-                float cohCap = SeniorNature(c) == "Merry" ? 18 : 12;
+                bool campTrained = p == Player && (Captain.Origin is "drillmaster" or "sellsword" || Captain.Birth == "camp");
+                float cohCap = (SeniorNature(c) == "Merry" ? 18 : 12) + (campTrained ? 2 : 0);
                 if (town && c.Cohesion < cohCap) c.Cohesion = MathF.Min(cohCap, c.Cohesion + (SeniorNature(c) == "Merry" ? 2 : 1)); // free town rest caps low; Merry men, feasts and cairns lift it further (PF3)
+                else if (!town && p == Player && Player.Resting && campTrained && c.Cohesion < 10) c.Cohesion = MathF.Min(10, c.Cohesion + 1); // camp/drillmaster/sellsword steadies men in camp (PF2)
             }
         }
         RefreshHeroes();
         RollDaily();
         CircleDaily();
-        if (Captain.Origin == "poacher" && Map.ProvinceAt(Player.Pos).Kind is "Forest" or "Taiga") Player.Food += 0.6f; // poachers forage meat in the woods (PF2)
+        string landKind = Map.ProvinceAt(Player.Pos).Kind;
+        if (Captain.Origin == "poacher" && landKind is "Forest" or "Taiga") Player.Food += 0.6f; // poachers forage meat in the woods (PF2)
+        if (Captain.Birth == "marcher" && landKind is "Hills" or "Highlands") Player.Food += 0.5f; // marchers know the border uplands (PF2)
+        if (Captain.Birth == "yeoman" && landKind is "Plains" or "Farmland") Player.Food += 0.4f; // yeomen know how to provision from farm country (PF2)
         EatDaily();
         // A company bled out away from battle (rearguards, desertion, hunger) does not leave you with nothing to command:
         // a handful of loyal men gather at the nearest friendly town, as they do after a lost battle.
@@ -534,6 +540,16 @@ public sealed partial class Campaign
         DiplomacyDaily();
     }
 
+    /// Share of weekly upkeep paid by your employer: modest for a free captain, full for a Sworn Sword, tapering once you hold fiefs (PF5).
+    public float ContractPayRate => Captain.Contract < 0 ? 0 : Rank switch
+    {
+        Rank.FreeCompany => B.FreeContractPay,
+        Rank.SwornSword => B.ContractPay,
+        Rank.Vassal => B.VassalContractPay,
+        Rank.Lord or Rank.Marshal => B.LordContractPay,
+        _ => 0,
+    };
+
     void Weekly()
     {
         weekDue = true; // the week's turn is a moment for the events (EventDirector.cs)
@@ -552,8 +568,8 @@ public sealed partial class Campaign
             {
                 if (Has("Quartermaster")) upkeep *= 0.9f;
                 if (HasCompanion("Quartermaster")) upkeep *= 0.95f;
-                float payRate = Rank >= Rank.SwornSword ? B.ContractPay : B.FreeContractPay;
-                float pay = Captain.Contract >= 0 && Rank != Rank.King ? upkeep * payRate * Settings.Current.PayFactor : 0;
+                if (Captain.Origin == "steward") upkeep *= 0.9f; // steward trims company upkeep drag (PF2)
+                float pay = upkeep * ContractPayRate * Settings.Current.PayFactor;
                 // A sworn man's liege keeps him in the field (F9): a retainer that lets a beaten company rebuild.
                 pay += Retainer;
                 float fiefs = S.Settlements.Where(t => t.Owner == Player.Id).Sum(Income) * (HasCompanion("Steward") ? 1.15f : 1)

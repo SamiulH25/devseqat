@@ -47,7 +47,10 @@ public partial class Campaign
             if (Calmed(g.Pos)) continue; // calmed by a rite (Workings.cs)
             if (days < B.GraveRiseDays * (S.Omen >= OmenStirs ? 0.5f : 1) || UndeadHosts.Count() >= B.UndeadMax || !rng.Chance(B.GraveRiseChance)) continue;
             S.Graves.Remove(g);
-            RaiseHost(g);
+            var prov = Map.ProvinceAt(g.Pos);
+            int barrows = Lairs.Count(l => l.Breed == "undead");
+            if (barrows < 2 && (WildnessOf(prov.Id) >= 40 || S.Omen >= OmenStirs) && rng.Chance(0.35f)) RaiseBarrow(g);
+            else RaiseHost(g);
         }
     }
 

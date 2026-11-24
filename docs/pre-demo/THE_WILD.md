@@ -1,7 +1,13 @@
 # The Wild: monsters as part of the game (plan)
 
 The owner's brief (2026-11-21): monsters "just sort of exist". Give them a reason to exist, a reason to be fought and dealt with,
-and a better roster. This plan comes from a brainstorm with the owner. Nothing in it is built yet. Moved back to pre-demo on 2026-11-23.
+and a better roster. This plan comes from a brainstorm with the owner. Moved back to pre-demo on 2026-11-23.
+
+**Status (2026-11-23):**
+- **WI1 (Wildness)** built: `Province.Wildness` (0–100, saved), `Campaign/Wild.cs` (`WildnessDaily`, war/exhaustion multiplier, garrison & lord patrol calm, village prosperity drain & emptying, unrest in `Fiefs.cs`, caravan road closures in `Roads.cs`, seasonal wolf/wyvern shifts, immediate wildness cut on clearing), red wildness wash on the realm map (`MapScreen.Atlas.cs`), hover card line (`MapScreen.Hud.cs`), and tavern rumours (`Town.cs`).
+- **WI2 (Growing lairs)** built: `Party.Stage` (saved), goblin `Holdout -> Warren -> Hold`, spider `Nest -> Brood -> Webbed Wood` (slows travel `* 0.7` in `Campaign.cs` and stops caravans), river-crossing `Bridge Trolls`, and persistent undead `Barrows` (`Undead.cs` -> `RaiseBarrow`).
+- **WI3 (Spoils of the wild)** built: monster spoils (`troll_hide`, `wyvern_sting`, `spider_silk`, `bear_pelt`, `dire_fang`, `grave_dust`) in `Goods.cs` with cultural market premiums, 3 spoil-gated Smith marks (`sting_edged`, `troll_hide_lining`, `silk_padding`) in `Data/effects.json` & `Smith.cs`, `grave_dust` halving craft rite Omen in `Rites.cs`, village/lord gratitude, steppe wolf / northern bear cultural reactions, order standing on undead, deeds, and great-beast Aura Wall breakthroughs.
+- **WI4–WI9** open next: monster contracts & hunts (WI4), new monsters (WI5–WI6), legendary apexes (WI7), world crisis endgame (WI8), and balance/shot verification (WI9).
 
 ## Where things stand
 

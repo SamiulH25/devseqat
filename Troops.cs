@@ -212,7 +212,7 @@ public sealed record NamedSpec(int Id, string Troop, string Name, int Wounds = 0
 public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false,
     StackSpec[]? Mix = null, float RoutBonus = 0, float VsMounted = 1, int Banner = -1, string Hero = "", int Division = -1, NamedSpec[]? Named = null,
     int Streamers = 0, bool Fringe = false, float Cohesion = 0, string HeroCalling = "", string[]? HeroGifts = null, int HeroLevel = 0, string[]? Standing = null,
-    string[]? Spells = null, int MasterRank = 0, bool Leaderless = false, string Doctrine = "")
+    string[]? Spells = null, int MasterRank = 0, bool Leaderless = false, string Doctrine = "", bool HasSergeant = false)
 {
     public bool Has(string trait) => Traits?.Contains(trait) == true;
     /// The men to spawn, largest stack first (so a squad's first man is its majority troop).
@@ -230,7 +230,7 @@ public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Com
 /// also maps the old goal names); LeadCompany, when
 /// Leader is empty, is the company his best man is picked from (a sergeant leading from his own company).
 public sealed record DivisionSpec(int Id, string Name, string Temper = "Steady", int Skill = 3, string Goal = "Hold", string Leader = "", int LeadCompany = 0,
-    string[]? Traits = null);
+    string[]? Traits = null, bool Distinguished = false);
 
 /// Army builder. A company belongs to a line (infantry, spears, archers, horse); its tier picks the troop on that line,
 /// standing in for companies the campaign has upgraded. Elite companies are smaller.

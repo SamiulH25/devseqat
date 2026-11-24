@@ -38,12 +38,18 @@ public partial class Battle
             if (c.Has("Veteran")) d += 0.05f;
             if (c.Has("Hothead")) d -= 0.05f;
             if (c.Hero.Length > 0) d += 0.05f;
+            int named = c.Named?.Length ?? 0;
+            bool banner = c.Named?.Any(m => m.Banner) == true;
+            if (named > 0) d += MathF.Min(0.06f, named * 0.015f);
+            if (banner) d += 0.04f;
+            if (c.HasSergeant) d += 0.03f;
+            if (!c.HasSergeant && named == 0 && c.Hero.Length == 0) d -= 0.03f; // raw unled companies are more brittle (PF3)
         }
         return Math.Clamp(d, 0, 1);
     }
 
     /// The drill a campaign company takes into battle, as DrillOf(Squad, Company) will make it: its fit men's (by count),
-    /// cohesion, officer and companion (for the muster roll).
+    /// cohesion, officer, named veterans and companion (for the muster roll).
     public static float DrillOf(CompanyRecord c)
     {
         float sum = 0;
@@ -54,6 +60,13 @@ public partial class Battle
         if (c.Traits.Contains("Veteran")) d += 0.05f;
         if (c.Traits.Contains("Hothead")) d -= 0.05f;
         if (c.Hero.Length > 0) d += 0.05f;
+        int named = c.Roll.Count(m => !m.Hurt);
+        bool banner = c.Roll.Any(m => !m.Hurt && Campaign.OfBanner(m));
+        bool sgt = c.Officer != "";
+        if (named > 0) d += MathF.Min(0.06f, named * 0.015f);
+        if (banner) d += 0.04f;
+        if (sgt) d += 0.03f;
+        if (!sgt && named == 0 && c.Hero.Length == 0) d -= 0.03f;
         return Math.Clamp(d, 0, 1);
     }
 

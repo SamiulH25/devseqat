@@ -58,7 +58,7 @@ public static partial class SelfTest
 
         // Lord: two fiefs and renown. Then the marshal's baton, by vote, and an objective for the hosts.
         foreach (var t in c.S.Settlements.Where(s => s.Faction == 0 && s.Kind != SettlementKind.Village).OrderByDescending(s => s.Kind == SettlementKind.Town).Take(2)) t.Owner = c.Player.Id;
-        c.Captain.Renown = 400;
+        c.Captain.Renown = Campaign.LordRenown;
         Check(c.Rank == Rank.Lord, "two fiefs and renown make a lord");
         Days(c, 1);
         Check(c.Beat is { Title: "LORD" }, "becoming a lord is a career beat");
@@ -231,7 +231,7 @@ public static partial class SelfTest
         Check(foreign.Faction == kin && foreign.Owner != c.Player.Id, "at the end of its patience a fief goes over to its own people");
 
         // Vassals: a lord with two fiefs raises a companion to land and gives him orders.
-        c.Captain.Renown = 400;
+        c.Captain.Renown = Campaign.LordRenown;
         // Two fiefs again (one went over to its people, and the wars may have taken others): castles of the realm, unheld
         // ones first.
         foreach (var t in c.S.Settlements.Where(s => s.Faction == 0 && s.Kind == SettlementKind.Castle && s.Owner != c.Player.Id).OrderBy(s => s.Owner < 0 ? 0 : 1).ToList())

@@ -11,23 +11,43 @@ public partial class Campaign
     {
         new("arms", "Arms", 12), new("armour", "Armour", 30), new("harness", "Harness", 20),
         new("silver", "Silver plate", 45), new("trinkets", "Trinkets", 8), new("furs", "Furs and hides", 10),
+        // WI3: spoils of the wild (trophies & reagents)
+        new("troll_hide", "Troll hide", 65), new("wyvern_sting", "Wyvern sting", 85), new("spider_silk", "Spider silk", 55),
+        new("bear_pelt", "Bear pelt", 40), new("dire_fang", "Dire fang", 35), new("grave_dust", "Grave dust", 45),
     };
 
     public static GoodsKind GoodsOf(string id) => GoodsKinds.First(k => k.Id == id);
 
-    /// What a fallen man of this troop leaves on the field.
-    public static string GoodsFrom(UnitType t) => t.Wild ? (t.Breed == "goblin" ? "trinkets" : "furs") : t.Mount != null ? "harness" : t.Tier >= 3 ? "armour" : "arms";
+    /// What a fallen man or beast of this troop leaves on the field (WI3).
+    public static string GoodsFrom(UnitType t) => t.Wild ? t.Breed switch
+    {
+        "troll" => "troll_hide",
+        "wyvern" => "wyvern_sting",
+        "spider" => "spider_silk",
+        "bear" => "bear_pelt",
+        "wolf" => t.Tier >= 3 ? "dire_fang" : "furs",
+        "undead" => "grave_dust",
+        "goblin" => "trinkets",
+        _ => "furs",
+    } : t.Mount != null ? "harness" : t.Tier >= 3 ? "armour" : "arms";
 
     /// Lots of goods you carry.
     public int GoodsCount => S.Goods.Values.Sum();
 
-    /// What a town's market pays for one lot: more in a prosperous town, a third more for the kind it wants this week.
-    /// 0 where it will not buy (villages, castles, towns that refuse you).
+    /// What a town's market pays for one lot: more in a prosperous town, a third more for the kind it wants this week,
+    /// and cultural premiums for monster spoils (WI3). 0 where it will not buy (villages, castles, towns that refuse you).
     public int GoodsPrice(GoodsKind k, Settlement s)
     {
         if (s.Kind != SettlementKind.Town || Refuses(s)) return 0;
         float mul = 0.85f + s.Prosperity / 400f;
         if (WantedGoods(s) == k.Id) mul *= 1.3f;
+        string people = Factions.PeopleOf(s.Culture);
+        if ((people == "northern" && k.Id is "troll_hide" or "bear_pelt")
+            || (people == "southern" && k.Id is "spider_silk" or "wyvern_sting")
+            || (people == "league" && k.Id is "spider_silk" or "grave_dust")
+            || (people == "crimson" && k.Id is "grave_dust" or "wyvern_sting")
+            || (people == "steppe" && k.Id is "wyvern_sting" or "troll_hide")) mul *= 1.35f;
+        else if (people == "steppe" && k.Id == "dire_fang") mul *= 0.5f; // steppe clans hold wolves sacred
         if (Captain.Birth == "guild") mul *= 1.15f;
         return Math.Max(1, (int)MathF.Round(k.Value * mul));
     }

@@ -156,9 +156,9 @@ public partial class Campaign
     {
         foreach (var lair in Lairs.ToList())
         {
-            if (lair.Breed == "spider") GrowNest(lair); else Grow(lair);
+            if (lair.Breed == "spider") GrowNest(lair); else if (lair.Breed == "goblin") Grow(lair);
             lair.Gold += B.HoldoutHoardPerDay;
-            if (S.Hours >= lair.NextRaid && lair.Men >= Scaled(lair.Breed == "spider" ? B.NestStartMen * 2 : B.HoldoutRaidMen)) SendRaiders(lair);
+            if (lair.Breed is "goblin" or "spider" && S.Hours >= lair.NextRaid && lair.Men >= Scaled(lair.Breed == "spider" ? B.NestStartMen * 2 : B.HoldoutRaidMen)) SendRaiders(lair);
         }
         // Each missing pack or bear has its own chance to come back, so a cleared forest fills again within days.
         for (int missing = WolfPacksWanted - WolfPacks.Count(); missing > 0; missing--)
@@ -176,6 +176,8 @@ public partial class Campaign
             if (Holdouts.Count() < HoldoutsWanted && rng.Chance(B.HoldoutSpawnChance)) SpawnHoldout();
         for (int n = Math.Max(1, NestsWanted / 6); n > 0; n--)
             if (Nests.Count() < NestsWanted && rng.Chance(B.NestSpawnChance)) SpawnNest();
+        LairsGrowDaily();
+        WildnessDaily();
     }
 
     /// A holdout breeds goblins up to its cap; a big one gains hobgoblins, archers and, once, a boss.

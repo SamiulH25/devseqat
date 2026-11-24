@@ -320,14 +320,15 @@ public static partial class SelfTest
         float coh = co.Cohesion = 10;
         float gold = c.S.Gold;
         for (int i = 0; i < 3; i++) { c.S.MentionPool.Add(hero.Id); Check(c.Mention(hero) == null, "mention a man of the day"); }
-        Check(c.S.Gold == gold - 3 * Balance.Get().MentionPurse && co.Cohesion == coh + 3 && c.S.MentionPool.Count == 0, "a mention pays a purse and lifts the company");
+        Check(c.S.Gold == gold - 3 * Balance.Get().MentionPurse && co.Cohesion == coh + 5 && c.S.MentionPool.Count == 0, "a mention pays a purse and lifts the company (+3 on 3rd banner mention)");
         Check(Campaign.OfBanner(hero) && c.Summary().Any(l => l.Contains(hero.Name.ToUpperInvariant())), "three mentions: of the banner, and in the end summary");
 
         // Arms: a lot of looted arms, or a piece from your baggage you do not wear.
         c.S.Goods.Remove("arms");
         Check(c.CannotArm(hero, null) == "NO LOOTED ARMS", "no arms to give");
         c.S.Goods["arms"] = 1;
-        Check(c.Arm(hero, null) == null && hero.Carries != "" && !c.S.Goods.ContainsKey("arms"), "a man takes a lot of looted arms");
+        float preArmCoh = co.Cohesion;
+        Check(c.Arm(hero, null) == null && hero.Carries != "" && !c.S.Goods.ContainsKey("arms") && co.Cohesion == preArmCoh + 2, "a man takes a lot of looted arms and lifts company cohesion");
         Check(c.CannotArm(hero, null) == "HE IS ARMED ALREADY", "one gift a man");
         var sword = Gear.All.First(g => g.Slot == "weapon" && !c.Captain.Kit.Worn.Contains(g.Id));
         var piece = new GearItem { Def = sword.Id, Quality = ItemQuality.Fine };
@@ -508,5 +509,19 @@ public static partial class SelfTest
         var plainU = sq.Units.First(u => u.SoldierId == 0 && u.Type.Id == vet.Troop);
         Check(namedU.Armed && namedU.VeteranBonus >= 0.199f, $"named veteran carries Armed and VeteranBonus ({namedU.VeteranBonus:0.00})");
         Check(namedU.Hp > plainU.Hp * 1.25f, $"armed banner veteran spawns with higher HP ({namedU.Hp:0.0} vs {plainU.Hp:0.0})");
+        // Drill: raw unled company is lower than a company with a sergeant & banner veteran, and muster matches battle.
+        float vetDrill = Battle.DrillOf(co);
+        Check(MathF.Abs(vetDrill - sq.Drill) < 0.001f, $"muster drill ({vetDrill:0.00}) matches battle squad drill ({sq.Drill:0.00})");
+        var rawCo = new CompanyRecord { Id = 999, Name = "Raw", Stacks = new() { new TroopStack { Troop = co.Troop, Men = co.Men } } };
+        Check(vetDrill > Battle.DrillOf(rawCo) + 0.05f, $"named/banner company has higher drill than raw unled company ({vetDrill:0.00} vs {Battle.DrillOf(rawCo):0.00})");
+        // Distinguished division (banner sergeant or companion) raises wing drill and speeds reaction.
+        co.Officer = "Sgt Hal";
+        co.OfficerMan = vet;
+        Check(c.MakeDivision(-1, co.Id) == null, "banner sergeant can lead a division");
+        var divRec = c.Divisions.First();
+        Check(c.IsDistinguished(divRec) && c.CommandOf(divRec) >= 3, "banner sergeant division is distinguished with higher command");
+        var plainDiv = new Division(0, 0, "Plain", Temper.Steady, 4, new Goal(Post.Front, Stance.Hold)) { Leader = plainU };
+        var distDiv = new Division(0, 1, "Dist", Temper.Steady, 4, new Goal(Post.Front, Stance.Hold)) { Leader = namedU, Distinguished = true };
+        Check(Battle.Reaction(distDiv) < Battle.Reaction(plainDiv), "distinguished division reacts faster");
     }
 }

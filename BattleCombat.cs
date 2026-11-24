@@ -234,8 +234,8 @@ public partial class Battle
         if (!ranged && a.Squad is { Broken: true, Swarm: false } && Ranked(a.Squad) && !Overwhelms(a.Squad)) officer *= BrokenBlow; // a crowd has no room to swing (round a beast it needs none)
         float fury = a.Mods.Fury > 0 && a.Squad is { StartCount: > 0 } fs ? a.Mods.Fury * (1 - fs.Alive / (float)fs.StartCount) : 0; // battle fury: the fewer, the fiercer
         float headsman = !ranged && (t.IsLeader || t.Hero || t.Sergeant) ? a.Mods.Headsman : 0;                                    // headsmen seek the officers
-        // Division command (PF3): companies led by an active division officer fight more cohesively.
-        if (a.Squad?.Division?.Leader is { Active: true }) officer *= 1.05f;
+        // Division command (PF3): companies led by an active division officer fight more cohesively (more under a Companion or banner sergeant).
+        if (a.Squad?.Division is { Leader.Active: true } div) officer *= div.Distinguished || div.Leader.Hero ? 1.08f : 1.05f;
         // Captain's Road identity (PF2): distinct personal fighting edge in battles and duels.
         if (a.IsPlayer)
         {

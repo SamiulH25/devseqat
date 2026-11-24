@@ -213,7 +213,11 @@ partial class MapScreen
             SkillRow("RIDING", t.Skills.Riding, now.Skills.Riding);
             SkillRow("BOWCRAFT", t.Skills.Bowcraft, now.Skills.Bowcraft);
         }
-        int tx = d.X + ph + ui.U(12), colW = ui.U(228);
+        int tx = d.X + ph + ui.U(12);
+        int actW = Math.Min(ui.U(270), Math.Max(ui.U(196), d.Width * 24 / 100));
+        int avail = Math.Max(ui.U(360), d.Right - actW - ui.U(14) - tx);
+        int colW = Math.Min(ui.U(228), avail * 28 / 100);
+        int kw = Math.Min(ui.U(266), avail * 36 / 100);
         ui.TextFit(t.Name.ToUpperInvariant(), tx, d.Y, colW, Style.Text, ui.FitScale(t.Name.ToUpperInvariant(), colW));
         for (int i = 0; i < Troops.MaxTier; i++) ui.Rect(new Rectangle(tx + i * ui.U(7), d.Y + ui.U(21), ui.U(5), ui.U(5)), i < t.Tier ? Kit.Gilt : Color.White * 0.1f);
         ui.Text($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, Troops.MaxTier)]}", tx + ui.U(47), d.Y + ui.U(20), Style.Dim, 1);
@@ -230,7 +234,7 @@ partial class MapScreen
         if (n != root && Rules.TroopRole(n.Id) != Rules.RoleOf(c) && fy + ui.U(14) <= d.Bottom) Outcome(tx, fy, colW, "flag", $"JOINS A {Rules.TroopRole(n.Id).ToUpperInvariant()} COMPANY", -1);
 
         // Kit piece by piece, and what changes on promotion (KT6).
-        int kx = tx + colW + ui.U(14), kw = ui.U(266), ky = d.Y;
+        int kx = tx + colW + ui.U(14), ky = d.Y;
         ui.Rect(new Rectangle(kx - ui.U(7), d.Y, ui.U(1), d.Height), Color.White * 0.08f);
         var changes = n == root ? new List<(string Text, int Sign)>() : Fighter.KitChanges(now, t);
         if (changes.Count > 0)
@@ -261,7 +265,7 @@ partial class MapScreen
         }
 
         // The numbers as bars, each against the best in this tree, your men's mark on the bar.
-        int sx = kx + kw + ui.U(14), sw = d.Right - ui.U(284) - sx, sy = d.Y;
+        int sx = kx + kw + ui.U(14), sw = Math.Max(ui.U(120), d.Right - actW - ui.U(14) - sx), sy = d.Y;
         ui.Rect(new Rectangle(sx - ui.U(7), d.Y, ui.U(1), d.Height), Color.White * 0.08f);
         var all = nodes.Values.Select(k => k.T).ToList();
         var rows = new List<(string Icon, string Label, float V, float Was, float Max, string Fmt)>
@@ -278,7 +282,7 @@ partial class MapScreen
         {
             ui.Icon(icon, sx, sy + ui.U(2), Style.Dim, 1);
             ui.Text(label, sx + ui.U(12), sy + ui.U(2), Style.Dim, 1);
-            var bar = new Rectangle(sx + ui.U(60), sy + ui.U(1), Math.Max(ui.U(40), sw - ui.U(132)), ui.U(9));
+            var bar = new Rectangle(sx + ui.U(56), sy + ui.U(1), Math.Max(ui.U(20), sw - ui.U(118)), ui.U(9));
             float m = Math.Max(0.01f, max);
             float diff = v - was;
             ui.Rect(bar, Color.Black * 0.5f);
@@ -287,14 +291,14 @@ partial class MapScreen
             if (vw > ww) ui.Rect(new Rectangle(bar.X + ww, bar.Y, vw - ww, bar.Height), Style.Ok);
             else if (ww > vw) ui.Rect(new Rectangle(bar.X + vw, bar.Y, ww - vw, bar.Height), Kit.Mul(Style.Warn, 0.55f));
             ui.Rect(new Rectangle(bar.X + ww - px(), bar.Y - ui.U(2), Math.Max(1, ui.U(1)), bar.Height + ui.U(4)), Color.White * 0.7f); // your men now
-            ui.Text(v.ToString(fmt), bar.Right + ui.U(6), sy + ui.U(2), Style.Text, 1);
-            if (n != root && MathF.Abs(diff) >= 0.05f) ui.Text((diff > 0 ? "+" : "") + diff.ToString(fmt), bar.Right + ui.U(36), sy + ui.U(2), diff > 0 ? Style.Ok : Style.Warn, 1);
+            ui.Text(v.ToString(fmt), bar.Right + ui.U(4), sy + ui.U(2), Style.Text, 1);
+            if (n != root && MathF.Abs(diff) >= 0.05f) ui.Text((diff > 0 ? "+" : "") + diff.ToString(fmt), bar.Right + ui.U(30), sy + ui.U(2), diff > 0 ? Style.Ok : Style.Warn, 1);
             sy += step;
         }
         int px() => Math.Max(1, ui.U(1)) / 2;
 
         // The promotion.
-        var act = new Rectangle(d.Right - ui.U(270), d.Y, ui.U(270), d.Height);
+        var act = new Rectangle(d.Right - actW, d.Y, actW, d.Height);
         ui.Rect(new Rectangle(act.X - ui.U(14), act.Y, ui.U(1), act.Height), Color.White * 0.08f);
         if (n == root)
         {

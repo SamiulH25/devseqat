@@ -87,6 +87,15 @@ public sealed partial class Campaign
         return null;
     }
 
+    /// Monster spoil required for a wild smith mark, or null for ordinary marks (WI3).
+    public static (string Goods, int Lots)? MarkSpoil(string mark) => mark switch
+    {
+        "sting_edged" => ("wyvern_sting", 1),
+        "troll_hide_lining" => ("troll_hide", 1),
+        "silk_padding" => ("spider_silk", 1),
+        _ => null,
+    };
+
     /// Why the smith will not strike this mark on this piece, or null: fine pieces and up take a mark, one at a time here.
     public string? CannotRemark(GearItem i, string mark)
     {
@@ -95,6 +104,8 @@ public sealed partial class Campaign
         if (i.Quality < ItemQuality.Fine) return "ONLY A FINE PIECE TAKES A MARK";
         if (!MarksFor(g.Slot).Any(e => e.Id == mark)) return "THAT MARK DOES NOT FIT IT";
         if (i.Marks.Contains(mark)) return "IT BEARS THAT MARK";
+        if (MarkSpoil(mark) is (string spoil, int lots) && S.Goods.GetValueOrDefault(spoil) < lots)
+            return $"NEEDS {lots} {GoodsOf(spoil).Name.ToUpperInvariant()}";
         int cost = RemarkPrice(g);
         return S.Gold < cost ? $"NEEDS {cost} CROWNS" : null;
     }
@@ -105,6 +116,11 @@ public sealed partial class Campaign
         if (CannotRemark(i, mark) is string why) return why;
         var g = Gear.Get(i.Def);
         S.Gold -= RemarkPrice(g);
+        if (MarkSpoil(mark) is (string spoil, int lots))
+        {
+            S.Goods[spoil] -= lots;
+            if (S.Goods[spoil] <= 0) S.Goods.Remove(spoil);
+        }
         int most = i.Quality >= ItemQuality.Masterwork ? MostMarks : 1;
         if (i.Marks.Count >= most) i.Marks.RemoveAt(0);
         i.Marks.Add(mark);

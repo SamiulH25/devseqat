@@ -161,17 +161,40 @@ public sealed partial class Campaign
         return note == "" ? line : line == "" ? note : line + " " + note;
     }
 
-    /// A short reaction to the captain's homeland, birth or past (PF2), empty when nothing special applies.
+    /// A short reaction to the captain's homeland, birth, past or road (PF2), empty when nothing special applies.
     string OriginReaction(Character ch)
     {
+        if (ch.Kind == "companion")
+        {
+            if (Captain.Origin is "drillmaster" or "sellsword") return "Good to march under a captain who knows the ranks.";
+            if (Captain.Origin == "surgeon") return "The men say you sew up your own — I can respect that.";
+            if (Captain.Origin == "sapper") return "You know walls better than most engineers.";
+            if (Captain.Road == "lance") return "I have seen you ride — keep the horse ahead of us.";
+            if (Captain.Road == "bow") return "Steady eye on the bow, captain.";
+            if (Captain.Road == "great") return "That greatsword leaves little room to argue.";
+            if (Captain.Road == "pole") return "A captain who fights in the pike line earns his men's trust.";
+            return "";
+        }
         if (ch.Kind != "lord") return "";
         if (Captain.Origin == "deserter" && ch.Faction == Captain.Homeland) return "Your old banner has not forgotten you.";
         if (Captain.Origin == "outlaw") return "I know what roads you used to work.";
         if (Captain.Birth == "highborn" || Captain.Origin == "disinherited") return "Your house's name still carries weight in the hall.";
         if (Captain.Origin is "tourney" or "hedge_knight") return "I have heard of your lance in the lists.";
         if (Captain.Birth == "cloister" || Captain.Origin == "pilgrim") return "A captain who keeps the faith is welcome at my fire.";
+        if (Captain.Origin == "steward" || Captain.Birth == "guild") return "A captain who can read a ledger is rare enough.";
+        if (Captain.Road == "lance") return "You sit a warhorse like a man of rank.";
+        if (Captain.Road == "great") return "Few captains swing a two-hander in the press.";
         if (Captain.Homeland >= 0 && ch.Faction == Captain.Homeland && Captain.Contract != ch.Faction) return "You were born to our hills — you should fly our colours.";
         return "";
+    }
+
+    /// A short homeland/origin welcome shown on a settlement's steward board (PF1/PF2), or "".
+    public string SettlementWelcome(Settlement s)
+    {
+        if (Captain.Homeland < 0 || s.Faction != Captain.Homeland) return "";
+        if (Captain.Origin == "deserter") return "THE STEWARD EYES YOU COLDLY: YOUR OLD BANNER REMEMBERS.";
+        if (Captain.Origin == "outlaw") return "THE WATCH STILL KNOWS YOUR OLD NAME ON THESE ROADS.";
+        return Captain.Contract == s.Faction ? "YOUR HOMELAND'S STEWARD WELCOMES ONE OF THEIR OWN." : "HOMELAND FAVOUR: WARM STANDING AND 15% OFF VILLAGE RECRUITS.";
     }
 
     /// The topics that make sense with him now (what he can be asked; whether you can afford it is CannotAsk).

@@ -300,6 +300,8 @@ public sealed class Party
     public int ArmyId = -1;
     /// Active live map skirmish (CampaignState.Skirmishes, Campaign/Skirmishes.cs); -1 when not locked in battle.
     public int BattleId = -1;
+    /// Growth stage for monster lairs and bridge trolls (docs/pre-demo/THE_WILD.md WI2): 0 base, 1 warren/brood/ford, 2 hold/webbed/barrow.
+    public int Stage;
 
     public int Men => Companies.Sum(c => c.Men);
     public int Wounded => Companies.Sum(c => c.Wounded);
@@ -400,6 +402,8 @@ public sealed class Province
     public List<int> Neighbors = new();
     /// How wet its ground is from recent rain, 0-1 (docs/archive/TERRAIN.md T7; Campaign.RainDaily).
     public float Wet;
+    /// How wild and monster-ridden the province is, 0-100 (docs/pre-demo/THE_WILD.md WI1; Campaign.WildnessDaily).
+    public float Wildness;
 }
 
 /// A knight order on the map (docs/archive/KNIGHT_ORDERS.md 4): its patron realm, chapter house, grand master and commanders,
@@ -883,8 +887,8 @@ public sealed class Balance
     public float StartGold = 300, StartRenown = 50;
     /// Wages by tier (docs/post-demo/TIERS.md TI0, TI4): a man's wage is figured from his `cost` bent toward `WageAnchor` by
     /// `WageCurve` (1 = his cost as it is; under 1 the dear troops cost less to keep and the cheap ones more). Hire prices keep `cost`.
-    public float WageCurve = 0.6f, WageAnchor = 36;
-    public float UpkeepRate = 0.1f, FreeContractPay = 0.35f, ContractPay = 0.85f, LootRate = 0.25f, LootCoinShare = 0.3f, RansomRate = 1, MercMarkup = 1.5f;
+    public float WageCurve = 0.72f, WageAnchor = 36;
+    public float UpkeepRate = 0.1f, FreeContractPay = 0.35f, ContractPay = 0.85f, VassalContractPay = 0.45f, LordContractPay = 0.25f, LootRate = 0.25f, LootCoinShare = 0.3f, RansomRate = 1, MercMarkup = 1.5f;
     public float WoundBase = 0.3f, WoundArmor = 40, WoundMin = 0.25f, WoundMax = 0.7f, CaptureChance = 0.5f, FledReturnOnDefeat = 0.7f;
     public float XpParticipation = 10, XpVictory = 1.5f, XpPerKillTier = 6;
     public float RenownPerVictory = 5, RenownStrengthDivisor = 50;
@@ -910,7 +914,7 @@ public sealed class Balance
     /// How much the Tide (docs/archive/ARCANA.md AR3) moves a side's circles in auto-resolve: x(1 + mage share x this x (tide - 1)).
     public float TideWeight = 0.75f;
     /// A feast in town, crowns a man (docs/archive/COMPANIONS_MAGIC.md A5).
-    public float FeastPerMan = 6;
+    public float FeastPerMan = 8;
     /// Named men a company keeps at most (L1), and how much more often a named man lives through what kills his stack (L2).
     public int RollSize = 6;
     public float VeteranSurvival = 0.6f;

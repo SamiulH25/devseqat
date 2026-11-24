@@ -200,6 +200,13 @@
     { "id": "nature_proud", "name": "Proud", "icon": "flag", "line": "A proud man will not be outdone: the company strikes a little harder.", "tags": ["nature"],
       "damage": 0.12, "moralePerSec": 0.2 },
     { "id": "sure_footed_horse", "name": "Sure-footed", "icon": "horse", "line": "A sure-footed horse: rough ground slows it less.", "tags": ["mark", "horse"],
-      "footing": 0.25 }
+      "footing": 0.25 },
+    // WI3: monster-spoil smith marks (require wyvern_sting, troll_hide, or spider_silk)
+    { "id": "sting_edged", "name": "Sting-edged", "icon": "sword", "line": "Tempered with wyvern venom: blows bite deeper.", "tags": ["mark", "weapon"],
+      "damage": 0.08, "charge": 0.05 },
+    { "id": "troll_hide_lining", "name": "Troll-hide", "icon": "shield", "line": "Lined with troll hide: stout protection that steadies the bearer.", "tags": ["mark", "body", "helm"],
+      "armour": 3, "moralePerSec": 0.25 },
+    { "id": "silk_padding", "name": "Silk-padded", "icon": "boot", "line": "Spun spider silk under steel: light, swift and tireless.", "tags": ["mark", "body", "helm"],
+      "armour": 1, "tire": -0.18, "speed": 0.04 }
   ]
 }

@@ -152,7 +152,7 @@ public sealed class Pilot
     bool Fresh(Settlement s) => !visited.TryGetValue(s.Id, out float at) || c.S.Hours - at > 48;
 
     /// Gold kept back: a month of what upkeep costs after contract pay and the liege's retainer, plus a margin.
-    float Reserve => MathF.Max(0, Me.Companies.Sum(Rules.Upkeep) * (c.Captain.Contract >= 0 ? 1 - (c.Rank >= Rank.SwornSword ? B.ContractPay : B.FreeContractPay) : 1) - c.Retainer) * 4 + 60;
+    float Reserve => MathF.Max(0, Me.Companies.Sum(Rules.Upkeep) * (1 - c.ContractPayRate) - c.Retainer) * 4 + 60;
 
     /// Promotions the purse can pay for while keeping a reserve for upkeep.
     IEnumerable<(CompanyRecord Company, TroopStack Stack, string To)> Affordable() =>

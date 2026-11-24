@@ -32,7 +32,7 @@ public sealed partial class Campaign
         if (CannotBuildWork(s, id) is string why) return why;
         var def = Engines.Get(id);
         S.Gold -= def.Cost;
-        Queue(Player, def, Has("Siegecraft") ? 0.5f : 1);
+        Queue(Player, def, (Has("Siegecraft") ? 0.5f : 1) * (Captain.Origin == "sapper" ? 0.8f : 1));
         LogYours($"Your engineers start on a {def.Name.ToLowerInvariant()}.");
         AudioEngine.Current?.Play(Cue.AnvilRing);
         return null;
@@ -92,7 +92,7 @@ public sealed partial class Campaign
         if (s.SapReadyAt > 0) return SapReady(s) ? "THE SAP IS READY" : "ALREADY MINING A SAP";
         if (S.Gold < 180) return "NEED 180 CROWNS";
         S.Gold -= 180;
-        s.SapReadyAt = (float)S.Hours + (Has("Siegecraft") ? 36f : 72f);
+        s.SapReadyAt = (float)S.Hours + (Has("Siegecraft") ? 36f : 72f) * (Captain.Origin == "sapper" ? 0.8f : 1);
         LogYours($"Your sappers begin a mine under the walls of {s.Name}.");
         return null;
     }

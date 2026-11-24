@@ -13,28 +13,19 @@ Owner's brief (2026-11-23):
 ## Status (2026-11-23)
 
 - **PF1** built: `CaptainState.Homeland` & `HomelandRegard` (+12 standing lord opinion, 15% homeland village recruit discount); creator starts independent (`Contract = -1`, homeland palette except `deserter`); `FreeContractPay = 0.35` until earned `SwornSword` (`SwornDays = 14` + `SwornDeeds = 3`); scaled `Ditch Wolves`; `CampTier = 2`, `CastleYardTier = 4`, `NobleRenown = 140`.
-- **PF2** built: recurring origin hooks across `Rites`, `Oath`, `Smith`, `Goods`, `Ships`, `Fiefs`, `Nobility`, `Campaign.Daily/Speed`, `CampaignBattle`, `Duels`, `Talk.Greeting`, plus saved `CaptainState.Road` -> `BattleOptions.CaptainRoad` combat signatures.
-- **PF3** built: `NamedSpec` carries `Armed`, `Banner`, `Battles` into battle (scaling HP/damage, Armed +4 armour/+15% dmg/+12% HP, company morale & `BattleUrge` steadiness); stronger `nature_*` effects & `NatureWeight = 0.05`; `SergeantPickDays = 5`; lower free town cohesion cap (`12`, `18` with Merry); active Division officers boost wing combat (+5%), discipline (`TemperOf -0.12`), and morale reach.
+- **PF2** built: recurring origin hooks across `Rites`, `Oath`, `Smith`, `Goods`, `Ships`, `Fiefs`, `Nobility`, `SiegeWorks` (`sapper`), `Ground` (`poacher`/`marcher`/`outlaw`/`deserter` scouting), `Roll` (`drillmaster`/`camp`/`sellsword` faster named-man rising), `Characters` (`highborn`/`disinherited` house memory), `Campaign.Daily/Weekly/Speed` (`steward` upkeep drag, `camp`/`drillmaster`/`sellsword` camp cohesion, `poacher`/`marcher`/`yeoman` foraging), `CampaignBattle` (`surgeon` survival, `sellsword` bounties), `Duels`, `Talk.Greeting` (lords + companions + Road) & `SettlementWelcome`, plus saved `CaptainState.Road` -> `BattleOptions.CaptainRoad` combat signatures.
+- **PF3** built: `NamedSpec` carries `Armed`, `Banner`, `Battles` into battle (scaling HP/damage, Armed +4 armour/+15% dmg/+12% HP, company morale, `BattleDrill` named/sergeant/banner bonus vs raw unled brittleness, & `BattleUrge` steadiness); stronger `nature_*` effects & `NatureWeight = 0.05`; `SergeantPickDays = 5`; `Arm` (+2) and 3rd `Mention` (+3) lift company cohesion & dampen post-battle cohesion loss; lower free town cohesion cap (`12`, `18` with Merry); active Division officers boost wing combat (+5%), discipline (`TemperOf -0.12`), and morale reach — and **Distinguished** divisions (Companion or `"of the banner"` Sergeant) add extra wing drill (+0.04), 25% faster `Reaction`, wider/stronger morale aura, and higher `CommandOf`/`DivisionEdge`.
 - **PF4** built: stronger `bless_rite`, higher `TideWeight = 0.75`, stronger pre-battle `Duels` (`DuelMorale = 20`, `DuelRenown = 15`, `DuelEdge = 1.15`) and `tourney`/`hedge_knight` duel leverage; `cloister`/`pilgrim` Day-1 Faith Camp Rites.
-- **PF5** partial: `TrainTab` now surfaces stat/role promotion jumps and `Inventory` shows discounted Smith prices; full `--tiers` / `--pacing` / `--realms` balance pass remains next.
+- **PF5** built: `TrainTab` surfaces stat/role promotion jumps, `Inventory` shows discounted Smith prices, `ContractTab` shows `SettlementWelcome` and accurate `35% / 85%` pay copy; tuned mid/late gold sinks (`ContractPayRate` tapers to `VassalContractPay = 0.45` and `LordContractPay = 0.25` once landed, `WageCurve = 0.72`, `FeastPerMan = 8`) and career pacing (`VassalRenown = 150`, `LordRenown = 480`, `MarshalRenown = 750`). Verified with `--kit`, `--tiers 3` (100% wins across all 370 Tier I–VI links, 96–100% at equal places, 75–85% at equal upkeep), `--realms 4` (max share 38%, 0 snowball flags), `--balance 4`, and `--pacing 4` (Vassal days 44–54, Lord days 101–125, Marshal days 162–218, all seeds reaching Tier V).
 
-### Handoff Notes (leaving off 2026-11-23)
+### Remaining Follow-ups (2026-11-23)
 
-**Design philosophy locked in with owner:**
-- **Zero new mechanics for their own sake** — every change couples existing systems (Camp, Named Men/Roll/Natures/Sergeants/Cairns, Arcane Rites/Circles/Wells, Knight Orders/Aura/Black Flame, Training Yards/Barracks, Smithing, Duels, Divisions, Homeland/Origins) into the progression loop so players have a concrete reason to engage with them.
-- **Total War scale, NOT Mount & Blade caps** — keep generous `CompanySlots` and `MenLimit`. Friction comes from economy/upkeep (`FreeContractPay` until earned `SwornSword`), recruitment & training infrastructure (`CampTier = 2`, `CastleYardTier = 4`, `NobleRenown = 140`), company cohesion/command, and tactical counters.
-- **Homeland != Sworn Sword** — picking a faction in the creator sets `Captain.Homeland` (warm lord standing + 15% village recruit discount + homeland palette) while starting independent (`Contract = -1`, no Day-1 85% payroll).
-- **Named men directly affect battles** — veterancy, `Armed` gear, `OfBanner` mentions, `nature_*` effects, and Division officers all tangibly move HP, damage, armour, morale, and `BattleUrge` steadiness.
-
-**What to do next on the other device:**
-1. **Finish PF5 balance & verification:**
-   - Run `dotnet run -c Release --no-build -- --tiers 3`, `--pacing 4`, `--balance 4`, and `--realms 4` to check opening climb (Days 1–20 without levies), tier jump clarity across Tiers I–VI, and mid/late gold sinks (upkeep, horses, Smith marks, Camp Rites/Feasts, Fief works).
-   - Check `MapScreen.Town` / `MapScreen.Party` / `MapScreen.Camp` UI shots (`IRONFIELD_TOWN_ONLY=1`, `IRONFIELD_CAMP_ONLY=1`) to verify the new `TrainTab` stat-jump lines and `Inventory` Smith discount labels don't overflow.
+1. **UI screenshot check on desktop:** Capture `IRONFIELD_TOWN_ONLY=1` and `IRONFIELD_CAMP_ONLY=1` (headless `xvfb-run` is not installed on this machine) to visually verify `TrainTab`, `ContractTab`, `Inventory` Smith prices, and `overflow.txt`.
 2. **Optional polish on PF2/PF4:**
    - Expand single `day>=14` origin events into 2–3 beat personal arcs once `EVENTS.md` storylets are underway.
    - Audit enemy Court Mages / Order Champions in mid/late battles to ensure `bless_rite`, Wells (`TideWeight = 0.75`), Circle counterplay, and Duels feel decisive without making mundane generals unviable.
-3. **Note on pre-existing `demo-sprint` test failures (unrelated to PF1–PF4):**
-   - Full `--selftest` had 7 pre-existing failures from earlier dirty changes on `demo-sprint`: `TroopTree` (longbowmen/yurt_guards), `UrgeLunges`, `Sites`, `Roads`, `FormsWork`, `SaveMidRun` (`NextItemId` mismatch on load), and `LordArmies`. All PF1–PF4 targeted tests pass.
+3. **Pre-existing `demo-sprint` test failures (unrelated to PF1–PF5):**
+   - Full `--selftest` had 7 pre-existing failures from earlier dirty changes on `demo-sprint`: `TroopTree` (longbowmen/yurt_guards), `UrgeLunges`, `Sites`, `Roads`, `FormsWork`, `SaveMidRun` (`NextItemId` mismatch on load), and `LordArmies`. All PF1–PF5 targeted tests pass.
 
 ## Phases
 

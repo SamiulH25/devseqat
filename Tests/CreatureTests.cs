@@ -451,7 +451,7 @@ public static partial class SelfTest
         Check(thralls.Name == "Goblin Thralls" && thralls.Troop == "goblin" && thralls.Cohesion == 0 && thralls.Type.Has("craven"), "as a company of goblin thralls, cowardly and loveless");
 
         // A kennel in your fief breeds hounds that join you as a pack.
-        var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town);
+        var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && !c.Refuses(s));
         var other = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s != town);
         Check(c.RaiseHounds(town, 3) != null, "no kennel, no hounds");
         town.Owner = c.Player.Id;
@@ -619,5 +619,68 @@ public static partial class SelfTest
             if (day % 10 == 0)
                 Console.WriteLine($"day {day}: graves {c.S.Graves.Count}, hosts {string.Join(", ", c.UndeadHosts.Select(h => $"{h.Name} {h.Men}"))}; risen so far {seen.Count}");
         }
+    }
+
+    /// WI1-WI2: province wildness rises with lairs, feeds unrest, cuts on clearing, persists in saves; lairs grow up
+    /// through warren/hold, spider brood/webbed wood (slowing travel), and barrows.
+    static void WildnessAndLairs()
+    {
+        var c = Campaign.New(81);
+        var lair = c.Holdouts.First();
+        var prov = c.Map.ProvinceAt(lair.Pos);
+        float w0 = c.WildnessOf(prov.Id);
+        for (int i = 0; i < 15; i++) c.WildnessDaily();
+        float w1 = c.WildnessOf(prov.Id);
+        Check(w1 > w0 + 5, $"lair raises province wildness ({w0:0.0} -> {w1:0.0})");
+        var saved = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        Check(MathF.Abs(saved.WildnessOf(prov.Id) - w1) < 0.01f, "province wildness survives save/load");
+        // Clearing cuts wildness at once.
+        c.OnMonsterCleared(lair);
+        Check(c.WildnessOf(prov.Id) < w1 - 10, $"clearing lair cuts wildness ({w1:0.0} -> {c.WildnessOf(prov.Id):0.0})");
+        // High wildness raises fief unrest.
+        var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && !c.Refuses(s));
+        c.S.Provinces[town.Province].Wildness = 80;
+        Check(c.UnrestDrift(town).Why.Any(w => w.Contains("WILDNESS")), "high wildness adds unrest drift");
+        Check(c.RoadClosedByWild(town.Province), "overrun province closes roads to caravans");
+        // Goblin holdout grows to Warren (stage 1) and Hold (stage 2).
+        lair.Companies[0].Stacks[0].Men = c.Scaled(Balance.Get().HoldoutMaxMen);
+        lair.Tier = 4;
+        c.LairsGrowDaily();
+        Check(lair.Stage == 1 && lair.Name.Contains("Warren"), $"holdout grows into Warren ({lair.Name})");
+        c.LairsGrowDaily();
+        Check(lair.Stage == 2 && lair.Name.Contains("Hold"), $"warren grows into Hold ({lair.Name})");
+        // Spider nest grows to Stage 2 webbed wood and slows travel.
+        var nest = c.Nests.FirstOrDefault() ?? (c.SpawnNest() ? c.Nests.First() : null);
+        if (nest != null)
+        {
+            var nProv = c.Map.ProvinceAt(nest.Pos);
+            nest.Companies[0].Stacks[0].Men = c.Scaled(Balance.Get().NestMaxMen);
+            c.Player.Pos = nest.Pos;
+            float fast = c.Speed(c.Player);
+            c.LairsGrowDaily();
+            c.LairsGrowDaily();
+            Check(nest.Stage == 2 && c.IsProvinceWebbed(nProv.Id), "spider nest grows into stage 2 webbed wood");
+            Check(c.Speed(c.Player) < fast * 0.8f, "webbed province slows travel");
+        }
+        // Barrow raised from grave field.
+        var barrow = c.RaiseBarrow(new Grave { Id = 999, Pos = prov.Center, Dead = 200, Hours = 0 });
+        Check(barrow.Lair && barrow.Breed == "undead" && barrow.Stage == 2 && Campaign.LairStageWord(barrow) == "BARROW", "grave field rises as a barrow lair");
+
+        // WI3: monster spoils, wild smith marks, order standing on undead, and aura breakthrough on great beasts.
+        Check(Campaign.GoodsFrom(Troops.Get("troll")) == "troll_hide" && Campaign.GoodsFrom(Troops.Get("wyvern")) == "wyvern_sting"
+            && Campaign.GoodsFrom(Troops.Get("spider")) == "spider_silk" && Campaign.GoodsFrom(Troops.Get("skeleton")) == "grave_dust", "monsters drop their own spoils");
+        c.Player.Pos = town.Pos;
+        c.S.Gold = 5000;
+        var fineBlade = new GearItem { Id = c.S.NextItemId++, Def = "arming_sword", Quality = ItemQuality.Fine };
+        c.Captain.Baggage.Add(fineBlade);
+        c.S.Goods.Remove("wyvern_sting");
+        Check(c.CannotRemark(fineBlade, "sting_edged")!.Contains("WYVERN STING"), "wild smith mark requires its monster spoil");
+        c.S.Goods["wyvern_sting"] = 1;
+        Check(c.Remark(fineBlade, "sting_edged") == null && fineBlade.Marks.Contains("sting_edged") && !c.S.Goods.ContainsKey("wyvern_sting"), "wild smith mark consumes spoil and applies mark");
+        c.Captain.AuraTier = 1;
+        c.Captain.AuraWall = true;
+        var troll = new Party { Kind = PartyKind.Monster, Breed = "troll", Name = "Old Jaw", Pos = prov.Center };
+        c.OnMonsterCleared(troll, playerWon: true);
+        Check(!c.Captain.AuraWall && c.Captain.AuraTier == 2, "slaying a great beast breaks an aura wall");
     }
 }

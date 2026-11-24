@@ -136,6 +136,8 @@ public sealed class Division
     /// His nature (SG7): officer traits of his company, or the spec's.
     public string[] Traits = Array.Empty<string>();
     public bool Has(string trait) => Array.IndexOf(Traits, trait) >= 0;
+    /// True when led by a Companion or an "of the banner" Sergeant (PF3): stronger wing drill, morale & order speed.
+    public bool Distinguished;
 }
 
 /// Battle: divisions (docs/archive/COMBAT_OVERHAUL.md 1.3-1.4, docs/archive/OFFICERS.md). Each officer looks again every half second or
@@ -178,6 +180,8 @@ public partial class Battle
             var d = AddDivision(team, spec.Name, squads, temper, spec.Skill + (traits.Contains("Veteran") ? 1 : 0), null, hero);
             d.SpecId = spec.Id;
             d.Traits = traits;
+            d.Distinguished = spec.Distinguished || (d.Leader?.Hero == true);
+            if (d.Distinguished) foreach (var s in squads) if (!s.Swarm) s.Drill = MathF.Min(1, s.Drill + 0.04f); // Companion or banner sergeant raises wing drill (PF3)
             if (d.Has("Drillmaster")) foreach (var s in squads) if (!s.Swarm) s.Drill = MathF.Min(1, s.Drill + d.Skill * 0.01f); // he drills them twice as hard
             d.Goal = Ironfield.Goal.FromName(spec.Goal);
         }

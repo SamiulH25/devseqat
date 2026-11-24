@@ -12,8 +12,8 @@ public partial class Battle
     /// How far behind its place a spent company is pulled back to rest.
     public const float RestBack = 15;
 
-    /// Seconds between his looks: about 2 s at skill 0, 0.4 s at 10.
-    public static float Reaction(Division d) => 2f - 0.16f * d.Skill;
+    /// Seconds between his looks: about 2 s at skill 0, 0.4 s at 10 (25% faster under a Companion or banner sergeant, PF3).
+    public static float Reaction(Division d) => (2f - 0.16f * d.Skill) * (d.Distinguished && d.Leader is { Active: true } ? 0.75f : 1);
 
     /// How far out he sees horse coming or a foe rounding the line's end: 15 m at skill 0, 55 m at 10.
     public static float Notice(Division d) => 15 + 4 * d.Skill;
