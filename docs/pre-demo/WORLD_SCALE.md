@@ -193,6 +193,10 @@ Zoom bands: local (as now), regional (a province or two, places as models), stra
 main view: banners, borders, armies as counters). Labels, cards and the encounter ring keep their screen size. Sight
 (`Vision`) and encounter radii stay in units (a man sees as far as he did), so the land feels larger, not emptier at once.
 
+**As built (2026-11-24), the close end.** `WorldMap.CloseZoom` (10 on the draft, 25 elsewhere) is the wheel's near
+clamp in `MapScreen`; the near plane already follows the zoom. Shot `campaign-near.png` (map-only shots) is the camera at
+its closest on your company. Still open: the regional and strategic bands, labels and ring at screen size.
+
 ### WS6: Time and travel feel
 `HourSeconds` to about 1.0 (2 real minutes town to town); speed-ups up to 8x or 16x; a march that auto-pauses on what
 matters (a party in sight, arrival, an event, hunger). Forced march (faster, tiring), and camps at night as the C5 camp.

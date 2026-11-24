@@ -694,9 +694,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/WorldLand.cs (136 lines)
 - **WorldMap** (class, L8): LayFields:12, BitCount:71, FieldClear:74, InField:105, GrowStands:110
 
-## Campaign/WorldMap.cs (737 lines)
-- **WorldMap** (class, L8): InLand:82, WorldMap:94, readonly:106, Generate:110, Climate:227, RaiseRidges:241, AddRidge:272, RidgeDist:284, RidgeHeight:287, OnRidge:305, HomeOf:308, ReachOf:310, GrowRealms:315, SiteKindsFor:357, PlaceSites:361, Cross:386, RiverDist:395, RiverScan:396, ProvinceAt:400, ProvinceScan:403, RoadDist:416, NearRoad:418, RoadScan:420, SpeedFactor:433, BattleGround:438, Height:459, LandHeight:472, DesignedHeight:496, RimAt:521, Ridged:523, Tint:526, OwnColour:570, NearSea:573, KindTint:581, BuildTerrain:596
-- **PlaceNamer** (class, L711): PlaceNamer:718, Pool:720, Next:726
+## Campaign/WorldMap.cs (739 lines)
+- **WorldMap** (class, L8): InLand:84, WorldMap:96, readonly:108, Generate:112, Climate:229, RaiseRidges:243, AddRidge:274, RidgeDist:286, RidgeHeight:289, OnRidge:307, HomeOf:310, ReachOf:312, GrowRealms:317, SiteKindsFor:359, PlaceSites:363, Cross:388, RiverDist:397, RiverScan:398, ProvinceAt:402, ProvinceScan:405, RoadDist:418, NearRoad:420, RoadScan:422, SpeedFactor:435, BattleGround:440, Height:461, LandHeight:474, DesignedHeight:498, RimAt:523, Ridged:525, Tint:528, OwnColour:572, NearSea:575, KindTint:583, BuildTerrain:598
+- **PlaceNamer** (class, L713): PlaceNamer:720, Pool:722, Next:728
 
 ## Campaign/WorldRelief.cs (244 lines)
 - **WorldMap** (class, L10): CliffLine:13, UplandArea:15, CliffReach:23, SkirtOf:25, DesignRelief:27, Bound:43, Ragged:52, Unit01:57, Relief:60, CliffLift:87, Taper:97, Climb:105, OnCliff:119, FaceGap:133, BuildFaces:143, FaceGapExact:177, CrossesCliff:191, InsideDistance:230
@@ -876,7 +876,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Castle.cs (58 lines)
 - **MapScreen** (class, L6): MusterTab:8
 
-## MapScreen.cs (1213 lines)
+## MapScreen.cs (1216 lines)
 - **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:99, Prepared:114, Prepare:119, PlaceStateOf:128, Open:152, ShowResults:176, Pressed:184, Update:188, readonly:293, LaterTips:307, Pan:331, ScreenKeys:333, OpenScreen:341, Soundscape:352, CameFrom:446, Camera:448, Rename:472, Trails:485, MapPick:498, OnScreen:504, PickAt:519, ClickWorld:550, Ground:559, Draw:573, UpdateBearers:733, FinishLife:790, UpdateLife:797, BuildSprites:831, BuildSpritesInner:838, BuildUnits3D:845, DrawUnits3D:869, DrawSprites:880, Surface:893, G:895, DrawLines:897, MapWeather:956, DrawMapAmbience:979, Stage:1042
 
 ## MapScreen.Dialogs.cs (241 lines)

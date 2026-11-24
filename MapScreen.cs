@@ -465,7 +465,7 @@ sealed partial class MapScreen
             pitch = Math.Clamp(pitch + (ms.Y - pms.Y) * 0.006f, 0.35f, 1.45f);
         }
         // The map is much bigger than a battlefield: the camera pulls back far enough to see a province and its neighbours.
-        zoom = Math.Clamp(zoom - (ms.ScrollWheelValue - pms.ScrollWheelValue) * 0.08f, 25, 620);
+        zoom = Math.Clamp(zoom - (ms.ScrollWheelValue - pms.ScrollWheelValue) * 0.08f, C.Map.CloseZoom, 620);
     }
 
     /// Typing a company's new name: Enter keeps it, Escape drops it.
@@ -1087,6 +1087,9 @@ sealed partial class MapScreen
             case "farm": // the fields round a village (WL3)
                 panel = PanelKind.None; follow = false; zoom = 95; pitch = 0.85f;
                 focus = C.S.Settlements.Where(s => s.Kind == SettlementKind.Village).OrderBy(s => Vector2.Distance(s.Pos, C.Player.Pos)).First().Pos;
+                break;
+            case "near": // the camera as close as it comes, on your company (docs/pre-demo/WORLD_SCALE.md WS5)
+                panel = PanelKind.None; follow = false; zoom = C.Map.CloseZoom; pitch = 0.7f; focus = C.Player.Pos;
                 break;
             case "holds": // the nearest tower house to the player (docs/archive/HOLDS.md HD5)
                 panel = PanelKind.None; follow = false; zoom = 70; pitch = 0.72f;

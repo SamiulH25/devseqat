@@ -62,6 +62,8 @@ public sealed partial class WorldMap
     /// Real seconds a game hour lasts against `Balance.HourSeconds` (WS6): 1.5 on the draft, so a march on foot from a town to
     /// the nearest town (median ~160 game hours by the way the planner takes) takes about two minutes at normal speed
     /// (test `MarchTakesMinutes`); the speed-ups (3x, 8x) shorten it.
+    /// How close the map's camera may come: 10 on the draft, where riders and places are drawn smaller (WS5), 25 elsewhere.
+    public float CloseZoom => Layout >= DraftLayout ? 10 : 25;
     public float HourScale => Layout >= DraftLayout ? 1.5f : 1;
     /// The draft's warp (1 on every other map): its land is warp x warp times the drawn world's with the same places on it.
     float drawnWarp = 1;
