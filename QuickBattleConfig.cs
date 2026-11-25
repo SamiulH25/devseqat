@@ -54,6 +54,24 @@ public sealed class QuickBattleConfig
     public int Trebuchets;
     public int Springalds;
 
+    // Duel Arena settings (used when Mode == QuickBattleMode.Duel)
+    /// Total fighters on your side including the player (1 = solo, 2 = player + 1 ally, etc.).
+    public int DuelAllies = 1;
+    /// Total fighters on the enemy side (1 = 1v1, 2 = 1v2, 3 = 1v3, etc.).
+    public int DuelEnemies = 1;
+    /// Optional explicit troop id for allied duelists ("" = auto melee troop for Player.Faction & Player.Tier).
+    public string DuelAllyTroop = "";
+    /// Optional explicit troop id for enemy duelists ("" = auto melee troop for Enemy.Faction & Enemy.Tier).
+    public string DuelEnemyTroop = "";
+    /// Fight on horseback instead of on foot.
+    public bool DuelMounted;
+
+    public static readonly (string Label, int Allies, int Enemies)[] DuelMatchups =
+    {
+        ("1V1", 1, 1), ("1V2", 1, 2), ("1V3", 1, 3), ("1V4", 1, 4),
+        ("2V2", 2, 2), ("2V3", 2, 3), ("3V3", 3, 3),
+    };
+
     // Weather & time
     public float Hour = 13f;
     /// 0 Clear, 1 Rain, 2 Storm, 3 Fog, 4 Snow.
@@ -143,7 +161,8 @@ public sealed class QuickBattleConfig
                 break;
             case "DUEL":
                 c.Mode = QuickBattleMode.Duel; c.Ground = "Lists"; c.Layout = FieldLayout.Open;
-                c.Player.Faction = 0; c.Enemy.Faction = 1; c.Player.Men = 30; c.Enemy.Men = 30;
+                c.Player.Faction = 0; c.Enemy.Faction = 1; c.Player.Tier = 3; c.Enemy.Tier = 3;
+                c.DuelAllies = 1; c.DuelEnemies = 1;
                 break;
             default:
                 c.Ground = "Meadow"; c.Layout = FieldLayout.Open;
@@ -151,6 +170,52 @@ public sealed class QuickBattleConfig
                 break;
         }
         return c;
+    }
+
+    /// Build a Duel Arena config for an explicit matchup (e.g. 1v1, 1v2, 1v3, 2v2).
+    public static QuickBattleConfig FromDuel(int allies, int enemies, bool mounted = false, int seed = 777)
+    {
+        var c = FromPreset("DUEL", seed);
+        c.DuelAllies = Math.Clamp(allies, 1, 5);
+        c.DuelEnemies = Math.Clamp(enemies, 1, 6);
+        c.DuelMounted = mounted;
+        if (mounted) c.Road = "lance";
+        return c;
+    }
+
+    /// Parse IRONFIELD_DUEL env spec: "1v3", "2v2", "1v2:mounted", etc. Returns null for "setup" or invalid.
+    public static QuickBattleConfig? ParseDuelEnv(string spec)
+    {
+        var parts = spec.Trim().ToLowerInvariant().Split(':', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0 || parts[0] == "setup") return null;
+        var nums = parts[0].Split('v');
+        if (nums.Length != 2 || !int.TryParse(nums[0], out int a) || !int.TryParse(nums[1], out int e)) return null;
+        bool mounted = parts.Any(p => p is "mounted" or "horse");
+        var cfg = FromDuel(a, e, mounted);
+        foreach (var p in parts.Skip(1))
+            if (Troops.Has(p)) cfg.DuelEnemyTroop = p;
+            else if (Roads.Contains(p)) cfg.Road = p;
+        return cfg;
+    }
+
+    /// Pick a default melee fighter troop id for a faction and tier in Duel Arena.
+    public static string PickDuelTroop(int faction, int tier)
+    {
+        tier = Math.Clamp(tier, 1, Troops.MaxTier);
+        if (faction == -2)
+        {
+            var pool = Troops.All.Where(t => (t.Wild || t.Culture == "wild") && t.Id != "captain")
+                .OrderBy(t => Math.Abs(t.Tier - tier)).ToList();
+            return pool.Count > 0 ? pool[0].Id : "troll";
+        }
+        if (faction == -1)
+        {
+            var band = Troops.All.Where(t => t.Culture == "bandit" && t.Class != UnitClass.Archer)
+                .OrderBy(t => Math.Abs(t.Tier - tier)).ToList();
+            return band.Count > 0 ? band[0].Id : "levies";
+        }
+        int f = Math.Clamp(faction, 0, Factions.All.Count - 1);
+        return Factions.Line(f, "infantry", tier);
     }
 
     public static string FactionName(int faction) => faction switch
@@ -293,14 +358,33 @@ public sealed class QuickBattleConfig
     public (int Seed, ArmySpec Player, ArmySpec Enemy, BattleOptions Options) Build()
     {
         var rng = new Random(Seed);
-        var pArmy = BuildArmy(Player, 0, rng);
-        var eArmy = BuildArmy(Enemy, 1, rng);
+        bool siege = Mode == QuickBattleMode.Siege;
+        bool duel = Mode == QuickBattleMode.Duel;
+
+        UnitType? duelEnemyLeader = null;
+        ArmySpec pArmy, eArmy;
+        if (duel)
+        {
+            int allies = Math.Clamp(DuelAllies, 1, 5);
+            int enemies = Math.Clamp(DuelEnemies, 1, 6);
+            string allyId = DuelAllyTroop != "" && Troops.Has(DuelAllyTroop) ? DuelAllyTroop : PickDuelTroop(Player.Faction, Player.Tier);
+            string enemyId = DuelEnemyTroop != "" && Troops.Has(DuelEnemyTroop) ? DuelEnemyTroop : PickDuelTroop(Enemy.Faction, Enemy.Tier);
+            duelEnemyLeader = Troops.Get(enemyId);
+            var pComps = new List<Company>();
+            if (allies > 1) pComps.Add(new Company(allyId, allies - 1, Rules.TroopRole(allyId), 1001));
+            var eComps = new List<Company>();
+            if (enemies > 1) eComps.Add(new Company(enemyId, enemies - 1, Rules.TroopRole(enemyId), 2001));
+            pArmy = new ArmySpec(FactionName(Player.Faction), Player.Tier, pComps);
+            eArmy = new ArmySpec($"{allies}V{enemies} {duelEnemyLeader.Name.ToUpperInvariant()}", Enemy.Tier, eComps);
+        }
+        else
+        {
+            pArmy = BuildArmy(Player, 0, rng);
+            eArmy = BuildArmy(Enemy, 1, rng);
+        }
 
         int pPal = PaletteOf(Player.Faction), ePal = PaletteOf(Enemy.Faction);
         if (pPal == ePal) ePal = pPal == 1 ? 0 : 1; // keep sides readable if same faction is pitted against itself
-
-        bool siege = Mode == QuickBattleMode.Siege;
-        bool duel = Mode == QuickBattleMode.Duel;
         var baseGround = TerrainParams.Named(Ground) ?? TerrainParams.Meadow;
         string defStyle = CultureOf(Enemy.Faction);
         var ground = baseGround with
@@ -365,6 +449,8 @@ public sealed class QuickBattleConfig
             WallEngines = Math.Clamp(WallEngines, 0, 4),
             Engines = engines,
             Duel = duel,
+            DuelMounted = duel && DuelMounted,
+            EnemyLeader = duel ? duelEnemyLeader : null,
             AutoPlayer = AutoPlayer,
             Scouted = Scouted,
             AuraTier = Math.Clamp(AuraTier, 0, 5),

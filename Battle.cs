@@ -123,15 +123,36 @@ public sealed partial class Battle
         DrawGoals(seed);
     }
 
-    /// Single combat (P2): the two leaders face each other on foot a few paces apart.
+    /// Single or multi-fighter duel (P2 / Battle Lab): fighters face each other a few paces apart and charge immediately.
     void SetupDuel()
     {
-        Player.Horse = null;
-        Player.Pos = new Vector2(0, -5);
-        EnemyCaptain.Horse = null;
-        EnemyCaptain.Pos = new Vector2(0, 5);
-        EnemyCaptain.Face(Player.Pos - EnemyCaptain.Pos);
-        eGuard.Order = Order.Charge;
+        float dist = Options.DuelMounted ? 11f : 5f;
+        float step = Options.DuelMounted ? 3.2f : 2.2f;
+        void Place(int team, Unit leader, float y, Vector2 face)
+        {
+            var others = Units.Where(u => u.Team == team && u != leader).ToList();
+            var line = new List<Unit>(others.Count + 1);
+            int mid = others.Count / 2;
+            for (int i = 0; i < mid; i++) line.Add(others[i]);
+            line.Add(leader);
+            for (int i = mid; i < others.Count; i++) line.Add(others[i]);
+            float x0 = -(line.Count - 1) * step * 0.5f;
+            for (int i = 0; i < line.Count; i++)
+            {
+                var u = line[i];
+                if (Options.DuelMounted)
+                {
+                    if (u.Horse == null) { var m = u.Type.Mount ?? Mount.Courser; u.Horse = m; u.HorseHp = m.Hp; }
+                }
+                else { u.Horse = null; u.HorseHp = 0; }
+                u.Pos = new Vector2(x0 + i * step, y);
+                u.Face(face);
+                u.Morale = 100;
+            }
+            foreach (var s in SquadsOf(team)) { s.Order = Order.Charge; s.Anchor = new Vector2(0, y); s.Front = face; }
+        }
+        Place(0, Player, -dist, new Vector2(0, 1));
+        Place(1, EnemyCaptain, dist, new Vector2(0, -1));
     }
 
     List<Squad> Role(int team, string role) => roles[team].TryGetValue(role, out var l) ? l : roles[team][role] = new List<Squad>();

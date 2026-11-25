@@ -95,6 +95,8 @@ public sealed class BattleOptions
     public bool Tournament;
     /// Single combat before a battle (P2): you on foot against the enemy leader, nobody else; a fall is a yield, not a death.
     public bool Duel;
+    /// Keep mounts in a duel (for mounted combat / couched lance testing in Battle Lab).
+    public bool DuelMounted;
     /// The enemy leader's own type (a lord's champion in a duel); null = the plain captain.
     public UnitType? EnemyLeader;
     /// Added to every enemy man's morale at the start (a duel lost by his lord: -15).

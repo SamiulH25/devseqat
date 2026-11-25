@@ -176,6 +176,11 @@ sealed class ScreenHost : Game
         title = new TitleScreen(this);
         if (battle.HasShots) mode = Mode.Battle;
         if (campaignShots != null) StartCampaign(3);
+        if (Environment.GetEnvironmentVariable("IRONFIELD_DUEL") is { Length: > 0 } duelSpec)
+        {
+            if (QuickBattleConfig.ParseDuelEnv(duelSpec) is { } dcfg) QuickBattle(dcfg);
+            else OpenQuickBattle(QuickBattleConfig.FromPreset("DUEL"));
+        }
     }
 
     // ---------- modes ----------

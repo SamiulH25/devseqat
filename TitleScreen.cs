@@ -287,7 +287,9 @@ sealed partial class TitleScreen
         else if (shotStep == 1 && shotFrames == 4) { PendingShot = "qb-siege"; shotStep = 2; shotFrames = 0; }
         else if (shotStep == 2 && shotFrames == 1) { quickBattle.C = QuickBattleConfig.FromPreset("ARCANA"); quickBattle.C.Player.Custom = true; }
         else if (shotStep == 2 && shotFrames == 4) { PendingShot = "qb-custom"; shotStep = 3; shotFrames = 0; }
-        else if (shotStep >= 3) host.Exit();
+        else if (shotStep == 3 && shotFrames == 1) quickBattle.C = QuickBattleConfig.FromDuel(1, 3);
+        else if (shotStep == 3 && shotFrames == 4) { PendingShot = "qb-duel"; shotStep = 4; shotFrames = 0; }
+        else if (shotStep >= 4) host.Exit();
     }
 
     /// The creator's steps one by one as PNGs (IRONFIELD_CREATOR_SHOTS), with a made-up captain, then quit.

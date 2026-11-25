@@ -79,9 +79,10 @@ sealed class QuickBattleScreen
         var mid = new Rectangle(left.Right + U(10), bodyY, midW, bodyH);
         var right = new Rectangle(mid.Right + U(10), bodyY, sideW, bodyH);
 
-        DrawSide(left, C.Player, 0, "YOUR ARMY (TEAM 0)", wheel);
+        bool duel = C.Mode == QuickBattleMode.Duel;
+        DrawSide(left, C.Player, 0, duel ? "YOUR SIDE (TEAM 0)" : "YOUR ARMY (TEAM 0)", wheel);
         DrawCenter(mid);
-        DrawSide(right, C.Enemy, 1, "ENEMY ARMY (TEAM 1)", wheel);
+        DrawSide(right, C.Enemy, 1, duel ? "OPPONENTS (TEAM 1)" : "ENEMY ARMY (TEAM 1)", wheel);
         DrawFooter(new Rectangle(margin, ui.H - footH - U(10), pw, footH));
 
         if (pickerSide >= 0) DrawTroopPicker(wheel);
@@ -107,6 +108,12 @@ sealed class QuickBattleScreen
             C.Preset = "CUSTOM";
         }
         y += U(26);
+
+        if (C.Mode == QuickBattleMode.Duel)
+        {
+            DrawDuelSide(x, y, w, inner.Bottom, s, side, pal, block);
+            return;
+        }
 
         // Mode toggle: FACTION HOST vs CUSTOM COMPANIES
         int hw = (w - U(6)) / 2;
@@ -196,6 +203,65 @@ sealed class QuickBattleScreen
         }
     }
 
+    void DrawDuelSide(int x, int y, int w, int bottom, QuickSideConfig s, int side, int pal, bool block)
+    {
+        int count = side == 0 ? C.DuelAllies : C.DuelEnemies;
+        string summary = side == 0
+            ? (count <= 1 ? "1 FIGHTER: YOU ALONE" : $"{count} FIGHTERS: YOU + {count - 1} ALLY{(count > 2 ? "S" : "")}")
+            : $"{count} OPPONENT{(count > 1 ? "S" : "")}";
+        ui.Text(summary, x, y + U(2), Kit.Gilt, 1);
+        y += U(18);
+
+        s.Tier = NumStepper(x, y, w, "FIGHTER TIER", s.Tier, 1, 6, 1, block);
+        y += U(26);
+
+        string chosenId = side == 0 ? C.DuelAllyTroop : C.DuelEnemyTroop;
+        bool isAuto = chosenId == "" || !Troops.Has(chosenId);
+        string resolvedId = isAuto ? QuickBattleConfig.PickDuelTroop(s.Faction, s.Tier) : chosenId;
+        var troop = Troops.Get(resolvedId);
+
+        string roleLabel = side == 0
+            ? (count <= 1 ? "ALLY FIGHTER (AT 2+)" : "ALLY FIGHTER")
+            : "OPPONENT FIGHTER";
+        ui.Text(roleLabel, x, y, Style.Dim, 1);
+        y += U(14);
+
+        var card = new Rectangle(x, y, w, U(56));
+        ui.Rect(card, Color.Black * 0.32f);
+        ui.Frame(card, Style.PanelEdge, U(1));
+        var port = new Rectangle(card.X + U(6), card.Y + U(6), U(44), U(44));
+        ui.Portrait(troop, port, Math.Max(1, port.Height / U(32)) * ui.S, palette: pal);
+        int tx = port.Right + U(8), tw = card.Right - tx - U(6);
+        ui.TextFit(troop.Name.ToUpperInvariant(), tx, card.Y + U(8), tw, Style.Text, 1);
+        ui.TextFit($"T{troop.Tier} {troop.Class.ToString().ToUpperInvariant()} . HP {troop.MaxHp:0} . DMG {troop.Damage:0}", tx, card.Y + U(22), tw, Kit.Gilt, 1);
+        ui.TextFit(isAuto ? "AUTO BY FACTION / TIER" : "CUSTOM PICKED FIGHTER", tx, card.Y + U(36), tw, Style.Dim, 1);
+        y += U(64);
+
+        int btnW = (w - U(6)) / 2;
+        if (ui.Button(new Rectangle(x, y, btnW, U(22)), "PICK FIGHTER") && !block) { pickerSide = side; pickerScroll = 0; }
+        if (ui.Button(new Rectangle(x + btnW + U(6), y, btnW, U(22)), "AUTO BY TIER", active: isAuto) && !block)
+        {
+            if (side == 0) C.DuelAllyTroop = "";
+            else C.DuelEnemyTroop = "";
+        }
+
+        // Bottom controls pinned to the bottom of the column.
+        int by = bottom - U(side == 0 ? 54 : 32);
+        ui.Divider(x, by, w, Kit.Gilt * 0.45f); by += U(8);
+        if (side == 0)
+        {
+            int ri = Math.Max(0, Array.IndexOf(QuickBattleConfig.Roads, C.Road));
+            ri = Stepper(x, by, w, "CAPTAIN KIT", C.Road.ToUpperInvariant(), ri, QuickBattleConfig.Roads.Length, block);
+            C.Road = QuickBattleConfig.Roads[ri];
+            by += U(22);
+            C.AuraTier = NumStepper(x, by, w, "AURA TIER", C.AuraTier, 0, 5, 1, block);
+        }
+        else
+        {
+            ui.TextFit("USE ESC > NEW BATTLE FOR INSTANT REMATCH", x, by + U(4), w, Style.Dim, 1);
+        }
+    }
+
     void DrawCenter(Rectangle r)
     {
         var inner = ui.Plate(r, "BATTLEFIELD AND RULES", Kit.Gilt);
@@ -249,8 +315,30 @@ sealed class QuickBattleScreen
         }
         else
         {
-            ui.Text("1V1 SINGLE COMBAT ON FOOT", x, y + U(4), Style.Dim, 1);
+            ui.Text("DUEL MATCHUP", x, y, Kit.Gilt, 1); y += U(14);
+            // Row 1: 1V1, 1V2, 1V3, 1V4
+            int r1w = (w - U(12)) / 4;
+            for (int i = 0; i < 4; i++)
+            {
+                var (lbl, a, e) = QuickBattleConfig.DuelMatchups[i];
+                bool act = C.DuelAllies == a && C.DuelEnemies == e;
+                if (ui.Button(new Rectangle(x + i * (r1w + U(4)), y, r1w, U(20)), lbl, active: act) && !block)
+                { C.DuelAllies = a; C.DuelEnemies = e; }
+            }
             y += U(24);
+            // Row 2: 2V2, 2V3, 3V3
+            int r2w = (w - U(8)) / 3;
+            for (int i = 0; i < 3; i++)
+            {
+                var (lbl, a, e) = QuickBattleConfig.DuelMatchups[4 + i];
+                bool act = C.DuelAllies == a && C.DuelEnemies == e;
+                if (ui.Button(new Rectangle(x + i * (r2w + U(4)), y, r2w, U(20)), lbl, active: act) && !block)
+                { C.DuelAllies = a; C.DuelEnemies = e; }
+            }
+            y += U(26);
+            C.DuelAllies = NumStepper(x, y, w, "YOUR SIDE", C.DuelAllies, 1, 5, 1, block); y += U(22);
+            C.DuelEnemies = NumStepper(x, y, w, "ENEMY SIDE", C.DuelEnemies, 1, 6, 1, block); y += U(22);
+            C.DuelMounted = Toggle(x, y, w, "MOUNTED DUEL", C.DuelMounted, block); y += U(24);
         }
 
         ui.Divider(x, y, w, Kit.Gilt * 0.45f); y += U(8);
@@ -287,7 +375,10 @@ sealed class QuickBattleScreen
         int pw = Math.Min(U(720), ui.W - U(40)), ph = Math.Min(U(500), ui.H - U(40));
         var box = new Rectangle((ui.W - pw) / 2, (ui.H - ph) / 2, pw, ph);
         var sideCfg = pickerSide == 0 ? C.Player : C.Enemy;
-        var inner = ui.Plate(box, $"ADD TROOP TO {(pickerSide == 0 ? "YOUR ARMY" : "ENEMY ARMY")}", Kit.Gilt);
+        string pTitle = C.Mode == QuickBattleMode.Duel
+            ? (pickerSide == 0 ? "PICK ALLY DUELIST" : "PICK ENEMY DUELIST")
+            : $"ADD TROOP TO {(pickerSide == 0 ? "YOUR ARMY" : "ENEMY ARMY")}";
+        var inner = ui.Plate(box, pTitle, Kit.Gilt);
         int x = inner.X, w = inner.Width, y = inner.Y;
 
         int tw = (w - U(4) * (PickerTabs.Length - 1)) / PickerTabs.Length;
@@ -325,8 +416,16 @@ sealed class QuickBattleScreen
                 var cr = new Rectangle(x + c * (cw + gap), area.Y + r * (ch + gap), cw, ch);
                 if (ui.Button(cr, ""))
                 {
-                    int defCount = t.Huge ? 2 : t.Class == UnitClass.Caster ? 12 : t.Class == UnitClass.Cavalry ? 24 : 36;
-                    sideCfg.Companies.Add((t.Id, defCount));
+                    if (C.Mode == QuickBattleMode.Duel)
+                    {
+                        if (pickerSide == 0) C.DuelAllyTroop = t.Id;
+                        else C.DuelEnemyTroop = t.Id;
+                    }
+                    else
+                    {
+                        int defCount = t.Huge ? 2 : t.Class == UnitClass.Caster ? 12 : t.Class == UnitClass.Cavalry ? 24 : 36;
+                        sideCfg.Companies.Add((t.Id, defCount));
+                    }
                     pickerSide = -1;
                     return;
                 }
@@ -346,10 +445,15 @@ sealed class QuickBattleScreen
         if (ui.Gilded(new Rectangle(r.X, r.Y, U(140), r.Height), "BACK", "ESC") && !block) Open = false;
         int mid = r.Center.X;
         if (ui.Gilded(new Rectangle(mid - U(175), r.Y, U(165), r.Height), "SWAP SIDES") && !block)
+        {
             (C.Player, C.Enemy) = (C.Enemy, C.Player);
+            if (C.Mode == QuickBattleMode.Duel)
+                (C.DuelAllies, C.DuelEnemies, C.DuelAllyTroop, C.DuelEnemyTroop) = (Math.Clamp(C.DuelEnemies, 1, 5), Math.Clamp(C.DuelAllies, 1, 6), C.DuelEnemyTroop, C.DuelAllyTroop);
+        }
         if (ui.Gilded(new Rectangle(mid + U(10), r.Y, U(165), r.Height), "RANDOM SEED") && !block)
             C.Seed = Random.Shared.Next(1, 99999);
-        if (ui.Gilded(new Rectangle(r.Right - U(270), r.Y, U(270), r.Height), "LAUNCH BATTLE", "ENTER", tone: Style.Ok) && !block)
+        string launchLabel = C.Mode == QuickBattleMode.Duel ? $"LAUNCH {C.DuelAllies}V{C.DuelEnemies} DUEL" : "LAUNCH BATTLE";
+        if (ui.Gilded(new Rectangle(r.Right - U(270), r.Y, U(270), r.Height), launchLabel, "ENTER", tone: Style.Ok) && !block)
             Launch();
     }
 

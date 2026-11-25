@@ -10,6 +10,7 @@ public partial class Battle
 
     void UpdateMorale(float dt)
     {
+        if (Options.Duel) return; // duelists fight to the finish
         int all0 = 0, gone0 = 0, all1 = 0, gone1 = 0;
         bool anyRouting = false, anyFear = false, anyFastHorse = false, anyTier6 = false;
         var units = Units;

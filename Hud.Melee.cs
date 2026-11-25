@@ -49,7 +49,8 @@ sealed partial class Hud
     Unit? Opponent()
     {
         var p = B.Player;
-        if (B.Options.Duel && B.EnemyCaptain.Active) return B.EnemyCaptain;
+        int duelFoes = B.Options.Duel ? B.Units.Count(u => u.Active && u.Team != p.Team) : 0;
+        if (B.Options.Duel && duelFoes <= 1 && B.EnemyCaptain.Active) return B.EnemyCaptain;
         for (int i = B.Blows.Count - 1; i >= 0; i--)
         {
             var b = B.Blows[i];
@@ -57,12 +58,13 @@ sealed partial class Hud
         }
         Unit? best = null;
         float bestScore = float.MaxValue;
+        float maxRange = B.Options.Duel ? 18f : 5f;
         foreach (var u in B.Units)
         {
             if (!u.Active || u.Team == p.Team || u.Routing) continue;
             var to = u.Pos - p.Pos;
             float d = to.Length();
-            if (d > 5 || d < 1e-3f) continue;
+            if (d > maxRange || d < 1e-3f) continue;
             float score = d - (u.Target == p ? 2 : 0) - (Vector2.Dot(to / d, p.Dir) > 0.5f ? 1 : 0);
             if (score < bestScore) { bestScore = score; best = u; }
         }
@@ -110,9 +112,13 @@ sealed partial class Hud
         var mine = new Rectangle(W / 2 - gap / 2 - bw, y, bw, U(10));
         var his = new Rectangle(W / 2 + gap / 2, y, bw, U(10));
         Panel(new Rectangle(mine.X - U(8), y - U(16), bw * 2 + gap + U(16), U(32)), Gold);
-        TextC("SINGLE COMBAT", W / 2f, y - U(12), Gold, 1);
+        int myAlive = B.Units.Count(u => u.Active && u.Team == 0);
+        int foeAlive = B.Units.Count(u => u.Active && u.Team == 1);
+        string title = B.Units.Count <= 2 ? "SINGLE COMBAT" : $"DUEL  {myAlive}V{foeAlive}";
+        TextC(title, W / 2f, y - U(12), Gold, 1);
         Fighter(mine, B.Player, false);
-        Fighter(his, B.EnemyCaptain, true);
+        var foe = Opponent() ?? (B.EnemyCaptain.Active ? B.EnemyCaptain : B.Units.FirstOrDefault(u => u.Active && u.Team == 1) ?? B.EnemyCaptain);
+        Fighter(his, foe, true);
     }
 
     void Fighter(Rectangle r, Unit u, bool foe)

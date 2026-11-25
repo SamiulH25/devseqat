@@ -2254,5 +2254,27 @@ public static partial class SelfTest
             if (name.Contains("SIEGE") || name == "GREAT CASTLE") Check(b.Wall != null, $"{name} preset built a fortress");
         }
     }
+
+    /// Selectable Duel Arena matchups (1v1, 1v2, 1v3, 2v2, 3v3, mounted) spawn exact fighter counts in duel range and charge.
+    static void SelectableDuels()
+    {
+        foreach (var (allies, enemies, mounted) in new[] { (1, 1, false), (1, 2, false), (1, 3, false), (2, 2, false), (3, 3, false), (1, 2, true) })
+        {
+            var cfg = QuickBattleConfig.FromDuel(allies, enemies, mounted, 777);
+            var (seed, pArmy, eArmy, opts) = cfg.Build();
+            var b = new Battle(seed, pArmy, eArmy, opts);
+            Check(b.Options.Duel && b.Options.DuelMounted == mounted, $"duel {allies}v{enemies} options");
+            int team0 = b.Units.Count(u => u.Team == 0 && u.Active);
+            int team1 = b.Units.Count(u => u.Team == 1 && u.Active);
+            Check(team0 == allies && team1 == enemies, $"duel {allies}v{enemies} spawned {team0}v{team1}");
+            Check(b.Units.All(u => MathF.Abs(u.Pos.Y) <= 12f), $"duel {allies}v{enemies} placed in duel range");
+            Check(b.Units.All(u => mounted ? u.Horse != null : u.Horse == null), $"duel {allies}v{enemies} mount state");
+            for (int i = 0; i < 60; i++) b.Update(1 / 60f);
+            Check(b.Units.All(u => !u.Routing), $"duel {allies}v{enemies} fighters do not rout");
+        }
+        var parsed = QuickBattleConfig.ParseDuelEnv("2v3:mounted");
+        Check(parsed != null && parsed.DuelAllies == 2 && parsed.DuelEnemies == 3 && parsed.DuelMounted, "ParseDuelEnv parses 2v3:mounted");
+        Check(QuickBattleConfig.ParseDuelEnv("setup") == null, "ParseDuelEnv returns null for setup");
+    }
 }
 
