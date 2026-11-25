@@ -118,8 +118,8 @@ void main()
                 }
             }
 
-            if (convex > 0.30) col *= 1.0 + OutlineCfg.z * 0.16 * nearWeight;
-            else if (concave > 0.36) col *= 1.0 - OutlineCfg.z * 0.18 * nearWeight;
+            if (convex > 0.30) col *= 1.0 + OutlineCfg.z * 0.20 * nearWeight;
+            else if (concave > 0.38) col *= 1.0 - OutlineCfg.z * 0.14 * nearWeight;
         }
     }
 

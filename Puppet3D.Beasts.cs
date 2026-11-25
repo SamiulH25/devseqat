@@ -78,19 +78,19 @@ sealed partial class Puppet3D
             var foot = hip + new Vector3(0, -0.58f * MathF.Cos(a), 0.58f * MathF.Sin(a) + (front ? 0.04f : -0.06f));
             // Anatomical joint: elbow sits slightly back on forelegs, hock sits distinctly back on hindlegs
             var mid = Vector3.Lerp(hip, foot, 0.48f) + new Vector3(sd * 0.015f, 0.02f, front ? -0.09f : -0.14f);
-            EmitBone(kit.QuadThigh, hip, mid, Vector3.UnitZ);
-            EmitBone(kit.QuadShin, mid, foot, Vector3.UnitZ);
+            EmitBone(kit.QuadThigh, hip, mid, Vector3.UnitZ, 1f, MeshKit3D.PatFur);
+            EmitBone(kit.QuadShin, mid, foot, Vector3.UnitZ, 1f, MeshKit3D.PatFur);
         }
         Vector3 bU = RotX(Vector3.UnitY, pitchDeg), bF = RotX(Vector3.UnitZ, pitchDeg);
-        EmitLocal(kit.WolfBody, new Vector3(0, y, bodyZ), Vector3.UnitX, bU, bF);
+        EmitLocal(kit.WolfBody, new Vector3(0, y, bodyZ), Vector3.UnitX, bU, bF, 1f, 1f, 1f, MeshKit3D.PatFur);
         float headPitch = -wind * 12f + strike * 16f - rock * 50f;
         Vector3 hU = RotX(Vector3.UnitY, headPitch), hF = RotX(Vector3.UnitZ, headPitch);
-        EmitLocal(kit.WolfHead, new Vector3(0, y + 0.14f + rock * 0.7f, bodyZ + 0.40f + lunge * 0.20f), Vector3.UnitX, hU, hF);
+        EmitLocal(kit.WolfHead, new Vector3(0, y + 0.14f + rock * 0.7f, bodyZ + 0.40f + lunge * 0.20f), Vector3.UnitX, hU, hF, 1f, 1f, 1f, MeshKit3D.PatFur);
         if (Detail == 0)
         {
             float wag = MathF.Sin(Now * (5.5f + 4f * gait) + pos.X) * (0.09f + 0.06f * gait);
             EmitBone(kit.WolfTail, new Vector3(0, y + 0.08f - rock, bodyZ - 0.50f),
-                new Vector3(wag, y - 0.14f + gait * 0.28f + strike * 0.18f, bodyZ - 0.94f - gait * 0.22f), Vector3.UnitZ);
+                new Vector3(wag, y - 0.14f + gait * 0.28f + strike * 0.18f, bodyZ - 0.94f - gait * 0.22f), Vector3.UnitZ, 1f, MeshKit3D.PatFur);
         }
         return (y + 0.06f) * size;
     }
@@ -138,19 +138,19 @@ sealed partial class Puppet3D
                 hip = P(hip);
             }
             var mid = Vector3.Lerp(hip, foot, 0.48f) + new Vector3(sd * 0.04f, 0.02f, front ? -0.10f : -0.12f);
-            EmitBone(kit.BearThigh, hip, mid, Vector3.UnitZ);
-            EmitBone(kit.BearShin, mid, foot, Vector3.UnitZ);
+            EmitBone(kit.BearThigh, hip, mid, Vector3.UnitZ, 1f, MeshKit3D.PatFur);
+            EmitBone(kit.BearShin, mid, foot, Vector3.UnitZ, 1f, MeshKit3D.PatFur);
         }
         float yawSwipe = swipe * -14f + waddle * 75f;
         Vector3 bR = RotY(Vector3.UnitX, yawSwipe);
         Vector3 bUp = RotY(new Vector3(0, c, -s), yawSwipe);
         Vector3 bFwd = RotY(new Vector3(0, s, c), yawSwipe);
-        EmitLocal(kit.BearBody, P(new Vector3(waddle * 0.5f, y, 0)), bR, bUp, bFwd);
+        EmitLocal(kit.BearBody, P(new Vector3(waddle * 0.5f, y, 0)), bR, bUp, bFwd, 1f, 1f, 1f, MeshKit3D.PatFur);
         float hAng = Rad(24f * rear);
         float hc = MathF.Cos(hAng), hs = MathF.Sin(hAng);
         Vector3 hUp = RotY(new Vector3(0, hc, -hs), yawSwipe * 1.15f);
         Vector3 hFwd = RotY(new Vector3(0, hs, hc), yawSwipe * 1.15f);
-        EmitLocal(kit.BearHead, P(new Vector3(waddle * 0.6f, y + 0.15f, 0.44f)), bR, hUp, hFwd);
+        EmitLocal(kit.BearHead, P(new Vector3(waddle * 0.6f, y + 0.15f, 0.44f)), bR, hUp, hFwd, 1f, 1f, 1f, MeshKit3D.PatFur);
     }
 
     void DrawSpider3D(Unit u, float ground, Color tint)
@@ -184,9 +184,9 @@ sealed partial class Puppet3D
         }
         float abdPitch = rear * 22f + MathF.Sin(u.Anim * MathF.Tau * 2f) * 5f * gait + idlePulse * 240f;
         Vector3 aU = RotX(Vector3.UnitY, abdPitch), aF = RotX(Vector3.UnitZ, abdPitch);
-        EmitLocal(kit.SpiderAbdomen, new Vector3(0, y + 0.10f - rear * 0.06f, -0.46f + lunge * 0.4f), Vector3.UnitX, aU, aF);
+        EmitLocal(kit.SpiderAbdomen, new Vector3(0, y + 0.10f - rear * 0.06f, -0.46f + lunge * 0.4f), Vector3.UnitX, aU, aF, 1f, 1f, 1f, MeshKit3D.PatScale);
         Vector3 hU = RotX(Vector3.UnitY, -rear * 24f), hF = RotX(Vector3.UnitZ, -rear * 24f);
-        EmitLocal(kit.SpiderHead, new Vector3(0, y + 0.06f + rear * 0.20f, 0.10f + lunge), Vector3.UnitX, hU, hF);
+        EmitLocal(kit.SpiderHead, new Vector3(0, y + 0.06f + rear * 0.20f, 0.10f + lunge), Vector3.UnitX, hU, hF, 1f, 1f, 1f, MeshKit3D.PatScale);
     }
 
     void DrawWyvern3D(Unit u, float ground, Color tint)

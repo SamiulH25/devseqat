@@ -40,9 +40,9 @@ sealed partial class Puppet3D
     static readonly byte[] PatAlpha = BuildPatAlpha();
     static byte[] BuildPatAlpha()
     {
-        var table = new byte[5 * UnitMatTable.Slots];
+        var table = new byte[6 * UnitMatTable.Slots];
         var metalQ = UnitMatTable.MetalQ;
-        for (int p = 0; p < 5; p++)
+        for (int p = 0; p < 6; p++)
             for (int m = 0; m < UnitMatTable.Slots; m++)
             {
                 byte pat = 0;

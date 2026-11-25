@@ -227,8 +227,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.cs (724 lines)
 - **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:130, Load:144, QuickGround:175, BeginCampaign:185, StartDeployment:222, StageCommandView:237, BenchStage:247, FinishCampaignBattle:288, BeginQuickBattle:304, NewBattle:331, WithMages:376, SetWorld:384, SetCommand:399, Pressed:411, Update:419, PlaySounds:529, PlayPlayerSounds:558, Soundscape:580, SyncHud:674, MenuChoice:706
 
-## BattleScreen.Draw.cs (1118 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:60, Total3DVerts:160, DrawBlobs:162, EaseFacings:204, Spray:220, Effects:233, GroundSteps:299, BuildSprites:364, DrawUnits3D:557, LensFill:572, SpriteStates:575, DrawSpritesBasic:583, DrawSpritesShaded:593, DrawSoft:604, Line:618, G:619, OrderArrows:628, OrderArrowLines:630, FortressPointRings:646, Ring:657, DashedRing:668, SelectionBox:683, Band:716, BeamQuad:738, BattleTutorialRibbon:763, TorchRow:810, Precipitation:820, Fall:831, Stakes:851, SpellColor:885, Spells:891, AuraGlow:907, ChampionGlow:917, PlayerGlow:930, PendingFormsDrawn:944, RouteDots:969, PlanHook:982, DrawLines:1012
+## BattleScreen.Draw.cs (1153 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:60, Total3DVerts:160, DrawBlobs:162, EaseFacings:204, Spray:220, Effects:233, GroundSteps:299, BuildSprites:364, EnsureSkinned:572, DrawUnits3D:580, LensFill:607, SpriteStates:610, DrawSpritesBasic:618, DrawSpritesShaded:628, DrawSoft:639, Line:653, G:654, OrderArrows:663, OrderArrowLines:665, FortressPointRings:681, Ring:692, DashedRing:703, SelectionBox:718, Band:751, BeamQuad:773, BattleTutorialRibbon:798, TorchRow:845, Precipitation:855, Fall:866, Stakes:886, SpellColor:920, Spells:926, AuraGlow:942, ChampionGlow:952, PlayerGlow:965, PendingFormsDrawn:979, RouteDots:1004, PlanHook:1017, DrawLines:1047
 
 ## BattleScreen.Effects.cs (210 lines)
 - **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:73, Stamp:98, Trample:107, MenMap:125, TrampleTexture:148, RearOf:165, BannerFalls:187, DrawFallingBanners:198
@@ -965,9 +965,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Upgrade.cs (355 lines)
 - **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:187, Leads:343
 
-## Mesh3D.cs (462 lines)
-- **MeshKit3D** (class, L9): TryLoad:73, Load:83, Get:174, Resolve:176, MapLimb:308, MapHelm:316, MapWeapon:360, MapShield:387
-- **UnitMatTable** (struct, L402): Fill:415, FillBeast:453
+## Mesh3D.cs (469 lines)
+- **MeshKit3D** (class, L9): TryLoad:73, Load:86, Get:177, Resolve:179, MapLimb:311, MapHelm:319, MapWeapon:363, MapShield:390
+- **UnitMatTable** (struct, L405): Fill:418, FillBeast:456
 
 ## MusicDirector.cs (129 lines)
 - **MusicDirector** (class, L12): Cue:17, MusicDirector:28, Pool:36, Reset:51, Adopt:59, Update:68, BackToMap:99, Next:109, Start:121
@@ -1069,9 +1069,13 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SettingsScreen.cs (206 lines)
 - **SettingsScreen** (class, L7): readonly:20, SettingsScreen:22, Update:24, Close:42, Draw:50
 
-## Shading.cs (270 lines)
+## Shading.cs (297 lines)
 - **Quality** (enum, L8)
-- **Shading** (class, L12): Source:38, Shading:48, AimSun:104, Setup:148, Blank:177, Scene:184, PostToScreen:199, PixelPostToScreen:237, PixelPostTo:244, Dispose:265
+- **Shading** (class, L12): Source:39, Shading:49, AimSun:128, Setup:172, Blank:204, Scene:211, PostToScreen:226, PixelPostToScreen:264, PixelPostTo:271, Dispose:292
+
+## SkinnedMesh3D.cs (229 lines)
+- **VertexPNCTBW** (struct, L10)
+- **SkinnedMesh3D** (class, L31): SkinnedMesh3D:40, TryLoad:46, Load:67, DrawBear:108, DrawWolf:168, Dispose:223
 
 ## Sky.cs (117 lines)
 - **Sky** (class, L7): Sky:31, Set:39, Moonlit:87, Omen:106
@@ -1242,8 +1246,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **DivisionSpec** (record, L232)
 - **Armies** (class, L237): LineTroop:240, readonly:242, Count:250, Standard:258, Random:261, Large:268, FullCount:279, Divide:289, OfficerSkill:297, Split:310, Make:362, MageTroop:366, LineTroop:370, RoleOf:372
 
-## TroopSheet.cs (129 lines)
-- **TroopSheet** (class, L9): TroopSheet:20, Write:29, One:56
+## TroopSheet.cs (150 lines)
+- **TroopSheet** (class, L9): TroopSheet:21, Write:32, One:61
 
 ## Ui.cs (362 lines)
 - **Ui** (class, L8): Hovered:28, Hovered:36, FrameEnd:46, Ui:50, Anim:69, static:80, Since:93, Count:103, Key:110, Reset:113, Begin:115, End:125, Blocks:128, Block:129, U:130, Rect:132, Clip:142, Frame:158, Panel:167, Dim:170, Text:173, TextPlain:179, Ink:186, InkProse:195, TW:202, TextC:203, TextPlainC:204, TextR:205, Bar:209, Hover:222, Clicked:225, Button:234, Face:263, FaceHead:273, HasSprite:285, Sprite:287, SpriteFit:299, GearSprite:312, GoodsSprite:356, StoreSprite:359, Portrait:361

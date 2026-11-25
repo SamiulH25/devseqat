@@ -18,7 +18,8 @@ sealed class Shading : IDisposable
     public static readonly Vector2 SpriteLight = new(1.05f, 0.62f); // sprite brightness: sky part, sun part (lit ~1.0, shade ~0.5)
     public static readonly Vector4 Wind = new(0.8f, 0.6f, 0.12f, 0.25f); // direction xz, strength, steady lean
 
-    public readonly Effect World, Sprite, Sky, Post, Unit3D, PixelPost;
+    public readonly Effect World, Sprite, Sky, Post, Unit3D, SkinnedUnit3D, PixelPost;
+    public readonly Texture2D WhiteTex, HumanTex;
     public readonly RenderTarget2D ShadowMap;
     public Matrix LightView, LightViewProj;
     public Vector3 LightEye;
@@ -83,12 +84,35 @@ sealed class Shading : IDisposable
             new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aUV", VertexElementUsage.TextureCoordinate) },
             new GlslEffect.Technique("Post"));
 
-        var lit3D = lit.Concat(new[] { Uniform.Mat4("View") }).ToArray();
+        WhiteTex = new Texture2D(gd, 1, 1);
+        WhiteTex.SetData(new[] { Color.White });
+        HumanTex = WhiteTex;
+        foreach (var dir in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
+        {
+            var hp = Path.Combine(dir, "Data", "meshes", "human_tex.png");
+            if (File.Exists(hp)) { using var hfs = File.OpenRead(hp); HumanTex = Texture2D.FromStream(gd, hfs); break; }
+        }
+
+        var unitTexSlot = new TextureSlot("UnitTex", 1, SamplerState.PointClamp);
+        var lit3D = lit.Concat(new[] { Uniform.Mat4("View"), Uniform.Float("HasUnitTex") }).ToArray();
         Unit3D = GlslEffect.Create(gd, "unit3d", common + Source("unit3d.glsl"), lit3D,
-            new[] { shadowTex },
+            new[] { shadowTex, unitTexSlot },
             new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aNormal", VertexElementUsage.Normal),
                     new Attribute("aColor", VertexElementUsage.Color), new Attribute("aUV", VertexElementUsage.TextureCoordinate) },
             new GlslEffect.Technique("Unit3D"), new GlslEffect.Technique("Unit3DShadow", "SHADOW"));
+
+        var skinnedLit = lit3D.Concat(new[]
+        {
+            Uniform.Mat4("World"),
+            Uniform.Mat4("Bone0"), Uniform.Mat4("Bone1"), Uniform.Mat4("Bone2"), Uniform.Mat4("Bone3"),
+            Uniform.Mat4("Bone4"), Uniform.Mat4("Bone5"), Uniform.Mat4("Bone6"), Uniform.Mat4("Bone7"),
+        }).ToArray();
+        SkinnedUnit3D = GlslEffect.Create(gd, "skinned_unit3d", common + Source("unit3d.glsl"), skinnedLit,
+            new[] { shadowTex, unitTexSlot },
+            new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aNormal", VertexElementUsage.Normal),
+                    new Attribute("aColor", VertexElementUsage.Color), new Attribute("aUV", VertexElementUsage.TextureCoordinate),
+                    new Attribute("aBones", VertexElementUsage.TextureCoordinate, 1), new Attribute("aWeights", VertexElementUsage.TextureCoordinate, 2) },
+            new GlslEffect.Technique("Unit3D", "SKINNED"), new GlslEffect.Technique("Unit3DShadow", "SKINNED", "SHADOW"));
 
         PixelPost = GlslEffect.Create(gd, "pixel_post", Source("pixel_post.glsl"),
             new[] { Uniform.Vec2("Texel"), Uniform.Vec4("Grade"), Uniform.Vec4("Tint"), Uniform.Vec4("Awe"), Uniform.Vec4("Moment"), Uniform.Float("Time"), Uniform.Float("Warp"), Uniform.Vec4("OutlineCfg") },
@@ -170,6 +194,9 @@ sealed class Shading : IDisposable
         p["Palette"]?.SetValue(Looks.Palette);
         p["Look"]?.SetValue(new Vector4(Ironfield.Sky.Snow, NearDetail ? 1 : 0, Ironfield.Sky.Night, Ironfield.Sky.Rain));
         if (p["GroundMap"] is { } gm) gm.SetValue(GroundMap ?? Blank(gd));
+        bool useHuman = fx == Unit3D && HumanTex != WhiteTex;
+        p["UnitTex"]?.SetValue(useHuman ? HumanTex : WhiteTex);
+        p["HasUnitTex"]?.SetValue(useHuman ? 1f : 0f);
     }
 
     static Texture2D? blank;
@@ -264,7 +291,7 @@ sealed class Shading : IDisposable
 
     public void Dispose()
     {
-        World.Dispose(); Sprite.Dispose(); Sky.Dispose(); Post.Dispose(); Unit3D.Dispose(); PixelPost.Dispose();
+        World.Dispose(); Sprite.Dispose(); Sky.Dispose(); Post.Dispose(); Unit3D.Dispose(); SkinnedUnit3D.Dispose(); PixelPost.Dispose(); WhiteTex.Dispose(); if (HumanTex != WhiteTex) HumanTex.Dispose();
         ShadowMap.Dispose(); scene?.Dispose(); pixelScene?.Dispose(); pixelNormDepth?.Dispose();
     }
 }

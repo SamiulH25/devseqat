@@ -85,13 +85,13 @@ partial class BattleScreen
             sh.Setup(sh.Sprite, Matrix.Identity, sh.LightEye, realTime, false, 0);
             sh.Sprite.Parameters["ShadowMap"].SetValue((Texture2D?)null);
             DrawSpritesShaded(sh.Sprite, "SpriteShadow");
-            int shdN = do3D ? Total3DVerts() : 0;
+            int shdN = do3D ? Total3DVerts() + skinnedQueue.Count : 0;
             if (shdN > 0)
             {
                 sh.Setup(sh.Unit3D, Matrix.Identity, sh.LightEye, realTime, false, 0);
                 sh.Unit3D.Parameters["ShadowMap"].SetValue((Texture2D?)null);
                 sh.Unit3D.Parameters["View"].SetValue(sh.LightView);
-                DrawUnits3D(sh.Unit3D, "Unit3DShadow");
+                DrawUnits3D(sh, sh.Unit3D, "Unit3DShadow", false);
                 if (FrameProf.On) FrameProf.Count("shdTris", shdN / 3);
             }
             FrameProf.End("shadowDraw");
@@ -122,7 +122,7 @@ partial class BattleScreen
         FrameProf.Begin("mainBuild");
         BuildSprites(view, false);
         FrameProf.End("mainBuild");
-        int mainN = do3D ? Total3DVerts() : 0;
+        int mainN = do3D ? Total3DVerts() + skinnedQueue.Count : 0;
         if (mainN > 0)
         {
             FrameProf.Begin("u3dDraw");
@@ -130,7 +130,7 @@ partial class BattleScreen
             gd.SetRenderTargets(pCol, pNd);
             sh.Setup(sh.Unit3D, view * proj, eye, realTime, shadows, 0.45f);
             sh.Unit3D.Parameters["View"].SetValue(view);
-            DrawUnits3D(sh.Unit3D, "Unit3D");
+            DrawUnits3D(sh, sh.Unit3D, "Unit3D", shadows);
             gd.SetRenderTarget(pCol);
             if (FrameProf.On) FrameProf.Count("u3dTris", mainN / 3);
             FrameProf.End("u3dDraw");
@@ -430,7 +430,7 @@ partial class BattleScreen
         }
         foreach (int idx in corpseTouched) corpseGrid[idx] = 0;
         corpseTouched.Clear();
-        drawQueue3D.Clear();
+        drawQueue3D.Clear(); skinnedQueue.Clear();
         float bNow = battle.Time;
         var (near3D, mid3D, fullCap) = LodDistances(); // set by the frame rate (BattleScreen.Lod.cs)
         float near3DSq = near3D * near3D, mid3DSq = mid3D * mid3D, alwaysFullSq = AlwaysFull * AlwaysFull;
@@ -470,6 +470,17 @@ partial class BattleScreen
                             else det = 1;
                         }
                         else det = d3Sq < mid3DSq ? 1 : 2;
+                    }
+                    EnsureSkinned();
+                    if (!u.Dead && !u.Fled && u.Type.Look.Face == "bear" && skinnedBear != null)
+                    {
+                        skinnedQueue.Add((u, h, true));
+                        continue;
+                    }
+                    if (!u.Dead && !u.Fled && u.Type.Look.Beast && u.Type.Breed is "wolf" or "hound" && skinnedWolf != null)
+                    {
+                        skinnedQueue.Add((u, h, false));
+                        continue;
                     }
                     // Far LOD (Detail 2, alive) never reads Variety look fields, so skip Variety.Of and RearOf for a big win.
                     var look = (det >= 2 && !u.Dead) || puppet3D!.ExactLook ? u.Type.Look : Variety.Of(u);
@@ -554,7 +565,19 @@ partial class BattleScreen
         puppet.Detail = 0;
     }
 
-    void DrawUnits3D(Effect fx, string technique)
+    SkinnedMesh3D? skinnedBear, skinnedWolf;
+    bool skinnedLoaded;
+    readonly List<(Unit U, float H, bool Bear)> skinnedQueue = new();
+
+    void EnsureSkinned()
+    {
+        if (skinnedLoaded) return;
+        skinnedLoaded = true;
+        skinnedBear = SkinnedMesh3D.TryLoad(GraphicsDevice, "bear_skinned.skin", "bear_tex.png");
+        skinnedWolf = SkinnedMesh3D.TryLoad(GraphicsDevice, "wolf_skinned.skin", "wolf_tex.png");
+    }
+
+    void DrawUnits3D(Shading sh, Effect fx, string technique, bool drawShadows)
     {
         var gd = GraphicsDevice;
         gd.BlendState = BlendState.Opaque;
@@ -565,6 +588,18 @@ partial class BattleScreen
         if (units3D.N > 0) units3D.Draw(gd, PrimitiveType.TriangleList, units3D.N / 3);
         for (int i = 0; i < workerVerts.Length; i++)
             if (workerVerts[i].N > 0) workerVerts[i].Draw(gd, PrimitiveType.TriangleList, workerVerts[i].N / 3);
+        if (skinnedQueue.Count > 0)
+        {
+            bool shadow = technique == "Unit3DShadow";
+            sh.Setup(sh.SkinnedUnit3D, shadow ? Matrix.Identity : view * proj, shadow ? sh.LightEye : eye, realTime, !shadow && drawShadows, shadow ? 0f : 0.45f);
+            if (shadow) sh.SkinnedUnit3D.Parameters["ShadowMap"]?.SetValue((Texture2D?)null);
+            sh.SkinnedUnit3D.Parameters["View"]?.SetValue(shadow ? sh.LightView : view);
+            foreach (var (su, shH, isBear) in skinnedQueue)
+            {
+                if (isBear) skinnedBear!.DrawBear(gd, sh, su, shH, 1f, technique);
+                else skinnedWolf!.DrawWolf(gd, sh, su, shH, 1f, technique);
+            }
+        }
     }
 
     /// A man so close to the field camera that his body would fill the lens. Only these are left out:

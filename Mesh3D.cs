@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Compact binary 3D modular mesh kit exported by Blender (`tools/build_meshes_3d.py` -> `Data/meshes/units3d.bin`).
+/// Compact binary 3D modular mesh kit built by the Three.js pipeline (`tools/gltf` -> `Data/meshes/units3d.bin`).
 /// Caches all part arrays and Look->Mesh mappings once so per-frame battle rendering allocates ZERO strings or arrays.
 sealed class MeshKit3D
 {
@@ -22,7 +22,7 @@ sealed class MeshKit3D
     }
 
     /// Surface pattern IDs packed into VertexPNCT Color.A high nibble (read by Shaders/unit3d.glsl).
-    public const byte PatSmooth = 0, PatMail = 1, PatScale = 2, PatQuilt = 3, PatBrushed = 4;
+    public const byte PatSmooth = 0, PatMail = 1, PatScale = 2, PatQuilt = 3, PatBrushed = 4, PatFur = 5;
 
     /// Pre-resolved modular mesh references for one `Look` (zero string lookups during rendering!).
     public sealed class LookMeshes
@@ -72,6 +72,9 @@ sealed class MeshKit3D
 
     public static MeshKit3D? TryLoad()
     {
+        // Experimental packs can be previewed in the real renderer without overwriting Data/meshes.
+        var overridePath = Environment.GetEnvironmentVariable("IRONFIELD_MESH_PACK");
+        if (!string.IsNullOrWhiteSpace(overridePath) && File.Exists(overridePath)) return Load(overridePath);
         foreach (var dir in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
         {
             var path = Path.Combine(dir, "Data", "meshes", "units3d.bin");
@@ -455,6 +458,10 @@ struct UnitMatTable
         var tv = tint.ToVector3();
         Vector3 Pack(Color c) => new(c.R / 255f * tv.X, c.G / 255f * tv.Y, c.B / 255f * tv.Z);
         cols[0] = tv;
+        cols[3] = Pack(new Color(238, 178, 52));
+        cols[6] = Pack(new Color(196, 136, 44));
+        cols[9] = Pack(Color.Lerp(body, new Color(232, 220, 198), 0.36f));
+        cols[10] = Pack(Color.Lerp(body, dark, 0.48f));
         cols[11] = Pack(body);
         cols[12] = Pack(accent);
         cols[13] = Pack(dark);

@@ -19,12 +19,38 @@ attribute vec4 aPos;
 attribute vec3 aNormal;
 attribute vec4 aColor;
 attribute vec2 aUV;
+#ifdef SKINNED
+attribute vec4 aBones;
+attribute vec4 aWeights;
+
+mat4 GetBone(float idx)
+{
+    if (idx < 0.5) return Bone0;
+    if (idx < 1.5) return Bone1;
+    if (idx < 2.5) return Bone2;
+    if (idx < 3.5) return Bone3;
+    if (idx < 4.5) return Bone4;
+    if (idx < 5.5) return Bone5;
+    if (idx < 6.5) return Bone6;
+    return Bone7;
+}
+#endif
 
 void main()
 {
+#ifdef SKINNED
+    mat4 b0 = GetBone(aBones.x), b1 = GetBone(aBones.y), b2 = GetBone(aBones.z), b3 = GetBone(aBones.w);
+    vec4 lp = vec4(aPos.xyz, 1.0);
+    vec4 sp = (lp * b0) * aWeights.x + (lp * b1) * aWeights.y + (lp * b2) * aWeights.z + (lp * b3) * aWeights.w;
+    vec3 p = (sp * World).xyz;
+    vec4 ln = vec4(aNormal, 0.0);
+    vec3 sn = (ln * b0).xyz * aWeights.x + (ln * b1).xyz * aWeights.y + (ln * b2).xyz * aWeights.z + (ln * b3).xyz * aWeights.w;
+    vNormal = normalize((vec4(sn, 0.0) * World).xyz);
+#else
     vec3 p = aPos.xyz;
-    vWorld = p;
     vNormal = aNormal;
+#endif
+    vWorld = p;
     vColor = aColor;
     vUV = aUV;
 #ifdef SHADOW
@@ -47,21 +73,12 @@ void main()
     vec3 n = normalize(vNormal);
     vec3 l = normalize(-SunDir);
     vec3 v = normalize(CameraPos - vWorld);
-
-    float ndotl = dot(n, l);
     float sh = ShadowAt(vWorld + n * 0.06) * CloudAt(vWorld);
 
     // Unpack surface pattern ID (0..4) and metallic weight (0..1) from constant-per-triangle aColor.a.
     float aInt = floor(vColor.a * 255.0 + 0.5);
     float patId = floor(aInt / 16.0);
     float metal = mod(aInt, 16.0) / 15.0;
-
-    // 4-band stepped cel shading (crisp low-poly tonal steps with clean shadow/mid/lit separation, never blowing out steel to pure white).
-    float rawLit = clamp((ndotl * 0.76 + 0.24) * mix(0.42, 1.0, sh), 0.0, 1.0);
-    float band = 0.22;
-    band += smoothstep(0.24, 0.28, rawLit) * 0.26;
-    band += smoothstep(0.52, 0.56, rawLit) * 0.28;
-    band += smoothstep(0.78, 0.82, rawLit) * 0.24;
 
     // Subtle distance-faded surface micro-detail (kept gentle so crisp low-poly planes stay clean, never noisy static).
     float dist = length(CameraPos - vWorld);
@@ -70,7 +87,55 @@ void main()
     vec3 albedo = vColor.rgb;
     float specBoost = 1.0;
 
-    if (detailFade > 0.01 && patId > 0.5)
+    if (HasUnitTex > 0.5)
+    {
+#ifdef SKINNED
+        vec2 bumpUV = vUV;
+        vec3 texCol = texture2D(UnitTex, bumpUV).rgb;
+        albedo *= texCol;
+#else
+        vec2 bumpUV = vUV;
+        if (detailFade > 0.01)
+        {
+            // Sample crisp 32x32 PointClamp pixel-art tile for the surface pattern (0..4)
+            vec2 tile = vec2(mod(floor(patId + 0.5), 4.0), floor((patId + 0.5) / 4.0));
+            bumpUV = (tile + fract(vUV * 2.4)) * vec2(0.25, 0.25);
+            vec3 tex = texture2D(UnitTex, bumpUV).rgb;
+            albedo *= mix(vec3(1.0), tex, detailFade * 0.85);
+        }
+#endif
+        // Tangent-free normal mapping from UnitTex luminance gradient (chainmail, scales, fur, plate seams)
+        if (detailFade > 0.02)
+        {
+            float eps = 1.0 / 128.0;
+            float hC = dot(texture2D(UnitTex, bumpUV).rgb, vec3(0.3, 0.59, 0.11));
+            float hX = dot(texture2D(UnitTex, bumpUV + vec2(eps, 0.0)).rgb, vec3(0.3, 0.59, 0.11));
+            float hY = dot(texture2D(UnitTex, bumpUV + vec2(0.0, eps)).rgb, vec3(0.3, 0.59, 0.11));
+            vec3 dpdx = dFdx(vWorld);
+            vec3 dpdy = dFdy(vWorld);
+            vec2 duvdx = dFdx(bumpUV);
+            vec2 duvdy = dFdy(bumpUV);
+            vec3 r1 = cross(dpdy, n);
+            vec3 r2 = cross(n, dpdx);
+            float det = dot(dpdx, r1);
+            if (abs(det) > 1e-6)
+            {
+                vec2 dh = vec2(hX - hC, hY - hC) * (1.8 * detailFade);
+                vec3 surfGrad = sign(det) * (dh.x * (r1 * duvdx.x + r2 * duvdy.x) + dh.y * (r1 * duvdx.y + r2 * duvdy.y));
+                n = normalize(abs(det) * n - surfGrad);
+            }
+        }
+    }
+
+    float ndotl = dot(n, l);
+    // 4-band stepped cel shading (driven by normal-mapped n)
+    float rawLit = clamp((ndotl * 0.76 + 0.24) * mix(0.42, 1.0, sh), 0.0, 1.0);
+    float band = 0.22;
+    band += smoothstep(0.24, 0.28, rawLit) * 0.26;
+    band += smoothstep(0.52, 0.56, rawLit) * 0.28;
+    band += smoothstep(0.78, 0.82, rawLit) * 0.24;
+
+    if (detailFade > 0.01 && patId > 0.5 && patId < 5.5)
     {
         if (patId < 1.5)
         {
@@ -103,11 +168,22 @@ void main()
             float stitch = 1.0 - smoothstep(0.0, 0.08, min(d1, d2));
             albedo *= 1.0 + (0.02 - stitch * 0.05) * detailFade;
         }
-        else
+        else if (patId < 4.5)
         {
             // Pattern 4: Clean brushed steel / wood sheen.
             float grain = sin(vUV.x * 28.0 + vUV.y * 4.0) * 0.5 + 0.5;
             albedo *= 1.0 + (grain - 0.5) * 0.04 * detailFade;
+        }
+        else
+        {
+            // Pattern 5: Tufted fur / hair streaks (crisp directional pixel-art fur texture).
+            vec2 p = vUV * vec2(14.0, 7.0);
+            float row = floor(p.y);
+            p.x += sin(row * 12.9898) * 0.5;
+            float tuft = abs(fract(p.x) - 0.5) * 2.0;
+            float tip = fract(p.y);
+            float furShade = (1.0 - tuft * 0.14) * (0.90 + 0.14 * tip);
+            albedo *= mix(1.0, furShade, detailFade);
         }
     }
 
