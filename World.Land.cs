@@ -50,6 +50,10 @@ sealed partial class World
     /// One plot: a patch following the ground in 2.5 m cells, then its hedges or fence and any haystacks.
     void Plot(Mesh m, FieldPlot f)
     {
+        var centerGround = GroundColor(f.Center);
+        bool desertSand = t.Params.Look == GroundLook.Sand || t.GroundAt(f.Center) == GroundKind.Sand
+            || ((t.Own?.Invoke(f.Center) ?? 0) >= 0.85f && centerGround.X > 0.68f && centerGround.X - centerGround.Z > 0.2f);
+        if (desertSand && f.Kind == FieldKind.Ploughed) return; // no dark brown ploughed rectangles on pure desert sand
         var rng = new Random(f.Seed);
         var (col, rows) = FieldLook(f.Kind, t.MapSeason);
         col *= 1 + (rng.NextSingle() - 0.5f) * 0.12f;
@@ -67,11 +71,20 @@ sealed partial class World
             float u = fu * f.Half.X, v = fv * f.Half.Y;
             var p = f.At(u, v);
             float rim = MathF.Max(MathF.Abs(fu), MathF.Abs(fv)), corner = MathF.Abs(fu) * MathF.Abs(fv);
-            float wobble = (Terrain.Noise(p.X * 0.2f, p.Y * 0.2f, t.Seed + 43) - 0.5f) * 0.5f;
-            float blend = Math.Clamp(0.08f + 0.92f * MathF.Pow(Math.Clamp(rim + wobble * 0.4f, 0, 1), 3) + 0.35f * corner * corner, 0, 1);
-            if (f.Hedged != 0 && f.Kind != FieldKind.Pasture) blend = MathF.Min(blend, 0.08f + 0.3f * MathF.Pow(rim, 6)); // the crop runs up to its hedge, so the hedge reads as the field's edge
+            float n1 = Terrain.Noise(p.X * 0.14f, p.Y * 0.14f, t.Seed + 43) - 0.5f;
+            float n2 = Terrain.Noise(p.X * 0.37f, p.Y * 0.37f, t.Seed + 59) - 0.5f;
+            float wobble = n1 * 0.34f + n2 * 0.16f;
+            float edge = MathF.Pow(Math.Clamp((rim - 0.45f + wobble) / 0.55f, 0, 1), 1.6f);
+            float blend = Math.Clamp(0.08f + 0.92f * edge + 0.35f * corner * corner, 0, 1);
+            if (f.Hedged != 0 && f.Kind != FieldKind.Pasture)
+            {
+                float inner = 0.08f + 0.32f * MathF.Pow(Math.Clamp(rim + wobble * 0.25f, 0, 1), 4);
+                blend = MathF.Max(inner, MathHelper.SmoothStep(0f, 1f, (rim - 0.84f) / 0.16f));
+            }
+            if (rim >= 0.999f) blend = 1f; // outermost vertices always dissolve completely into the ground
             var c = Vector3.Lerp(col, GroundColor(p), blend) * (1 + (Terrain.Noise(p.X * 0.35f, p.Y * 0.35f, t.Seed + 41) - 0.5f) * 0.1f);
-            return new VertexPNCT(new Vector3(p.X, t.Height(p) + 0.26f, p.Y), NormalAt(p), new Color(c.X, c.Y, c.Z, 1 - blend), new Vector2(100 + v + f.Half.Y, rows * (1 - blend))); // alpha: how much crop (the map shader)
+            float lift = MathHelper.Lerp(0.08f, 0.03f, rim);
+            return new VertexPNCT(new Vector3(p.X, t.Height(p) + lift, p.Y), NormalAt(p), new Color(c.X, c.Y, c.Z, 1 - blend), new Vector2(100 + v + f.Half.Y, rows * (1 - blend))); // alpha: how much crop (the map shader)
         }
         for (int i = 0; i < nu; i++)
             for (int j = 0; j < nv; j++)
@@ -111,17 +124,22 @@ sealed partial class World
         if (t.MapSeason == 2) leaf = Color.Lerp(leaf, new Color(128, 108, 56), 0.35f);
         if (t.MapSeason == 3) leaf = Color.Lerp(leaf, new Color(196, 200, 206), 0.55f); // snow lies along it
         int steps = Math.Max(1, (int)(len / 1.8f));
-        float hPrev = 0.55f + rng.NextSingle() * 0.3f;
+        float hPrev = 0.45f + rng.NextSingle() * 0.45f;
+        float bPrev = 0.24f + rng.NextSingle() * 0.16f;
+        float oPrev = (rng.NextSingle() - 0.5f) * 0.22f;
         for (int i = 0; i < steps; i++)
         {
-            float h = 0.55f + rng.NextSingle() * 0.3f;
-            if (i == 0 || i == steps - 1 || rng.Next(14) == 0) { hPrev = h; continue; } // a rare gap, and open corners for the gates
-            Vector2 p0 = a + d * (len * i / steps), p1 = a + d * (len * (i + 1) / steps);
+            float h = 0.45f + rng.NextSingle() * 0.45f;
+            float bNext = 0.24f + rng.NextSingle() * 0.16f;
+            float oNext = (rng.NextSingle() - 0.5f) * 0.22f;
+            if (i == 0 || i == steps - 1 || rng.Next(8) == 0) { hPrev = h; bPrev = bNext; oPrev = oNext; continue; } // occasional gaps, and open corners for the gates
+            Vector2 p0 = a + d * (len * i / steps) + n * oPrev, p1 = a + d * (len * (i + 1) / steps) + n * oNext;
             float y0 = t.Height(p0), y1 = t.Height(p1);
-            Vector3 l0 = V3(p0 - n * 0.3f, y0 - 0.1f), l1 = V3(p1 - n * 0.3f, y1 - 0.1f), r0 = V3(p0 + n * 0.3f, y0 - 0.1f), r1 = V3(p1 + n * 0.3f, y1 - 0.1f);
+            Vector3 l0 = V3(p0 - n * bPrev, y0 - 0.1f), l1 = V3(p1 - n * bNext, y1 - 0.1f), r0 = V3(p0 + n * bPrev, y0 - 0.1f), r1 = V3(p1 + n * bNext, y1 - 0.1f);
             // A rounded hedge: two sides rising to a flat top of leaves (a sharp ridge showed one dark face from above, a slab).
-            float w0 = 0.18f + (rng.NextSingle() - 0.5f) * 0.08f, w1 = 0.18f;
+            float w0 = 0.14f + rng.NextSingle() * 0.14f, w1 = 0.14f + rng.NextSingle() * 0.14f;
             Vector3 tl0 = V3(p0 - n * w0, y0 + hPrev), tl1 = V3(p1 - n * w1, y1 + h), tr0 = V3(p0 + n * w0, y0 + hPrev), tr1 = V3(p1 + n * w1, y1 + h);
+            bPrev = bNext; oPrev = oNext;
             var c = Jitter(leaf, rng, 0.07f);
             Face(l0, l1, tl1, tl0, c); Face(r1, r0, tr0, tr1, c);
             Face(tl0, tl1, tr1, tr0, Color.Lerp(c, new Color(150, 170, 90), 0.18f)); // the sunlit top

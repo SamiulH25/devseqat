@@ -142,17 +142,19 @@ public sealed partial class WorldMap
                     if (town < houses + 4) continue;
                     if (at >= nextTree) // the approach to a seat: trees on one side, a hedge on the other
                     {
-                        nextTree = at + 2.4f;
+                        nextTree = at + 1.9f + rng.NextSingle() * 1.8f;
                         if (place is { Kind: not SettlementKind.Village } && town < houses + 50)
                         {
                             int k = (int)(at / 2.4f);
                             int flip = place.Id & 1;
-                            // (Distances are to the road's coarse copy, up to 1.2 m off the drawn line: the margins allow for it.)
-                            float near = 0.45f + 0.55f * Math.Clamp((town - 12 * grow * grow) / (30 * grow * grow), 0, 1); // small by the walls, as the stands' trees are
+                            float near = 0.45f + 0.55f * Math.Clamp((town - 12 * grow * grow) / (30 * grow * grow), 0, 1);
                             if (k % 3 == 0 && town > houses + 8 && Free(p + side * (r.Half + 3.2f) * (flip * 2 - 1), r.Half + 1.6f))
-                                foliage.Add(new Foliage(Lands.Of(ProvinceAt(p).Kind).Conifer ? Pine : Broadleaf, p + side * (r.Half + 3.2f) * (flip * 2 - 1), (1.5f + rng.NextSingle() * 0.5f) * grow * near, 0, rng.Next()));
-                            var hedge = p - side * (r.Half + 2.4f) * (flip * 2 - 1);
-                            if (Free(hedge, r.Half + 0.9f)) foliage.Add(new Foliage(Shrub, hedge, (0.8f + rng.NextSingle() * 0.25f) * grow, 0, rng.Next(), 0.1f));
+                                foliage.Add(new Foliage(Lands.Of(ProvinceAt(p).Kind).Conifer ? Pine : Broadleaf, p + side * (r.Half + 3.0f + rng.NextSingle() * 0.8f) * (flip * 2 - 1), (1.4f + rng.NextSingle() * 0.7f) * grow * near, 0, rng.Next()));
+                            if (rng.Next(4) != 0)
+                            {
+                                var hedge = p - side * (r.Half + 2.0f + rng.NextSingle() * 1.2f) * (flip * 2 - 1);
+                                if (Free(hedge, r.Half + 0.9f)) foliage.Add(new Foliage(Shrub, hedge, (0.55f + rng.NextSingle() * 0.55f) * grow, 0, rng.Next(), 0.1f));
+                            }
                         }
                     }
                     if (at >= nextMile && !r.Village)

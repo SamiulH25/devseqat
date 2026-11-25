@@ -54,43 +54,80 @@ sealed partial class World
     {
         if (t.RoadLines.Count == 0) return;
         float[] cols = { -1, -0.62f, -0.3f, 0, 0.3f, 0.62f, 1 };
+        // Trim road ribbons cleanly at settlement outer gates/aprons and wayside sites (inns, tolls) so they do not slice
+        // through courtyards, houses or roofs.
+        var clearings = new List<(Vector2 Pos, float ClearR, float FadeW)>(t.Places.Count + 16);
+        foreach (var pl in t.Places)
+        {
+            float r = pl.Radius * t.ThingScale;
+            clearings.Add((pl.Pos, r * (pl.Kind == SettlementKind.Village ? 0.95f : 0.92f), 1.6f));
+        }
+        foreach (var fl in t.Foliage)
+        {
+            if (t.Places.Count == 0 && fl.Kind is FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village)
+                clearings.Add((fl.Pos, (fl.Kind == FoliageKind.Village ? 4.5f : 6.5f) * t.ThingScale, 1.6f));
+            else if (fl.Kind is FoliageKind.Inn or FoliageKind.Toll or FoliageKind.Ruin or FoliageKind.Shrine or FoliageKind.Watch or FoliageKind.Mill or FoliageKind.Hut)
+                clearings.Add((fl.Pos, 2.2f * fl.Scale * t.ThingScale, 1.2f));
+        }
+        float RoadFade(Vector2 p)
+        {
+            float f = 1f;
+            for (int i = 0; i < clearings.Count; i++)
+            {
+                var (c, cr, fw) = clearings[i];
+                float lim = cr + fw;
+                if (MathF.Abs(p.X - c.X) >= lim || MathF.Abs(p.Y - c.Y) >= lim) continue;
+                float d = Vector2.Distance(p, c);
+                if (d <= cr) return 0f;
+                if (d < lim) f = MathF.Min(f, MathHelper.SmoothStep(0f, 1f, (d - cr) / fw));
+            }
+            return f;
+        }
         // Each point of a ribbon (sample x column) is worked out once, the roads in parallel; then the quads take their
         // corners from those points, road by road in order.
-        var ribbons = new (int Samples, VertexPNCT[] At)[t.RoadLines.Count];
+        var ribbons = new (int Samples, VertexPNCT[] At, float[] Fade)[t.RoadLines.Count];
         Parallel.For(0, t.RoadLines.Count, k =>
         {
             var road = t.RoadLines[k];
             var s = Resample(road.Points, 2f);
             var at = new VertexPNCT[s.Count * cols.Length];
+            var fade = new float[s.Count];
             for (int i = 0; i < s.Count; i++)
             {
                 var (p, d) = s[i];
+                float f = RoadFade(p);
+                fade[i] = f;
                 Vector2 nrm = new(-d.Y, d.X);
                 float half = road.Half * PlacePlan.StreetScale(t.Places, p) * t.ThingScale; // a town's streets narrow (docs/archive/SETTLEMENTS.md SM2); the draft's roads too (WS5b)
-                for (int c = 0; c < cols.Length; c++) at[i * cols.Length + c] = Vertex(p + nrm * cols[c] * half, c);
+                for (int c = 0; c < cols.Length; c++) at[i * cols.Length + c] = Vertex(p + nrm * cols[c] * half, c, f);
             }
-            ribbons[k] = (s.Count, at);
+            ribbons[k] = (s.Count, at, fade);
 
-            VertexPNCT Vertex(Vector2 p, int col)
+            VertexPNCT Vertex(Vector2 p, int col, float f)
             {
                 var earth = col is 0 or 6 ? Verge : col is 2 or 4 ? Rut : col == 3 ? Crown : RoadEarth;
                 if (road.Village) earth = Vector3.Lerp(earth, Verge, 0.25f); // a lane: less worn
-                var c = Vector3.Lerp(earth, GroundColor(p), 0.1f); // the ground's season shows through (snow, dry summer)
-                return new VertexPNCT(new Vector3(p.X, t.Height(p) + 0.32f, p.Y), NormalAt(p), new Color(c), Trodden);
+                var g = GroundColor(p);
+                var roadCol = Vector3.Lerp(earth, g, 0.1f); // the ground's season shows through (snow, dry summer)
+                var c = Vector3.Lerp(g, roadCol, f);
+                return new VertexPNCT(new Vector3(p.X, t.Height(p) + 0.06f, p.Y), NormalAt(p), new Color(c), Trodden);
             }
         });
-        foreach (var (count, at) in ribbons)
+        foreach (var (count, at, fade) in ribbons)
         {
             for (int from = 0; from + 1 < count; from += 20)
             {
                 int start = m.V.Count, to = Math.Min(count - 1, from + 20);
                 for (int i = from; i < to; i++)
+                {
+                    if (fade[i] <= 0.001f && fade[i + 1] <= 0.001f) continue;
                     for (int c = 0; c + 1 < cols.Length; c++)
                     {
                         int a0 = i * cols.Length + c, b0 = a0 + 1, a1 = a0 + cols.Length, b1 = a1 + 1;
                         m.V.Add(at[a0]); m.V.Add(at[b0]); m.V.Add(at[b1]);
                         m.V.Add(at[a0]); m.V.Add(at[b1]); m.V.Add(at[a1]);
                     }
+                }
                 AddTile(m, start);
             }
         }

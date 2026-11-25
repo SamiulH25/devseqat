@@ -235,23 +235,10 @@ partial class MapScreen
         foreach (var l in placed.AsEnumerable().Reverse()) l.Draw(l);
     }
 
-    /// The land lives: thin smoke from town chimneys, and dust kicked up behind parties on the move (docs/archive/VISUALS.md V4).
+    /// The land lives: dust kicked up behind parties on the move (docs/archive/VISUALS.md V4; chimney smoke is 3D soft puffs).
     void Life()
     {
         float fade = Math.Clamp((240 - zoom) / 80, 0, 1);
-        foreach (var t in C.S.Settlements)
-        {
-            if (t.Kind == SettlementKind.Village && t.ThreatUntil > C.S.Hours) continue; // already burning
-            int n = t.Kind == SettlementKind.Village ? 2 : 3;
-            for (int i = 0; i < n; i++)
-            {
-                float ph = (time * 0.12f + i / (float)n + t.Id * 0.37f) % 1;
-                var at = t.Pos + new Vector2((i - 1) * 1.6f + MathF.Sin(ph * 4 + t.Id) * 0.6f + ph * 2.5f, 0.8f * i);
-                if (Screen(G(at, (t.Kind == SettlementKind.Village ? 4 : 7) + ph * 9)) is not Vector2 sp) continue;
-                int r = Math.Max(1, ui.U((2 + ph * 6) * 110 / MathF.Max(40, zoom)));
-                ui.Rect(new Rectangle((int)sp.X - r / 2, (int)sp.Y - r / 2, r, r), new Color(200, 196, 190) * (0.22f * (1 - ph) * fade));
-            }
-        }
         foreach (var p in C.S.Parties)
         {
             if (p.Down || !bearers.TryGetValue(p.Id, out var u) || u.Speed <= 0) continue;

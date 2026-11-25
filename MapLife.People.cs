@@ -336,8 +336,12 @@ sealed partial class MapLife
         foreach (var b in seaBoats) DrawSeaBoat(b);
         foreach (var c in caravans) DrawCaravan(c.Id, c.Pilgrims);
         if (Ship is var (at, facing, sail)) // rolling a little on the swell
-            World.Ship(mesh, new Vector3(at.X, (t.SeaLevel ?? 0) + MathF.Sin(clock * 1.3f) * 0.08f, at.Y), facing + MathF.Sin(clock * 0.7f) * 0.03f, 1.2f, sail, false);
-        DrawSmoke();
+        {
+            var shipAt = new Vector3(at.X, (t.SeaLevel ?? 0) + MathF.Sin(clock * 1.3f) * 0.08f, at.Y);
+            float shipYaw = facing + MathF.Sin(clock * 0.7f) * 0.03f;
+            if (MapProps3D.HasShip) MapProps3D.EmitShip(mesh, shipAt, shipYaw, 1.2f, sail);
+            else World.Ship(mesh, shipAt, shipYaw, 1.2f, sail, false);
+        }
     }
 
     /// A figure about as tall as a cottage's eaves: legs that step, a tunic, a head, a straw hat for some. `stoop`
@@ -380,6 +384,7 @@ sealed partial class MapLife
     /// A horse as boxes, legs swinging with `phase`.
     void DrawHorse(Vector2 pos, float heading, float phase, float k, Color coat)
     {
+        k *= K;
         var f = new Vector2(MathF.Cos(heading), MathF.Sin(heading));
         var s = new Vector2(-f.Y, f.X);
         float ground = t.Height(pos);
@@ -492,50 +497,6 @@ sealed partial class MapLife
         return false;
     }
 
-    /// One puff of smoke: an eight-faced lump with normals from its middle, so it shades soft (a sphere would cost forty
-    /// times the triangles, and there are up to two hundred puffs).
-    void Puff(Vector3 c, float r, Color col)
-    {
-        Span<Vector3> d = stackalloc Vector3[] { Vector3.UnitX, Vector3.UnitZ, -Vector3.UnitX, -Vector3.UnitZ };
-        var top = c + Vector3.Up * r * 0.85f; var bottom = c - Vector3.Up * r * 0.7f;
-        for (int i = 0; i < 4; i++)
-        {
-            Vector3 a = c + d[i] * r, b = c + d[(i + 1) % 4] * r;
-            mesh.Raw(top, Vector3.Up, col, Vector2.Zero); mesh.Raw(a, d[i], col, Vector2.Zero); mesh.Raw(b, d[(i + 1) % 4], col, Vector2.Zero);
-            mesh.Raw(bottom, -Vector3.Up, col, Vector2.Zero); mesh.Raw(b, d[(i + 1) % 4], col, Vector2.Zero); mesh.Raw(a, d[i], col, Vector2.Zero);
-        }
-    }
-
     /// Whether a chimney smokes (about one in three, fixed by where it stands).
-    static bool Lit(Vector3 c) => ((uint)(MathF.Floor(c.X * 5.3f) * 73856093f % 1e6f + MathF.Floor(c.Z * 5.3f) * 19349663f % 1e6f)) % 3 == 0;
-
-    /// Smoke from the chimneys: a few puffs each, rising, drifting with the wind and swelling as they go.
-    void DrawSmoke()
-    {
-        for (int c = 0; c < smoking.Count; c++)
-        {
-            var at = smoking[c];
-            float seed = (c * 0.618f + at.X * 0.013f) % 1f;
-            for (int j = 0; j < 5; j++)
-            {
-                float age = clock * 0.18f + seed + j / 5f; age -= MathF.Floor(age); // seed can be negative: keep the age in 0..1
-                var p = at + new Vector3(2.4f, 0, 0.9f) * age * age * 1.4f + Vector3.Up * age * 3.2f;
-                float size = 0.22f + age * 0.6f;
-                var col = Color.Lerp(new Color(128, 126, 122), new Color(196, 198, 202), age);
-                Puff(p, size, col);
-            }
-        }
-        for (int c = 0; c < burning.Count; c++) // fires: a flicker of flame and a thick dark column leaning with the wind
-        {
-            var at = burning[c];
-            float seed = (c * 0.618f + at.X * 0.017f) % 1f;
-            Puff(at + Vector3.Up * 0.08f, 0.15f + 0.05f * MathF.Sin(clock * 9 + c), new Color(236, 128, 44));
-            for (int j = 0; j < 5; j++)
-            {
-                float age = clock * 0.15f + seed + j / 5f; age -= MathF.Floor(age);
-                var p = at + new Vector3(2.4f, 0, 0.9f) * age * age * 1.4f + Vector3.Up * (0.25f + age * 3.8f);
-                Puff(p, 0.2f + age * 0.75f, Color.Lerp(new Color(88, 82, 76), new Color(172, 168, 166), age));
-            }
-        }
-    }
+    public static bool Lit(Vector3 c) => ((uint)(MathF.Floor(c.X * 5.3f) * 73856093f % 1e6f + MathF.Floor(c.Z * 5.3f) * 19349663f % 1e6f)) % 3 == 0;
 }

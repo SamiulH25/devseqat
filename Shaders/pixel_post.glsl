@@ -159,9 +159,22 @@ void main()
         }
     }
 
-    // Soft HD-2D highlight bloom on bright steel glints, spells, water sparkles, and night torches
+    // Soft HD-2D highlight bloom + subtle tilt-shift diorama depth of field at extreme horizon/foreground
     if (!transparentBg)
     {
+        float tilt = max(1.0 - smoothstep(0.0, 0.22, vUV.y), smoothstep(0.82, 1.0, vUV.y));
+        float blurAmt = clamp(tilt * 0.42, 0.0, 0.45);
+        if (blurAmt > 0.001)
+        {
+            vec2 dOff = Texel * 1.6;
+            vec3 blurCol = (
+                texture2D(Scene, puv + vec2(-dOff.x, -dOff.y)).rgb +
+                texture2D(Scene, puv + vec2( dOff.x, -dOff.y)).rgb +
+                texture2D(Scene, puv + vec2(-dOff.x,  dOff.y)).rgb +
+                texture2D(Scene, puv + vec2( dOff.x,  dOff.y)).rgb
+            ) * 0.25;
+            col = mix(col, blurCol, blurAmt);
+        }
         vec2 bOff = Texel * 2.5;
         vec3 b0 = texture2D(Scene, puv + vec2(-bOff.x, -bOff.y)).rgb;
         vec3 b1 = texture2D(Scene, puv + vec2( bOff.x, -bOff.y)).rgb;

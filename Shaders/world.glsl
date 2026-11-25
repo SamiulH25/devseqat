@@ -72,6 +72,17 @@ vec3 MapLand(vec3 c, vec2 w)
     land *= 0.86 + 0.28 * patchy.r;
     return land * (0.8 + 0.4 * mix(fine.r, mid.r, 0.35));
 }
+// Subtle low-lying valley & river mist near water level on the campaign map, stronger at dawn/dusk/night.
+vec3 ValleyMist(vec3 col, vec3 world)
+{
+    if (Field.y > 0.5 || world.y >= 8.0) return col;
+    float valley = 1.0 - smoothstep(1.5, 8.0, world.y);
+    float lowSun = 1.0 - smoothstep(0.05, 0.45, max(-SunDir.y, 0.0));
+    float mistTime = mix(0.28, 1.0, max(Look.z, lowSun));
+    float drift = 0.75 + 0.25 * Noise2(world.xz * 0.025 + vec2(Time * 0.008, 0.0));
+    float mist = valley * mistTime * drift * 0.28;
+    return mix(col, FogColor, mist);
+}
 #endif
 void main()
 {
@@ -130,6 +141,11 @@ void main()
         float crack = 1.0 - smoothstep(0.0, 0.02, abs(Noise2(vWorld.xz * 0.3) - 0.5));
         vec3 ice = vec3(0.6, 0.72, 0.84) * (1.0 - 0.25 * crack) * mix(1.0, 0.72, smoothstep(0.6, 1.0, edge));
         wcol = mix(wcol, ice * (wamb + SunColor * max(wl.y, 0.0) * wsh), Look.x * 0.85);
+        float bankFeather = smoothstep(0.85, 1.0, edge);
+        vec3 bankFoam = mix(GroundColor * 1.1, FogColor * 0.85, 0.35);
+        bankFoam = mix(bankFoam, vec3(0.86, 0.88, 0.86) * (wamb + SunColor * max(wl.y, 0.0) * wsh), 0.25);
+        wcol = mix(wcol, bankFoam, bankFeather * 0.65);
+        wcol = ValleyMist(wcol, vWorld);
         gl_FragColor = vec4(Fog(wcol, vWorld), 1.0);
         return;
     }
@@ -308,6 +324,7 @@ void main()
     vec3 toCam = normalize(CameraPos - vWorld);
     col += albedo * SunColor * pow(max(dot(-toCam, l), 0.0), 4.0) * leaf * 0.6 * shadow;
 #endif
+    col = ValleyMist(col, vWorld);
     gl_FragColor = vec4(Fog(col, vWorld), 1.0);
 #endif
 }

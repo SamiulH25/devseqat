@@ -23,9 +23,15 @@ sealed partial class World
             Vector3 At(float s, float lift = 0) { var p = f.A + d * s; return new Vector3(p.X, t.Height(p) + lift, p.Y); }
             if (f.Kind == FeatureKind.Hedge)
             {
-                // Overlapping leafy blocks of uneven height, sunk a little into the ground.
-                for (float s = 0.6f; s < len; s += 1.1f)
-                    m.Box(At(s, -0.3f), 1.5f, 1.0f + rng.NextSingle() * 0.25f, f.Height + 0.3f + rng.NextSingle() * 0.35f, yaw + (rng.NextSingle() - 0.5f) * 0.2f, Jitter(HedgeLeaf, rng, 0.1f));
+                // Overlapping leafy blocks with jittered spacing, occasional gaps, and varied width/height/yaw.
+                var n = new Vector2(-d.Y, d.X);
+                for (float s = 0.5f + rng.NextSingle() * 0.35f; s < len; s += 0.85f + rng.NextSingle() * 0.6f)
+                {
+                    if (rng.Next(9) == 0) continue;
+                    var p = f.A + d * s + n * ((rng.NextSingle() - 0.5f) * 0.28f);
+                    var at = new Vector3(p.X, t.Height(p) - 0.3f, p.Y);
+                    m.Box(at, 1.1f + rng.NextSingle() * 0.7f, 0.85f + rng.NextSingle() * 0.45f, f.Height + 0.15f + rng.NextSingle() * 0.5f, yaw + (rng.NextSingle() - 0.5f) * 0.45f, Jitter(HedgeLeaf, rng, 0.12f));
+                }
             }
             else
             {

@@ -118,18 +118,10 @@ sealed partial class MapLife
             mesh.Box(bb + Vector3.Up * (bh - 0.65f * s), 0.85f * s, 0.06f * s, 0.55f * s, gate + 0.4f, GoblinBanner);
         }
 
-        // Campfire and rising smoke in the yard before the burrow.
+        // Campfire in the yard before the burrow (soft smoke is drawn by MapScreen).
         var fp = pos + gf * (1.35f * s);
         var fb = new Vector3(fp.X, t.Height(fp), fp.Y);
         mesh.Box(fb, 0.52f * s, 0.52f * s, 0.14f * s, 0, GoblinEmber);
-        float seed = (id * 0.618f + fp.X * 0.013f) % 1f;
-        for (int j = 0; j < 4; j++)
-        {
-            float age = clock * 0.22f + seed + j / 4f;
-            age -= MathF.Floor(age);
-            var sp = fb + Vector3.Up * (0.4f + age * 4.2f * s) + new Vector3(1.8f, 0, 0.7f) * age * age * 1.8f;
-            Puff(sp, (0.28f + age * 0.75f) * s, Color.Lerp(new Color(96, 92, 86), new Color(172, 174, 178), age));
-        }
 
         // A couple of small goblin sentries proportional to the camp (not giant map-tokens).
         var sentry = new Person { Shirt = GoblinRag, Hose = GoblinSkin, Hat = false };

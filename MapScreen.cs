@@ -55,6 +55,7 @@ sealed partial class MapScreen
     readonly Puppet puppet;
     readonly Puppet3D? puppet3D;
     readonly Verts<VertexPositionColorTexture> sprites = new();
+    readonly Verts<VertexPositionColorTexture> soft = new();
     readonly Verts<VertexPNCT> units3D = new();
     readonly BoundingFrustum unitFrustum = new(Matrix.Identity);
     readonly Verts<VertexPositionColor> lines = new();
@@ -100,7 +101,7 @@ sealed partial class MapScreen
     {
         this.gd = gd; this.art = art; this.shading = shading; this.ctl = ctl; campKit = meshKit;
         ui = new Ui(sb, art, font);
-        puppet = new Puppet(art, sprites) { Scale = FigureScale }; // a little smaller than the towns they ride between (WL3)
+        puppet = new Puppet(art, sprites) { Scale = FigureScale, Soft = soft }; // a little smaller than the towns they ride between (WL3)
         if (meshKit != null) puppet3D = new Puppet3D(meshKit, units3D) { Scale = FigureScale };
         spriteFx = new AlphaTestEffect(gd)
         {
@@ -678,6 +679,12 @@ sealed partial class MapScreen
                     gd.SetRenderTarget(pCol);
                     FrameProf.End("u3dDraw");
                 }
+                BuildSmoke(view);
+                if (soft.N > 0)
+                {
+                    sh.Setup(sh.Sprite, view * proj, eye, time, shadows, 1.2f);
+                    DrawSoft(sh.Sprite);
+                }
                 FrameProf.Begin("linesAndPost");
                 DrawLines();
                 sh.PixelPostToScreen(pScale, Sky.Grade);
@@ -695,6 +702,8 @@ sealed partial class MapScreen
                 FrameProf.Begin("spritesDraw");
                 sh.Setup(sh.Sprite, view * proj, eye, time, shadows, 1.2f);
                 DrawSprites(sh.Sprite, "Sprite");
+                BuildSmoke(view);
+                DrawSoft(sh.Sprite);
                 FrameProf.End("spritesDraw");
                 FrameProf.Begin("linesAndPost");
                 DrawLines();
@@ -889,6 +898,66 @@ sealed partial class MapScreen
         sprites.Draw(gd, PrimitiveType.TriangleList, sprites.N / 3);
     }
 
+    void BuildSmoke(Matrix viewer)
+    {
+        soft.N = 0;
+        if (world == null || zoom > 260 || (bare && !ShotLife)) return;
+        puppet.Begin(viewer);
+        float reach = Math.Clamp(zoom * 1.4f, 60, 260), reach2 = reach * reach;
+        int cap = lifeQuality == Quality.High ? 40 : 16;
+        int drawn = 0;
+        foreach (var at in world.ChimneysNow)
+        {
+            if (drawn >= cap || Vector2.DistanceSquared(new Vector2(at.X, at.Z), focus) > reach2 || !MapLife.Lit(at)) continue;
+            float seed = MathF.Abs((drawn * 0.618f + at.X * 0.013f) % 1f);
+            for (int j = 0; j < 5; j++)
+            {
+                float age = time * 0.14f + seed + j / 5f;
+                age -= MathF.Floor(age);
+                var p = at + new Vector3(1.8f, 0, 0.7f) * (age * age * 1.5f)
+                    + new Vector3(MathF.Sin(age * 5f + drawn) * 0.25f, age * 3.6f, MathF.Cos(age * 4f + drawn) * 0.2f);
+                float size = 0.55f + age * 1.45f;
+                float alpha = MathF.Sin(MathF.Min(1f, age * 4f) * MathF.PI * 0.5f) * (1f - age) * (1f - age) * 0.42f;
+                var col = Color.Lerp(new Color(210, 206, 198), new Color(235, 236, 240), age);
+                puppet.Haze(p, size, col, alpha, seed * 12f + j * 2.1f + age * 1.4f);
+            }
+            drawn++;
+        }
+        int fireCap = lifeQuality == Quality.High ? 24 : 10;
+        int fires = 0;
+        foreach (var at in world.Fires)
+        {
+            if (fires >= fireCap || Vector2.DistanceSquared(new Vector2(at.X, at.Z), focus) > reach2 * 2) continue;
+            float seed = MathF.Abs((fires * 0.618f + at.X * 0.017f) % 1f);
+            puppet.Haze(at + Vector3.Up * 0.18f, 0.85f + 0.16f * MathF.Sin(time * 8f + fires), new Color(255, 145, 50), 0.72f, time * 2f + fires);
+            for (int j = 0; j < 6; j++)
+            {
+                float age = time * 0.13f + seed + j / 6f;
+                age -= MathF.Floor(age);
+                var p = at + new Vector3(1.9f, 0, 0.75f) * (age * age * 1.5f)
+                    + new Vector3(MathF.Sin(age * 4.5f + fires) * 0.3f, 0.3f + age * 4.2f, MathF.Cos(age * 3.5f + fires) * 0.25f);
+                float size = 0.75f + age * 2.0f;
+                float alpha = MathF.Sin(MathF.Min(1f, age * 4f) * MathF.PI * 0.5f) * (1f - age) * (1f - age) * 0.58f;
+                var col = Color.Lerp(new Color(95, 88, 82), new Color(175, 172, 168), age);
+                puppet.Haze(p, size, col, alpha, seed * 15f + j * 1.9f + age * 1.2f);
+            }
+            fires++;
+        }
+    }
+
+    void DrawSoft(Effect fx)
+    {
+        if (soft.N == 0) return;
+        gd.BlendState = BlendState.AlphaBlend;
+        gd.DepthStencilState = DepthStencilState.DepthRead;
+        gd.RasterizerState = RasterizerState.CullNone;
+        fx.CurrentTechnique = fx.Techniques["SpriteSoft"];
+        fx.CurrentTechnique.Passes[0].Apply();
+        soft.Draw(gd, PrimitiveType.TriangleList, soft.N / 3);
+        gd.BlendState = BlendState.Opaque;
+        gd.DepthStencilState = DepthStencilState.Default;
+    }
+
     /// The ground, or the sea's surface over it: what a mark or a label out on the water stands on.
     float Surface(Vector2 p) => MathF.Max(terrain.Height(p), terrain.SeaLevel ?? float.MinValue);
 
@@ -903,11 +972,11 @@ sealed partial class MapScreen
             for (int i = 0; i < 16; i++)
             {
                 float a0 = i * MathF.Tau / 16, a1 = (i + 1) * MathF.Tau / 16;
-                Line(G(p + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * r), G(p + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * r), c);
+                Line(G(p + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * r, 0.95f), G(p + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * r, 0.95f), c);
             }
         }
         // The town or ruin the next click would go to gets a ring, so a click that is not on its centre still reads as aimed.
-        if (hover.Party == null && (hover.Town?.Pos ?? hover.Site?.Pos) is Vector2 ringAt) Ring(ringAt, hover.Town is { Kind: SettlementKind.Village } ? 6 : hover.Town != null ? 10 : 4, Style.Accent);
+        if (hover.Party == null && (hover.Town?.Pos ?? hover.Site?.Pos) is Vector2 ringAt) Ring(ringAt, hover.Town is { Kind: SettlementKind.Village } ? 7 : hover.Town != null ? 13 : 4.5f, Style.Accent);
         // Tracks: dotted lines behind every party, toward its current position.
         foreach (var (id, track) in trails)
         {
