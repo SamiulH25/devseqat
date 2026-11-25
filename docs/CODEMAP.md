@@ -965,9 +965,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Upgrade.cs (355 lines)
 - **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:187, Leads:343
 
-## Mesh3D.cs (469 lines)
-- **MeshKit3D** (class, L9): TryLoad:73, Load:86, Get:177, Resolve:179, MapLimb:311, MapHelm:319, MapWeapon:363, MapShield:390
-- **UnitMatTable** (struct, L405): Fill:418, FillBeast:456
+## Mesh3D.cs (471 lines)
+- **MeshKit3D** (class, L9): TryLoad:75, Load:88, Get:179, Resolve:181, MapLimb:313, MapHelm:321, MapWeapon:365, MapShield:392
+- **UnitMatTable** (struct, L407): Fill:420, FillBeast:458
 
 ## MusicDirector.cs (129 lines)
 - **MusicDirector** (class, L12): Cue:17, MusicDirector:28, Pool:36, Reset:51, Adopt:59, Update:68, BackToMap:99, Next:109, Start:121
@@ -1025,8 +1025,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Puppet3D.Beasts.cs (526 lines)
 - **Puppet3D** (class, L7): BeastRearing:9, DrawBeast3D:13, DrawWolfUnit3D:34, DrawWolfRig:52, DrawWarg3D:99, DrawBear3D:107, DrawSpider3D:156, DrawWyvern3D:192, DrawBoar3D:256, DrawHarpy3D:286, DrawGriffon3D:312, DrawBasilisk3D:351, DrawSandWurm3D:382, DrawWerewolf3D:403, DrawBrute3D:441
 
-## Puppet3D.cs (1464 lines)
-- **Puppet3D** (class, L12): BuildPatAlpha:41, Puppet3D:58, BeginCamera:64, Rad:71, Frame:73, WorldFrame:82, Lean:91, W:100, WDir:111, EmitLocal:126, EmitBone:195, EmitDir:211, EmitWeapon:223, RotX:248, RotZ:254, RotY:260, Elbow:266, Sink:288, TryDraw:297, EmblemOf:778, EmitSlashArc:788, EmitShield:861, DrawFallen3D:906, Banner:1011, DrawMissile:1149, HorseScale:1167, Joint:1177, DrawHorse3D:1191, DrawLooseHorse:1344, DrawDeadHorse:1358, Bench:1402
+## Puppet3D.cs (1489 lines)
+- **Puppet3D** (class, L12): BuildPatAlpha:41, Puppet3D:58, BeginCamera:64, Rad:71, Frame:73, WorldFrame:82, Lean:91, W:100, WDir:111, EmitLocal:126, EmitBone:195, EmitDir:211, EmitWeapon:223, RotX:248, RotZ:254, RotY:260, Elbow:266, Sink:288, TryDraw:297, EmblemOf:796, EmitSlashArc:806, EmitShield:879, DrawFallen3D:931, Banner:1036, DrawMissile:1174, HorseScale:1192, Joint:1202, DrawHorse3D:1216, DrawLooseHorse:1369, DrawDeadHorse:1383, Bench:1427
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, SheetRect:133, OtherBeastCorpse:136

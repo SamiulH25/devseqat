@@ -22,7 +22,9 @@ sealed class MeshKit3D
     }
 
     /// Surface pattern IDs packed into VertexPNCT Color.A high nibble (read by Shaders/unit3d.glsl).
-    public const byte PatSmooth = 0, PatMail = 1, PatScale = 2, PatQuilt = 3, PatBrushed = 4, PatFur = 5;
+    public const byte PatSmooth = 0, PatMail = 1, PatScale = 2, PatQuilt = 3, PatBrushed = 4, PatFur = 5,
+        PatPlateFluted = 6, PatPlateRiveted = 7, PatPlateWorn = 8, PatMailHeavy = 9, PatScaleOrnate = 10,
+        PatClothHerring = 11, PatClothPadded = 12, PatClothCheck = 13, PatWoodPlank = 14, PatLeatherTooled = 15;
 
     /// Pre-resolved modular mesh references for one `Look` (zero string lookups during rendering!).
     public sealed class LookMeshes

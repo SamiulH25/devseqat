@@ -40,9 +40,9 @@ sealed partial class Puppet3D
     static readonly byte[] PatAlpha = BuildPatAlpha();
     static byte[] BuildPatAlpha()
     {
-        var table = new byte[6 * UnitMatTable.Slots];
+        var table = new byte[16 * UnitMatTable.Slots];
         var metalQ = UnitMatTable.MetalQ;
-        for (int p = 0; p < 6; p++)
+        for (int p = 0; p < 16; p++)
             for (int m = 0; m < UnitMatTable.Slots; m++)
             {
                 byte pat = 0;
@@ -493,13 +493,31 @@ sealed partial class Puppet3D
                 }
             }
         }
-        EmitLocal(chestMesh, torsoPos, tR, Vector3.UnitY, tF, 1f, syB, szB, lm.ChestPat);
+        static byte VaryPat(byte pat, int seed, int salt)
+        {
+            int h = Math.Abs(seed * 17 + salt * 31);
+            return pat switch
+            {
+                MeshKit3D.PatBrushed => (h % 5) switch { 0 => MeshKit3D.PatBrushed, 1 => MeshKit3D.PatPlateFluted, 2 => MeshKit3D.PatPlateRiveted, 3 => MeshKit3D.PatPlateWorn, _ => MeshKit3D.PatSmooth },
+                MeshKit3D.PatMail => (h & 1) == 0 ? MeshKit3D.PatMail : MeshKit3D.PatMailHeavy,
+                MeshKit3D.PatScale => (h & 1) == 0 ? MeshKit3D.PatScale : MeshKit3D.PatScaleOrnate,
+                MeshKit3D.PatQuilt => (h & 3) switch { 0 => MeshKit3D.PatQuilt, 1 => MeshKit3D.PatClothHerring, 2 => MeshKit3D.PatClothPadded, _ => MeshKit3D.PatClothCheck },
+                _ => pat,
+            };
+        }
+        bool varyTex = !ExactLook && !u.IsPlayer && !u.IsLeader && !u.Hero;
+        int texSeed = varyTex ? Variety.Seed(u) : 0;
+        byte chestPat = varyTex ? VaryPat(lm.ChestPat, texSeed, 1) : lm.ChestPat;
+        byte skirtPat = varyTex ? VaryPat(lm.SkirtPat, texSeed, 2) : lm.SkirtPat;
+        byte shldPat = varyTex ? VaryPat(lm.ShldPat, texSeed, 3) : lm.ShldPat;
+        byte tabardPat = varyTex ? VaryPat(MeshKit3D.PatQuilt, texSeed, 4) : MeshKit3D.PatQuilt;
+        EmitLocal(chestMesh, torsoPos, tR, Vector3.UnitY, tF, 1f, syB, szB, chestPat);
         if (skirtMesh.Length > 0)
-            EmitLocal(skirtMesh, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f, 1f, lm.SkirtPat);
+            EmitLocal(skirtMesh, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f, 1f, skirtPat);
         if (Detail == 0)
         {
-            if (shldMesh.Length > 0) EmitLocal(shldMesh, torsoPos, tR, Vector3.UnitY, tF, 1f, syB, szB, lm.ShldPat);
-            if (lm.TabardPanel.Length > 0) EmitLocal(lm.TabardPanel, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f, 1f, MeshKit3D.PatQuilt);
+            if (shldMesh.Length > 0) EmitLocal(shldMesh, torsoPos, tR, Vector3.UnitY, tF, 1f, syB, szB, shldPat);
+            if (lm.TabardPanel.Length > 0) EmitLocal(lm.TabardPanel, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f, 1f, tabardPat);
             if (beltMesh.Length > 0) EmitLocal(beltMesh, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f, szB);
             if (lm.HasTabard)
             {
@@ -866,7 +884,14 @@ sealed partial class Puppet3D
         Vector3 sR = RotY(bR, yawDeg);
         Vector3 sU = RotY(bU, yawDeg);
         Vector3 sF = RotY(bF, yawDeg);
-        EmitLocal(lm.Shield, pos, sR, sU, sF);
+        byte shieldPat = ((int)MathF.Round(pos.X * 13f + pos.Z * 7f) & 3) switch
+        {
+            0 => MeshKit3D.PatQuilt,
+            1 => MeshKit3D.PatWoodPlank,
+            2 => MeshKit3D.PatPlateRiveted,
+            _ => MeshKit3D.PatClothCheck,
+        };
+        EmitLocal(lm.Shield, pos, sR, sU, sF, 1f, 1f, 1f, shieldPat);
 
         if (Detail <= 1)
         {
