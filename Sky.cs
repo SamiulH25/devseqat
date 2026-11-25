@@ -30,9 +30,9 @@ public static class Sky
 
     static Sky() => Set(Weather.Clear);
 
-    static readonly Vector3 NoonSun = new(0.9f, 0.84f, 0.72f), DuskSun = new(0.95f, 0.6f, 0.36f), MoonSun = new(0.26f, 0.3f, 0.44f);
-    static readonly Vector3 NoonSky = new(0.42f, 0.47f, 0.56f), DuskSky = new(0.4f, 0.34f, 0.38f), NightSky = new(0.13f, 0.15f, 0.24f);
-    static readonly Color NoonHorizon = new(186, 204, 218), DuskHorizon = new(226, 168, 128), NightHorizon = new(30, 36, 56);
+    static readonly Vector3 NoonSun = new(0.96f, 0.88f, 0.74f), DuskSun = new(1.04f, 0.56f, 0.28f), MoonSun = new(0.24f, 0.30f, 0.48f);
+    static readonly Vector3 NoonSky = new(0.42f, 0.48f, 0.58f), DuskSky = new(0.38f, 0.32f, 0.40f), NightSky = new(0.11f, 0.14f, 0.25f);
+    static readonly Color NoonHorizon = new(186, 204, 220), DuskHorizon = new(236, 156, 108), NightHorizon = new(26, 32, 54);
     static readonly Color NoonZenith = new(78, 126, 194), DuskZenith = new(70, 84, 140), NightZenith = new(10, 14, 32);
 
     /// `nightFloor` keeps the darkest night this bright (the campaign map stays readable at night).

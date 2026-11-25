@@ -1069,9 +1069,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SettingsScreen.cs (206 lines)
 - **SettingsScreen** (class, L7): readonly:20, SettingsScreen:22, Update:24, Close:42, Draw:50
 
-## Shading.cs (297 lines)
+## Shading.cs (300 lines)
 - **Quality** (enum, L8)
-- **Shading** (class, L12): Source:39, Shading:49, AimSun:128, Setup:172, Blank:204, Scene:211, PostToScreen:226, PixelPostToScreen:264, PixelPostTo:271, Dispose:292
+- **Shading** (class, L12): Source:39, Shading:49, AimSun:128, Setup:172, Blank:204, Scene:211, PostToScreen:226, PixelPostToScreen:264, PixelPostTo:271, Dispose:295
 
 ## SkinnedMesh3D.cs (229 lines)
 - **VertexPNCTBW** (struct, L10)

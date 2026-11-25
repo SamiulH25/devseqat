@@ -120,7 +120,55 @@ void main()
 
             if (convex > 0.30) col *= 1.0 + OutlineCfg.z * 0.20 * nearWeight;
             else if (concave > 0.38) col *= 1.0 - OutlineCfg.z * 0.14 * nearWeight;
+
+            // 4-tap diagonal contact AO + half-res SSGI-Lite (1-bounce color bleeding from nearby sunlit surfaces)
+            float occ = 0.0;
+            vec3 gi = vec3(0.0);
+            vec2 dOff = Texel * 2.2;
+            vec2 offs[4];
+            offs[0] = vec2(-dOff.x, -dOff.y);
+            offs[1] = vec2( dOff.x, -dOff.y);
+            offs[2] = vec2(-dOff.x,  dOff.y);
+            offs[3] = vec2( dOff.x,  dOff.y);
+            for (int i = 0; i < 4; i++)
+            {
+                vec4 dK = texture2D(NormDepth, puv + offs[i]);
+                float fg = step(0.005, dK.a);
+                occ += clamp((dK.a - ndC.a) * 35.0, 0.0, 1.0) * fg;
+                float close = 1.0 - smoothstep(0.015, 0.075, abs(dK.a - ndC.a));
+                vec3 nK = UnpackNormal(dK.rgb);
+                vec3 dirToC = normalize(vec3(-offs[i] / Texel, 0.35));
+                float facing = max(dot(nK, dirToC), 0.0) * 0.65 + 0.35;
+                vec3 sK = texture2D(Scene, puv + offs[i]).rgb;
+                gi += sK * facing * close * mix(0.45, 1.0, fg);
+            }
+            // 5-step screen-space contact shadow raymarch along SunScreen on NormDepth (thin shields/weapons/limbs)
+            float contactSh = 0.0;
+            vec2 rayStep = SunScreen * Texel * 1.35;
+            for (int s = 1; s <= 5; s++)
+            {
+                vec4 shSample = texture2D(NormDepth, puv + rayStep * float(s));
+                float diff = shSample.a - ndC.a;
+                if (shSample.a > 0.005 && diff > 0.0022 && diff < 0.028)
+                {
+                    contactSh = max(contactSh, 1.0 - float(s - 1) * 0.16);
+                }
+            }
+            col *= 1.0 - (occ * 0.045 + contactSh * 0.22) * nearWeight;
+            col += (gi * 0.25) * (0.14 * nearWeight) * (0.35 + 0.65 * col);
         }
+    }
+
+    // Soft HD-2D highlight bloom on bright steel glints, spells, water sparkles, and night torches
+    if (!transparentBg)
+    {
+        vec2 bOff = Texel * 2.5;
+        vec3 b0 = texture2D(Scene, puv + vec2(-bOff.x, -bOff.y)).rgb;
+        vec3 b1 = texture2D(Scene, puv + vec2( bOff.x, -bOff.y)).rgb;
+        vec3 b2 = texture2D(Scene, puv + vec2(-bOff.x,  bOff.y)).rgb;
+        vec3 b3 = texture2D(Scene, puv + vec2( bOff.x,  bOff.y)).rgb;
+        vec3 bloomCol = max(b0 - 0.75, 0.0) + max(b1 - 0.75, 0.0) + max(b2 - 0.75, 0.0) + max(b3 - 0.75, 0.0);
+        col += bloomCol * 0.32;
     }
 
     // Color grade & split-tone matching Ironfield's post.glsl.
@@ -128,7 +176,7 @@ void main()
     float l = dot(col, Luma);
     col = mix(vec3(l), col, Grade.x);
     col = (col - 0.5) * Grade.y + 0.5;
-    col += vec3(0.035, 0.018, -0.02) * smoothstep(0.45, 1.0, l) + vec3(-0.02, 0.0, 0.03) * (1.0 - smoothstep(0.0, 0.45, l));
+    col += vec3(0.042, 0.022, -0.022) * smoothstep(0.45, 1.0, l) + vec3(-0.024, 0.0, 0.036) * (1.0 - smoothstep(0.0, 0.45, l));
     vec2 c = (vUV - 0.5) * vec2(1.3, 1.0);
     if (!transparentBg) col *= 1.0 - Grade.z * smoothstep(0.35, 0.95, length(c));
     if (Awe.w > 0.0)

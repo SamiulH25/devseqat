@@ -93,7 +93,7 @@ sealed class Shading : IDisposable
             if (File.Exists(hp)) { using var hfs = File.OpenRead(hp); HumanTex = Texture2D.FromStream(gd, hfs); break; }
         }
 
-        var unitTexSlot = new TextureSlot("UnitTex", 1, SamplerState.PointClamp);
+        var unitTexSlot = new TextureSlot("UnitTex", 2, SamplerState.PointClamp);
         var lit3D = lit.Concat(new[] { Uniform.Mat4("View"), Uniform.Float("HasUnitTex") }).ToArray();
         Unit3D = GlslEffect.Create(gd, "unit3d", common + Source("unit3d.glsl"), lit3D,
             new[] { shadowTex, unitTexSlot },
@@ -115,7 +115,7 @@ sealed class Shading : IDisposable
             new GlslEffect.Technique("Unit3D", "SKINNED"), new GlslEffect.Technique("Unit3DShadow", "SKINNED", "SHADOW"));
 
         PixelPost = GlslEffect.Create(gd, "pixel_post", Source("pixel_post.glsl"),
-            new[] { Uniform.Vec2("Texel"), Uniform.Vec4("Grade"), Uniform.Vec4("Tint"), Uniform.Vec4("Awe"), Uniform.Vec4("Moment"), Uniform.Float("Time"), Uniform.Float("Warp"), Uniform.Vec4("OutlineCfg") },
+            new[] { Uniform.Vec2("Texel"), Uniform.Vec4("Grade"), Uniform.Vec4("Tint"), Uniform.Vec4("Awe"), Uniform.Vec4("Moment"), Uniform.Float("Time"), Uniform.Float("Warp"), Uniform.Vec4("OutlineCfg"), Uniform.Vec2("SunScreen") },
             new[] { new TextureSlot("Scene", 0, SamplerState.PointClamp), new TextureSlot("NormDepth", 1, SamplerState.PointClamp) },
             new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aUV", VertexElementUsage.TextureCoordinate) },
             new GlslEffect.Technique("PixelPost"));
@@ -285,6 +285,9 @@ sealed class Shading : IDisposable
         PixelPost.Parameters["Warp"]?.SetValue(warp);
         PixelPost.Parameters["Time"].SetValue((float)(Environment.TickCount64 % 100000) / 1000f);
         PixelPost.Parameters["OutlineCfg"].SetValue(outlineCfg ?? new Vector4(0.95f, 0.85f, 0.90f, 0));
+        var sunScr = new Vector2(-Ironfield.World.SunDir.X, Ironfield.World.SunDir.Y);
+        if (sunScr.LengthSquared() > 1e-4f) sunScr.Normalize(); else sunScr = new Vector2(0.55f, -0.75f);
+        PixelPost.Parameters["SunScreen"]?.SetValue(new Vector2(sunScr.X, -sunScr.Y));
         PixelPost.CurrentTechnique.Passes[0].Apply();
         gd.DrawUserPrimitives(PrimitiveType.TriangleList, quad, 0, 2);
     }

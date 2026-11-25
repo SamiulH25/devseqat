@@ -36,6 +36,7 @@ float ShadowAt(vec3 world)
     vec2 uv = vec2(c.x * 0.5 + 0.5, 0.5 - c.y * 0.5);
     float d = c.z - ShadowParams.y;
     // A continuous 3x3 tent filter (9 taps) weighted by sub-texel position, smooth across texels without stepping.
+    float penumbra = ShadowParams.x * 1.35;
     vec2 tc = uv / ShadowParams.x;
     vec2 f = fract(tc) - 0.5;
     vec2 base = (floor(tc) + 0.5) * ShadowParams.x;
@@ -46,7 +47,7 @@ float ShadowAt(vec3 world)
         for (int j = -1; j <= 1; j++)
         {
             float wy = j == 0 ? 1.0 : (j < 0 ? 0.5 - f.y : 0.5 + f.y);
-            s += step(d, texture2D(ShadowMap, base + vec2(float(i), float(j)) * ShadowParams.x).r) * wx * wy;
+            s += step(d, texture2D(ShadowMap, base + vec2(float(i), float(j)) * penumbra).r) * wx * wy;
         }
     }
     s *= 0.25;
@@ -63,7 +64,7 @@ vec3 TorchLight(vec3 w)
     vec3 d = w - vec3(x, Torch.y, Torch.x);
     float d2 = dot(d, d);
     float flick = 0.86 + 0.14 * sin(Time * 13.0 + x * 1.7) * sin(Time * 7.3 + x * 0.6);
-    return vec3(1.0, 0.6, 0.28) * Torch.z * flick * 7.0 / (d2 + 3.0) * (1.0 - smoothstep(60.0, 150.0, d2));
+    return vec3(1.05, 0.54, 0.22) * Torch.z * flick * 8.5 / (d2 + 2.6) * (1.0 - smoothstep(60.0, 160.0, d2));
 }
 
 // Moving lights (docs/archive/SPECTACLE.md S1): up to four a frame, picked by the battle screen (a smite's pillar, a bolt, fire,

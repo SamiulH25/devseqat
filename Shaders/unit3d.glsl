@@ -129,11 +129,11 @@ void main()
 
     float ndotl = dot(n, l);
     // 4-band stepped cel shading (driven by normal-mapped n)
-    float rawLit = clamp((ndotl * 0.76 + 0.24) * mix(0.42, 1.0, sh), 0.0, 1.0);
-    float band = 0.22;
-    band += smoothstep(0.24, 0.28, rawLit) * 0.26;
-    band += smoothstep(0.52, 0.56, rawLit) * 0.28;
-    band += smoothstep(0.78, 0.82, rawLit) * 0.24;
+    float rawLit = clamp((ndotl * 0.78 + 0.22) * mix(0.40, 1.0, sh), 0.0, 1.0);
+    float band = 0.18;
+    band += smoothstep(0.22, 0.26, rawLit) * 0.28;
+    band += smoothstep(0.50, 0.54, rawLit) * 0.30;
+    band += smoothstep(0.76, 0.80, rawLit) * 0.24;
 
     if (detailFade > 0.01 && patId > 0.5 && patId < 5.5)
     {
@@ -187,25 +187,30 @@ void main()
         }
     }
 
-    // Balanced cool-shadow / warm-key lighting so midtone steel stays rich silver-grey and only true specular glints hit bright white.
+    // Sun-coupled biome ground bounce: undersides pick up sunlit ground/snow color instead of static brown.
+    float sunUp = clamp(-SunDir.y * 1.4, 0.0, 1.0);
+    vec3 groundBounce = GroundColor * (0.48 + 0.28 * sunUp) + SunColor * vec3(0.10, 0.12, 0.06) * sunUp;
+    groundBounce = mix(groundBounce, SkyColor * 0.85 + vec3(0.28, 0.32, 0.38) * sunUp, Look.x * 0.75);
     float hemi = n.y * 0.5 + 0.5;
-    vec3 amb = mix(GroundColor * 0.52, SkyColor * 0.62, hemi) * vec3(0.86, 0.92, 1.08);
+    vec3 amb = mix(groundBounce, SkyColor * 0.64, hemi) * vec3(0.88, 0.93, 1.06);
     vec3 direct = SunColor * (band * 0.78);
 
     vec3 col = albedo * (amb + direct);
 
-    // Crisp quantized metallic specular highlight on steel/plate/brass (never blows out whole limbs).
-    if (metal > 0.2)
+    // Crisp quantized metallic specular + rain-slicked wetness sheen (Look.w) on armor, cloth, and hides.
+    float wet = Look.w;
+    if (metal > 0.2 || wet > 0.01)
     {
         vec3 h = normalize(l + v);
-        float spec = pow(max(dot(n, h), 0.0), 22.0) * sh * specBoost;
-        float specBand = smoothstep(0.36, 0.42, spec);
-        col += SunColor * mix(vec3(0.82, 0.88, 0.98), albedo * 1.15, 0.35) * specBand * metal * 0.52;
+        float spec = pow(max(dot(n, h), 0.0), mix(16.0, 22.0, step(0.2, metal))) * sh * specBoost;
+        float specBand = smoothstep(0.34, 0.40, spec);
+        float specWeight = max(metal * 0.52, wet * 0.34);
+        col += mix(SunColor, SkyColor * 1.3, wet * 0.35) * mix(vec3(0.82, 0.88, 0.98), albedo * 1.15, 0.35) * specBand * specWeight;
     }
 
-    // Subtle stepped rim light on sun-grazing edges.
-    float rim = pow(1.0 - max(dot(n, v), 0.0), 2.8) * max(ndotl * 0.5 + 0.5, 0.0) * sh;
-    col += (SunColor * 0.50 + SkyColor * 0.50) * smoothstep(0.52, 0.60, rim) * 0.14;
+    // Stepped rim light on sun-grazing edges (gives crisp silhouette separation at dusk, night, and noon).
+    float rim = pow(1.0 - max(dot(n, v), 0.0), 2.6) * max(ndotl * 0.5 + 0.5, 0.0) * sh;
+    col += (SunColor * 0.55 + SkyColor * 0.45) * smoothstep(0.48, 0.56, rim) * 0.20;
 
     // Night torches & moving spell glows.
     col += albedo * (TorchLight(vWorld) + GlowLight(vWorld));
