@@ -71,21 +71,75 @@ sealed partial class Hud
         return best;
     }
 
-    /// What he is doing, in a word you can act on, and its colour.
-    (string Text, Color Col) Intent(Unit u)
+    /// CR6: 4-chevron directional combat reticle around centre screen + compact melee stamina/posture bar.
+    /// Gilt = your active attack/guard direction; flashing crimson = incoming enemy swing to block/parry; bright gold pulse = riposte/chamber window.
+    void CombatReticle(int cx, int cy)
     {
         var p = B.Player;
-        if (u.Action == UnitAction.Windup && u.Target == p)
-            return ($"SWINGS: BLOCK {BlockWord(Dirs.Mirror(u.Swing))}", Foe);
-        if (u.Action == UnitAction.Stagger) return ("REELING: STRIKE NOW", Gold);
-        if (u.Action == UnitAction.Block) return ("GUARD UP", Dim);
+        bool ripostePulse = B.Riposting || (B.Time - p.ClashedAt < 0.35f);
+        float pulse = 0.65f + 0.35f * MathF.Sin(B.Time * 22f);
+
+        // Centre dot (bright gold during riposte/chamber window).
+        Rect(new Rectangle(cx - U(1), cy - U(1), U(3), U(3)), ripostePulse ? Gold : Color.White * 0.9f);
+
+        var incoming = new bool[4];
+        bool foeNear = B.Options.Duel;
+        foreach (var u in B.Units)
+        {
+            if (!u.Active || u.Team == p.Team || u.Routing) continue;
+            float d2 = Vector2.DistanceSquared(u.Pos, p.Pos);
+            if (d2 < 36f) foeNear = true;
+            if (d2 < 20f && u.Action is UnitAction.Windup or UnitAction.Active && (u.Target == p || d2 < 9f))
+                incoming[(int)Dirs.Mirror(u.Swing)] = true;
+        }
+
+        float rad = U(21), len = U(8);
+        var activeDir = p.Action == UnitAction.Block ? p.GuardDir : p.Charging || p.Action is UnitAction.Windup or UnitAction.Active ? p.Swing : Aim;
+        for (int i = 0; i < 4; i++)
+        {
+            var d = (AttackDir)i;
+            var dir = d switch { AttackDir.Overhead => -Vector2.UnitY, AttackDir.Thrust => Vector2.UnitY, AttackDir.Left => -Vector2.UnitX, _ => Vector2.UnitX };
+            var side = new Vector2(-dir.Y, dir.X);
+            bool isInc = incoming[i];
+            bool isMine = d == activeDir;
+            float extra = isInc ? U(2) * pulse : isMine ? U(1) : 0;
+            var tip = new Vector2(cx, cy) + dir * (rad + len + extra);
+            var col = ripostePulse && isMine ? Color.Lerp(Gold, Color.White, pulse * 0.55f)
+                : isInc ? Color.Lerp(Foe, new Color(255, 110, 90), pulse)
+                : isMine ? (p.Action == UnitAction.Block ? Kit.Gilt : Gold)
+                : Color.White * 0.28f;
+            float w = isInc ? U(3.5f) : isMine ? U(3f) : U(1.8f);
+            // Dark outline under active/incoming chevrons so they pop over bright sky or snow.
+            if (isInc || isMine)
+            {
+                Line(tip, tip - dir * len + side * len, Color.Black * 0.65f, w + U(1.6f));
+                Line(tip, tip - dir * len - side * len, Color.Black * 0.65f, w + U(1.6f));
+            }
+            Line(tip, tip - dir * len + side * len, col, w);
+            Line(tip, tip - dir * len - side * len, col, w);
+        }
+
+        // Compact Stamina / Posture bar right beneath the reticle during melee.
+        if (foeNear || p.Stamina < 99.5f)
+        {
+            int bw = U(52), bh = U(4), bx = cx - bw / 2, by = cy + U(34);
+            float frac = Math.Clamp(p.Stamina / 100f, 0f, 1f);
+            var barCol = frac < 0.25f ? Bad : frac < 0.5f ? Warn : Ok;
+            Rect(new Rectangle(bx - U(1), by - U(1), bw + U(2), bh + U(2)), Color.Black * 0.65f);
+            Bar(new Rectangle(bx, by, bw, bh), frac, barCol);
+        }
+    }
+
+    /// What he is doing, in a crisp word you can act on (direction is shown on the 4-chevron reticle; CR6).
+    (string Text, Color Col) Intent(Unit u)
+    {
+        if (u.Action == UnitAction.Stagger) return (u.GuardBroken ? "GUARD BROKEN!" : "STAGGERED", Gold);
+        if (u.Action is UnitAction.Windup or UnitAction.Active && u.Target == B.Player) return (u.Action == UnitAction.Active ? "STRIKING" : "WINDING UP", Foe);
+        if (u.Action == UnitAction.Block) return ("GUARDING", Dim);
         if (u.Action == UnitAction.Recover) return ("OPEN", Ok);
         if (u.Stamina < 25) return ("SPENT", Ok);
         return ("", Dim);
     }
-
-    /// The direction to guard, as the crosshair chevron that lights for it.
-    static string BlockWord(AttackDir d) => d switch { AttackDir.Overhead => "UP", AttackDir.Thrust => "DOWN", AttackDir.Left => "LEFT", _ => "RIGHT" };
 
     /// Over the foe you are fighting: his name, his health and what he is doing.
     void OpponentMark()

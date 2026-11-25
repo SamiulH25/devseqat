@@ -571,28 +571,12 @@ sealed partial class Hud
     {
         if (!B.Player.Active) return;
         int cx = W / 2, cy = H / 2;
-        Rect(new Rectangle(cx - U(1), cy - U(1), U(3), U(3)), Color.White);
-        var incoming = new bool[4];
-        foreach (var u in B.Units)
-            if (u.Active && u.Team != 0 && u.Target == B.Player && u.Action == UnitAction.Windup && Vector2.DistanceSquared(u.Pos, B.Player.Pos) < 16)
-                incoming[(int)Dirs.Mirror(u.Swing)] = true;
-        float rad = U(22), len = U(7);
-        for (int i = 0; i < 4; i++)
-        {
-            var d = (AttackDir)i;
-            var dir = d switch { AttackDir.Overhead => -Vector2.UnitY, AttackDir.Thrust => Vector2.UnitY, AttackDir.Left => -Vector2.UnitX, _ => Vector2.UnitX };
-            var side = new Vector2(-dir.Y, dir.X);
-            var tip = new Vector2(cx, cy) + dir * (rad + len);
-            var c = incoming[i] ? Foe : d == Aim ? Gold : Color.White * 0.35f;
-            float w = incoming[i] || d == Aim ? U(3) : U(2);
-            Line(tip, tip - dir * len + side * len, c, w); // chevron pointing outward
-            Line(tip, tip - dir * len - side * len, c, w);
-        }
         var p = B.Player;
+        CombatReticle(cx, cy);
         if (p.Charging) Bar(new Rectangle(cx - U(24), cy + U(40), U(48), U(4)), p.Charge, Gold);
         var (hit, at) = B.PlayerHit;
         hit = System.Text.RegularExpressions.Regex.Replace(hit, @"\d+ DMG\s*", "").Trim(); // the number itself pops over the man hit (Hud.Melee.cs)
-        if (B.Time - at < 1.2f && hit != "") TextC(hit, cx, cy + U(50), hit.StartsWith("PARRY") ? Gold : Color.White);
+        if (B.Time - at < 1.2f && hit != "") TextC(hit, cx, cy + U(52), hit.StartsWith("PARRY") || hit.StartsWith("CHAMBER") || hit.Contains("BREAK") ? Gold : Color.White);
 
         // Context prompts.
         string? prompt = null;

@@ -57,7 +57,7 @@ public partial class Battle
         if (AuraTier < f.Tier) return $"NEEDS AURA TIER {f.Tier}";
         if (Time < formReady[i]) return $"{f.Name.ToUpperInvariant()} IN {formReady[i] - Time:0}";
         if (Aura + Surge < FormCost(f)) return "NOT ENOUGH AURA";
-        if (p.Action is UnitAction.Windup or UnitAction.Recover or UnitAction.Stagger) return "BUSY";
+        if (p.Action is UnitAction.Windup or UnitAction.Active or UnitAction.Recover or UnitAction.Stagger) return "BUSY";
         if (f.Kind == "shot" && (p.Type.Ammo == 0 || p.Ammo <= 0)) return "TAKE UP A BOW";
         if (f.Kind == "leap" && p.Mounted && f.Id != Forms.OwnId) return "NOT FROM THE SADDLE"; // your own Charge leaps from the saddle (MA6)
         return null;

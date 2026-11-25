@@ -5,27 +5,268 @@ namespace Ironfield;
 /// Battle: the damage path (TickAction -> Strike -> Hit -> Kill), horses, arrows, braced spears and couched lances.
 public partial class Battle
 {
+    /// CR2: Active swing duration by weapon weight (0.12s - 0.20s).
+    static float ActiveTimeOf(Unit u)
+    {
+        float t = Look.GripOf(u.Type.Look.Weapon) switch
+        {
+            Grip.Two => 0.18f,
+            Grip.Pole => u.Type.Look.Weapon is "pike" or "halberd" ? 0.19f : 0.16f,
+            _ => u.Type.Look.Weapon is "sword" or "sword_viking" or "sword_knightly" or "scimitar" or "falchion" ? 0.13f : 0.15f,
+        };
+        return u.Swing == AttackDir.Thrust ? MathF.Max(0.12f, t - 0.02f) : t;
+    }
+
+    /// Two fidelity tiers (COMBAT_REWORK.md): full per-tick angular sweep in duels, for the player, and within 18m of the player.
+    bool HighFidelity(Unit u) => Options.Duel || u.IsPlayer || (Player.Active && Vector2.DistanceSquared(u.Pos, Player.Pos) <= 18f * 18f);
+
+    /// CR4: Weapon class helpers shared by both player and AI troops.
+    internal static bool IsCrushWeapon(Unit a) => a.Type.Style == AttackStyle.Crush
+        || a.Type.Look.Weapon is "axe" or "axe_bearded" or "daneaxe" or "daneaxe_bearded" or "mace" or "morningstar" or "warhammer" or "club" or "bardiche";
+
+    internal static bool IsPoleWeapon(Unit a) => Look.GripOf(a.Type.Look.Weapon) == Grip.Pole;
+
+    internal static bool IsTwoHandSword(Unit a) => !a.Type.HasShield
+        && a.Type.Look.Weapon is "greatsword" or "greatsword_claymore" or "flamberge" or "longsword" or "longsword_estoc" or "longsword_gilded";
+
+    internal static bool IsSwordAndShield(Unit a) => a.Type.HasShield
+        && a.Type.Look.Weapon is "sword" or "sword_viking" or "sword_knightly" or "scimitar" or "falchion" or "longsword" or "longsword_gilded";
+
+    /// CR3: Skill factor (0..1) from troop tier and squad drill governing guard-switch speed, parry window and stamina recovery.
+    internal static float GuardSkill(Unit u) => Math.Clamp((u.Type.Tier - 1) / 5f * 0.65f + (u.Squad?.Drill ?? 0.45f) * 0.35f, 0f, 1f);
+
+    /// CR3: Update an AI fighter's explicit GuardDir toward an incoming threat at tier/drill-scaled reaction speed.
+    internal void UpdateGuardDir(Unit u, Unit? threat, float dt)
+    {
+        if (u.GuardSwitchCd > 0) u.GuardSwitchCd = MathF.Max(0, u.GuardSwitchCd - dt);
+        if (threat == null || !threat.Active || u.Type.Look.Beast || u.Type.Huge || u.Type.BlockChance <= 0) return;
+        bool incoming = threat.Action is UnitAction.Windup or UnitAction.Active || (threat.IsPlayer && threat.Charging);
+        if (!incoming) return;
+        if (threat.Target != u && !threat.IsPlayer) return;
+        if (Vector2.DistanceSquared(u.Pos, threat.Pos) > 4.2f * 4.2f) return;
+
+        float skill = GuardSkill(u);
+        var want = Dirs.Mirror(threat.Swing);
+        if (u.GuardDir != want && u.GuardSwitchCd <= 0)
+        {
+            u.GuardDir = want;
+            u.BlockStart = Time;
+            u.GuardSwitchCd = MathHelper.Lerp(0.82f, 0.16f, skill);
+        }
+        // Trained troops raise active guard against an incoming windup when not swinging.
+        if (u.Action == UnitAction.None && u.Stamina > 18f && threat.Action == UnitAction.Windup
+            && (u.Type.Tier >= 3 || (u.Type.HasShield && u.Type.Tier >= 2))
+            && u.GuardDir == want && u.GuardSwitchCd <= MathHelper.Lerp(0.55f, 0.16f, skill))
+        {
+            u.Action = UnitAction.Block;
+            u.ActionTimer = threat.ActionTimer + 0.18f;
+            u.BlockStart = Time;
+            u.Guard = true;
+            u.Face(threat.Pos - u.Pos);
+        }
+    }
+    static bool HeavyCleaver(Unit u) => u.Type.Look.Weapon is "greatsword" or "greatsword_claymore" or "flamberge" or "bardiche" or "glaive";
+
+    static int CleaveCap(Unit u) => u.Swing switch
+    {
+        AttackDir.Thrust => 1,
+        AttackDir.Overhead => HeavyCleaver(u) ? 2 : 1,
+        _ => HeavyCleaver(u) ? 3 : (u.IsPlayer ? 2 : 1),
+    };
+
     void TickAction(Unit u, float dt)
     {
         if (u.Action == UnitAction.None || (u.IsPlayer && u.Action == UnitAction.Block)) return;
+        if (u.Action == UnitAction.Active)
+        {
+            float prev = u.SwingProgress;
+            u.ActionTimer -= dt;
+            u.SwingProgress = Math.Clamp(1f - MathF.Max(0, u.ActionTimer) / MathF.Max(0.01f, u.ActiveDuration), 0f, 1f);
+            TickActive(u, prev, u.SwingProgress);
+            if (u.Action != UnitAction.Active) return; // clash, stagger, or cleave-stop ended Active early
+            if (u.ActionTimer > 0) return;
+            if (u.IsPlayer) riposteSwing = false;
+            u.LastSwing = u.Swing;
+            u.Action = UnitAction.Recover;
+            float whiffMult = u.HitCount == 0 && IsCrushWeapon(u) ? 1.15f : 1f; // CR4: axes/maces have heavier whiff recovery
+            u.ActionTimer = (u.IsPlayer ? 0.28f * u.Type.Recover / 0.5f : u.Mounted ? MathF.Min(u.Type.Recover, SaddleRecover) : u.Type.Recover) * whiffMult;
+            return;
+        }
         if ((u.ActionTimer -= dt) > 0) return;
         switch (u.Action)
         {
             case UnitAction.Windup:
-                Strike(u);
-                if (u.IsPlayer) riposteSwing = false;
-                u.Action = UnitAction.Recover;
-                u.ActionTimer = u.IsPlayer ? 0.3f * u.Type.Recover / 0.5f : u.Mounted ? MathF.Min(u.Type.Recover, SaddleRecover) : u.Type.Recover; // your weapon sets your pace (P1); a rider hacks with his sidearm
+                u.Action = UnitAction.Active;
+                u.ActiveDuration = ActiveTimeOf(u);
+                u.ActionTimer = u.ActiveDuration;
+                u.SwingProgress = 0;
+                u.ClearHits();
+                if (!u.IsPlayer && !u.Mounted && !u.Type.Flying && HighFidelity(u) && u.DodgeTimer <= 0)
+                {
+                    u.LungeVel = u.Dir * 2.4f;
+                    u.LungeTimer = 0.11f;
+                }
                 break;
             case UnitAction.Recover:
                 u.Action = UnitAction.None;
                 if (u.IsPlayer) lastRecovered = Time;
-                if (!u.IsPlayer) u.Cooldown = MathF.Max(u.Cooldown, rng.NextSingle() * 0.5f); // desync the line
+                if (!u.IsPlayer) u.Cooldown = MathF.Max(u.Cooldown, rng.NextSingle() * 0.45f); // desync the line
                 break;
             default:
                 u.Action = UnitAction.None;
                 u.Guard = false;
+                u.GuardBroken = false;
                 break;
+        }
+    }
+
+    void TickActive(Unit a, float prevProg, float curProg)
+    {
+        if (a.Type.Flying)
+        {
+            if (!a.MassSwung && curProg >= 0.45f) { a.MassSwung = true; Strike(a); }
+            return;
+        }
+        if (!HighFidelity(a))
+        {
+            if (!a.MassSwung && curProg >= 0.45f) { a.MassSwung = true; Strike(a); }
+            return;
+        }
+        SweepActive(a, prevProg, curProg);
+    }
+
+    /// CR2: Full per-tick angular sweep with accels/drags, sequential cleave, cleave-stop, and blade clashes/chambers.
+    void SweepActive(Unit a, float prevProg, float curProg)
+    {
+        float baseReach = a.Mounted && !a.IsPlayer ? MathF.Min(a.Type.Reach, MountedMeleeReach) : ReachOf(a);
+        float reach = a.Swing switch
+        {
+            AttackDir.Thrust => baseReach + (a.IsPlayer ? 0.7f : 0.45f),
+            AttackDir.Overhead => baseReach + 0.35f,
+            _ => baseReach + 0.35f,
+        };
+        if (a.Mounted) reach += 0.45f;
+
+        float minAng, maxAng, effReach = reach;
+        if (a.Swing == AttackDir.Thrust)
+        {
+            if (curProg < 0.12f || prevProg > 0.90f) return;
+            minAng = -0.34f; maxAng = 0.34f;
+            effReach = reach * MathHelper.Lerp(0.6f, 1.0f, Math.Clamp(curProg / 0.75f, 0f, 1f));
+        }
+        else if (a.Swing == AttackDir.Overhead)
+        {
+            if (curProg < 0.20f || prevProg > 0.92f) return;
+            minAng = -0.48f; maxAng = 0.48f;
+        }
+        else
+        {
+            float halfArc = IsTwoHandSword(a) ? 1.28f : a.Mounted ? 1.25f : 1.12f; // CR4: greatswords & mounted cuts sweep wider
+            float sign = a.Swing == AttackDir.Left ? 1f : -1f; // Left sweeps -halfArc -> +halfArc; Right sweeps +halfArc -> -halfArc
+            float a0 = MathHelper.Lerp(-halfArc, halfArc, prevProg) * sign;
+            float a1 = MathHelper.Lerp(-halfArc, halfArc, curProg) * sign;
+            minAng = MathF.Min(a0, a1) - 0.32f;
+            maxAng = MathF.Max(a0, a1) + 0.32f;
+        }
+
+        float dmg = StyleBlow(a, (a.IsPlayer ? a.Type.Damage : a.Type.MeleeDamage) * a.Power);
+        if (a.Mounted && a.IsPlayer) dmg *= 1 + 0.1f * RidingEdge;
+        int cap = CleaveCap(a);
+        bool heavy = HeavyCleaver(a);
+
+        // Deterministic candidate list sorted by distance then index.
+        var near = Near(a.Pos, effReach + 1.2f, nearBrace);
+        List<Unit>? hits = null;
+        for (int i = 0; i < near.Count; i++)
+        {
+            var t = near[i];
+            if ((t.Team == a.Team && !(a.IsPlayer && Mad)) || t == a || !t.Active || a.AlreadyHit(t.Index)) continue;
+            var d = t.Pos - a.Pos;
+            float len = d.Length();
+            float targetReach = effReach + (t.Mounted ? 0.55f : 0f) + (a.Mounted ? 0.25f : 0f);
+            if (len > targetReach) continue;
+            if (len > 0.01f && !a.Mounted)
+            {
+                float rel = MathHelper.WrapAngle(MathF.Atan2(d.Y, d.X) - a.Facing);
+                if (rel < minAng || rel > maxAng) continue;
+            }
+            (hits ??= new List<Unit>(4)).Add(t);
+        }
+        if (hits == null) return;
+        if (hits.Count > 1) hits.Sort((x, y) =>
+        {
+            int c = Vector2.DistanceSquared(x.Pos, a.Pos).CompareTo(Vector2.DistanceSquared(y.Pos, a.Pos));
+            return c != 0 ? c : x.Index.CompareTo(y.Index);
+        });
+
+        for (int i = 0; i < hits.Count; i++)
+        {
+            var t = hits[i];
+            if (!t.Active) continue;
+
+            // Blade Clash / Chambering (CR2): intersecting swings from mirrored directions clash steel!
+            if (!a.Type.Huge && !t.Type.Huge && !a.Type.Look.Beast && !t.Type.Look.Beast
+                && t.Action is UnitAction.Active or UnitAction.Windup
+                && t.Swing == Dirs.Mirror(a.Swing)
+                && SideOf(a, t) == Side.Front && SideOf(t, a) == Side.Front)
+            {
+                TriggerClash(a, t);
+                return;
+            }
+
+            float taper = a.HitCount switch { 0 => 1f, 1 => 0.72f, _ => 0.50f };
+            a.RecordHit(t.Index);
+            if (!a.IsPlayer)
+            {
+                if (a.Type.Look.Face == "troll") Sound(Cue.TrollSweep, a.Pos);
+                else if (a.Type.Look.Face == "wolf") Sound(Cue.WolfSnarl, a.Pos);
+                else if (a.Type.Look.Face == "bear") Sound(Cue.BearRoar, a.Pos);
+                else if (a.Type.Look.Face == "spider") Sound(Cue.SpiderChitter, a.Pos);
+            }
+            bool stopped = Hit(a, t, dmg * taper, false);
+            if (!a.IsPlayer && a.Type.Has("sweep") && a.HitCount == 1) Sweep(a, t, dmg, effReach + 0.3f);
+
+            // Cleave-stop: 1H/axes stop on blocks or heavy armor unless charged; cap ends swing.
+            bool armorStop = !heavy && (stopped || (t.Type.Armor >= 14f && a.Power < 1.35f));
+            if (a.Action != UnitAction.Active || a.HitCount >= cap || armorStop)
+            {
+                if (a.Action == UnitAction.Active)
+                {
+                    if (a.IsPlayer) riposteSwing = false;
+                    a.LastSwing = a.Swing;
+                    a.Action = UnitAction.Recover;
+                    a.ActionTimer = a.IsPlayer ? 0.28f * a.Type.Recover / 0.5f : a.Mounted ? MathF.Min(a.Type.Recover, SaddleRecover) : a.Type.Recover;
+                }
+                return;
+            }
+        }
+    }
+
+    /// CR2: Two mirrored swings collide -> steel ring, spark flash, recoil pushback, and fast counter-windup on chamber.
+    void TriggerClash(Unit a, Unit t)
+    {
+        var mid = (a.Pos + t.Pos) * 0.5f;
+        var sep = t.Pos - a.Pos;
+        var n = sep.LengthSquared() > 1e-4f ? Vector2.Normalize(sep) : a.Dir;
+        if (!a.Mounted) a.Pos -= n * 0.35f;
+        if (!t.Mounted) t.Pos += n * 0.35f;
+        a.ClashedAt = t.ClashedAt = Time;
+        bool chamber = t.Action == UnitAction.Windup; // t swung into a's active blade = chamber!
+        Sound(Cue.ParrySteel, mid, priority: a.IsPlayer || t.IsPlayer);
+        Flash("clash", mid, 1.4f, a.Team, chamber ? "chamber" : "clash", n);
+        if (chamber)
+        {
+            Stagger(a, 0.55f);
+            t.ActionTimer = MathF.Min(t.ActionTimer, 0.06f); // fast counter-windup!
+            if (t.IsPlayer) { RiposteUntil = Time + RiposteTime; Parries++; PlayerHit = ("CHAMBER! COUNTER", Time); }
+            else { t.RiposteReady = true; if (a.IsPlayer) PlayerHit = ("CHAMBERED!", Time); }
+        }
+        else
+        {
+            // Mutual blade clash: both recoil briefly and reset to neutral.
+            a.Action = UnitAction.Recover; a.ActionTimer = 0.18f;
+            t.Action = UnitAction.Recover; t.ActionTimer = 0.18f;
+            if (a.IsPlayer || t.IsPlayer) PlayerHit = ("BLADE CLASH!", Time);
         }
     }
 
@@ -125,17 +366,18 @@ public partial class Battle
     }
 
     /// One blow (melee, arrow or lance) from a at t: horse hits, blocks and parries, then damage multipliers.
-    internal void Hit(Unit a, Unit t, float dmg, bool ranged, bool lance = false, bool plunge = false)
+    /// Returns true if the blow was blocked, parried, or stopped cleanly.
+    internal bool Hit(Unit a, Unit t, float dmg, bool ranged, bool lance = false, bool plunge = false)
     {
         if (a.Team == 1) dmg *= Options.EnemyDamage;
-        if (OutOfReach(a, t, ranged)) { if (a.IsPlayer) PlayerHit = ("OUT OF REACH", Time); return; } // a wyvern aloft (BattleMonsters.cs)
+        if (OutOfReach(a, t, ranged)) { if (a.IsPlayer) PlayerHit = ("OUT OF REACH", Time); return true; } // a wyvern aloft (BattleMonsters.cs)
         if (ranged && Wall != null && Wall.Inside(t.Pos) && !Wall.Inside(a.Pos) && Terrain.Height(t.Pos) > Terrain.Height(a.Pos) + 2) dmg *= 0.6f; // merlons
         if (ranged && Engines.Count > 0 && Sheltered(t)) dmg *= 0.25f; // under a ram's roof, behind a tower (BattleEngines.cs)
         // Arrows and spears often take the horse instead of the rider (a footman's blade rarely does).
         if (t.Mounted && rng.NextSingle() < (ranged ? 0.55f : a.Type.Class == UnitClass.Skirmisher ? 0.55f : 0.18f))
         {
             HitHorse(t, dmg * a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) * (ranged ? HorseArrow : 1), a); // a horse carries many arrows before it falls
-            return;
+            return false;
         }
 
         // Testudo (D4): a halted company of shield men under arrows raises its shields all round.
@@ -143,12 +385,12 @@ public partial class Battle
         {
             if (t.StuckArrows < 4) t.StuckArrows++;
             Sound(Cue.ArrowShield, t.Pos);
-            return;
+            return true;
         }
-        if (ranged && t.Mods.Veil > 0 && rng.NextSingle() < t.Mods.Veil) return; // lost in mist or smoke, turned by a ward
+        if (ranged && t.Mods.Veil > 0 && rng.NextSingle() < t.Mods.Veil) return true; // lost in mist or smoke, turned by a ward
         var side = t.Squad?.Formation == Formation.Square && !t.Routing ? Side.Front : SideOf(a, t); // a square has no flank
         bool facing = side == Side.Front;
-        if (ranged && t.Squad?.Formation == Formation.Loose && rng.NextSingle() < 0.3f) return; // open ranks: the arrow finds a gap
+        if (ranged && t.Squad?.Formation == Formation.Loose && rng.NextSingle() < 0.3f) return true; // open ranks: the arrow finds a gap
         if (t.IsPlayer)
         {
             if (facing && Guarding) // Unbroken Wall (K2): nothing from the front gets through
@@ -156,12 +398,12 @@ public partial class Battle
                 if (!ranged && !lance) Stagger(a, 0.8f);
                 Sound(ranged ? Cue.ArrowShield : ShieldCue(t), t.Pos, priority: true);
                 PlayerHit = ("UNBROKEN", Time);
-                return;
+                return true;
             }
             if (facing && t.Action == UnitAction.Block)
             {
                 // Matching the incoming direction just as the blow comes is a parry: free, and it throws the attacker off balance.
-                if (!ranged && !lance && !SelfGuard && Input.Dir == Dirs.Mirror(a.Swing) && Time - t.BlockStart < ParryTime)
+                if (!ranged && !lance && !SelfGuard && BlockDir == Dirs.Mirror(a.Swing) && Time - t.BlockStart < ParryTime)
                 {
                     Stagger(a, 0.9f);
                     t.Stamina = MathF.Max(0, t.Stamina - 2);
@@ -170,60 +412,140 @@ public partial class Battle
                     CounterStrike(t, a);
                     PlayerHit = (Countering ? "PARRY! COUNTER" : "PARRY! RIPOSTE", Time);
                     Sound(Cue.ParrySteel, t.Pos, priority: true);
-                    return;
+                    Flash("parry", (a.Pos + t.Pos) * 0.5f, 1.2f, t.Team, "parry");
+                    return true;
                 }
                 if (!t.Type.HasShield && !ranged && BlockDir != Dirs.Mirror(a.Swing))
                 {
-                    dmg *= 0.5f; // a two-handed guard only half-stops a blow from the wrong side
+                    dmg *= 0.55f; // a two-handed guard only half-stops a blow from the wrong side
                     goto Struck;
                 }
-                t.Stamina -= (ranged ? 4 : dmg * (lance ? 1.2f : 0.8f)) * (t.Type.HasShield ? 1 : 1.4f) * (Perk("IronGrip") ? 0.7f : 1); // a shield stops any direction, at a stamina cost
-                if (t.Stamina <= 0) { t.Stamina = 0; Stagger(t, 0.8f); Sound(Cue.ShieldSplinter, t.Pos, priority: true); Log("Guard broken!"); }
+                float pCrush = !ranged && IsCrushWeapon(a) ? 1.6f : 1f; // CR3/CR4: axes & maces crush guard posture
+                float pLance = lance ? 1.6f : 1f; // CR4: couched lance shatters shields
+                t.Stamina -= (ranged ? 4 : dmg * 0.78f * pCrush * pLance) * (t.Type.HasShield ? 1f : 1.35f) * (Perk("IronGrip") ? 0.7f : 1f);
+                if (t.Stamina <= 0) { t.Stamina = 0; Stagger(t, 0.9f, guardBreak: true); Sound(Cue.ShieldSplinter, t.Pos, priority: true); PlayerHit = ("GUARD BROKEN!", Time); Log("Guard broken!"); }
                 else
                 {
                     Sound(ranged ? Cue.ArrowShield : ShieldCue(t), t.Pos, priority: true);
                     if (!ranged && !lance) Stagger(a, 0.35f);
                 }
-                return;
+                return true;
             }
         }
         else if (facing && t.Action is UnitAction.None or UnitAction.Block)
         {
-            // Shields cover every direction; without one, thrusts and overheads are harder to read.
-            float chance = t.Type.BlockChance * (lance ? 0.5f : 1) * (a.Type.Huge ? 0.5f : 1) * (t.Type.HasShield
-                ? (a.Swing == AttackDir.Thrust ? 0.9f : 1)
-                : a.Swing switch { AttackDir.Thrust => 0.7f, AttackDir.Overhead => 0.85f, _ => 1 });
-            if (ranged && !t.Type.HasShield) chance *= 0.3f;
-            if (Webbed(t)) chance *= 0.4f; // caught in a web, he can hardly lift his guard
-            if (a.IsPlayer && !ranged && !lance) chance = riposteSwing && (t.Type.Tier <= 3 || Perk("Champion")) ? 0 : MathF.Min(0.95f, chance + 0.08f * Math.Min(Chain, 4)); // a riposte slips the guard; a rhythm is read
-            if (t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield && InOrder(t)) chance = MathF.Min(0.9f, chance * (ranged ? 1.8f : 1.35f)); // locked shields
-            if (!ranged && !lance && a.Mounted && !a.IsPlayer && !t.Mounted) chance *= SaddleGuard; // a blow from the saddle comes down hard to read
-            if (!ranged) chance *= RankGuard(t) * RankEdge(a); // friends at the shoulders, foes all round (docs/archive/MELEE.md D3.7)
-            if (a.IsPlayer && AuraBlade && !ranged || FoeBlade(a, ranged)) chance *= BladeGuard; // aura cuts through a guard (K1; a champion's, K6)
-            chance *= StyleGuard(a, t, ranged, plunge); // a crush, a bash, an arrow from above a shield (BattleStyles.cs)
-            if (t.Guard && !ranged && t.Squad != null) chance = MathF.Min(0.92f, chance + (1 - chance) * 0.5f * t.Squad.Drill); // he saw it coming
-            chance = MathF.Min(0.95f, chance * (1 + t.Mods.Block + (t.Vel.LengthSquared() < 1 ? t.Mods.BlockStill : 0))); // passives: locked shields (BattleEffects.cs)
-            if (rng.NextSingle() < chance)
+            if (ranged)
             {
-                if (t.Guard) t.Cooldown = 0; // a held guard opens the way for his own blow
-                if (!ranged) StyleBlocked(t);
-                t.Action = UnitAction.Block;
-                t.ActionTimer = 0.35f;
-                if (ranged && t.Type.HasShield && t.StuckArrows < 4) t.StuckArrows++;
-                if (a.IsPlayer) PlayerHit = ("BLOCKED", Time);
-                Sound(ranged ? Cue.ArrowShield : ShieldCue(t), t.Pos, priority: a.IsPlayer);
-                return;
+                // Ranged arrows/bolts: shields and formations still cover the front cone.
+                float rChance = t.Type.BlockChance * (t.Type.HasShield ? 1f : 0.28f);
+                if (Webbed(t)) rChance *= 0.4f;
+                if (t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield && InOrder(t)) rChance = MathF.Min(0.9f, rChance * 1.8f);
+                rChance *= StyleGuard(a, t, true, plunge);
+                rChance = MathF.Min(0.95f, rChance * (1 + t.Mods.Block + (t.Vel.LengthSquared() < 1 ? t.Mods.BlockStill : 0)));
+                if (rng.NextSingle() < rChance)
+                {
+                    t.Action = UnitAction.Block;
+                    t.ActionTimer = 0.3f;
+                    if (t.Type.HasShield && t.StuckArrows < 4) t.StuckArrows++;
+                    Sound(Cue.ArrowShield, t.Pos, priority: a.IsPlayer);
+                    return true;
+                }
+            }
+            else if (!t.Type.Look.Beast && !t.Type.Huge && !Webbed(t) && (t.Action == UnitAction.Block || t.Type.BlockChance > 0))
+            {
+                // CR3: Unified explicit GuardDir + universal stamina & guard-break (replaces pure RNG melee blocking).
+                bool riposteBypass = a.IsPlayer && !lance && riposteSwing && (t.Type.Tier <= 3 || Perk("Champion"));
+                if (!riposteBypass)
+                {
+                    bool matched = t.GuardDir == Dirs.Mirror(a.Swing);
+                    float skill = GuardSkill(t);
+                    bool auraCut = (a.IsPlayer && AuraBlade) || FoeBlade(a, false);
+                    float crushMult = (IsCrushWeapon(a) ? 1.6f : 1f) * (lance ? 1.6f : 1f) * (auraCut ? 1.5f : 1f);
+                    bool wallLock = t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield && InOrder(t);
+
+                    // Timed Parry: matching GuardDir freshly raised triggers a free parry + riposte opening!
+                    float aiParryWin = 0.16f + 0.18f * skill;
+                    if (matched && t.Action == UnitAction.Block && !lance && !a.Type.Huge && !auraCut
+                        && Time - t.BlockStart <= aiParryWin && t.Type.Tier >= 3)
+                    {
+                        t.Stamina = MathF.Max(0, t.Stamina - 2f);
+                        t.RiposteReady = true;
+                        t.Cooldown = 0;
+                        Stagger(a, 0.55f);
+                        Sound(Cue.ParrySteel, t.Pos, priority: a.IsPlayer);
+                        Flash("parry", (a.Pos + t.Pos) * 0.5f, 1.1f, t.Team, "parry");
+                        if (a.IsPlayer) PlayerHit = ("PARRIED!", Time);
+                        return true;
+                    }
+
+                    // Shielded defender: covers front cone at stamina cost (vulnerable to flanks, kicks, and crush weapons).
+                    if (t.Type.HasShield && (t.Action == UnitAction.Block || (t.Stamina > 12f && t.Type.BlockChance > 0.15f)))
+                    {
+                        float cost = dmg * 0.72f * crushMult * (matched ? 0.65f : 1f) * (wallLock ? 0.65f : 1f) / MathF.Max(0.75f, RankGuard(t));
+                        t.Stamina -= cost;
+                        if (t.Stamina <= 0)
+                        {
+                            t.Stamina = 0;
+                            Stagger(t, 0.9f, guardBreak: true);
+                            Sound(Cue.ShieldSplinter, t.Pos, priority: a.IsPlayer);
+                            if (a.IsPlayer) PlayerHit = ("GUARD BREAK!", Time);
+                            dmg *= 0.45f; // shattered guard lets partial blow through
+                            goto Struck;
+                        }
+                        if (t.Guard) t.Cooldown = 0;
+                        StyleBlocked(t);
+                        t.Action = UnitAction.Block;
+                        t.ActionTimer = 0.28f;
+                        if (a.IsPlayer) PlayerHit = ("BLOCKED", Time);
+                        Sound(ShieldCue(t), t.Pos, priority: a.IsPlayer);
+                        return true;
+                    }
+
+                    // Unshielded / 2H defender: MUST match GuardDir to block cleanly; wrong-side guard takes heavy bleed-through.
+                    if (!t.Type.HasShield)
+                    {
+                        if (matched && !auraCut && (t.Action == UnitAction.Block || (t.Stamina > 15f && t.Type.BlockChance >= 0.2f)))
+                        {
+                            float cost = dmg * 0.85f * crushMult * (a.Mounted && !t.Mounted ? 1.25f : 1f);
+                            t.Stamina -= cost;
+                            if (t.Stamina <= 0)
+                            {
+                                t.Stamina = 0;
+                                Stagger(t, 0.9f, guardBreak: true);
+                                Sound(Cue.ShieldSplinter, t.Pos, priority: a.IsPlayer);
+                                if (a.IsPlayer) PlayerHit = ("GUARD BREAK!", Time);
+                                dmg *= 0.5f;
+                                goto Struck;
+                            }
+                            if (t.Guard) t.Cooldown = 0;
+                            StyleBlocked(t);
+                            t.Action = UnitAction.Block;
+                            t.ActionTimer = 0.28f;
+                            if (a.IsPlayer) PlayerHit = ("BLOCKED", Time);
+                            Sound(Cue.ParrySteel, t.Pos, priority: a.IsPlayer);
+                            return true;
+                        }
+                        if (t.Action == UnitAction.Block && !matched)
+                        {
+                            dmg *= 0.7f; // wrong-side unshielded guard: heavy bleed-through
+                            goto Struck;
+                        }
+                    }
+                }
             }
         }
 
         Struck:
         // Chambering: striking into the enemy's blow from the mirrored side as it lands turns it aside.
-        if (t.IsPlayer && !ranged && !lance && t.Action == UnitAction.Windup && t.Swing == Dirs.Mirror(a.Swing))
+        if (t.IsPlayer && !ranged && !lance && t.Action is UnitAction.Windup or UnitAction.Active && t.Swing == Dirs.Mirror(a.Swing))
         {
             Stagger(a, 1.0f);
+            RiposteUntil = Time + RiposteTime;
+            Parries++;
             PlayerHit = ("CHAMBER!", Time);
             Sound(Cue.ParrySteel, t.Pos, priority: true);
-            return;
+            Flash("clash", (a.Pos + t.Pos) * 0.5f, 1.3f, t.Team, "chamber");
+            return true;
         }
         float speed = ranged || lance ? 0 : SpeedBonus(a, t);
         float high = ranged ? 0 : HighGround(Terrain.Height(a.Pos) - Terrain.Height(t.Pos), a.Slope, a.Vel.Length());
@@ -260,9 +582,25 @@ public partial class Battle
         if (t.Squad != null) t.Squad.HitsTaken++;
         if (side != Side.Front && a.Squad != null && !ranged) a.Squad.FlankHits++;
         if (side != Side.Front && t.Squad != null) { t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f; Flanked(t.Squad, side == Side.Rear); }
+        // CR4: Weapon class damage & spacing mechanics (polearm tip sweet-spot, crush armor pen, polearm sweep pushback).
+        float poleMult = 1f;
+        bool poleSweet = false;
+        if (!ranged && !lance && IsPoleWeapon(a))
+        {
+            float dist = Vector2.Distance(a.Pos, t.Pos);
+            float r = ReachOf(a);
+            if (a.Swing == AttackDir.Thrust && dist >= r * 0.62f) { poleMult = 1.22f; poleSweet = true; }
+            else if (dist < r * 0.42f) poleMult = 0.75f; // crowded face-to-face: haft hits weaker
+            else if (a.Swing != AttackDir.Thrust && !t.Mounted && !t.Type.Huge)
+            {
+                var push = t.Pos - a.Pos;
+                if (push.LengthSquared() > 1e-4f) t.Pos += Vector2.Normalize(push) * 0.7f; // reset spacing!
+            }
+        }
+        float crushPierce = !ranged && IsCrushWeapon(a) ? 0.15f : 0f;
         bool foeBlade = FoeBlade(a, ranged);
-        float pierce = MathF.Min(0.9f, a.Type.Pierce + (a.IsPlayer && AuraBlade && !ranged || foeBlade ? BladePierce : 0) + (a.IsPlayer && edgeLeft > 0 && !ranged ? 0.9f : 0));
-        float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, pierce, ranged); // maces, axes, bolts and the aura blade bite through armour
+        float pierce = MathF.Min(0.9f, a.Type.Pierce + crushPierce + (a.IsPlayer && AuraBlade && !ranged || foeBlade ? BladePierce : 0) + (a.IsPlayer && edgeLeft > 0 && !ranged ? 0.9f : 0));
+        float real = Damage(a, t, dmg * mult * poleMult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, pierce, ranged); // maces, axes, bolts and the aura blade bite through armour
         if (a.IsPlayer && !ranged && AuraBlade) BladeMarks(t); // breaks a working, leaves craft marks (MA5)
         if (a.IsPlayer && !ranged) BladeLanded();
         if (foeBlade) FoeAura = MathF.Max(0, FoeAura - BladeHitCost);
@@ -279,10 +617,12 @@ public partial class Battle
             if (speed >= 0.1f) text += $"  +{speed * 100:0}% SPEED";
             if (side != Side.Front) text += side == Side.Rear ? "  REAR" : "  FLANK";
             if (high >= 0.05f) text += "  HIGH GROUND";
+            if (poleSweet) text += "  SWEET SPOT";
             PlayerHit = (text, Time);
             if (Blows.Count > 0 && Blows[^1].Target == t && !Blows[^1].OnPlayer) // the number over him says why it bit
-                Blows[^1] = Blows[^1] with { Tag = lance ? "LANCE" : side == Side.Rear ? "REAR" : side == Side.Flank ? "FLANK" : speed >= 0.1f ? "SPEED" : high >= 0.05f ? "HIGH GROUND" : "" };
+                Blows[^1] = Blows[^1] with { Tag = lance ? "LANCE" : poleSweet ? "SWEET SPOT" : side == Side.Rear ? "REAR" : side == Side.Flank ? "FLANK" : speed >= 0.1f ? "SPEED" : high >= 0.05f ? "HIGH GROUND" : "" };
         }
+        return false;
     }
 
     /// Keeps a blow by or on the player for the numbers drawn over the man hit (drawing only).
@@ -308,7 +648,9 @@ public partial class Battle
         // Hits interrupt swings, but not a rhythm he has read: past your second chained blow he swings through it (P2).
         // A rider's swing is not broken by a footman's blow: he strikes down from the saddle, and three men round his horse
         // otherwise kept every swing from landing.
-        if ((t.Action == UnitAction.Windup || t.Charging) && !(a.IsPlayer && Chain >= 2) && !(t.Mounted && !a.Mounted && t.Action == UnitAction.Windup)) Stagger(t, 0.3f);
+        // CR4: 2H greatsword overhead has brief poise/hyper-armor in late windup & active so light blows don't interrupt it.
+        bool poise = IsTwoHandSword(t) && t.Swing == AttackDir.Overhead && (t.Action == UnitAction.Active || (t.Action == UnitAction.Windup && t.ActionTimer < t.WindupDuration * 0.45f));
+        if (!poise && (t.Action == UnitAction.Windup || t.Charging) && !(t.Mounted && !a.Mounted && t.Action == UnitAction.Windup)) Stagger(t, 0.3f);
         if (t.Hp <= 0) Kill(t, a);
         if (a.IsPlayer || t.IsPlayer) NoteBlow(t, real, !a.IsPlayer);
         return real;
@@ -334,11 +676,12 @@ public partial class Battle
         Damage(by, r, 12, 0);
     }
 
-    static void Stagger(Unit u, float time)
+    static void Stagger(Unit u, float time, bool guardBreak = false)
     {
         if (u.Type.Huge) return; // a troll's swing is not stopped by a man's blow or shield
         u.Action = UnitAction.Stagger;
         u.ActionTimer = time;
+        u.GuardBroken = guardBreak;
         u.Charging = false;
         u.Charge = 0;
         u.Couched = false;

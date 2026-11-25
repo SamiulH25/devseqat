@@ -9,6 +9,26 @@ partial class BattleScreen
     // ---------- camera kick and hit pause ----------
 
     float trauma, hitPause, lastHitAt = -1, lastPlayerHp = -1;
+    Vector3 camKick, camKickVel;
+
+    /// Directional camera kick (CR1): spring-damped impulse aligned to swing/impact vectors.
+    void KickDir(Vector3 dir, float strength)
+    {
+        if (dir.LengthSquared() < 1e-6f) return;
+        camKickVel += Vector3.Normalize(dir) * (strength * Settings.Current.CameraShake);
+    }
+
+    Vector3 UpdateCamKick()
+    {
+        float dt = MathF.Min(frameDt, 0.05f);
+        // Critically damped spring back to zero (omega = 22 rad/s).
+        const float w = 22f;
+        var accel = -w * w * camKick - 2f * w * camKickVel;
+        camKickVel += accel * dt;
+        camKick += camKickVel * dt;
+        if (camKick.LengthSquared() < 1e-6f && camKickVel.LengthSquared() < 1e-6f) { camKick = camKickVel = Vector3.Zero; }
+        return camKick * (1 - MathHelper.SmoothStep(0, 1, blend));
+    }
 
     /// Read what just happened near you: your blow landing, a blow on you, a charge striking close by.
     void Feel()
@@ -18,10 +38,51 @@ partial class BattleScreen
         {
             lastHitAt = battle.PlayerHit.At;
             var text = battle.PlayerHit.Text;
-            if (text.Contains("DMG")) { Kick(0.22f); if (Settings.Current.HitPause && quality != Quality.Low) hitPause = 0.045f; }
-            else if (text.StartsWith("PARRY") || text == "BLOCKED" || text.EndsWith("BASH!") || text == "KICK!") Kick(0.12f);
+            var f = new Vector3(MathF.Cos(p.Facing), 0, MathF.Sin(p.Facing));
+            var r = new Vector3(-f.Z, 0, f.X);
+            var swingKick = p.Swing switch
+            {
+                AttackDir.Left => r,
+                AttackDir.Right => -r,
+                AttackDir.Overhead => new Vector3(0, -1, 0),
+                _ => f,
+            };
+            if (text.Contains("GUARD BREAK") || text.Contains("GUARD BROKEN"))
+            {
+                Kick(0.32f); KickDir(-f, 2.2f);
+                if (Settings.Current.HitPause && quality != Quality.Low) hitPause = 0.070f; // CR6: 70ms guard-break hitstop
+                AddSparkFlash(p.Pos + p.Dir * 0.9f, 1.3f, 0.9f, new Color(255, 220, 120));
+            }
+            else if (text.StartsWith("PARRY") || text.StartsWith("CHAMBER") || text.StartsWith("BLADE CLASH"))
+            {
+                Kick(0.20f); KickDir(-f, 1.8f);
+                if (Settings.Current.HitPause && quality != Quality.Low) hitPause = 0.055f; // CR6: 55ms parry/chamber hitstop
+                AddSparkFlash(p.Pos + p.Dir * 0.85f, 1.35f, 0.95f, new Color(255, 245, 195));
+            }
+            else if (text.Contains("DMG"))
+            {
+                bool heavy = battle.Blows.Count > 0 && battle.Blows[^1] is { OnPlayer: false } lb && (lb.Fatal || lb.Amount >= lb.Target.Type.MaxHp * 0.4f);
+                Kick(heavy ? 0.30f : 0.20f); KickDir(swingKick, heavy ? 2.0f : 1.3f);
+                if (Settings.Current.HitPause && quality != Quality.Low) hitPause = heavy ? 0.065f : 0.035f; // CR6: 35ms light / 65ms heavy/kill
+                if (battle.Blows.Count > 0 && battle.Blows[^1] is { OnPlayer: false } hitBlow)
+                    Spray(hitBlow.Target.Pos, 1.15f, heavy ? 9 : 5, new Color(170, 26, 22), heavy ? 4.8f : 3.2f, 2.2f, 0.32f, true, 0.45f);
+            }
+            else if (text == "BLOCKED" || text.EndsWith("BASH!") || text == "KICK!")
+            {
+                Kick(0.14f); KickDir(-f, 1.2f);
+                AddSparkFlash(p.Pos + p.Dir * 0.85f, 1.25f, 0.65f, new Color(235, 225, 190));
+            }
         }
-        if (lastPlayerHp >= 0 && p.Hp < lastPlayerHp - 0.5f) Kick(0.4f);
+        // CR6: Steel clash sparks for any nearby parries, chambers, or shield blocks.
+        foreach (var (cue, at) in battle.Sounds)
+            if (cue is Cue.ParrySteel or Cue.ShieldSplinter && Vector2.DistanceSquared(at, p.Pos) < 22f * 22f)
+                AddSparkFlash(at, 1.3f, cue == Cue.ParrySteel ? 0.85f : 0.65f, cue == Cue.ParrySteel ? new Color(255, 244, 188) : new Color(235, 200, 140));
+        if (lastPlayerHp >= 0 && p.Hp < lastPlayerHp - 0.5f)
+        {
+            Kick(0.4f);
+            var from = p.Pos - p.HitFrom;
+            if (from.LengthSquared() > 1e-4f) KickDir(new Vector3(from.X, 0.25f, from.Y), 2.4f);
+        }
         lastPlayerHp = p.Hp;
         foreach (var (cue, at) in battle.Sounds)
             if (Synth.HeavyImpact(cue)) { float d = Vector2.Distance(at, p.Pos); if (d < 16) Kick(0.3f * (1 - d / 16)); }
@@ -242,14 +303,12 @@ partial class BattleScreen
         for (int i = 0; i < units.Count; i++)
         {
             var u = units[i];
-            if (!u.Active || u.Action != UnitAction.Recover) continue;
+            if (!u.Active || u.Action != UnitAction.Active) continue;
             if (u.Type.Class is UnitClass.Archer or UnitClass.Caster) continue;
             bool priority = u.IsPlayer || u.IsLeader || u.Hero || u.Type.Reach >= 2.2f;
             if (!priority && Vector2.DistanceSquared(u.Pos, eye2) > maxD2) continue;
-            if (lastSlashAt.TryGetValue(u.Index, out float prev) && now - prev < 0.28f) continue;
-            // Spawn right at the start of Recover (the strike moment)
-            float recLen = u.Type.Recover;
-            if (recLen > 0.05f && u.ActionTimer < recLen - 0.08f) continue;
+            if (lastSlashAt.TryGetValue(u.Index, out float prev) && now - prev < 0.25f) continue;
+            if (u.SwingProgress < 0.05f) continue;
             lastSlashAt[u.Index] = now;
 
             Color col = u.IsPlayer && battle.AuraBlade ? AuraColour

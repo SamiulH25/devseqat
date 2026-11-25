@@ -197,8 +197,20 @@ For all fighters in `Options.Duel` and enemies engaging near the player (`<= 14m
 
 ---
 
-## Open design calls (resolve before CR1/CR2)
+## Open design calls (resolved)
 
-1. **Direction input default:** Mouse-flick (with deadzone + lock-on-press) as default, with Movement-key direction as an option, plus `MMB`/`Tab` soft lock-on? *(Recommended: Yes.)*
-2. **Shields:** Omni-directional block at stamina cost (vulnerable to kicks & axe/mace guard-crush) + **directional matching for a free Timed Parry/Riposte**, or strict 4-way directional shield blocking? *(Recommended: Omni-block at stamina cost + directional Timed Parry.)*
-3. **Dodge binding:** `Space` for sidestep dodge on foot (keeping `Shift` for sprint and `F` for kick/bash)? *(Recommended: Yes.)*
+1. **Direction input default:** Mouse-flick (with deadzone + idle decay + lock-on-press) as default, with Movement-key direction (`Settings.MoveDirControl`) as an option, plus `MMB` tap / `Tab` (in Duel) soft lock-on. *(Adopted.)*
+2. **Shields:** Omni-directional block at stamina cost (vulnerable to flanks, kicks/bashes & `1.6x` axe/mace guard-crush) + directional matching for a free Timed Parry/Riposte. *(Adopted.)*
+3. **Dodge binding:** `Space` (`Act.Dodge`) for sidestep dodge on foot (keeping `Shift` for sprint, `CTRL` for kick/bash, and `Space` for Pause in command view/deployment). *(Adopted.)*
+
+---
+
+## As built (2026-11-25)
+
+- **CR0 Baseline:** `--bench 1500` recorded at **7.52 ms/tick** mean (p95 8.49 ms, 2982 men).
+- **CR1 (Camera & Controls):** Critically damped focus height and lateral shoulder offset (`BattleScreen.Controls.cs`), closer default `fieldDist = 3.8m` (scroll `2.4m–10m`), `F4` (`Act.CameraView`) OTS / Close Duel / First-Person toggle, dynamic FOV (`+5°` sprint, `-4°` charged swing), spring-damped directional camera kick (`KickDir` in `BattleScreen.Effects.cs`), Fortress wall/tower/building camera pull-in (`PullCameraIn`), `MMB` tap / `Tab` (Duel) soft lock-on with mouse-wheel target cycling, decoupled mouse-flick with deadzone/decay/lock-on-press + `Settings.MoveDirControl` toggle in Settings, and deterministic 150ms input buffer in `BattlePlayer.cs`.
+- **CR2 (Active Swings, Clashes, Feints, Footwork & Combos):** 3-phase `Windup → Active → Recover` (`UnitAction.Active`, `SwingProgress`, fixed 3-hit tracking with zero per-unit allocations), live-facing angular sweeps (`SweepActive`) supporting accels/drags, sequential cleave & cleave-stop, mirrored-swing **Blade Clashes & Chambers** (`TriggerClash`), early-windup **Feint** (RMB/Q) & **Morph**, forward swing lunge impulse, `Space` **Sidestep Dodge** (`0.22s`, `22` stamina, real spatial evasion), reworked posture-breaking **Kick / Shield Bash**, responsive combat footwork (removed `0.3x` mud crawl), and opposite-side combo cancels replacing punishing `Chain` block-rate inflation. Tested by `CombatReworkCR2`.
+- **CR3 (Unified Directional Guard & Non-RNG Troop Combat):** Explicit `Unit.GuardDir` + tier/drill-scaled `UpdateGuardDir` replacing pure RNG melee blocking for AI troops; directional timed parries, shield stamina drain & `0.9s` **Guard Break** (`GuardBroken`) for both player and troops; mass-battle fast path (`> 18m` from player, non-duel) keeps `--bench 1500` at **7.40 ms/tick** mean (faster than CR0 baseline).
+- **CR4 (Weapon Class Identities):** Sword & Shield fastest riposte (`0.42x`), 2H Greatsword wider cleave (`±1.28 rad`) + combo speed + overhead hyper-armor/poise, Axes/Maces `1.6x` guard-crush + `+0.15` pierce + `1.15x` whiff recovery, Polearms thrust tip sweet-spot (`+22%` at `>= 0.62*reach`, `-25%` crowded `< 0.42*reach`) + sweep spacing pushback, Bow draw-tension sweet spot (`0.78–0.96` charge) + fast sidearm swap (`0.18s`), Mounted wider side cuts & couched lance `1.6x` shield-shatter. Tested by `CombatReworkCR3CR4`.
+- **CR5 (Smart Dueling & 1vX AI):** New `BattleDuelAI.cs` for `Options.Duel` and foot melee engaging near the player (`<= 14m`): preferred reach spacing (`0.85 * reach`), lateral strafing, stamina/whiff backstep, deterministic 1vX attack-slot pacing (`DuelSlot`) with flank/rear circling at `3.5m` and punish-on-turned-back, and tier-scaled guard reads, feints, shield-kicks, and ripostes. Tested by `DuelAISpacing`.
+- **CR6 (3D Telegraphs, VFX & Reticle HUD):** Exaggerated directional windups, `Active` `SwingProgress`-driven sweeps & `EmitSlashArc`, visible directional `GuardDir` poses, and dedicated **Guard-Break**, **Blade Clash**, **Kick/Bash**, and **Sidestep Dodge** poses (`PuppetPoses.cs`, `Puppet3D.cs`); tiered hitstop (`35/55/65/70 ms`) and steel clash spark flashes (`BattleScreen.Effects.cs`); 4-chevron directional combat reticle with pulsing crimson threat chevron, gold riposte/chamber pulse, and melee stamina/posture bar (`Hud.Melee.cs`, `Hud.cs`).

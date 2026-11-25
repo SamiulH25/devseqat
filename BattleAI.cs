@@ -55,6 +55,8 @@ public partial class Battle
         u.EnemyDist = d;
         if (u.Ammo > 0 && !u.Mounted && LoosesAtCaptain(u, s)) return; // a volley marked on you
         if (u.Mounted) { ThinkCav(u, s, enemy, d, dt); return; }
+        if (UseDuelAI(u, enemy, d)) { DuelThink(u, enemy!, d, dt); return; } // CR5: smart dueling & 1vX AI
+        if (enemy != null && d < 4.5f) UpdateGuardDir(u, enemy, dt); // CR3: explicit directional guard tracking
         u.Wish = Vector2.Zero;
 
         float toSlot = Vector2.Distance(u.Pos, u.Slot);

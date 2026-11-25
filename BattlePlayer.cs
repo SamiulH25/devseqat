@@ -10,7 +10,7 @@ public partial class Battle
     /// still goes down; it only buys the time to look at the field. Read from the sim alone, so replays agree.
     public bool SelfGuard { get; private set; }
     AttackDir guardDir;
-    /// The side the player's block covers: the mouse's, or the guard's own read while you command.
+    /// The side the player's block covers: the mouse/key input (locked on press by controls), or the guard's own read while you command.
     AttackDir BlockDir => SelfGuard ? guardDir : Input.Dir;
     const float GuardReach = 3.5f;
 
@@ -31,11 +31,33 @@ public partial class Battle
         inp.Block = true;
     }
 
+    // CR1: 150ms deterministic input buffer for Attack, Block, Dodge and Bash during busy frames.
+    const float InputBufferWindow = 0.15f;
+    enum BufferedAct { None, Attack, Block, Dodge, Bash }
+    BufferedAct bufAct;
+    float bufUntil = -1;
+    AttackDir bufDir;
+    Vector2 bufMove;
+    bool prevAttackDown, prevBlockDown;
+
+    void BufferInput(PlayerInput inp, bool busy)
+    {
+        bool atkPress = inp.Attack && !prevAttackDown;
+        bool blkPress = inp.Block && !prevBlockDown;
+        prevAttackDown = inp.Attack;
+        prevBlockDown = inp.Block;
+        if (!busy) return;
+        if (inp.Dodge) { bufAct = BufferedAct.Dodge; bufUntil = Time + InputBufferWindow; bufMove = inp.Move; }
+        else if (inp.Bash) { bufAct = BufferedAct.Bash; bufUntil = Time + InputBufferWindow; }
+        else if (blkPress) { bufAct = BufferedAct.Block; bufUntil = Time + InputBufferWindow; bufDir = inp.Dir; }
+        else if (atkPress) { bufAct = BufferedAct.Attack; bufUntil = Time + InputBufferWindow; bufDir = inp.Dir; }
+    }
+
     void UpdatePlayer(Unit p, float dt)
     {
         var inp = Madness(p, Input, dt);
         SelfGuard = false;
-        if (Commanding && !Mad) { inp = default; inp.Dir = Input.Dir; p.Charging = false; p.Charge = 0; Guard(p, ref inp); }
+        if (Commanding && !Mad) { inp = default; inp.Dir = Input.Dir; p.Charging = false; p.Charge = 0; bufAct = BufferedAct.None; Guard(p, ref inp); }
         else p.Facing = inp.Facing;
 
         UpdateAura(p, inp.Aura, dt);
@@ -50,14 +72,82 @@ public partial class Battle
         }
         if (Manned != null) { inp.Attack = false; p.Charging = false; p.Charge = 0; } // the attack key looses the engine, not a blow
         if (inp.Swap) SwapWeapon(p);
-        if (inp.Bash) Bash(p);
 
-        bool busy = p.Action is UnitAction.Windup or UnitAction.Recover or UnitAction.Stagger;
+        bool busy = p.Action is UnitAction.Windup or UnitAction.Active or UnitAction.Recover or UnitAction.Stagger;
+        BufferInput(inp, busy);
+
+        // CR2: Feint (RMB or Q during first 60% of Windup) & Morph (direction change during first 45% of Windup).
+        if (p.Action == UnitAction.Windup && p.WindupDuration > 0.02f)
+        {
+            float prog = 1f - p.ActionTimer / p.WindupDuration;
+            if ((inp.Block || inp.Feint) && prog <= 0.60f)
+            {
+                p.Action = inp.Block ? UnitAction.Block : UnitAction.None;
+                p.ActionTimer = 0;
+                p.BlockStart = Time;
+                p.GuardDir = inp.Dir;
+                p.Stamina = MathF.Max(0, p.Stamina - 6f);
+                PlayerHit = ("FEINT", Time);
+                busy = false;
+            }
+            else if (!p.Morphed && !p.Type.ThrustOnly && prog <= 0.45f && inp.Dir != p.Swing && p.Stamina >= 5f)
+            {
+                p.Swing = inp.Dir;
+                p.Morphed = true;
+                p.ActionTimer += 0.07f;
+                p.WindupDuration = MathF.Max(p.WindupDuration, p.ActionTimer);
+                p.Stamina -= 5f;
+                PlayerHit = ("MORPH", Time);
+            }
+        }
+
+        // CR2: Sidestep / Dodge on foot (Space, 0.22s directional burst, 22 stamina, 0.45s cd, real spatial evasion).
+        if (inp.Dodge && !p.Mounted && p.DodgeCd <= 0 && p.Action != UnitAction.Stagger && p.Stamina >= 22f)
+        {
+            p.DodgeDir = inp.Move.LengthSquared() > 0.04f ? Vector2.Normalize(inp.Move) : -p.Dir;
+            p.DodgeTimer = 0.22f;
+            p.DodgeCd = 0.45f;
+            p.Stamina -= 22f;
+            p.Charging = false;
+            p.Charge = 0;
+            if (p.Action is UnitAction.Windup or UnitAction.Block) { p.Action = UnitAction.None; p.ActionTimer = 0; busy = false; }
+        }
+
+        // CR2: Fluid opposite-side combo cancel during early Recover (skips half of Recover into next swing).
+        if (p.Action == UnitAction.Recover && p.Type.Ammo == 0 && !p.Couched && p.ActionTimer <= p.Type.Recover * 0.55f
+            && (inp.Attack || (bufAct == BufferedAct.Attack && Time <= bufUntil)))
+        {
+            var nextDir = bufAct == BufferedAct.Attack && Time <= bufUntil ? bufDir : inp.Dir;
+            if (nextDir != p.LastSwing || p.Type.ThrustOnly)
+            {
+                bufAct = BufferedAct.None;
+                p.Swing = p.Type.ThrustOnly ? AttackDir.Thrust : nextDir;
+                p.Charge = 0.15f;
+                ReleaseSwing(p, combo: true);
+                busy = true;
+            }
+        }
+
+        if (!busy && bufAct != BufferedAct.None && Time <= bufUntil)
+        {
+            switch (bufAct)
+            {
+                case BufferedAct.Bash: inp.Bash = true; break;
+                case BufferedAct.Dodge: inp.Dodge = true; if (inp.Move == Vector2.Zero) inp.Move = bufMove; break;
+                case BufferedAct.Block: inp.Block = true; inp.Dir = bufDir; break;
+                case BufferedAct.Attack: inp.Attack = true; inp.Dir = bufDir; break;
+            }
+            bufAct = BufferedAct.None;
+        }
+        else if (Time > bufUntil) bufAct = BufferedAct.None;
+
+        if (inp.Bash) Bash(p);
+        busy = p.Action is UnitAction.Windup or UnitAction.Active or UnitAction.Recover or UnitAction.Stagger;
         if (!busy)
         {
             if (inp.Block && p.Charging) { p.Charging = false; p.Charge = 0; } // feint: cancel the swing into a block
-            if (inp.Block && p.Action != UnitAction.Block) p.BlockStart = Time;
-            if (inp.Block) p.Action = UnitAction.Block;
+            if (inp.Block && p.Action != UnitAction.Block) { p.BlockStart = Time; p.GuardDir = inp.Dir; }
+            if (inp.Block) { p.Action = UnitAction.Block; if (SelfGuard) p.GuardDir = guardDir; }
             else if (p.Action == UnitAction.Block) p.Action = UnitAction.None;
             if (p.Action == UnitAction.None && !p.Couched && p.Type.Ammo > 0) PlayerBow(p, inp, dt);
             else if (p.Action == UnitAction.None && !p.Couched)
@@ -107,12 +197,15 @@ public partial class Battle
         else
         {
             bool sprint = inp.Sprint && inp.Move != Vector2.Zero && p.Stamina > 5 && !p.Charging && p.Action == UnitAction.None;
-            float speed = p.Type.Speed * (sprint ? 1.6f : 1)
-                * (p.Charging || p.Action == UnitAction.Block ? 0.5f : 1)
-                * (p.Action == UnitAction.Stagger ? 0 : busy ? 0.3f : 1);
+            // CR2: responsive combat footwork (no 0.3x mud-glue crawl during swings).
+            float speed = p.Type.Speed * (sprint ? 1.6f : 1f)
+                * (p.Action == UnitAction.Stagger ? 0f
+                    : p.Action is UnitAction.Windup or UnitAction.Active ? 0.78f
+                    : p.Action == UnitAction.Recover ? 0.72f
+                    : p.Charging || p.Action == UnitAction.Block ? 0.68f : 1f);
             p.Wish = inp.Move * speed;
             // Breath comes back between blows, not while swinging (P2): a captain who never pauses runs dry.
-            p.Stamina = Math.Clamp(p.Stamina + (sprint ? -20 : (p.Action == UnitAction.Block ? 4 : busy || p.Charging ? 0 : 15) * AuraBreath) * dt, 0, 100);
+            p.Stamina = Math.Clamp(p.Stamina + (sprint ? -20 : (p.Action == UnitAction.Block ? 5 : busy || p.Charging ? 0 : 16) * AuraBreath) * dt, 0, 100);
         }
         if (inp.Rally && RallyCooldown <= 0 && p.Stamina >= 30) Rally(p);
     }

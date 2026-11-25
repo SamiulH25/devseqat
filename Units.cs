@@ -4,7 +4,7 @@ namespace Ironfield;
 
 /// Caster: a mage (docs/archive/COMPANIONS_MAGIC.md E1): poor in melee, casts the spells in `UnitType.Spells` (BattleAbilities.cs).
 public enum UnitClass { Infantry, Archer, Skirmisher, Captain, Cavalry, Caster }
-public enum UnitAction { None, Windup, Recover, Block, Stagger }
+public enum UnitAction { None, Windup, Active, Recover, Block, Stagger }
 
 /// Swing direction, named from the attacker's side (Left = the blade comes from the attacker's left).
 /// The defender sees Left/Right mirrored, see <see cref="Dirs.Mirror"/>.
@@ -201,6 +201,28 @@ public sealed class Unit
     public UnitAction Action;
     public AttackDir Swing;
     public float ActionTimer, Cooldown, Charge, Power = 1, HitFlash, Anim;
+    // CR2-CR3: 3-phase swing (Windup -> Active -> Recover), explicit directional guard, dodge & lunge footwork.
+    public float WindupDuration, ActiveDuration, SwingProgress;
+    public int HitCount, Hit0 = -1, Hit1 = -1, Hit2 = -1;
+    public bool MassSwung; // mass-battle fast path fired its single Active check
+    public AttackDir GuardDir = AttackDir.Overhead;
+    public float GuardSwitchCd;
+    public bool GuardBroken;
+    public float ClashedAt = -99, BashedAt = -99;
+    public float DodgeTimer, DodgeCd, LungeTimer;
+    public Vector2 DodgeDir, LungeVel;
+    public AttackDir LastSwing = AttackDir.Overhead;
+    public bool Morphed;
+
+    public void ClearHits() { HitCount = 0; Hit0 = Hit1 = Hit2 = -1; MassSwung = false; }
+    public bool AlreadyHit(int idx) => (HitCount > 0 && Hit0 == idx) || (HitCount > 1 && Hit1 == idx) || (HitCount > 2 && Hit2 == idx);
+    public void RecordHit(int idx)
+    {
+        if (HitCount == 0) Hit0 = idx;
+        else if (HitCount == 1) Hit1 = idx;
+        else if (HitCount == 2) Hit2 = idx;
+        HitCount++;
+    }
     /// Drawing only (the sim never reads them): when the cast this man is gathering began and fires, and where it goes.
     public float CastStart = -99, CastFire = -99;
     public Vector2 CastAim;

@@ -12,11 +12,38 @@ partial class BattleScreen
     static Vector2 Forward(float yaw) => new(MathF.Cos(yaw), MathF.Sin(yaw));
     static Vector2 RightOf(Vector2 f) => new(-f.Y, f.X); // screen right when looking along f
 
-    void FieldControls()
+    void FieldControls(float dt)
     {
-        bool wasWheel = wheelOpen;
-        wheelOpen = ctl.Down(Act.OrderWheel) || shotWheel;
+        if (ctl.Pressed(Act.CameraView))
+        {
+            camMode = (camMode + 1) % 3;
+            battle.Log(camMode switch { 1 => "Camera: Close Duel", 2 => "Camera: First Person", _ => "Camera: Over-the-Shoulder" });
+        }
+
+        // Soft lock-on (CR1): tap MMB (when shared with OrderWheel) toggles lock-on; hold MMB > 0.18s opens OrderWheel.
+        bool wasWheel = wheelOpen, wasWheelDown = wheelDown, lockTap = false;
+        bool shareLock = ctl.Binds.TryGetValue(Act.LockTarget, out var lb) && ctl.Binds.TryGetValue(Act.OrderWheel, out var wb) && lb.Any(wb.Contains);
+        if (shareLock)
+        {
+            wheelDown = ctl.Down(Act.OrderWheel) && !capWheel;
+            if (wheelDown && !wasWheelDown) wheelSince = Ironfield.Ui.Now;
+            // Non-shared key (e.g. Z) opens OrderWheel immediately; shared MMB waits 0.18s so a quick tap toggles lock-on.
+            bool lockKeyDown = ctl.Down(Act.LockTarget);
+            wheelOpen = shotWheel || (wheelDown && (!lockKeyDown || Ironfield.Ui.Now - wheelSince > 0.18f));
+            if (wasWheelDown && !wheelDown && !wasWheel && Ironfield.Ui.Now - wheelSince <= 0.22f) lockTap = true;
+        }
+        else
+        {
+            wheelOpen = ctl.Down(Act.OrderWheel) || shotWheel;
+            lockTap = ctl.Pressed(Act.LockTarget);
+        }
         if (wheelOpen && !wasWheel) wheelVec = Vector2.Zero;
+        if (lockTap) ToggleLockTarget();
+
+        // Validate active soft lock-on target.
+        if (lockTarget != null && (!lockTarget.Active || lockTarget.Routing || Vector2.DistanceSquared(lockTarget.Pos, battle.Player.Pos) > 24f * 24f))
+            lockTarget = null;
+
         // The captain's ring: hold its key a moment and it opens; a tap is the couch (when it shares the couch key).
         bool wasCap = capWheel, wasCapDown = capDown, couchTap = false;
         capDown = ctl.Down(Act.CaptainWheel) && !wheelOpen;
@@ -24,6 +51,12 @@ partial class BattleScreen
         capWheel = shotCapWheel || capDown && Ironfield.Ui.Now - capSince > 0.18f;
         if (capWheel && !wasCap) wheelVec = Vector2.Zero;
         if (wasCapDown && !capDown && !wasCap && ctl.First(Act.CaptainWheel) == ctl.First(Act.Couch)) couchTap = true;
+
+        bool attackDown = IsActive && !wheelOpen && !capWheel && ctl.Down(Act.Attack);
+        bool blockDown = IsActive && !wheelOpen && !capWheel && ctl.Down(Act.Block);
+        // Lock-on-press (CR1): while holding attack or block in mouse-flick mode, camera panning does not flip your direction.
+        bool dirLocked = !Settings.Current.MoveDirControl && lockTarget == null && (attackDown || blockDown);
+
         if (IsActive)
         {
             // shortcut: mouse look by warping to the centre; switch to SDL relative mode if a platform refuses warps.
@@ -36,50 +69,106 @@ partial class BattleScreen
                     wheelVec += d;
                     if (wheelVec.Length() > 120) wheelVec = Vector2.Normalize(wheelVec) * 120;
                 }
+                else if (lockTarget != null)
+                {
+                    // Locked on: mouse movement is dedicated cleanly to 4-way attack/guard direction without fighting camera yaw.
+                    if (!Settings.Current.MoveDirControl)
+                    {
+                        aimAcc *= MathF.Exp(-12f * dt);
+                        if (d.LengthSquared() >= 4f) aimAcc += d;
+                        if (aimAcc.LengthSquared() > 36f)
+                        {
+                            aimDir = MathF.Abs(aimAcc.X) > MathF.Abs(aimAcc.Y)
+                                ? (aimAcc.X > 0 ? AttackDir.Right : AttackDir.Left)
+                                : (aimAcc.Y < 0 ? AttackDir.Overhead : AttackDir.Thrust);
+                            aimAcc = Vector2.Zero;
+                        }
+                    }
+                }
                 else
                 {
                     float k = 0.0035f * ctl.Sensitivity;
                     yaw += d.X * k;
                     pitch = Math.Clamp(pitch + d.Y * k * (ctl.InvertY ? -1 : 1), -0.35f, 1.1f);
-                    // Mount & Blade style directions: the way the mouse moves picks the swing (and the block).
-                    aimAcc = aimAcc * 0.8f + d;
-                    if (aimAcc.LengthSquared() > 36)
-                        aimDir = MathF.Abs(aimAcc.X) > MathF.Abs(aimAcc.Y)
-                            ? (aimAcc.X > 0 ? AttackDir.Right : AttackDir.Left)
-                            : (aimAcc.Y < 0 ? AttackDir.Overhead : AttackDir.Thrust);
+                    // Decoupled mouse-flick direction (CR1): deadzone + idle decay + lock-on-press.
+                    if (!Settings.Current.MoveDirControl)
+                    {
+                        aimAcc *= MathF.Exp(-10f * dt);
+                        if (!dirLocked && d.LengthSquared() >= 4.8f)
+                        {
+                            aimAcc += d;
+                            if (aimAcc.LengthSquared() > 64f)
+                            {
+                                aimDir = MathF.Abs(aimAcc.X) > MathF.Abs(aimAcc.Y)
+                                    ? (aimAcc.X > 0 ? AttackDir.Right : AttackDir.Left)
+                                    : (aimAcc.Y < 0 ? AttackDir.Overhead : AttackDir.Thrust);
+                                aimAcc = Vector2.Zero;
+                            }
+                        }
+                    }
                 }
             }
             skipMouse = false;
             Mouse.SetPosition(c.X, c.Y);
         }
         else skipMouse = true;
+
+        // Smoothly frame locked-on target.
+        if (lockTarget != null)
+        {
+            var to = lockTarget.Pos - battle.Player.Pos;
+            if (to.LengthSquared() > 1e-4f)
+            {
+                float targetYaw = MathF.Atan2(to.Y, to.X);
+                float alpha = 1f - MathF.Exp(-12f * dt);
+                yaw += MathHelper.WrapAngle(targetYaw - yaw) * alpha;
+                pitch = MathHelper.Lerp(pitch, 0.22f, 1f - MathF.Exp(-8f * dt));
+            }
+        }
+
         if (wasCap && !capWheel && CapSector(wheelVec) is int cs) capPending = Hud.CaptainRing[cs];
         if (wasWheel && !wheelOpen && WheelSector() is int sector)
         {
             if (selectedDivision is { } dv) GiveGoal(dv, Hud.WheelGoals(dv)[sector]);
             else Command(Hud.WheelOrder[sector]);
         }
-        fieldDist = Math.Clamp(fieldDist - (ms.ScrollWheelValue - pms.ScrollWheelValue) * 0.004f, 2.5f, 12);
+
+        int wheelDelta = ms.ScrollWheelValue - pms.ScrollWheelValue;
+        if (wheelDelta != 0)
+        {
+            if (lockTarget != null) CycleLockTarget(wheelDelta > 0 ? 1 : -1);
+            else fieldDist = Math.Clamp(fieldDist - wheelDelta * 0.0035f, 2.4f, 10f);
+        }
 
         bool mounted = battle.Player.Mounted;
         if (mounted) yaw += battle.Reined; // turning the horse on the reins turns the view with it (the horse follows the view: BattlePlayer.cs)
         battle.Reined = 0;
         var f = Forward(yaw);
-        var move = mounted ? Vector2.Zero : f * ctl.Axis(Act.Forward, Act.Back) + RightOf(f) * ctl.Axis(Act.Right, Act.Left);
+        float fwdAxis = ctl.Axis(Act.Forward, Act.Back), rightAxis = ctl.Axis(Act.Right, Act.Left);
+        var move = mounted ? Vector2.Zero : f * fwdAxis + RightOf(f) * rightAxis;
         if (move != Vector2.Zero) move.Normalize();
+        if (Settings.Current.MoveDirControl && !mounted && (fwdAxis != 0 || rightAxis != 0))
+        {
+            aimDir = MathF.Abs(rightAxis) > MathF.Abs(fwdAxis)
+                ? (rightAxis > 0 ? AttackDir.Right : AttackDir.Left)
+                : (fwdAxis > 0 ? AttackDir.Overhead : AttackDir.Thrust);
+        }
+
         battle.Input = new PlayerInput
         {
             Move = move,
-            Throttle = mounted ? ctl.Axis(Act.Forward, Act.Back) : 0, // on horseback forward/back is the rein, left/right turns the horse
-            Steer = mounted ? ctl.Axis(Act.Right, Act.Left) : 0,
+            Throttle = mounted ? fwdAxis : 0, // on horseback forward/back is the rein, left/right turns the horse
+            Steer = mounted ? rightAxis : 0,
             Dir = aimDir,
             Couch = couchTap || ctl.Pressed(Act.Couch) && ctl.First(Act.Couch) != ctl.First(Act.CaptainWheel) || capPending == Hud.CapCmd.Couch,
             Mount = ctl.Pressed(Act.Interact) || capPending == Hud.CapCmd.Mount,
             Facing = yaw, // the player looks (and strikes) where the camera looks
             EngineAim = battle.Manned != null ? GroundUnder(GraphicsDevice.Viewport.Width / 2, GraphicsDevice.Viewport.Height / 2) : null, // an engine you work looses where the crosshair is
             Sprint = ctl.Down(Act.Sprint),
-            Attack = IsActive && !wheelOpen && !capWheel && ctl.Down(Act.Attack),
-            Block = IsActive && !wheelOpen && !capWheel && ctl.Down(Act.Block),
+            Attack = attackDown,
+            Block = blockDown,
+            Dodge = IsActive && !wheelOpen && !capWheel && !mounted && ctl.Pressed(Act.Dodge),
+            Feint = IsActive && !wheelOpen && !capWheel && couchTap,
             Rally = ctl.Pressed(Act.Rally),
             Bash = ctl.Pressed(Act.Bash),
             Swap = ctl.Pressed(Act.SwapWeapon) || capPending == Hud.CapCmd.Swap,
@@ -89,6 +178,58 @@ partial class BattleScreen
             Relic = ctl.Pressed(Act.Relic) || capPending == Hud.CapCmd.Relic,
         };
         capPending = null;
+    }
+
+    void ToggleLockTarget()
+    {
+        if (lockTarget != null) { lockTarget = null; return; }
+        lockTarget = PickLockTarget();
+    }
+
+    void ToggleOrCycleLock()
+    {
+        if (lockTarget == null) { lockTarget = PickLockTarget(); return; }
+        var prev = lockTarget;
+        CycleLockTarget(1);
+        if (lockTarget == prev) lockTarget = null;
+    }
+
+    Unit? PickLockTarget()
+    {
+        var p = battle.Player;
+        var fwd = Forward(yaw);
+        Unit? best = null;
+        float bestScore = float.MaxValue;
+        foreach (var u in battle.Units)
+        {
+            if (!u.Active || u.Team == p.Team || u.Routing) continue;
+            var to = u.Pos - p.Pos;
+            float d = to.Length();
+            if (d > 18f || d < 0.01f) continue;
+            float dot = Vector2.Dot(to / d, fwd);
+            if (dot < -0.25f) continue;
+            float score = d * (1.4f - 0.6f * dot);
+            if (score < bestScore) { bestScore = score; best = u; }
+        }
+        return best;
+    }
+
+    void CycleLockTarget(int dir)
+    {
+        var p = battle.Player;
+        var foes = new List<(Unit u, float ang)>();
+        foreach (var u in battle.Units)
+        {
+            if (!u.Active || u.Team == p.Team || u.Routing) continue;
+            var to = u.Pos - p.Pos;
+            if (to.LengthSquared() > 20f * 20f || to.LengthSquared() < 1e-4f) continue;
+            foes.Add((u, MathHelper.WrapAngle(MathF.Atan2(to.Y, to.X) - yaw)));
+        }
+        if (foes.Count <= 1) return;
+        foes.Sort((a, b) => a.ang.CompareTo(b.ang));
+        int idx = foes.FindIndex(f => f.u == lockTarget);
+        if (idx < 0) { lockTarget = foes[0].u; return; }
+        lockTarget = foes[(idx + (dir >= 0 ? 1 : -1) + foes.Count) % foes.Count].u;
     }
 
     int? WheelSector() => wheelOpen ? Sector(wheelVec, Hud.WheelOrder.Length) : capWheel ? CapSector(wheelVec) : null;
@@ -349,21 +490,7 @@ partial class BattleScreen
             || !float.IsFinite(far.X) || !float.IsFinite(far.Y) || !float.IsFinite(far.Z)
             || (far - near).LengthSquared() < 1e-8f)
             return camFocus;
-        var d = Vector3.Normalize(far - near);
-        var t = battle.Terrain;
-        float Above(Vector3 p) => p.Y - t.Height(new Vector2(p.X, p.Z));
-        float s = 0, step = 1;
-        for (int i = 0; i < 800 && s < 600; i++)
-        {
-            var p = near + d * s;
-            float h = Above(p);
-            if (h > 0) { step = MathF.Max(0.5f, h * 0.5f); s += step; continue; }
-            float lo = MathF.Max(0, s - step), hi = s; // bisect the crossing
-            for (int k = 0; k < 10; k++) { float m = (lo + hi) / 2; if (Above(near + d * m) > 0) lo = m; else hi = m; }
-            var hit = near + d * hi;
-            return float.IsFinite(hit.X) && float.IsFinite(hit.Z) ? new Vector2(hit.X, hit.Z) : camFocus;
-        }
-        return camFocus;
+        return GroundPick.March(near, far, battle.Terrain, 800, 600) ?? camFocus; // bisects the crossing
     }
 
     void UpdateCamera()
@@ -372,13 +499,37 @@ partial class BattleScreen
         var t = battle.Terrain;
         var p = battle.Player.Pos;
         bool mounted = battle.Player.Mounted;
-        var shoulder = new Vector3(-MathF.Sin(yaw), 0, MathF.Cos(yaw)) * 0.8f; // over the right shoulder
-        var fieldFocus = new Vector3(p.X, t.Height(p) + (mounted ? 2.6f : 1.7f), p.Y) + shoulder;
+        float dt = MathF.Min(MathF.Max(frameDt, 1f / 120f), 0.05f);
+
+        // Critically damped focus height (CR1): eliminates terrain-ripple jitter while keeping 1:1 mouse-look responsiveness.
+        float targetY = t.Height(p) + (camMode == 2 ? (mounted ? 2.55f : 1.68f) : (mounted ? 2.5f : 1.65f));
+        float targetShoulder = camMode == 2 ? 0f : camMode == 1 ? 0.48f : 0.68f;
+        if (!camInit || shotDir != null)
+        {
+            camFocusY = targetY;
+            camFocusYVel = 0;
+            camShoulder = targetShoulder;
+            camFov = 62f;
+            camInit = true;
+        }
+        else
+        {
+            const float w = 14f;
+            float acc = w * w * (targetY - camFocusY) - 2f * w * camFocusYVel;
+            camFocusYVel += acc * dt;
+            camFocusY += camFocusYVel * dt;
+            camShoulder = MathHelper.Lerp(camShoulder, targetShoulder, 1f - MathF.Exp(-10f * dt));
+        }
+
+        var shoulder = new Vector3(-MathF.Sin(yaw), 0, MathF.Cos(yaw)) * camShoulder; // over the right shoulder
+        var fieldFocus = new Vector3(p.X, camFocusY, p.Y) + shoulder;
         var cmdFocus = new Vector3(camFocus.X, t.Height(camFocus), camFocus.Y);
         float k = MathHelper.SmoothStep(0, 1, blend);
         var focus = Vector3.Lerp(fieldFocus, cmdFocus, k);
         float y = yaw + MathHelper.WrapAngle(camYaw - yaw) * k; // shortest way round
-        float pt = MathHelper.Lerp(pitch, camPitch, k), dist = MathHelper.Lerp(fieldDist + (mounted ? 1.5f : 0), zoom, k);
+        float pt = MathHelper.Lerp(pitch, camPitch, k);
+        float baseDist = camMode == 2 ? 0.05f : camMode == 1 ? 2.7f : fieldDist;
+        float dist = MathHelper.Lerp(baseDist + (mounted && camMode != 2 ? 1.4f : 0), zoom, k);
         if (intro >= 0)
         {
             // The opening: from high over the far side the camera swings round and down to where you deploy.
@@ -393,14 +544,116 @@ partial class BattleScreen
             dist += 7 * r; pt += 0.3f * r;
         }
         var look = new Vector3(MathF.Cos(y) * MathF.Cos(pt), -MathF.Sin(pt), MathF.Sin(y) * MathF.Cos(pt));
-        var shake = Shake();
-        eye = focus - look * dist + shake;
+        var shake = Shake() + UpdateCamKick();
+        var rawEye = focus - look * dist;
+        if (k < 0.5f && dist > 0.25f) rawEye = PullCameraIn(focus, rawEye);
+        eye = rawEye + shake;
         focus += shake * 0.6f;
         focusPoint = focus;
-        eye.Y = MathF.Max(eye.Y, t.Height(new Vector2(eye.X, eye.Z)) + 0.5f); // never under the ground
-        proj = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(pressFov is float pf && k > 0.5f ? pf : MathHelper.Lerp(62, 45, k)), GraphicsDevice.Viewport.AspectRatio, 0.2f, 700);
+        eye.Y = MathF.Max(eye.Y, t.Height(new Vector2(eye.X, eye.Z)) + 0.45f); // never under the ground
+
+        // Dynamic FOV (CR1): +5 deg on sprint/gallop, -4 deg on charged swings.
+        bool sprinting = battle.Player.Active && (mounted ? MathF.Abs(battle.Player.Speed) > 7f : battle.Input.Sprint && battle.Input.Move != Vector2.Zero);
+        float targetFov = 62f + (sprinting ? 5f : 0f) - (battle.Player.Charging ? 4f * battle.Player.Charge : 0f);
+        camFov = MathHelper.Lerp(camFov, targetFov, 1f - MathF.Exp(-8f * dt));
+        float fov = pressFov is float pf && k > 0.5f ? pf : MathHelper.Lerp(camFov, 45f, k);
+
+        proj = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(fov), GraphicsDevice.Viewport.AspectRatio, 0.15f, 700);
         view = Matrix.CreateLookAt(eye, focus, Vector3.Up);
         hud.CamYaw = y;
         hud.CamFocus = camFocus;
+    }
+
+    /// Wall & building pull-in (CR1): clip segment from focus to eye against Fortress walls, towers and buildings.
+    Vector3 PullCameraIn(Vector3 focus, Vector3 desiredEye)
+    {
+        var wall = battle.Wall;
+        if (wall == null) return desiredEye;
+        var a = new Vector2(focus.X, focus.Z);
+        var b = new Vector2(desiredEye.X, desiredEye.Z);
+        var d = b - a;
+        if (d.LengthSquared() < 0.04f) return desiredEye;
+        float bestT = 1f;
+
+        // Fortress walls (skip breached segments and open gates).
+        foreach (var seg in wall.Segments)
+        {
+            if (seg.Breached) continue;
+            if (seg.IsGate && seg.GateIndex >= 0 && seg.GateIndex < wall.Gates.Count && wall.Gates[seg.GateIndex].Open) continue;
+            float hitT = SegSegT(a, b, seg.A, seg.B);
+            if (hitT < bestT)
+            {
+                float yAtHit = MathHelper.Lerp(focus.Y, desiredEye.Y, hitT);
+                float groundAtHit = battle.Terrain.Height(Vector2.Lerp(a, b, hitT));
+                if (yAtHit < groundAtHit + seg.Height + 0.4f) bestT = hitT;
+            }
+        }
+        // Fortress towers.
+        foreach (var tw in wall.Towers)
+        {
+            float hitT = SegCircleT(a, b, tw.Pos, tw.Radius + 0.35f);
+            if (hitT < bestT) bestT = hitT;
+        }
+        // Interior buildings / village houses.
+        foreach (var bld in wall.Buildings)
+        {
+            float hitT = SegObbT(a, b, bld.Pos, bld.Along, bld.Across, bld.W * 0.5f + 0.35f, bld.D * 0.5f + 0.35f);
+            if (hitT < bestT) bestT = hitT;
+        }
+        if (bestT >= 0.999f) return desiredEye;
+        return Vector3.Lerp(focus, desiredEye, Math.Clamp(bestT * 0.9f, 0.15f, 1f));
+    }
+
+    static float SegSegT(Vector2 p, Vector2 p2, Vector2 q, Vector2 q2)
+    {
+        var r = p2 - p;
+        var s = q2 - q;
+        float denom = r.X * s.Y - r.Y * s.X;
+        if (MathF.Abs(denom) < 1e-6f) return 1f;
+        var qp = q - p;
+        float t = (qp.X * s.Y - qp.Y * s.X) / denom;
+        float u = (qp.X * r.Y - qp.Y * r.X) / denom;
+        return t is > 0.02f and < 1f && u is >= 0f and <= 1f ? t : 1f;
+    }
+
+    static float SegCircleT(Vector2 a, Vector2 b, Vector2 c, float r)
+    {
+        var d = b - a;
+        var f = a - c;
+        float qa = Vector2.Dot(d, d);
+        if (qa < 1e-6f) return 1f;
+        float qb = 2f * Vector2.Dot(f, d);
+        float qc = Vector2.Dot(f, f) - r * r;
+        float disc = qb * qb - 4f * qa * qc;
+        if (disc < 0) return 1f;
+        float t = (-qb - MathF.Sqrt(disc)) / (2f * qa);
+        return t is > 0.02f and < 1f ? t : 1f;
+    }
+
+    static float SegObbT(Vector2 a, Vector2 b, Vector2 c, Vector2 along, Vector2 across, float hx, float hy)
+    {
+        var da = a - c;
+        var db = b - c;
+        float ax = Vector2.Dot(da, along), ay = Vector2.Dot(da, across);
+        float bx = Vector2.Dot(db, along), by = Vector2.Dot(db, across);
+        float dx = bx - ax, dy = by - ay;
+        float tmin = 0f, tmax = 1f;
+        if (MathF.Abs(dx) < 1e-6f) { if (MathF.Abs(ax) > hx) return 1f; }
+        else
+        {
+            float t1 = (-hx - ax) / dx, t2 = (hx - ax) / dx;
+            if (t1 > t2) (t1, t2) = (t2, t1);
+            tmin = MathF.Max(tmin, t1); tmax = MathF.Min(tmax, t2);
+            if (tmin > tmax) return 1f;
+        }
+        if (MathF.Abs(dy) < 1e-6f) { if (MathF.Abs(ay) > hy) return 1f; }
+        else
+        {
+            float t1 = (-hy - ay) / dy, t2 = (hy - ay) / dy;
+            if (t1 > t2) (t1, t2) = (t2, t1);
+            tmin = MathF.Max(tmin, t1); tmax = MathF.Min(tmax, t2);
+            if (tmin > tmax) return 1f;
+        }
+        return tmin is > 0.02f and < 1f ? tmin : 1f;
     }
 }

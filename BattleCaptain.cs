@@ -25,21 +25,35 @@ public sealed partial class Battle
     bool secondWind;
     float ParryTime => ParryWindow + 0.1f * ArmsEdge - (Options.Wounds.Contains("eye") ? 0.05f : 0) + (Countering ? 0.25f : 0); // Measured Blade (K2)
 
-    /// You release a swing (P2): its stamina cost, power and windup from the chain, a riposte, tiredness and Arms.
-    void ReleaseSwing(Unit p)
+    /// You release a swing (P2/CR2): stamina cost, power, windup, forward lunge and smooth opposite-side combos.
+    void ReleaseSwing(Unit p, bool combo = false)
     {
-        Chain = Time - lastRecovered < ChainGap ? Chain + 1 : 0;
+        bool opposite = combo || (Time - lastRecovered < ChainGap && p.Swing != p.LastSwing);
+        Chain = opposite ? Math.Min(Chain + 1, 3) : 0;
         riposteSwing = Riposting;
         RiposteUntil = -1;
-        float cost = (8 + 5 * Chain) * (1 - 0.25f * ArmsEdge) * (riposteSwing ? 0.5f : 1);
+        float cost = 9f * (1 - 0.25f * ArmsEdge) * (riposteSwing ? 0.5f : 1f);
         bool tired = p.Stamina < cost;
         p.Stamina = MathF.Max(0, p.Stamina - cost);
-        p.Power = (0.6f + p.Charge) * p.Swing switch { AttackDir.Overhead => 1.2f, AttackDir.Thrust => 1f, _ => 0.95f }
+        p.Power = (0.65f + p.Charge * 0.95f) * p.Swing switch { AttackDir.Overhead => 1.2f, AttackDir.Thrust => 1f, _ => 0.95f }
             * (tired ? 0.6f : 1) * (riposteSwing ? 1.25f : 1) * FocusEdge * SpentEdge; // Focus (K2); spent, weaker (MA3)
         p.Charge = 0;
         p.Action = UnitAction.Windup;
+        float riposteMult = riposteSwing ? (IsSwordAndShield(p) ? 0.42f : 0.5f) : 1f; // CR4: sword & shield fastest riposte
+        float comboMult = opposite && Chain > 0 ? (IsTwoHandSword(p) ? 0.84f : 0.88f) : 1f; // CR4: 2H greatsword strong combo chaining
         p.ActionTimer = (p.Swing == AttackDir.Overhead ? 0.2f : 0.15f) * p.Type.Windup / 0.4f // your weapon sets your pace (P1)
-            * (tired ? 1.4f : 1) * (riposteSwing ? 0.5f : 1) * (1 - 0.15f * ArmsEdge);
+            * (tired ? 1.4f : 1) * riposteMult * comboMult * (1 - 0.15f * ArmsEdge);
+        p.WindupDuration = p.ActionTimer;
+        p.ClearHits();
+        p.Morphed = false;
+        // CR2: forward lunge impulse on foot scaled by weapon and movement input.
+        if (!p.Mounted && p.DodgeTimer <= 0)
+        {
+            var lDir = Input.Move.LengthSquared() > 0.04f ? Vector2.Normalize(Input.Move * 0.4f + p.Dir * 0.6f) : p.Dir;
+            float lungeSpd = p.Swing == AttackDir.Thrust ? 4.4f : Look.GripOf(p.Type.Look.Weapon) == Grip.Two ? 3.2f : 3.8f;
+            p.LungeVel = lDir * lungeSpd;
+            p.LungeTimer = 0.14f;
+        }
         if (tired) PlayerHit = ("TOO TIRED: A WEAK BLOW", Time);
         var grip = Look.GripOf(p.Type.Look.Weapon);
         Sound(riposteSwing ? Cue.RiposteRing : grip == Grip.Two ? Cue.SwingTwo : grip is Grip.Pole or Grip.Lance ? Cue.SwingPole : Cue.SwingOne, p.Pos, priority: true);
@@ -78,11 +92,12 @@ public sealed partial class Battle
         var to = p.Type == secondary ? primary! : secondary;
         if (p.Mounted && !to.HasShield && to.Ammo == 0) { Log("Two hands for that: dismount first."); return; }
         if (p.Action != UnitAction.None || p.Charging) return;
+        bool fromBow = p.Type.Ammo > 0;
         p.Type = to;
         p.Mods = to.Mods + (p.Squad?.Mods ?? default); // the marks of the weapon now in hand
         (p.Ammo, sideAmmo) = (sideAmmo, p.Ammo);
-        p.Action = UnitAction.Stagger; // a moment to change grip
-        p.ActionTimer = 0.4f;
+        p.Action = UnitAction.Stagger; // a moment to change grip (CR4: fast sidearm draw when rushed with a bow)
+        p.ActionTimer = fromBow ? 0.18f : 0.35f;
         Sound(Cue.WeaponSwap, p.Pos, priority: true);
         Log(to.Ammo > 0 ? $"You take up the {WeaponName(to)}. {p.Ammo} shots left." : $"You take up the {WeaponName(to)}.");
     }
@@ -117,7 +132,11 @@ public sealed partial class Battle
         if (p.Ammo <= 0 || charge < 0.3f) return; // let down without loosing
         var t = AimTarget(p);
         var aim = t?.Pos ?? p.Pos + p.Dir * p.Type.Range * 0.8f;
-        Loose(p, aim, t, p.Type.Damage * (0.5f + 0.5f * charge), (1.6f - 1.1f * charge) * (1 - 0.3f * BowEdge) * (Perk("SteadyAim") ? 0.7f : 1) * (Perk("Deadeye") && charge >= 0.95f ? 0.15f : 1));
+        // CR4: bow draw-tension sweet spot (0.78..0.96) grants bonus damage and tighter aim stability.
+        bool sweetBow = charge is >= 0.78f and <= 0.96f;
+        float bowDmg = p.Type.Damage * (0.5f + 0.5f * charge) * (sweetBow ? 1.18f : 1f);
+        float bowSpread = (1.6f - 1.1f * charge) * (sweetBow ? 0.7f : 1f) * (1 - 0.3f * BowEdge) * (Perk("SteadyAim") ? 0.7f : 1) * (Perk("Deadeye") && charge >= 0.95f ? 0.15f : 1);
+        Loose(p, aim, t, bowDmg, bowSpread);
         p.Cooldown = 0.3f + (p.Type.Reload - 1) * 1.2f;
     }
 
@@ -140,29 +159,32 @@ public sealed partial class Battle
         return best;
     }
 
-    /// Shield bash (or a kick, with two hands): staggers a man in front of you, through his guard.
+    /// Shield bash (or a kick, with two hands; CR2): fast posture breaker that shatters a turtling guard or interrupts a close windup.
     void Bash(Unit p)
     {
-        if (p.Action != UnitAction.None || p.Charging || p.Mounted || p.Stamina < 15) return;
+        if (p.Action is not (UnitAction.None or UnitAction.Block) || p.Charging || p.Mounted || p.Stamina < 15) return;
         p.Stamina -= 15;
         p.Action = UnitAction.Recover;
-        p.ActionTimer = 0.35f;
+        p.ActionTimer = 0.26f;
+        p.BashedAt = Time;
         Unit? best = null;
-        float bd = 1.9f;
+        float bd = 2.15f;
         foreach (var t in Units)
         {
             if (t.Team == p.Team || !t.Active || t.Mounted) continue;
             var d = t.Pos - p.Pos;
             float l = d.Length();
-            if (l < bd && (l < 0.01f || Vector2.Dot(d / l, p.Dir) > 0.5f)) { bd = l; best = t; }
+            if (l < bd && (l < 0.01f || Vector2.Dot(d / l, p.Dir) > 0.45f)) { bd = l; best = t; }
         }
-        if (best == null) { PlayerHit = ("BASH: NOTHING THERE", Time); return; }
-        Stagger(best, 1.0f);
-        best.Pos += Vector2.Normalize(best.Pos - p.Pos + new Vector2(1e-4f, 0)) * 1.2f;
-        best.Morale -= 3;
-        Damage(p, best, 6, 2);
+        if (best == null) { PlayerHit = (TwoHanded ? "KICK: MISSED" : "BASH: NOTHING THERE", Time); return; }
+        bool wasBlocking = best.Action == UnitAction.Block || best.Type.HasShield;
+        Stagger(best, wasBlocking ? 1.0f : 0.75f, guardBreak: wasBlocking);
+        best.Stamina = MathF.Max(0, best.Stamina - 28f);
+        best.Pos += Vector2.Normalize(best.Pos - p.Pos + new Vector2(1e-4f, 0)) * 1.15f;
+        best.Morale -= 4;
+        Damage(p, best, TwoHanded ? 5 : 7, 2);
         Sound(Cue.BashThud, best.Pos, priority: true);
-        PlayerHit = (TwoHanded ? "KICK!" : "SHIELD BASH!", Time);
+        PlayerHit = (wasBlocking ? (TwoHanded ? "GUARD BREAK! KICK!" : "GUARD BREAK! BASH!") : (TwoHanded ? "KICK!" : "SHIELD BASH!"), Time);
     }
 
     /// Whistle for a riderless horse of your side: it trots to you.
@@ -198,7 +220,8 @@ public sealed partial class Battle
         if (u.IsPlayer || u.Mounted) return;
         // Effort, not ground covered: a man slogging through mud at a run is running.
         float run = u.Vel.Length() / MathF.Max(0.1f, u.Type.Speed * u.GroundPace);
-        float rate = run > 0.7f ? -2.5f * run : u.Action != UnitAction.None ? -1f : run < 0.2f ? 4f : 1f;
+        float tierRec = 0.75f + 0.12f * Math.Clamp(u.Type.Tier, 1, 6); // CR3: elites recover posture faster than levies
+        float rate = run > 0.7f ? -2.5f * run : u.Action is UnitAction.Windup or UnitAction.Active ? -1f : run < 0.2f ? 5.5f * tierRec : 2.0f * tierRec;
         float extra = run < 0.2f ? 0 : Strain(u);
         rate = rate < 0 ? rate * (1 + extra) * MathF.Max(0, 1 + u.Mods.Tire) : rate - 2.5f * run * extra; // hard ground and climbs tire a man on the move; tireless men less
         u.Stamina = Math.Clamp(u.Stamina + rate * dt, 0, 100);

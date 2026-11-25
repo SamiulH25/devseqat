@@ -31,7 +31,22 @@ public partial class Battle
                 if (!u.IsPlayer) { var saved = u.Wish; u.Wish = wish; Steer(u, dt); u.Wish = saved; }
                 u.Vel = u.HeadingDir * u.Speed;
             }
-            else u.Vel = wish * (u.Squad is { } fs && !u.Routing && fs.Order != Order.Charge && fs.Works == null ? fs.Pace : 1) * (u.Mounted ? 1 : Fatigue(u));
+            else
+            {
+                u.Vel = wish * (u.Squad is { } fs && !u.Routing && fs.Order != Order.Charge && fs.Works == null ? fs.Pace : 1) * (u.Mounted ? 1 : Fatigue(u));
+                // CR2: sidestep dodge burst and forward attack lunge impulse (real spatial evasion & momentum, collision-checked below).
+                if (u.DodgeTimer > 0)
+                {
+                    u.DodgeTimer = MathF.Max(0, u.DodgeTimer - dt);
+                    u.Vel = u.DodgeDir * 9.5f;
+                }
+                else if (u.LungeTimer > 0)
+                {
+                    u.LungeTimer = MathF.Max(0, u.LungeTimer - dt);
+                    u.Vel += u.LungeVel * (u.LungeTimer / 0.14f);
+                }
+            }
+            if (u.DodgeCd > 0) u.DodgeCd = MathF.Max(0, u.DodgeCd - dt);
             bool climbing = !u.Mounted && Wall != null && Wall.OnClimb(u.Pos);
             u.Slope = climbing ? 0 : Slope(Terrain, u.Pos, u.Vel);
             float pace = u.Type.Flying ? 1 : climbing ? 0.72f : SlopeFactor(u.Slope, u.Mounted) * GroundSpeed(u); // steady climb up ladders/ramps without vertical slope stall

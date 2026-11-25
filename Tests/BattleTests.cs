@@ -2276,5 +2276,140 @@ public static partial class SelfTest
         Check(parsed != null && parsed.DuelAllies == 2 && parsed.DuelEnemies == 3 && parsed.DuelMounted, "ParseDuelEnv parses 2v3:mounted");
         Check(QuickBattleConfig.ParseDuelEnv("setup") == null, "ParseDuelEnv returns null for setup");
     }
+
+    /// CR2: Active sweep hit timing, sequential cleave, chamber/blade clash, feint cancel, dodge impulse, and opposite-side combo cancel.
+    static void CombatReworkCR2()
+    {
+        // 1. Active sweep hit timing + sequential cleave with a greatsword.
+        var gs = Troops.Get("greatswords").Clone();
+        gs.Leader = true;
+        var b = Battle.Empty(11);
+        b.Player.Type = gs; b.Player.Horse = null; b.Player.Pos = Vector2.Zero; b.Player.Facing = 0;
+        var f1 = b.AddSquad(1, Troops.Get("levies"), 1, new Vector2(1.6f, -0.7f), 1, -Vector2.UnitX).Units[0];
+        var f2 = b.AddSquad(1, Troops.Get("levies"), 1, new Vector2(1.6f, 0.7f), 1, -Vector2.UnitX).Units[0];
+        f1.Type = f1.Type.Clone(); f1.Type.BlockChance = 0;
+        f2.Type = f2.Type.Clone(); f2.Type.BlockChance = 0;
+        // Charge then release a Left horizontal sweep.
+        b.Input = new PlayerInput { Facing = 0, Dir = AttackDir.Left, Attack = true };
+        for (int i = 0; i < 6; i++) b.Update(1 / 60f);
+        b.Input = new PlayerInput { Facing = 0, Dir = AttackDir.Left, Attack = false };
+        b.Update(1 / 60f);
+        Check(b.Player.Action == UnitAction.Windup, "release enters Windup");
+        Check(f1.Hp == f1.Type.MaxHp && f2.Hp == f2.Type.MaxHp, "no damage during Windup");
+        bool sawActive = false;
+        for (int i = 0; i < 35; i++)
+        {
+            b.Update(1 / 60f);
+            if (b.Player.Action == UnitAction.Active) sawActive = true;
+        }
+        Check(sawActive, "swing passes through Active phase");
+        Check(f1.Hp < f1.Type.MaxHp && f2.Hp < f2.Type.MaxHp, $"greatsword horizontal sweep cleaves both light targets ({f1.Hp:0}, {f2.Hp:0})");
+
+        // 2. Feint cancel during first 60% of Windup.
+        var b2 = Battle.Empty(12);
+        b2.Player.Horse = null; b2.Player.Pos = Vector2.Zero; b2.Player.Stamina = 100;
+        b2.Input = new PlayerInput { Facing = 0, Dir = AttackDir.Right, Attack = true };
+        for (int i = 0; i < 4; i++) b2.Update(1 / 60f);
+        b2.Input = new PlayerInput { Facing = 0, Dir = AttackDir.Right, Attack = false };
+        b2.Update(1 / 60f);
+        Check(b2.Player.Action == UnitAction.Windup, "feint test in Windup");
+        b2.Input = new PlayerInput { Facing = 0, Dir = AttackDir.Right, Block = true };
+        b2.Update(1 / 60f);
+        Check(b2.Player.Action == UnitAction.Block && b2.PlayerHit.Text == "FEINT", $"RMB in early Windup feints into Block ({b2.Player.Action}, {b2.PlayerHit.Text})");
+
+        // 3. Sidestep / Dodge impulse on foot.
+        var b3 = Battle.Empty(13);
+        b3.Player.Horse = null; b3.Player.Pos = Vector2.Zero; b3.Player.Stamina = 100;
+        b3.Input = new PlayerInput { Facing = 0, Move = Vector2.UnitY, Dodge = true };
+        b3.Update(1 / 60f);
+        Check(b3.Player.DodgeTimer > 0 && b3.Player.Stamina < 80, "dodge activates burst and spends stamina");
+        b3.Input = new PlayerInput { Facing = 0 };
+        for (int i = 0; i < 14; i++) b3.Update(1 / 60f);
+        Check(b3.Player.Pos.Y > 1.3f, $"dodge moves player laterally ({b3.Player.Pos.Y:0.00}m)");
+
+        // 4. Blade clash / chamber when mirrored swings intersect.
+        var b4 = Battle.Empty(14);
+        b4.Player.Horse = null; b4.Player.Pos = Vector2.Zero; b4.Player.Facing = 0;
+        var foe = b4.AddSquad(1, UnitType.Shieldman, 1, new Vector2(1.5f, 0), 1, -Vector2.UnitX).Units[0];
+        foe.Facing = MathF.PI;
+        b4.Player.Action = UnitAction.Active; b4.Player.ActiveDuration = 0.16f; b4.Player.ActionTimer = 0.16f; b4.Player.Swing = AttackDir.Left; b4.Player.ClearHits();
+        foe.Action = UnitAction.Windup; foe.WindupDuration = 0.35f; foe.ActionTimer = 0.35f; foe.Swing = AttackDir.Right; foe.ClearHits();
+        for (int i = 0; i < 8 && b4.Player.ClashedAt < 0; i++) b4.Update(1 / 60f);
+        Check(b4.Player.ClashedAt >= 0 && foe.ClashedAt >= 0 && foe.Hp == foe.Type.MaxHp, $"mirrored swings clash/chamber without damage (hit={b4.PlayerHit.Text})");
+
+        // 5. Opposite-side combo cancel during early Recover.
+        var b5 = Battle.Empty(15);
+        b5.Player.Horse = null; b5.Player.Pos = Vector2.Zero; b5.Player.Stamina = 100;
+        b5.Player.Action = UnitAction.Recover; b5.Player.ActionTimer = 0.15f; b5.Player.LastSwing = AttackDir.Left;
+        b5.Input = new PlayerInput { Facing = 0, Dir = AttackDir.Right, Attack = true };
+        b5.Update(1 / 60f);
+        Check(b5.Player.Action == UnitAction.Windup && b5.Player.Swing == AttackDir.Right, $"opposite-side attack in Recover combos into Windup ({b5.Player.Action}, {b5.Player.Swing})");
+    }
+
+    /// CR3 & CR4: Directional GuardDir blocking, axe/mace guard-crush stamina break, polearm tip sweet-spot, and 2H overhead poise.
+    static void CombatReworkCR3CR4()
+    {
+        // 1. Unshielded 2H fighter: matching GuardDir blocks cleanly, wrong-side GuardDir takes bleed-through.
+        var b = Battle.Empty(21);
+        b.Player.Horse = null; b.Player.Pos = Vector2.Zero; b.Player.Facing = 0;
+        var gs = b.AddSquad(1, Troops.Get("greatswords"), 1, new Vector2(1.5f, 0), 1, -Vector2.UnitX).Units[0];
+        gs.Facing = MathF.PI; gs.Action = UnitAction.Block; gs.ActionTimer = 0.5f; gs.GuardDir = AttackDir.Right; gs.BlockStart = -1f;
+        b.Player.Swing = AttackDir.Left; // mirrored = Right -> matched!
+        float hp0 = gs.Hp;
+        bool blocked = b.Hit(b.Player, gs, 24f, false);
+        Check(blocked && gs.Hp == hp0 && gs.Stamina < 100f, $"matched 2H GuardDir blocks cleanly and drains stamina (hp={gs.Hp:0}/{hp0:0}, stam={gs.Stamina:0})");
+
+        gs.Action = UnitAction.Block; gs.ActionTimer = 0.5f; gs.GuardDir = AttackDir.Overhead; gs.Stamina = 100f;
+        b.Player.Swing = AttackDir.Left; // wrong side!
+        bool blockedWrong = b.Hit(b.Player, gs, 24f, false);
+        Check(!blockedWrong && gs.Hp < hp0, $"wrong-side 2H GuardDir takes bleed-through damage ({gs.Hp:0} < {hp0:0})");
+
+        // 2. Crush weapon (axe/mace) deals 1.6x posture damage vs shield and triggers Guard Break at 0 stamina.
+        var b2 = Battle.Empty(22);
+        var axe = Troops.Get("huscarls").Clone(); axe.Leader = true;
+        b2.Player.Type = axe; b2.Player.Horse = null; b2.Player.Pos = Vector2.Zero; b2.Player.Facing = 0;
+        var sh = b2.AddSquad(1, UnitType.Shieldman, 1, new Vector2(1.4f, 0), 1, -Vector2.UnitX).Units[0];
+        sh.Facing = MathF.PI; sh.Action = UnitAction.Block; sh.ActionTimer = 0.5f; sh.GuardDir = AttackDir.Overhead; sh.BlockStart = -1f;
+        sh.Stamina = 30f;
+        b2.Player.Swing = AttackDir.Left;
+        b2.Hit(b2.Player, sh, 30f, false);
+        Check(sh.GuardBroken && sh.Action == UnitAction.Stagger, $"crush weapon breaks low-stamina shield guard (broken={sh.GuardBroken}, act={sh.Action})");
+
+        // 3. Polearm thrust tip sweet-spot deals more damage at optimal range than crowded face-to-face.
+        var b3 = Battle.Empty(23);
+        var pole = Troops.Get("halberdiers").Clone(); pole.Leader = true;
+        b3.Player.Type = pole; b3.Player.Horse = null; b3.Player.Pos = Vector2.Zero; b3.Player.Facing = 0; b3.Player.Swing = AttackDir.Thrust;
+        var nearFoe = b3.AddSquad(1, Troops.Get("levies"), 1, new Vector2(0.7f, 0), 1, -Vector2.UnitX).Units[0];
+        var tipFoe = b3.AddSquad(1, Troops.Get("levies"), 1, new Vector2(2.2f, 0), 1, -Vector2.UnitX).Units[0];
+        nearFoe.Type = nearFoe.Type.Clone(); nearFoe.Type.BlockChance = 0;
+        tipFoe.Type = tipFoe.Type.Clone(); tipFoe.Type.BlockChance = 0;
+        b3.Hit(b3.Player, nearFoe, 25f, false);
+        b3.Hit(b3.Player, tipFoe, 25f, false);
+        float nearDmg = nearFoe.Type.MaxHp - nearFoe.Hp;
+        float tipDmg = tipFoe.Type.MaxHp - tipFoe.Hp;
+        Check(tipDmg > nearDmg * 1.3f, $"polearm thrust tip sweet-spot beats crowded hit ({tipDmg:0.0} vs {nearDmg:0.0})");
+    }
+
+    /// CR5: In a 1v3 duel, enemies space and circle around flanks instead of stacking onto one blob.
+    static void DuelAISpacing()
+    {
+        var cfg = QuickBattleConfig.FromDuel(1, 3, mounted: false, seed: 42);
+        var (seed, pArmy, eArmy, opts) = cfg.Build();
+        var b = new Battle(seed, pArmy, eArmy, opts);
+        b.Player.Hp = b.Player.Type.MaxHp = 5000f; // hold center so 3 enemies engage and circle
+        b.Input = new PlayerInput { Facing = MathHelper.PiOver2, Block = true, Dir = AttackDir.Overhead };
+        for (int i = 0; i < 60 * 5; i++) b.Update(1 / 60f);
+        var foes = b.Units.Where(u => u.Team == 1 && u.Active).ToList();
+        Check(foes.Count == 3, "all 3 duel enemies active");
+        var angs = foes.Select(f => MathF.Atan2(f.Pos.Y - b.Player.Pos.Y, f.Pos.X - b.Player.Pos.X)).OrderBy(a => a).ToList();
+        float maxGap = 0;
+        for (int i = 0; i < angs.Count; i++)
+        {
+            float gap = (i + 1 < angs.Count ? angs[i + 1] - angs[i] : angs[0] + MathF.Tau - angs[i]);
+            if (gap > maxGap) maxGap = gap;
+        }
+        float spread = MathF.Tau - maxGap; // smallest arc containing all 3 foes
+        Check(spread > 1.2f, $"1v3 duel enemies spread around flanks instead of stacking (arc={spread:0.00} rad)");
+    }
 }
 

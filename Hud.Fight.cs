@@ -123,7 +123,7 @@ sealed partial class Hud
         if (!p.Active) return;
         if (B.Mad) TextC("THE FLAME HAS YOU", W / 2f, H / 2f + U(36), Bad, 2);
         else if (B.Riposting) TextC("RIPOSTE!", W / 2f, H / 2f + U(36), Gold, 2);
-        else if (B.Chain >= 1 && p.Action is UnitAction.Windup or UnitAction.Recover) TextC($"CHAIN X{B.Chain + 1}", W / 2f, H / 2f + U(36), B.Chain >= 3 ? Bad : Color.White, 1);
+        else if (B.Chain >= 1 && p.Action is UnitAction.Windup or UnitAction.Active or UnitAction.Recover) TextC($"COMBO X{B.Chain + 1}", W / 2f, H / 2f + U(42), Gold, 1);
     }
 
     /// Bottom right: your arms. A number key picks who listens (gold); with none picked all of them do. Each chip shows the

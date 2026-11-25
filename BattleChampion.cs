@@ -48,7 +48,7 @@ public partial class Battle
     /// One form a second at most: the first his tier, aura and cooldowns allow whose rule fits.
     void ChampionForms(Unit c)
     {
-        if (c.Action is UnitAction.Windup or UnitAction.Recover or UnitAction.Stagger) return;
+        if (c.Action is UnitAction.Windup or UnitAction.Active or UnitAction.Recover or UnitAction.Stagger) return;
         foreach (var id in Options.EnemyForms)
         {
             if (!Forms.Has(id)) continue;

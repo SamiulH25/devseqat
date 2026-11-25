@@ -142,7 +142,7 @@ public partial class Battle
     {
         if (u.Climbing && Time >= u.ClimbUntil) u.Climbing = false;
         float goal = u.Routing || u.Climbing ? FlyHigh
-            : u.Action is UnitAction.Windup or UnitAction.Recover or UnitAction.Stagger ? 0
+            : u.Action is UnitAction.Windup or UnitAction.Active or UnitAction.Recover or UnitAction.Stagger ? 0
             : Math.Clamp((u.EnemyDist - 2.5f) * 0.6f, 0, FlyHigh);
         u.Altitude += (goal - u.Altitude) * MathF.Min(1, dt * (goal < u.Altitude ? 3.5f : 2f));
     }
@@ -151,7 +151,7 @@ public partial class Battle
     void ThinkFlyer(Unit u, float dt)
     {
         var s = u.Squad!;
-        if (u.Action is UnitAction.Windup or UnitAction.Recover) { u.Wish = u.Dir * u.Type.Speed * 0.3f; return; } // it glides through its strike
+        if (u.Action is UnitAction.Windup or UnitAction.Active or UnitAction.Recover) { u.Wish = u.Dir * u.Type.Speed * 0.3f; return; } // it glides through its strike
         if (u.Action != UnitAction.None && u.Action != UnitAction.Block) { u.Wish = Vector2.Zero; return; }
         var (enemy, d) = s.Target != null && s.Order == Order.Charge ? Nearest(u, s.Target) : Nearest(u);
         if (u.Type.Has("prey_bows")) // WI5: harpies pick off archers and wounded men

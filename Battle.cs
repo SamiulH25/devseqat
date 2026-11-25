@@ -9,7 +9,7 @@ public struct PlayerInput
     public float Steer;       // mounted: +1 turn right, -1 turn left
     public float Facing;      // where the player looks (and strikes)
     public AttackDir Dir;     // attack / block direction, picked by mouse movement
-    public bool Sprint, Attack, Block, Rally, Couch, Mount, Bash, Swap;
+    public bool Sprint, Attack, Block, Rally, Couch, Mount, Bash, Swap, Dodge, Feint;
     public Vector2? EngineAim; // where the crosshair meets the ground: the mark of an engine you work (docs/archive/SIEGECRAFT.md A5)
     public bool Aura;         // held: the aura blade burns (docs/archive/KNIGHT_ORDERS.md K1)
     public bool Form1, Form2, Form3, Great; // pressed: a form (K2)
@@ -530,12 +530,15 @@ public sealed partial class Battle
         ? (rng.Next(4) == 0 ? AttackDir.Overhead : AttackDir.Thrust)
         : (AttackDir)rng.Next(4);
 
-    void StartSwing(Unit u, Unit target)
+    void StartSwing(Unit u, Unit target, AttackDir? forcedDir = null)
     {
         u.Action = UnitAction.Windup;
         u.ActionTimer = u.Type.Windup * (Raging(u) ? RageWindup : 1); // a wounded bear lashes out quicker
+        u.WindupDuration = u.ActionTimer;
         u.Target = target;
-        u.Swing = StyleSwing(u) ?? RandomSwing(u);
+        u.Swing = forcedDir ?? StyleSwing(u) ?? RandomSwing(u);
+        u.ClearHits();
+        u.Morphed = false;
         u.Face(target.Pos - u.Pos);
         u.Stamina = MathF.Max(0, u.Stamina - 3);
         StyleSwingStarts(u);

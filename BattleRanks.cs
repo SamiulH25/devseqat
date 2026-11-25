@@ -229,6 +229,8 @@ public partial class Battle
         if (threat == null || threat == u.Target && u.Guard || rng.NextSingle() >= s.Discipline * 0.8f) return false;
         u.Action = UnitAction.Block;
         u.ActionTimer = threat.ActionTimer + 0.15f;
+        u.GuardDir = Dirs.Mirror(threat.Swing);
+        u.BlockStart = Time;
         u.Guard = true;
         u.Target = threat;
         u.Face(threat.Pos - u.Pos);

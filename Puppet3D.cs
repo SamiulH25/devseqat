@@ -736,7 +736,7 @@ sealed partial class Puppet3D
         if (!p.Empty && lm.Weapon.Length > 0)
         {
             // Align weapon cutting edge cleanly into the active swing plane (Right/Left horizontal, Overhead vertical, Thrust sleek).
-            Vector3 edgeHint = (u.Action is UnitAction.Windup or UnitAction.Recover)
+            Vector3 edgeHint = (u.Action is UnitAction.Windup or UnitAction.Active or UnitAction.Recover)
                 ? u.Swing switch
                 {
                     AttackDir.Right => RotY(new Vector3(-0.96f, -0.26f, 0f), p.Yaw),
@@ -747,19 +747,14 @@ sealed partial class Puppet3D
                 : RotY(new Vector3(0.28f, -0.30f, 0.91f), p.Yaw);
             EmitWeapon(lm.Weapon, wHand, wDir, edgeHint, lm.WeaponEdgeZ);
 
-            // Crisp 3D steel slash-arc ribbons (Detail 0, works in battle AND AnimSheet) + optional battle haze glint.
+            // Crisp 3D steel slash-arc ribbons (CR6: driven directly by UnitAction.Active SwingProgress 0..1).
             if (Detail == 0 && grip is Grip.One or Grip.Two or Grip.Pole)
             {
-                float strikeK = -1f;
-                if (!u.IsPlayer && u.Action == UnitAction.Recover && u.Type.Recover > 0)
+                float strikeK = u.Action == UnitAction.Active ? Math.Clamp(u.SwingProgress, 0f, 1f) : -1f;
+                if (strikeK < 0f && !u.IsPlayer && u.Action == UnitAction.Recover && u.Type.Recover > 0)
                 {
                     float rk = 1f - u.ActionTimer / u.Type.Recover;
-                    if (rk < 0.30f) strikeK = rk / 0.30f;
-                }
-                else if (u.IsPlayer && u.Action == UnitAction.Windup)
-                {
-                    float wk = 1f - u.ActionTimer / (u.Swing == AttackDir.Overhead ? 0.2f : 0.15f);
-                    if (wk > 0.55f) strikeK = (wk - 0.55f) / 0.45f;
+                    if (rk < 0.16f) strikeK = 0.85f + rk; // brief follow-through fade
                 }
                 if (strikeK >= 0f && !ShadowOnly)
                 {

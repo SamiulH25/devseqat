@@ -114,6 +114,10 @@ sealed class SettingsScreen
                 if (Choice(0, "OFF", !s.HitPause)) s.HitPause = false;
                 if (Choice(1, "ON", s.HitPause)) s.HitPause = true;
                 Row();
+                Label("MELEE DIRECTION");
+                if (Choice(0, "MOUSE", !s.MoveDirControl)) s.MoveDirControl = false;
+                if (Choice(1, "MOVE KEYS", s.MoveDirControl)) s.MoveDirControl = true;
+                Row();
                 Label("CINEMATIC MOMENTS");
                 if (Choice(0, "OFF", !s.Cinematics)) s.Cinematics = false;
                 if (Choice(1, "ON", s.Cinematics)) s.Cinematics = true;

@@ -180,36 +180,72 @@ sealed partial class Puppet
         {
             case UnitAction.Windup:
             {
-                float k = 1 - u.ActionTimer / (u.IsPlayer ? (u.Swing == AttackDir.Overhead ? 0.2f : 0.15f) : t.Windup);
-                if (u.IsPlayer) arm = Lerp(raise, strike, Ease.In(k)); // player already raised while charging: the blow accelerates
-                else
+                float denom = MathF.Max(0.05f, u.WindupDuration > 0 ? u.WindupDuration : (u.IsPlayer ? (u.Swing == AttackDir.Overhead ? 0.2f : 0.15f) : t.Windup));
+                float k = Math.Clamp(1f - u.ActionTimer / denom, 0f, 1f);
+                // CR6: Exaggerated readable directional windup telegraphs (preserves raise.Alpha at peak).
+                float up = Ease.InOut(Math.Clamp(k / 0.85f, 0f, 1f));
+                var teleRaise = u.Swing switch
                 {
-                    float up = Ease.InOut(k / 0.85f); // held at the top for the last moment
-                    arm = Lerp(idle, raise, up);
-                    leanZ -= 7.5f * up * lean;
-                    leanX += (two ? 7.5f : 3.5f) * side * up; // wound up to the side the blow comes from
-                }
+                    AttackDir.Overhead => raise with { Pitch = raise.Pitch + 14f },
+                    AttackDir.Thrust => raise with { Reach = raise.Reach * 0.72f },
+                    AttackDir.Left => raise with { Yaw = raise.Yaw - 18f },
+                    _ => raise with { Yaw = raise.Yaw + 18f },
+                };
+                arm = u.IsPlayer ? Lerp(raise, teleRaise, up) : Lerp(idle, teleRaise, up);
+                leanZ -= (u.Swing == AttackDir.Overhead ? 12f : 9.5f) * up * lean;
+                leanX += (two ? 11f : 6.5f) * side * up;
+                break;
+            }
+            case UnitAction.Active:
+            {
+                // CR6: Physical Active sweep driven directly by SwingProgress (0 -> 1).
+                float f = Ease.OutBack(Math.Clamp(u.SwingProgress, 0f, 1f));
+                arm = Lerp(raise, strike, f);
+                leanZ += 16f * MathF.Sin(Math.Clamp(u.SwingProgress, 0f, 1f) * MathF.PI) * lean;
+                leanX += (two ? 10f : 5.5f) * side * (1f - 2f * Math.Clamp(u.SwingProgress, 0f, 1f));
                 break;
             }
             case UnitAction.Recover:
             {
-                float k = 1 - u.ActionTimer / (u.IsPlayer ? 0.3f : t.Recover);
+                float denom = MathF.Max(0.05f, u.IsPlayer ? 0.28f : t.Recover);
+                float k = Math.Clamp(1f - u.ActionTimer / denom, 0f, 1f);
                 const float hit = 0.25f;
                 float f;
                 if (!u.IsPlayer && k < hit) { f = Ease.OutBack(k / hit); arm = Lerp(raise, strike, f); }
-                else { float back = Ease.InOut(u.IsPlayer ? k : (k - hit) / (1 - hit)); arm = Lerp(strike, idle, back); f = 1 - back; }
-                leanZ += 13 * f * lean;
-                leanX += (two ? 7.5f : 3.5f) * side * (1 - 2 * Math.Clamp(f, 0, 1)); // the weight swings through to the far side
+                else { float back = Ease.InOut(u.IsPlayer ? k : (k - hit) / (1 - hit)); arm = Lerp(strike, idle, back); f = 1f - back; }
+                leanZ += 12f * f * lean;
+                leanX += (two ? 7.5f : 3.5f) * side * (1f - 2f * Math.Clamp(f, 0f, 1f));
                 break;
             }
             case UnitAction.Block:
-                arm = two ? new(75, 20, -55, 0.65f) : t.HasShield ? new(48, 78, 12, 0.75f) : new(95, 70, -30, 0.7f); // a two-hander holds his haft across, a shield man raises it
-                shield = t.HasShield; leanZ += t.HasShield ? 3 : -3; // brace into the shield
+            {
+                // CR6: Readable directional GuardDir pose on 3D humanoids.
+                arm = u.GuardDir switch
+                {
+                    AttackDir.Overhead => two ? new(135, 10, -15, 0.72f) : new(130, 35, 0, 0.74f),
+                    AttackDir.Thrust => two ? new(58, -15, 10, 0.78f) : new(62, -10, 12, 0.75f),
+                    AttackDir.Left => two ? new(88, 30, -72, 0.70f) : new(88, 55, -52, 0.72f),
+                    _ => two ? new(88, 30, 62, 0.70f) : new(88, 55, 48, 0.72f),
+                };
+                shield = t.HasShield;
+                leanZ += t.HasShield ? 4f : -3f;
+                leanX += u.GuardDir == AttackDir.Left ? -4.5f : u.GuardDir == AttackDir.Right ? 4.5f : 0f;
                 break;
+            }
             case UnitAction.Stagger:
             {
-                arm = new(14 + 28 * hurt, 95, 32, 0.78f);
-                leanZ -= 13 + MathF.Sin(now * 9 + phase) * 3.5f; // stumbling back, guard thrown open
+                if (u.GuardBroken)
+                {
+                    // CR6: Guard-break pose — arms and weapon flung wide open, heavy stagger back.
+                    arm = new(24, 125, 68, 0.90f);
+                    leanZ -= 22f + MathF.Sin(now * 10f + phase) * 3f;
+                    leanX += 11f;
+                }
+                else
+                {
+                    arm = new(14 + 28 * hurt, 95, 32, 0.78f);
+                    leanZ -= 13 + MathF.Sin(now * 9 + phase) * 3.5f; // stumbling back, guard thrown open
+                }
                 break;
             }
             default:
@@ -232,7 +268,28 @@ sealed partial class Puppet
                 break;
         }
         if (t.Look.Body == "bones") arm = arm with { Alpha = arm.Alpha + MathF.Sin(now * 23 + phase * 40) * 3 }; // dry joints rattle
-        float crouch = u.Action == UnitAction.Stagger ? 0.38f : u.Action == UnitAction.Block && t.HasShield ? 0.14f : 0;
+        // CR6: Clear overlays for Blade Clash recoil, Kick/Bash shove, and Sidestep Dodge dash.
+        if (now > 0 && now - u.ClashedAt < 0.22f)
+        {
+            float ck = 1f - (now - u.ClashedAt) / 0.22f;
+            leanZ -= 14f * ck;
+            arm = arm with { Alpha = arm.Alpha + 26f * ck };
+        }
+        if (now > 0 && now - u.BashedAt < 0.26f)
+        {
+            float bk = MathF.Sin((now - u.BashedAt) / 0.26f * MathF.PI);
+            leanZ += 16f * bk;
+            leg = MathHelper.Lerp(leg, 46f, bk);
+            shield = t.HasShield;
+        }
+        float crouch = u.Action == UnitAction.Stagger ? (u.GuardBroken ? 0.45f : 0.38f) : u.Action == UnitAction.Block && t.HasShield ? 0.14f : 0;
+        if (u.DodgeTimer > 0 && !u.Mounted)
+        {
+            Vector2 f = new(MathF.Cos(u.ViewFacing), MathF.Sin(u.ViewFacing)), r = new(-f.Y, f.X);
+            leanX += Vector2.Dot(u.DodgeDir, r) * 20f;
+            leanZ += Vector2.Dot(u.DodgeDir, f) * 14f;
+            crouch = MathF.Max(crouch, 0.28f);
+        }
         if (!moving && !u.Mounted && u.Action is UnitAction.None or UnitAction.Block && u.Squad is { } sq && t.Size < 1.5f)
         {
             // Stances in a line (docs/archive/ANIMATION_ROSTER.md A4): a shield wall crouches behind its shields, the first two ranks

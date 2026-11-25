@@ -96,8 +96,15 @@ sealed partial class BattleScreen
     readonly Verts<VertexPositionColor> bands = new(); // ground marks as soft ribbons (Band)
 
     bool command, paused, menuOpen, helpOpen, wheelOpen, skipMouse = true, shotNoMouse, attackMoveMode;
-    float yaw, pitch, fieldDist = 5.5f;       // field camera: third person behind the player
+    float yaw, pitch, fieldDist = 3.8f;       // field camera: closer OTS behind the player (CR1)
     float camYaw, camPitch, zoom = 45;        // command camera: free orbit around camFocus
+    // CR1 combat camera state: critically damped focus height, dynamic FOV, camera mode (0=OTS, 1=close duel, 2=first-person), soft lock-on.
+    float camFocusY, camFocusYVel, camShoulder = 0.68f, camFov = 62f;
+    bool camInit;
+    int camMode;
+    Unit? lockTarget;
+    bool wheelDown;
+    float wheelSince;
     float blend, frameDt, realTime, simAcc, soundscapeAcc, lastCardClick, lastFieldClick;
     bool replaySaved;
     Squad? lastCardSquad, lastFieldSquad;
@@ -390,6 +397,7 @@ sealed partial class BattleScreen
         ResetSpectacle();
         ResetLod();
         markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = simAcc = soundscapeAcc = 0; ending = -1; lastHitAt = lastPlayerHp = -1;
+        camInit = false; lockTarget = null; camKick = camKickVel = Vector3.Zero;
         Array.Clear(trample); trampleAt = 0; trampleDirty = true;
         world?.Dispose();
         world = new World(GraphicsDevice, battle.Terrain);
@@ -404,7 +412,7 @@ sealed partial class BattleScreen
         holdHeld = -1;
         dragStart = null;
         boxStart = null;
-        if (on) { camFocus = battle.Player.Pos; camYaw = yaw; camPitch = 0.95f; }
+        if (on) { camFocus = battle.Player.Pos; camYaw = yaw; camPitch = 0.95f; lockTarget = null; }
         else skipMouse = true;
     }
 
@@ -468,18 +476,27 @@ sealed partial class BattleScreen
         else
         {
             if ((!alive || deploying) && !command) SetCommand(true);
-            else if (alive && !deploying && ctl.Pressed(Act.CommandView)) SetCommand(!command);
+            else if (alive && !deploying && ctl.Pressed(Act.CommandView))
+            {
+                if (battle.Options.Duel && !command) ToggleOrCycleLock();
+                else SetCommand(!command);
+            }
             if (deploying && (ctl.Pressed(Act.Pause) || (LmbPressed && hud.StartAt(ms.Position))))
             {
                 deploying = false;
                 deployed = battle.DeploymentOf(); // how you drew them up, for the next battle (Q6)
                 battle.Log("The battle begins!");
             }
-            else if (ctl.Pressed(Act.Pause)) paused = !paused;
+            else if (ctl.Pressed(Act.Pause))
+            {
+                // On foot in field view, Space dodges when shared with Act.Dodge; in command view or mounted it pauses.
+                bool dodgeSharesPause = !command && !battle.Player.Mounted && ctl.Binds.TryGetValue(Act.Pause, out var pb) && ctl.Binds.TryGetValue(Act.Dodge, out var db) && pb.Any(db.Contains);
+                if (!dodgeSharesPause) paused = !paused;
+            }
             if (ctl.Pressed(Act.Slower) && speed > 0) speed--;
             if (ctl.Pressed(Act.Faster) && speed < Speeds.Length - 1) speed++;
             OrderKeys();
-            if (command) CommandControls(dt); else FieldControls();
+            if (command) CommandControls(dt); else FieldControls(dt);
         }
         IsMouseVisible = command || Overlay;
         battle.Commanding = command;
@@ -621,7 +638,7 @@ sealed partial class BattleScreen
             if (Vector2.DistanceSquared(u.Pos, ear) > range * range) continue;
             if (u.Mounted && MathF.Abs(u.Speed) > 5) horses++;
             else if (!u.Mounted && MathF.Abs(u.Speed) > 0.8f && u.EnemyDist > 4) marching++;
-            if (u.Action is UnitAction.Windup or UnitAction.Recover && u.Type.Ammo == 0) fighting++;
+            if (u.Action is UnitAction.Windup or UnitAction.Active or UnitAction.Recover && u.Type.Ammo == 0) fighting++;
         }
         bool quiet = paused || menuOpen || deploying;
         float hush = 1 - 0.6f * MathF.Max(BeatAmount, Sky.OmenDark); // a beat or a gathering working quiets the field
