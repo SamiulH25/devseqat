@@ -29,7 +29,7 @@ public sealed partial class WorldMap
         ["Taiga"] = new(0.75f, 0.55f, 0.2f, (Pine, 3), (Shrub, 3), (Rock, 3), (Tussock, 1), (DeadTree, 1)),
         ["Highlands"] = new(0.32f, 0.56f, 0.4f, (Heather, 6), (Rock, 4), (Tussock, 3), (Shrub, 1), (Pine, 1)),
         ["Tundra"] = new(0f, 0.45f, 0.6f, (Rock, 6), (Tussock, 3), (Heather, 2), (Shrub, 1)),
-        ["Desert"] = new(0f, 0.3f, 1f, (Rock, 5), (Shrub, 4), (Tussock, 2), (DeadTree, 1)),
+        ["Desert"] = new(0f, 0.3f, 1f, (Rock, 6), (Shrub, 5), (Tussock, 2)),
         ["Oasis"] = new(0.5f, 0.55f, 0.3f, (Palm, 4), (Shrub, 3), (Tussock, 3), (Reed, 1)),
     };
 

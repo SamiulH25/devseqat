@@ -126,10 +126,10 @@ void main()
         vec3 wcol = wc * (wamb + SunColor * max(wl.y, 0.0) * wsh) * (0.9 + rip * 0.2);
         float fres = pow(1.0 - max(dot(vw, rn), 0.0), 3.0);
         wcol = mix(wcol, FogColor * 0.85, fres * 0.55);                                                   // the sky in it
-        float glintFar = 1.0 - smoothstep(50.0, 160.0, length(CameraPos - vWorld)); // far ripples alias into speckle: let the glint go
-        float rawGlint = pow(max(dot(reflect(-wl, rn), vw), 0.0), 48.0) * wsh * glintFar;
-        float crispGlint = rawGlint * 0.45 + smoothstep(0.32, 0.38, rawGlint) * 0.55;                       // stepped HD-2D water sparkles
-        wcol += SunColor * crispGlint * 0.75;
+        float glintFar = 1.0 - smoothstep(60.0, 190.0, length(CameraPos - vWorld));
+        vec3 fineRn = normalize(vec3((Noise2(q * 3.1) - 0.5) * 0.7, 1.0, (Noise2(q * 3.1 + 11.0) - 0.5) * 0.7));
+        float rawGlint = pow(max(dot(reflect(-wl, fineRn), vw), 0.0), 84.0) * wsh * glintFar;
+        wcol += SunColor * rawGlint * 0.85;
         float streak = (1.0 - smoothstep(0.0, 0.4, abs(vUV.x))) * smoothstep(0.45, 0.75, Noise2(vec2(along * 0.06 - Time * 0.3, vUV.x * 0.7))) * (1.0 - still);
         wcol += (wamb + SunColor * 0.5) * vec3(0.13, 0.15, 0.16) * streak;                                // the bright thread of the current
         float foam = smoothstep(0.8, 1.0, edge) * smoothstep(0.45, 0.75, Noise2(q * 3.0 + 1.0)) * (1.0 - still);
@@ -309,7 +309,7 @@ void main()
     vec3 wBounce = GroundColor * (0.86 + 0.24 * sunUp) + SunColor * vec3(0.08, 0.10, 0.05) * sunUp;
     wBounce = mix(wBounce, SkyColor * 0.95 + vec3(0.22, 0.25, 0.30) * sunUp, Look.x * 0.70);
     vec3 ambient = mix(wBounce, SkyColor * 1.06, n.y * 0.5 + 0.5);
-    vec3 shadowTint = mix(SkyColor * 0.16, vec3(0.0), shadow);
+    vec3 shadowTint = mix(SkyColor * 0.22, vec3(0.0), shadow);
     vec3 col = albedo * max(ambient + shadowTint + SunColor * diffuse * shadow + TorchLight(vWorld + n * 0.3) + GlowLight(vWorld + n * 0.3), vec3(0.0));
     if (Field.w > 0.0)
     {

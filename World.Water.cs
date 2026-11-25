@@ -59,8 +59,9 @@ sealed partial class World
         var clearings = new List<(Vector2 Pos, float ClearR, float FadeW)>(t.Places.Count + 16);
         foreach (var pl in t.Places)
         {
-            float r = pl.Radius * t.ThingScale;
-            clearings.Add((pl.Pos, r * (pl.Kind == SettlementKind.Village ? 0.95f : 0.92f), 1.6f));
+            float scale = pl.Kind == SettlementKind.Village ? 1.35f : 1.55f;
+            float r = pl.Radius * t.ThingScale * scale;
+            clearings.Add((pl.Pos, r * (pl.Kind == SettlementKind.Village ? 1.18f : 1.15f), 2.4f));
         }
         foreach (var fl in t.Foliage)
         {
@@ -98,7 +99,7 @@ sealed partial class World
                 float f = RoadFade(p);
                 fade[i] = f;
                 Vector2 nrm = new(-d.Y, d.X);
-                float half = road.Half * PlacePlan.StreetScale(t.Places, p) * t.ThingScale; // a town's streets narrow (docs/archive/SETTLEMENTS.md SM2); the draft's roads too (WS5b)
+                float half = road.Half * PlacePlan.StreetScale(t.Places, p) * t.ThingScale * 0.68f; // a town's streets narrow (docs/archive/SETTLEMENTS.md SM2); the draft's roads too (WS5b)
                 for (int c = 0; c < cols.Length; c++) at[i * cols.Length + c] = Vertex(p + nrm * cols[c] * half, c, f);
             }
             ribbons[k] = (s.Count, at, fade);
@@ -395,8 +396,9 @@ sealed partial class World
         {
             var stone = Jitter(BridgeStone, rng, 0.05f);
             m.Box(At(0, Vector2.Zero, deck - 0.35f), reach * 2, 3.0f, 0.35f, yaw, stone);                         // the deck
-            foreach (float s in new[] { -reach * 0.45f, reach * 0.45f }) m.Box(At(s, Vector2.Zero, water), 1.0f, 2.6f, deck - water - 0.3f, yaw, new Color(stone.ToVector3() * 0.82f)); // piers
-            foreach (int k in new[] { -1, 1 }) m.Box(At(0, side * k * 1.38f, deck), reach * 2, 0.26f, 0.45f, yaw, Jitter(BridgeStone, rng, 0.06f)); // parapets
+            foreach (float s in new[] { -reach * 0.45f, reach * 0.45f }) m.Box(At(s, Vector2.Zero, water), 1.0f, 2.6f, deck - water - 0.3f, yaw, new Color(stone.ToVector3() * 0.80f)); // piers
+            foreach (float s in new[] { -reach * 0.92f, reach * 0.92f }) m.Box(At(s, Vector2.Zero, water), 0.9f, 3.25f, deck - water + 0.08f, yaw, new Color(stone.ToVector3() * 0.76f)); // abutments
+            foreach (int k in new[] { -1, 1 }) m.Box(At(0, side * k * 1.38f, deck), reach * 2, 0.28f, 0.56f, yaw, Jitter(BridgeStone, rng, 0.06f)); // parapets
         }
         else
         {

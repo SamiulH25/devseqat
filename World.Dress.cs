@@ -7,7 +7,7 @@ namespace Ironfield;
 sealed partial class World
 {
     static readonly Color Straw = new(204, 182, 112), DeadWood = new(112, 100, 86), PalmBark = new(134, 110, 78);
-    static readonly Color[] Blooms = { new(236, 214, 80), new(240, 240, 232), new(176, 120, 200), new(206, 70, 54), new(96, 128, 206) };
+    static readonly Color[] Blooms = { new(204, 178, 72), new(208, 204, 190), new(146, 108, 158), new(172, 74, 58), new(92, 118, 168) };
 
     /// A plant's green drawn toward straw by how parched it is, and a little more in autumn and winter.
     Color Parched(Color green, float dry) => Color.Lerp(green, Straw, Math.Min(1, dry + (t.MapSeason >= 2 ? 0.25f : 0)) * 0.85f);
@@ -71,7 +71,7 @@ sealed partial class World
         var wood = Jitter(DeadWood, r, 0.1f);
         var top = b + new Vector3((r.NextSingle() - 0.5f) * 0.6f, 3.4f + r.NextSingle(), (r.NextSingle() - 0.5f) * 0.6f) * s;
         m.Tag = Vector2.Zero;
-        m.Frustum(b - Vector3.Up * 0.4f, top, 0.24f * s, 0.07f * s, 5, wood, r);
+        m.Frustum(b - Vector3.Up * 0.4f, top, 0.30f * s, 0.10f * s, 5, wood, r);
         for (int i = 0; i < 3; i++)
         {
             float a = r.NextSingle() * MathF.Tau;
@@ -111,9 +111,9 @@ sealed partial class World
         var col = Blooms[(r.Next(4) == 0 ? r.Next() : patch) % Blooms.Length];
         for (int i = 9 + r.Next(8); i > 0; i--)
         {
-            float ang = r.NextSingle() * MathF.Tau, d = MathF.Sqrt(r.NextSingle()) * 2.4f * s, f = (0.2f + r.NextSingle() * 0.12f) * s;
+            float ang = r.NextSingle() * MathF.Tau, d = MathF.Sqrt(r.NextSingle()) * 2.2f * s, f = (0.14f + r.NextSingle() * 0.08f) * s;
             var q = at + new Vector2(MathF.Cos(ang), MathF.Sin(ang)) * d;
-            var c = new Vector3(q.X, t.Height(q) + 0.3f, q.Y);
+            var c = new Vector3(q.X, t.Height(q) + 0.14f, q.Y);
             var bloom = Jitter(col, r, 0.08f);
             m.TriUp(c - Vector3.UnitX * f, c + Vector3.UnitX * f, c + Vector3.UnitZ * f, bloom, bloom, bloom, 0.2f);
             m.TriUp(c - Vector3.UnitX * f, c + Vector3.UnitX * f, c - Vector3.UnitZ * f, bloom, bloom, bloom, 0.2f);

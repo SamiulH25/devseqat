@@ -73,7 +73,7 @@ sealed partial class World
             // A smaller place (WS5b): built at its drawn size, then shrunk about its middle onto the ground where its pieces now stand.
             var pm = new Mesh();
             Place(pm, p, placeShown[p.Id], new Random(p.Seed));
-            float k = t.ThingScale;
+            float k = t.ThingScale * (p.Kind == SettlementKind.Village ? 1.35f : 1.55f);
             Vector3 Shrink(Vector3 v)
             {
                 var at = new Vector2(p.Pos.X + (v.X - p.Pos.X) * k, p.Pos.Y + (v.Z - p.Pos.Y) * k);
