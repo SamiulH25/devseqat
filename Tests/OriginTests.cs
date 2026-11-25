@@ -29,6 +29,13 @@ public static partial class SelfTest
         Check(c.RecruitPriceFactor(homeVillage) < 1f, "homeland villages give a favour discount on recruits");
         var look = Rules.CaptainType(c.Captain).Look;
         Check(look.Visage == m.Visage && Variety.Parts(look.Visage) == (3, 5, 2) && look.NeutralHead, "the face you chose is the face you fight with");
+        Check(look.Features == Variety.PackFeatures(m.Look), "the captain's 3D head carries every portrait feature");
+        var unpacked = Variety.UnpackFeatures(look.Features);
+        Check(unpacked.Cut == m.Cut && unpacked.Beard == m.Beard && unpacked.Eye == m.Eye && unpacked.Brow == m.Brow && unpacked.Nose == m.Nose && unpacked.Jaw == m.Jaw && unpacked.Scar == m.Scar, "packed face features round-trip cleanly");
+        var manFace = PortraitPainter.OfMan(42, Troops.Get("levies"), 0, 26, false, 0, 1);
+        var manStyle = Variety.Parts(Variety.Visage(Troops.Get("levies").Culture, PortraitPainter.SoldierSeed(42))).Style;
+        var manFeat = Variety.DeriveFeatures(PortraitPainter.SoldierSeed(42), manStyle, false, 26);
+        Check(manFeat.Cut == manFace.Cut && manFeat.Beard == manFace.Beard && manFeat.Eye == manFace.Eye && manFeat.Brow == manFace.Brow && manFeat.Nose == manFace.Nose && manFeat.Jaw == manFace.Jaw, "3D soldier head features match PortraitPainter.OfMan");
         Check(c.S.Event == null && c.OriginNote == "Born in the Market, once a Hedge Knight", "no road event after the creator, and the K sheet names the origin");
         var back = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
         Check(back.Captain.Origin == "hedge_knight" && back.Captain.Visage == m.Visage, "origin and face survive a save");

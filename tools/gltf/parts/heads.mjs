@@ -1,6 +1,28 @@
-import { THREE, V, M, shadeVerts, heightShade, loft, column, lathe, bladeExtrude, addPart } from '../geom.mjs';
+import { THREE, V, M, shadeVerts, heightShade, loft, pathLoft, column, lathe, bladeExtrude, addPart } from '../geom.mjs';
 
 export function buildHeads(root) {
+  // Faceted pentagonal visor wedge: broad shield-shaped back silhouette tapering toward the front,
+  // so it reads as a visor both face-on and in profile. All dimensions are local head space (+Z face).
+  function visorWedge({ width = 0.126, top = 0.078, mid = -0.012, bottom = -0.108, y = 0, z0 = 0.16, z1 = 0.22, sx = 0.60, sy = 0.72, dy = -0.006 } = {}) {
+    const back = [[-width, top], [width, top], [width * 0.84, mid], [0, bottom], [-width * 0.84, mid]];
+    const pos = [];
+    for (const [x, yy] of back) pos.push(x, yy + y, z0);
+    for (const [x, yy] of back) pos.push(x * sx, yy * sy + dy + y, z1);
+    const idx = [
+      0, 1, 2, 0, 2, 3, 0, 3, 4,       // back cap (-Z)
+      5, 9, 8, 5, 8, 7, 5, 7, 6,       // front cap (+Z)
+    ];
+    for (let i = 0; i < 5; i++) {
+      const j = (i + 1) % 5, bi = i, bj = j, fi = i + 5, fj = j + 5;
+      idx.push(bi, fi, fj, bi, fj, bj);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return shadeVerts(g, (_x, yy) => 0.84 + Math.max(0, Math.min(0.14, yy + 0.08)), 0.78);
+  }
+
   addPart(root, 'helm_cap', (mesh) => {
     const crown = column([
       [0.045, 0.154, 0.168, 0, -0.012],
@@ -30,7 +52,7 @@ export function buildHeads(root) {
       [-0.03, 0.164, 0.174, 0, -0.012],
       [0.06, 0.166, 0.178, 0, -0.014],
       [0.14, 0.148, 0.162, 0, -0.014],
-    ], { segs: 8, arc: [-Math.PI * 1.26, Math.PI * 0.26] });
+    ], { segs: 8, arc: [Math.PI * 0.82, Math.PI * 2.18] });
     mesh(heightShade(cowl, -0.13, 0.14, 0.84, 1.0), M.cloth);
     // Closed brow & crown above eyes (y >= 0.080)
     const crown = column([
@@ -67,138 +89,351 @@ export function buildHeads(root) {
     ], { segs: 8 });
     mesh(heightShade(dome, 0.055, 0.280, 0.84, 1.0), M.steel);
 
-    // Wide sloped faceted kettle brim
+    // Very wide sloped faceted kettle brim: the silhouette reads before any surface detail.
     const brim = column([
-      [0.000, 0.275, 0.288, 0, -0.004],
-      [0.032, 0.252, 0.266, 0, -0.004],
+      [-0.004, 0.304, 0.316, 0, -0.004],
+      [0.030, 0.270, 0.282, 0, -0.004],
       [0.072, 0.168, 0.180, 0, -0.006],
     ], { segs: 8 });
-    mesh(heightShade(brim, 0.0, 0.072, 0.82, 0.96), M.steel);
+    mesh(heightShade(brim, -0.004, 0.072, 0.82, 0.96), M.steel);
 
-    // Crisp medial crest comb
-    const comb = shadeVerts(new THREE.BoxGeometry(0.024, 0.044, 0.24), () => 0.98);
-    mesh(comb, M.steel, [0, 0.258, -0.008]);
+    // Low rolled median rib only; a tall fin would read as a morion rather than a chapel-de-fer.
+    const comb = shadeVerts(new THREE.BoxGeometry(0.022, 0.024, 0.22), () => 0.98);
+    mesh(comb, M.steel, [0, 0.265, -0.008]);
   });
 
-  // helm_sallet: sleek Gothic sallet with flared lobster-tail neck guard, dark eye-slit visor & solid steel bevor
+  // helm_sallet: sleek Gothic skull, narrow visor slit and a close swept tail (not a huge rear fin).
   addPart(root, 'helm_sallet', (mesh) => {
-    // Upper faceted skull dome
     const skull = column([
-      [0.045, 0.168, 0.184, 0, -0.008],
-      [0.125, 0.164, 0.180, 0, -0.010],
-      [0.200, 0.130, 0.144, 0, -0.010],
-      [0.255, 0.068, 0.078, 0, -0.008],
-      [0.278, 0.020, 0.024, 0, -0.006],
+      [0.040, 0.166, 0.180, 0, -0.008],
+      [0.120, 0.164, 0.178, 0, -0.010],
+      [0.198, 0.126, 0.140, 0, -0.010],
+      [0.252, 0.064, 0.074, 0, -0.008],
+      [0.274, 0.018, 0.022, 0, -0.006],
     ], { segs: 8 });
-    mesh(heightShade(skull, 0.045, 0.278, 0.84, 1.0), M.steel);
+    mesh(heightShade(skull, 0.040, 0.274, 0.84, 1.0), M.steel);
 
-    // Swept flared rear lobster tail (-Z)
-    const tail = loft(V(0, 0.075, -0.10), V(0, -0.045, -0.34), [
-      [0.0, 0.162, 0.068],
-      [0.5, 0.146, 0.056],
-      [1.0, 0.112, 0.038],
+    // Lobster-tail neck guard hugs the nape and sweeps back horizontally.
+    const tail = loft(V(0, 0.064, -0.105), V(0, -0.040, -0.335), [
+      [0.0, 0.148, 0.040],
+      [0.55, 0.132, 0.030],
+      [1.0, 0.096, 0.018],
     ], { segs: 6, fwd: V(0, 1, 0) });
     mesh(shadeVerts(tail, () => 0.88), M.steel);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.022, 0.018, 0.190), () => 0.96), M.steel, [0, 0.020, -0.205], [0.18, 0, 0]);
 
-    // Protruding angled visor brow + crisp dark horizontal eye slit (+Z)
-    const visor = column([
-      [0.018, 0.178, 0.206, 0, 0.012],
-      [0.074, 0.172, 0.194, 0, 0.002],
-    ], { segs: 8, arc: [Math.PI * 0.06, Math.PI * 0.94] });
-    mesh(shadeVerts(visor, () => 0.96), M.steel);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.22, 0.024, 0.024), () => 0.10), M.dark, [0, 0.032, 0.206]);
+    // Short pentagonal visor wedge and a single unbroken black sight line.
+    mesh(visorWedge({ width: 0.142, top: 0.076, mid: -0.010, bottom: -0.098, y: 0.018, z0: 0.164, z1: 0.226, sx: 0.62, sy: 0.74 }), M.steel);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.160, 0.018, 0.006), () => 0.08), M.dark, [0, 0.070, 0.230]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.178, 0.015, 0.009), () => 0.98), M.steel, [0, 0.092, 0.224]);
 
-    // Solid beveled steel bevor covering jaw & chin cleanly (no bare gap)
+    // Bevor wraps the jaw and chin, leaving no floating visor or bare throat gap.
     const bevor = column([
-      [-0.145, 0.148, 0.164, 0, 0.010],
-      [-0.055, 0.168, 0.190, 0, 0.018],
-      [0.012, 0.166, 0.188, 0, 0.014],
+      [-0.145, 0.146, 0.162, 0, 0.010],
+      [-0.055, 0.166, 0.186, 0, 0.018],
+      [0.012, 0.164, 0.184, 0, 0.014],
     ], { segs: 8, arc: [Math.PI * 0.08, Math.PI * 0.92] });
     mesh(heightShade(bevor, -0.145, 0.012, 0.82, 0.96), M.steel);
   });
 
-  // ---------- HEADS (8 parts, centered at 0,0,0, face toward +Z) ----------
-  const buildHumanHead = (mesh, { beard = 0, hair = 'short' } = {}) => {
-    // Neck column (Y -0.19..-0.07)
-    mesh(column([[-0.19, 0.068, 0.072], [-0.07, 0.072, 0.076]], { segs: 8 }), M.skin);
-    // Cranium + jaw
+  // ---------- MODULAR HUMAN HEADS, FACES, HAIR & BEARDS (portrait-aligned, centered at 0,0,0, face +Z) ----------
+  // All crowns and skulls share segs: 10 angular alignment so hair strictly encloses the skull with zero z-fighting.
+  // Dynamic material slots used on human faces (restored/populated per-unit in Puppet3D.cs):
+  //   M.neutral (0) = eye sclera, M.coat (11) = eye iris (PortraitPainter.EyeColours), M.coatDark (12) = lip/scar tone.
+
+  const buildHeadBase = (mesh, jaw = 1) => {
+    const jw = jaw === 0 ? 1.12 : jaw === 2 ? 0.86 : 1.0;
+    const cw = jaw === 0 ? 1.05 : jaw === 2 ? 0.94 : 1.0;
+    // Neck column (shaded darker beneath the chin)
+    const neck = column([
+      [-0.190, 0.068 * cw, 0.070, 0, -0.004],
+      [-0.080, 0.072 * cw, 0.074, 0, -0.002],
+    ], { segs: 8 });
+    mesh(heightShade(neck, -0.190, -0.080, 0.90, 0.78), M.skin);
+
+    // Sculpted cranium & jaw (segs: 10, symmetric front +Z spine)
     const skull = column([
-      [-0.12, 0.078, 0.090, 0, 0.012],
-      [-0.04, 0.125, 0.138, 0, 0.010],
-      [0.04, 0.138, 0.150, 0, 0.004],
-      [0.12, 0.122, 0.135, 0, -0.004],
-      [0.175, 0.062, 0.072, 0, -0.006],
+      [-0.125, 0.066 * jw, 0.082, 0, 0.016],  // chin
+      [-0.065, 0.112 * jw, 0.128, 0, 0.012],  // jaw & mouth
+      [ 0.010, 0.132 * cw, 0.144, 0, 0.004],  // cheekbones & eyes
+      [ 0.085, 0.132,      0.146, 0, -0.002], // brow & temples
+      [ 0.145, 0.106,      0.120, 0, -0.006], // upper cranium
+      [ 0.180, 0.048,      0.056, 0, -0.008], // crown top
     ], { segs: 10 });
-    mesh(heightShade(skull, -0.12, 0.175, 0.84, 1.0), M.skin);
-    // Nose + dark eyes + brows
-    mesh(shadeVerts(new THREE.BoxGeometry(0.032, 0.052, 0.042), () => 0.96), M.skin, [0, -0.005, 0.148]);
+    mesh(heightShade(skull, -0.125, 0.180, 0.84, 1.0), M.skin);
+
+    // Ears
     for (const sx of [-1, 1]) {
-      mesh(shadeVerts(new THREE.BoxGeometry(0.026, 0.020, 0.020), () => 0.25), M.dark, [sx * 0.046, 0.022, 0.142]);
-      mesh(shadeVerts(new THREE.BoxGeometry(0.042, 0.016, 0.022), () => 0.82), M.hair, [sx * 0.048, 0.046, 0.144]);
+      const ear = shadeVerts(new THREE.BoxGeometry(0.022, 0.056, 0.034), (_x, y) => 0.84 + Math.max(0, y + 0.02) * 1.4, 0.78);
+      mesh(ear, M.skin, [sx * (0.128 * cw), 0.004, -0.006], [0, -sx * 0.22, -sx * 0.06]);
     }
-    // Hair cap
-    if (hair !== 'bald') {
-      const cap = column([
-        [0.02, 0.145, 0.158, 0, -0.014],
-        [0.11, 0.134, 0.146, 0, -0.012],
-        [0.18, 0.068, 0.078, 0, -0.008],
-      ], { segs: 9 });
-      mesh(heightShade(cap, 0.02, 0.18, 0.82, 1.0), M.hair);
-      if (hair === 'long') {
-        const back = column([[-0.15, 0.132, 0.115, 0, -0.045], [0.04, 0.146, 0.135, 0, -0.030]], { segs: 8, arc: [Math.PI * 1.05, Math.PI * 1.95] });
-        mesh(back, M.hair);
-      }
+
+    // Eyes: crisp balanced sclera, colored iris (M.coat -> EyeColours), dark pupil & upper lash
+    for (const sx of [-1, 1]) {
+      const ry = sx * 0.22;
+      mesh(shadeVerts(new THREE.BoxGeometry(0.026, 0.016, 0.008), () => 0.90), M.neutral, [sx * 0.044, 0.018, 0.132], [0, ry, 0]);
+      mesh(shadeVerts(new THREE.BoxGeometry(0.017, 0.016, 0.010), () => 0.96), M.coat, [sx * 0.044, 0.018, 0.136], [0, ry, 0]);
+      mesh(shadeVerts(new THREE.BoxGeometry(0.011, 0.012, 0.010), () => 0.14), M.dark, [sx * 0.044, 0.018, 0.139], [0, ry, 0]);
+      mesh(shadeVerts(new THREE.BoxGeometry(0.030, 0.006, 0.010), () => 0.26), M.dark, [sx * 0.044, 0.028, 0.137], [0, ry, 0]);
     }
-    // Beard styles
-    if (beard === 1) {
-      // Full beard
-      const b = column([
-        [-0.17, 0.088, 0.095, 0, 0.045],
-        [-0.08, 0.130, 0.142, 0, 0.024],
-        [-0.01, 0.134, 0.146, 0, 0.018],
-      ], { segs: 8, arc: [Math.PI * 0.08, Math.PI * 0.92] });
-      mesh(heightShade(b, -0.17, -0.01, 0.82, 1.0), M.hair);
-    } else if (beard === 2) {
-      // Mustache + goatee
-      mesh(shadeVerts(new THREE.BoxGeometry(0.11, 0.024, 0.032), () => 0.88), M.hair, [0, -0.044, 0.148]);
-      mesh(shadeVerts(new THREE.BoxGeometry(0.062, 0.070, 0.040), () => 0.85), M.hair, [0, -0.115, 0.136]);
+
+    // Subtle mouth/lip line (M.coatDark -> portrait lip shade)
+    mesh(shadeVerts(new THREE.BoxGeometry(0.038, 0.009, 0.010), () => 0.92), M.coatDark, [0, -0.056, 0.131]);
+  };
+
+  const buildNose = (mesh, style = 1) => {
+    // Sculpted tapered wedge prism from bridge between brows down to tip
+    const yTop = style === 0 ? 0.026 : style === 2 ? 0.036 : 0.030;
+    const yTip = style === 0 ? -0.018 : style === 2 ? -0.034 : -0.026;
+    const zTip = style === 0 ? 0.166 : style === 2 ? 0.184 : 0.175;
+    const wTip = style === 0 ? 0.022 : style === 2 ? 0.018 : 0.020;
+    const nose = loft(V(0, yTop, 0.138), V(0, yTip, zTip), [
+      [0.0, 0.011, 0.010],
+      [0.65, wTip * 0.85, 0.016],
+      [1.0, wTip, 0.014],
+    ], { segs: 5, fwd: V(0, 0, 1) });
+    mesh(shadeVerts(nose, (_x, y) => y < yTip + 0.012 ? 0.80 : 0.98, 0.76), M.skin);
+  };
+
+  const buildBrows = (mesh, style = 1) => {
+    const w = style === 0 ? 0.040 : style === 2 ? 0.054 : 0.046;
+    const h = style === 0 ? 0.010 : style === 2 ? 0.022 : 0.015;
+    const d = style === 0 ? 0.016 : style === 2 ? 0.026 : 0.020;
+    const y = style === 0 ? 0.048 : style === 2 ? 0.045 : 0.047;
+    for (const sx of [-1, 1]) {
+      const brow = shadeVerts(new THREE.BoxGeometry(w, h, d), () => 0.80);
+      mesh(brow, M.hair, [sx * 0.046, y, 0.140], [0, sx * 0.22, -sx * 0.10]);
     }
   };
 
-  addPart(root, 'head_0', (mesh) => buildHumanHead(mesh, { beard: 0, hair: 'short' }));
-  addPart(root, 'head_1', (mesh) => buildHumanHead(mesh, { beard: 1, hair: 'short' }));
-  addPart(root, 'head_2', (mesh) => buildHumanHead(mesh, { beard: 2, hair: 'short' }));
-  addPart(root, 'head_3', (mesh) => buildHumanHead(mesh, { beard: 1, hair: 'long' }));
+  const buildScar = (mesh, style = 1) => {
+    if (style === 1) {
+      // Brow scar: vertical seam above and below the right eye (skipping the eye itself)
+      mesh(shadeVerts(new THREE.BoxGeometry(0.010, 0.034, 0.010), () => 0.96), M.coatDark, [0.052, 0.056, 0.140], [0, 0.22, -0.14]);
+      mesh(shadeVerts(new THREE.BoxGeometry(0.010, 0.034, 0.010), () => 0.94), M.coatDark, [0.046, -0.008, 0.140], [0, 0.22, -0.14]);
+    } else if (style === 2) {
+      // Cheek scar: diagonal seam across the left cheek
+      mesh(shadeVerts(new THREE.BoxGeometry(0.052, 0.010, 0.010), () => 0.95), M.coatDark, [-0.068, -0.018, 0.126], [0, -0.45, 0.48]);
+    }
+  };
+
+  const buildHair = (mesh, cut = 0) => {
+    if (cut === 0) {
+      // Short: full crown (segs: 10, strictly outside skull), high swept hairline, nape coverage, sideburns
+      const cap = column([
+        [0.088, 0.148, 0.160, 0, -0.004],
+        [0.136, 0.144, 0.156, 0, -0.005],
+        [0.178, 0.104, 0.116, 0, -0.006],
+        [0.202, 0.048, 0.054, 0, -0.006],
+      ], { segs: 10 });
+      mesh(heightShade(cap, 0.088, 0.202, 0.84, 1.0), M.hair);
+      // Swept medieval forelock sitting cleanly above the forehead
+      mesh(shadeVerts(new THREE.BoxGeometry(0.144, 0.026, 0.042), () => 0.94), M.hair, [-0.008, 0.098, 0.136], [-0.14, 0, 0.09]);
+      // Back nape coverage
+      const nape = column([
+        [-0.065, 0.128, 0.136, 0, -0.012],
+        [ 0.090, 0.148, 0.160, 0, -0.004],
+      ], { segs: 8, arc: [Math.PI * 0.90, Math.PI * 2.10] });
+      mesh(heightShade(nape, -0.065, 0.090, 0.78, 0.92), M.hair);
+      // Sideburns framing temples
+      for (const sx of [-1, 1]) {
+        mesh(shadeVerts(new THREE.BoxGeometry(0.022, 0.072, 0.042), () => 0.86), M.hair, [sx * 0.134, 0.048, 0.038]);
+      }
+    } else if (cut === 1) {
+      // Long: fuller parted crown (clean forehead) + shoulder-length side curtains + flowing back mane
+      const cap = column([
+        [0.086, 0.154, 0.166, 0, -0.004],
+        [0.138, 0.150, 0.162, 0, -0.005],
+        [0.182, 0.108, 0.120, 0, -0.006],
+        [0.206, 0.052, 0.058, 0, -0.006],
+      ], { segs: 10 });
+      mesh(heightShade(cap, 0.086, 0.206, 0.84, 1.0), M.hair);
+      buildHairLongLower(mesh, 0.090);
+    } else if (cut === 2) {
+      // Tied: sleek drawn-back crown + prominent warrior topknot with trim cord
+      const cap = column([
+        [0.086, 0.144, 0.156, 0, -0.005],
+        [0.134, 0.140, 0.152, 0, -0.006],
+        [0.176, 0.098, 0.110, 0, -0.007],
+        [0.196, 0.044, 0.050, 0, -0.007],
+      ], { segs: 10 });
+      mesh(heightShade(cap, 0.086, 0.196, 0.84, 1.0), M.hair);
+      const nape = column([
+        [-0.035, 0.124, 0.132, 0, -0.012],
+        [ 0.088, 0.144, 0.156, 0, -0.005],
+      ], { segs: 8, arc: [Math.PI * 0.94, Math.PI * 2.06] });
+      mesh(heightShade(nape, -0.035, 0.088, 0.78, 0.90), M.hair);
+      // Trim hair cord around topknot base
+      const cord = column([
+        [0.178, 0.046, 0.046, 0, -0.045],
+        [0.198, 0.044, 0.044, 0, -0.048],
+      ], { segs: 8 });
+      mesh(shadeVerts(cord, () => 0.96), M.trim);
+      // Topknot / bun bulb
+      const bun = column([
+        [0.194, 0.042, 0.042, 0, -0.048],
+        [0.232, 0.068, 0.068, 0, -0.058],
+        [0.268, 0.050, 0.050, 0, -0.062],
+        [0.284, 0.020, 0.020, 0, -0.062],
+      ], { segs: 8 });
+      mesh(heightShade(bun, 0.194, 0.284, 0.82, 1.0), M.hair);
+    } else if (cut === 3) {
+      // Cropped: close-cropped buzz cut hugging skull cleanly with high hairline
+      const cap = column([
+        [0.076, 0.144, 0.158, 0, -0.004],
+        [0.132, 0.138, 0.152, 0, -0.005],
+        [0.172, 0.096, 0.108, 0, -0.007],
+        [0.190, 0.044, 0.050, 0, -0.007],
+      ], { segs: 10 });
+      mesh(heightShade(cap, 0.076, 0.190, 0.80, 0.96), M.hair);
+      const nape = column([
+        [-0.015, 0.124, 0.134, 0, -0.010],
+        [ 0.078, 0.144, 0.158, 0, -0.004],
+      ], { segs: 8, arc: [Math.PI * 0.96, Math.PI * 2.04] });
+      mesh(heightShade(nape, -0.015, 0.078, 0.76, 0.88), M.hair);
+    } else if (cut === 4) {
+      // Bald fringe: horseshoe band around sides & back, completely bare crown
+      const fringe = column([
+        [-0.045, 0.126, 0.136, 0, -0.010],
+        [ 0.015, 0.144, 0.156, 0, -0.006],
+        [ 0.058, 0.140, 0.152, 0, -0.008],
+      ], { segs: 8, arc: [Math.PI * 0.92, Math.PI * 2.08] });
+      mesh(heightShade(fringe, -0.045, 0.058, 0.78, 0.92), M.hair);
+    }
+  };
+
+  const buildHairLongLower = (mesh, topY = 0.048) => {
+    // Back mane draping down to the shoulders
+    const back = column([
+      [-0.220, 0.162, 0.132, 0, -0.042],
+      [-0.090, 0.156, 0.142, 0, -0.030],
+      [ topY,  0.152, 0.158, 0, -0.008],
+    ], { segs: 8, arc: [Math.PI * 0.90, Math.PI * 2.10] });
+    mesh(heightShade(back, -0.220, topY, 0.76, 0.94), M.hair);
+    // Side curtains framing cheeks & ears down past the jaw
+    for (const sx of [-1, 1]) {
+      const curtain = loft(V(sx * 0.136, topY, 0.042), V(sx * 0.148, -0.195, 0.018), [
+        [0.0, 0.034, 0.056],
+        [0.5, 0.036, 0.054],
+        [1.0, 0.024, 0.042],
+      ], { segs: 6, fwd: V(0, 0, 1) });
+      mesh(heightShade(curtain, -0.195, topY, 0.78, 0.94), M.hair);
+    }
+  };
+
+  const buildBeard = (mesh, style = 1) => {
+    if (style === 1) {
+      // Full beard: chin & lower jaw mass below the mouth, side jawbands framing bright upper cheeks, and moustache
+      const chin = column([
+        [-0.195, 0.072, 0.086, 0, 0.038],
+        [-0.125, 0.120, 0.134, 0, 0.020],
+        [-0.070, 0.132, 0.136, 0, 0.010],
+      ], { segs: 8, arc: [Math.PI * 0.10, Math.PI * 0.90] });
+      mesh(heightShade(chin, -0.195, -0.070, 0.78, 0.96), M.hair);
+      // Side jaw cheeks connecting chin beard up to sideburns without covering upper cheekbones
+      for (const sx of [-1, 1]) {
+        mesh(shadeVerts(new THREE.BoxGeometry(0.030, 0.072, 0.064), () => 0.88), M.hair, [sx * 0.122, -0.044, 0.066], [0, sx * 0.25, 0]);
+      }
+      // Moustache above lip (leaves clean mouth slit visible between moustache and chin beard)
+      mesh(shadeVerts(new THREE.BoxGeometry(0.104, 0.020, 0.030), () => 0.94), M.hair, [0, -0.040, 0.142]);
+    } else if (style === 2) {
+      // Moustache only (no goatee, matching PortraitBust.Beard == 2)
+      mesh(shadeVerts(new THREE.BoxGeometry(0.106, 0.022, 0.032), () => 0.92), M.hair, [0, -0.042, 0.144]);
+      for (const sx of [-1, 1]) {
+        mesh(shadeVerts(new THREE.BoxGeometry(0.028, 0.036, 0.026), () => 0.86), M.hair, [sx * 0.054, -0.058, 0.136], [0, sx * 0.25, -sx * 0.22]);
+      }
+    } else if (style === 3) {
+      // Forked beard: bold moustache + twin-pointed chin prongs (matching PortraitBust.Beard == 3)
+      mesh(shadeVerts(new THREE.BoxGeometry(0.112, 0.024, 0.034), () => 0.92), M.hair, [0, -0.042, 0.144]);
+      for (const sx of [-1, 1]) {
+        mesh(shadeVerts(new THREE.BoxGeometry(0.028, 0.036, 0.026), () => 0.86), M.hair, [sx * 0.056, -0.058, 0.136], [0, sx * 0.25, -sx * 0.22]);
+      }
+      // Chin anchor
+      mesh(shadeVerts(new THREE.BoxGeometry(0.096, 0.056, 0.052), () => 0.86), M.hair, [0, -0.100, 0.124]);
+      // Twin tapered fork prongs
+      for (const sx of [-1, 1]) {
+        const prong = loft(V(sx * 0.028, -0.115, 0.126), V(sx * 0.044, -0.225, 0.116), [
+          [0.0, 0.026, 0.026],
+          [0.55, 0.020, 0.020],
+          [1.0, 0.008, 0.008],
+        ], { segs: 5, fwd: V(0, 0, 1) });
+        mesh(heightShade(prong, -0.225, -0.115, 0.76, 0.92), M.hair);
+      }
+    }
+  };
+
+  // Modular parts used at runtime by Puppet3D
+  addPart(root, 'head_broad', (mesh) => buildHeadBase(mesh, 0));
+  addPart(root, 'head_plain', (mesh) => buildHeadBase(mesh, 1));
+  addPart(root, 'head_narrow', (mesh) => buildHeadBase(mesh, 2));
+
+  addPart(root, 'nose_short', (mesh) => buildNose(mesh, 0));
+  addPart(root, 'nose_plain', (mesh) => buildNose(mesh, 1));
+  addPart(root, 'nose_long', (mesh) => buildNose(mesh, 2));
+
+  addPart(root, 'brow_fine', (mesh) => buildBrows(mesh, 0));
+  addPart(root, 'brow_plain', (mesh) => buildBrows(mesh, 1));
+  addPart(root, 'brow_heavy', (mesh) => buildBrows(mesh, 2));
+
+  addPart(root, 'scar_brow', (mesh) => buildScar(mesh, 1));
+  addPart(root, 'scar_cheek', (mesh) => buildScar(mesh, 2));
+
+  addPart(root, 'hair_short', (mesh) => buildHair(mesh, 0));
+  addPart(root, 'hair_long', (mesh) => buildHair(mesh, 1));
+  addPart(root, 'hair_long_under', (mesh) => buildHairLongLower(mesh, 0.048));
+  addPart(root, 'hair_tied', (mesh) => buildHair(mesh, 2));
+  addPart(root, 'hair_cropped', (mesh) => buildHair(mesh, 3));
+  addPart(root, 'hair_bald_fringe', (mesh) => buildHair(mesh, 4));
+
+  addPart(root, 'beard_full', (mesh) => buildBeard(mesh, 1));
+  addPart(root, 'beard_moustache', (mesh) => buildBeard(mesh, 2));
+  addPart(root, 'beard_forked', (mesh) => buildBeard(mesh, 3));
+
+  // Legacy composed head_0..3 kept for reference/tooling compatibility (now clean & z-fight free)
+  addPart(root, 'head_0', (mesh) => { buildHeadBase(mesh, 1); buildNose(mesh, 1); buildBrows(mesh, 1); buildHair(mesh, 0); });
+  addPart(root, 'head_1', (mesh) => { buildHeadBase(mesh, 1); buildNose(mesh, 1); buildBrows(mesh, 1); buildHair(mesh, 0); buildBeard(mesh, 1); });
+  addPart(root, 'head_2', (mesh) => { buildHeadBase(mesh, 1); buildNose(mesh, 1); buildBrows(mesh, 1); buildHair(mesh, 0); buildBeard(mesh, 2); });
+  addPart(root, 'head_3', (mesh) => { buildHeadBase(mesh, 1); buildNose(mesh, 1); buildBrows(mesh, 1); buildHair(mesh, 4); buildBeard(mesh, 1); });
 
   addPart(root, 'head_goblin', (mesh) => {
-    const cranium = shadeVerts(new THREE.SphereGeometry(0.125, 8, 6), () => 0.92);
-    cranium.scale(1.05, 0.95, 1.08);
-    mesh(cranium, M.skin, [0, 0.01, 0.0]);
-    // Long hooked nose (+Z)
-    const nose = loft(V(0, 0.0, 0.12), V(0, -0.04, 0.23), [[0, 0.028, 0.028], [1, 0.010, 0.010]], { segs: 5 });
-    mesh(nose, M.skin);
-    // Wide pointed ears (±X)
+    // Angular hungry little skull: narrow chin, high cheekbones, hooked nose.
+    const cranium = column([
+      [-0.105, 0.082, 0.092, 0, 0.020],
+      [-0.020, 0.122, 0.132, 0, 0.006],
+      [0.095, 0.112, 0.122, 0, -0.006],
+      [0.165, 0.052, 0.062, 0, -0.012],
+    ], { segs: 8 });
+    mesh(heightShade(cranium, -0.105, 0.165, 0.82, 1.0), M.skin);
+    // Long nose bends down at the tip like the reference goblin silhouette.
+    const noseA = loft(V(0, 0.012, 0.105), V(0, -0.012, 0.190), [[0, 0.030, 0.025], [1, 0.018, 0.016]], { segs: 5, fwd: V(0, 1, 0) });
+    mesh(noseA, M.skin);
+    const noseB = loft(V(0, -0.012, 0.190), V(0, -0.066, 0.176), [[0, 0.018, 0.016], [1, 0.006, 0.006]], { segs: 5, fwd: V(0, 1, 0) });
+    mesh(noseB, M.skin);
+    // Broad leaf-shaped ears, not thin spikes; they read in one pixel cluster from the front.
     for (const sx of [-1, 1]) {
-      const ear = loft(V(sx * 0.12, 0.02, 0.0), V(sx * 0.32, 0.06, -0.04), [[0, 0.036, 0.018], [1, 0.008, 0.006]], { segs: 4 });
-      mesh(ear, M.skin);
-      mesh(shadeVerts(new THREE.SphereGeometry(0.024, 5, 4), () => 0.25), M.dark, [sx * 0.052, 0.035, 0.118]);
+      const ear = bladeExtrude([[0.0, 0.0], [sx * 0.190, 0.072], [sx * 0.046, -0.058]], 0.024, 0.003);
+      mesh(ear, M.skin, [sx * 0.090, 0.032, -0.012], [0, sx * 0.10, 0]);
+      mesh(shadeVerts(new THREE.BoxGeometry(0.030, 0.024, 0.016), () => 0.20), M.dark, [sx * 0.045, 0.030, 0.124]);
     }
+    mesh(shadeVerts(new THREE.BoxGeometry(0.072, 0.014, 0.014), () => 0.20), M.dark, [0, -0.067, 0.105]);
   });
 
   addPart(root, 'head_troll', (mesh) => {
+    // Massive square brow and jaw, tiny deep-set eyes, blunt upturned tusks.
     const head = column([
-      [-0.15, 0.125, 0.135, 0, 0.018],
-      [-0.02, 0.155, 0.165, 0, 0.015],
-      [0.10, 0.145, 0.152, 0, 0.008],
-      [0.19, 0.092, 0.105, 0, 0.0],
+      [-0.155, 0.142, 0.142, 0, 0.024],
+      [-0.035, 0.170, 0.172, 0, 0.018],
+      [0.095, 0.154, 0.158, 0, 0.006],
+      [0.190, 0.094, 0.106, 0, -0.002],
     ], { segs: 8 });
-    mesh(heightShade(head, -0.15, 0.19, 0.80, 1.0), M.skin);
-    // Heavy brow ridge + tusks
-    mesh(shadeVerts(new THREE.BoxGeometry(0.24, 0.048, 0.065), () => 0.85), M.skin, [0, 0.065, 0.155]);
+    mesh(heightShade(head, -0.155, 0.190, 0.78, 1.0), M.skin);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.185, 0.090, 0.090), () => 0.84), M.skin, [0, -0.105, 0.092]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.255, 0.058, 0.068), () => 0.76), M.skin, [0, 0.066, 0.154]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.060, 0.055, 0.055), () => 0.83), M.skin, [0, 0.005, 0.165]);
     for (const sx of [-1, 1]) {
-      mesh(shadeVerts(new THREE.BoxGeometry(0.032, 0.022, 0.022), () => 0.2), M.dark, [sx * 0.055, 0.032, 0.165]);
-      const tusk = shadeVerts(new THREE.ConeGeometry(0.018, 0.075, 5), () => 0.98);
-      mesh(tusk, M.trim, [sx * 0.068, -0.065, 0.175], [0.28, 0, -sx * 0.18]);
+      mesh(shadeVerts(new THREE.BoxGeometry(0.032, 0.018, 0.014), () => 0.16), M.dark, [sx * 0.057, 0.036, 0.188]);
+      const tusk = shadeVerts(new THREE.ConeGeometry(0.020, 0.090, 5), () => 0.98);
+      mesh(tusk, M.trim, [sx * 0.073, -0.070, 0.145], [0.10, 0, -sx * 0.18]);
     }
   });
 
@@ -206,13 +441,18 @@ export function buildHeads(root) {
     const cranium = shadeVerts(new THREE.SphereGeometry(0.125, 8, 6), () => 0.96);
     cranium.scale(0.95, 1.05, 1.05);
     mesh(cranium, M.skin, [0, 0.045, -0.005]);
-    // Gaunt jaw
-    mesh(shadeVerts(new THREE.BoxGeometry(0.12, 0.095, 0.13), () => 0.88), M.skin, [0, -0.075, 0.025]);
-    // Hollow dark eye sockets & nasal cavity
+    // Gaunt blocky jaw and cheekbones keep the skeleton angular rather than balloon-like.
+    mesh(shadeVerts(new THREE.BoxGeometry(0.118, 0.092, 0.128), () => 0.88), M.skin, [0, -0.075, 0.025]);
     for (const sx of [-1, 1]) {
-      mesh(shadeVerts(new THREE.SphereGeometry(0.032, 6, 4), () => 0.15), M.dark, [sx * 0.044, 0.025, 0.112]);
+      mesh(shadeVerts(new THREE.BoxGeometry(0.054, 0.030, 0.035), () => 0.91), M.skin, [sx * 0.060, -0.018, 0.095], [0, 0, sx * 0.15]);
+      // Flat deep sockets read as holes; round beads read as eyes.
+      mesh(shadeVerts(new THREE.BoxGeometry(0.044, 0.038, 0.012), () => 0.12), M.dark, [sx * 0.044, 0.028, 0.121]);
     }
-    mesh(shadeVerts(new THREE.ConeGeometry(0.018, 0.038, 4), () => 0.15), M.dark, [0, -0.022, 0.122]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.026, 0.042, 0.012), () => 0.12), M.dark, [0, -0.021, 0.124]);
+    // A dark mouth shadow with four large square teeth (readable, not dense denture noise).
+    mesh(shadeVerts(new THREE.BoxGeometry(0.090, 0.020, 0.012), () => 0.15), M.dark, [0, -0.078, 0.092]);
+    for (const x of [-0.033, -0.011, 0.011, 0.033])
+      mesh(shadeVerts(new THREE.BoxGeometry(0.015, 0.034, 0.010), () => 0.96), M.skin, [x, -0.096, 0.096]);
   });
 
   addPart(root, 'head_ghoul', (mesh) => {
@@ -224,9 +464,9 @@ export function buildHeads(root) {
     ], { segs: 8 });
     mesh(heightShade(head, -0.14, 0.175, 0.80, 1.0), M.skin);
     for (const sx of [-1, 1]) {
-      mesh(shadeVerts(new THREE.SphereGeometry(0.028, 5, 4), () => 0.18), M.dark, [sx * 0.044, 0.024, 0.122]);
+      mesh(shadeVerts(new THREE.BoxGeometry(0.040, 0.032, 0.012), () => 0.14), M.dark, [sx * 0.044, 0.026, 0.126]);
     }
-    mesh(shadeVerts(new THREE.BoxGeometry(0.075, 0.028, 0.024), () => 0.22), M.dark, [0, -0.065, 0.120]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.075, 0.028, 0.018), () => 0.20), M.dark, [0, -0.065, 0.124]);
   });
 
   // ---------- HELM HELPERS ----------
@@ -254,31 +494,37 @@ export function buildHeads(root) {
     mesh(heightShade(g, y0, yTop, 0.84, 1.0), matMain);
   };
 
-  const addHorns = (mesh, yBase = 0.18, spread = 0.35, height = 0.46, matMain = M.trim) => {
+  const addHorns = (mesh, yBase = 0.18, spread = 0.30, height = 0.40, matMain = M.trim) => {
     for (const sx of [-1, 1]) {
-      const horn = loft(V(sx * 0.14, yBase, 0.0), V(sx * spread, height, 0.03), [
-        [0.0, 0.042, 0.042],
-        [0.45, 0.034, 0.034, sx * 0.04, -0.04],
-        [0.80, 0.020, 0.020, sx * 0.02, -0.02],
-        [1.0, 0.006, 0.006],
-      ], { segs: 6 });
+      // Compact heraldic horns: thick at the cheek, curving up rather than sweeping far sideways.
+      const horn = pathLoft([
+        { p: V(sx * 0.135, yBase, 0.005), rx: 0.040, rz: 0.036 },
+        { p: V(sx * (spread * 0.92), yBase + (height - yBase) * 0.46, -0.005), rx: 0.030, rz: 0.027 },
+        { p: V(sx * spread, height, 0.018), rx: 0.006, rz: 0.006 },
+      ], { segs: 6, fwd: V(0, 0, 1) });
       mesh(horn, matMain);
     }
   };
 
   const buildGreathelm = (mesh, trimMat = M.brass) => {
-    // Compact, heroic flat-top great helm (clean eye-slit visor + brass top/brow bands, no cross)
+    // Heroic flat-topped great helm: octagonal barrel behind a broad, almost flat faceplate.
     const barrel = column([
-      [-0.14, 0.168, 0.182, 0, 0.004],
-      [0.05, 0.172, 0.188, 0, 0.006],
-      [0.215, 0.162, 0.178, 0, 0.004],
-      [0.250, 0.118, 0.128, 0, 0.002],
+      [-0.150, 0.166, 0.180, 0, 0.002],
+      [-0.060, 0.174, 0.188, 0, 0.004],
+      [0.160, 0.168, 0.184, 0, 0.004],
+      [0.228, 0.132, 0.144, 0, 0.002],
     ], { segs: 8 });
-    mesh(heightShade(barrel, -0.14, 0.250, 0.82, 1.0), M.steel);
-    // Dark horizontal eye slit + brass brow & crown bands (no cross)
-    mesh(shadeVerts(new THREE.BoxGeometry(0.22, 0.026, 0.024), () => 0.10), M.dark, [0, 0.058, 0.188]);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.24, 0.026, 0.024), () => 0.98), trimMat, [0, 0.088, 0.190]);
-    mesh(column([[0.195, 0.170, 0.186], [0.228, 0.166, 0.182]], { segs: 8 }), trimMat);
+    mesh(heightShade(barrel, -0.150, 0.228, 0.82, 1.0), M.steel);
+    // Trapezoid faceplate gives the front one readable flat plane instead of a barrel curve.
+    const plate = bladeExtrude([[-0.152, -0.158], [0.152, -0.158], [0.136, 0.155], [-0.136, 0.155]], 0.026, 0.003);
+    mesh(plate, M.steel, [0, 0.026, 0.184]);
+    // Cruciform brass reinforcing over a single dark horizontal sight slit.
+    mesh(shadeVerts(new THREE.BoxGeometry(0.224, 0.026, 0.012), () => 0.10), M.dark, [0, 0.057, 0.202]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.248, 0.030, 0.014), () => 0.98), trimMat, [0, 0.091, 0.205]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.036, 0.292, 0.014), () => 0.98), trimMat, [0, 0.022, 0.206]);
+    // Bold lower and crown bands frame the plate without rivet noise.
+    mesh(column([[-0.150, 0.174, 0.188], [-0.108, 0.176, 0.190]], { segs: 8 }), trimMat);
+    mesh(column([[0.150, 0.170, 0.186], [0.190, 0.162, 0.178]], { segs: 8 }), trimMat);
   };
 
   // ---------- HELMS (30 remaining) ----------
@@ -305,14 +551,16 @@ export function buildHeads(root) {
 
   addPart(root, 'helm_greathelm_horns', (mesh) => {
     buildGreathelm(mesh, M.brass);
-    addHorns(mesh, 0.18, 0.36, 0.48, M.trim);
+    addHorns(mesh, 0.18, 0.30, 0.42, M.trim);
   });
 
   addPart(root, 'helm_nasal', (mesh) => {
     mailCoifBase(mesh, 0.05);
     domeBowl(mesh, M.steel, 0.04, 0.30, 0.172, 0.185, true);
     mesh(column([[0.035, 0.180, 0.192], [0.068, 0.178, 0.190]], { segs: 9 }), M.mail);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.030, 0.125, 0.022), () => 0.96), M.steel, [0, -0.015, 0.188]);
+    // Broad shield-shaped nasal: readable as a single bright vertical stroke over the nose.
+    const nasal = bladeExtrude([[-0.026, 0.064], [0.026, 0.064], [0.020, -0.040], [0.0, -0.082], [-0.020, -0.040]], 0.020, 0.002);
+    mesh(nasal, M.steel, [0, -0.006, 0.194]);
   });
 
   addPart(root, 'helm_spangen', (mesh) => {
@@ -324,8 +572,9 @@ export function buildHeads(root) {
     const ribB = loft(V(0, 0.05, -0.192), V(0, 0.315, -0.012), [[0, 0.020, 0.012], [0.5, 0.018, 0.012], [1, 0.012, 0.010]], { segs: 4 });
     mesh(ribF, M.brass);
     mesh(ribB, M.brass);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.034, 0.135, 0.026), () => 0.98), M.brass, [0, -0.015, 0.196]);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.19, 0.028, 0.024), () => 0.96), M.brass, [0, 0.035, 0.194]);
+    const guard = bladeExtrude([[-0.028, 0.066], [0.028, 0.066], [0.022, -0.040], [0.0, -0.084], [-0.022, -0.040]], 0.022, 0.002);
+    mesh(guard, M.brass, [0, -0.006, 0.198]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.205, 0.030, 0.020), () => 0.96), M.brass, [0, 0.040, 0.196]);
   });
 
   addPart(root, 'helm_spangen_horns', (mesh) => {
@@ -333,7 +582,7 @@ export function buildHeads(root) {
     domeBowl(mesh, M.steel, 0.03, 0.30, 0.178, 0.190, true);
     mesh(column([[0.025, 0.188, 0.198], [0.065, 0.184, 0.195]], { segs: 9 }), M.brass);
     mesh(shadeVerts(new THREE.BoxGeometry(0.032, 0.13, 0.024), () => 0.96), M.steel, [0, -0.02, 0.194]);
-    addHorns(mesh, 0.16, 0.36, 0.44, M.trim);
+    addHorns(mesh, 0.16, 0.29, 0.38, M.trim);
   });
 
   addPart(root, 'helm_coif', (mesh) => {
@@ -343,24 +592,42 @@ export function buildHeads(root) {
 
   addPart(root, 'helm_turban', (mesh) => {
     mailCoifBase(mesh, 0.03, 0.165);
-    const wrap = shadeVerts(new THREE.TorusGeometry(0.162, 0.068, 6, 11), () => 0.94);
-    mesh(wrap, M.cloth, [0, 0.125, 0.01], [Math.PI / 2 - 0.12, 0, 0]);
-    domeBowl(mesh, M.steel, 0.10, 0.34, 0.145, 0.155, true);
-    mesh(shadeVerts(new THREE.SphereGeometry(0.032, 6, 5), () => 1.0), M.brass, [0, 0.14, 0.225]);
+    // Rounded wrapped band hugging the skull; two large cloth rolls, no brim-like disc.
+    const wrap = column([
+      [0.040, 0.178, 0.190, 0, -0.002],
+      [0.082, 0.190, 0.200, 0, -0.002],
+      [0.126, 0.184, 0.194, 0, -0.002],
+      [0.158, 0.160, 0.172, 0, -0.002],
+    ], { segs: 9 });
+    mesh(heightShade(wrap, 0.040, 0.158, 0.84, 1.0), M.cloth);
+    mesh(column([[0.082, 0.192, 0.202], [0.106, 0.190, 0.200]], { segs: 9 }), M.clothDark);
+    domeBowl(mesh, M.steel, 0.13, 0.34, 0.138, 0.150, true);
+    mesh(shadeVerts(new THREE.SphereGeometry(0.034, 6, 5), () => 1.0), M.brass, [0, 0.115, 0.202]);
   });
 
   addPart(root, 'helm_spike_turban', (mesh) => {
     mailCoifBase(mesh, 0.03, 0.168);
-    const wrap = shadeVerts(new THREE.TorusGeometry(0.168, 0.068, 6, 11), () => 0.94);
-    mesh(wrap, M.cloth, [0, 0.125, 0.01], [Math.PI / 2 - 0.10, 0, 0]);
-    domeBowl(mesh, M.steel, 0.10, 0.32, 0.148, 0.158, true);
+    const wrap = column([
+      [0.040, 0.182, 0.192, 0, -0.002],
+      [0.086, 0.194, 0.204, 0, -0.002],
+      [0.132, 0.184, 0.194, 0, -0.002],
+      [0.160, 0.160, 0.172, 0, -0.002],
+    ], { segs: 9 });
+    mesh(heightShade(wrap, 0.040, 0.160, 0.84, 1.0), M.cloth);
+    mesh(column([[0.084, 0.196, 0.206], [0.108, 0.192, 0.202]], { segs: 9 }), M.clothDark);
+    domeBowl(mesh, M.steel, 0.13, 0.32, 0.140, 0.152, true);
     mesh(lathe([[0.024, 0.30], [0.005, 0.45]], 6), M.brass);
   });
 
   addPart(root, 'helm_furcap', (mesh) => {
-    const brim = shadeVerts(new THREE.TorusGeometry(0.172, 0.064, 6, 10), () => 0.88);
-    mesh(brim, M.hair, [0, 0.08, 0], [Math.PI / 2, 0, 0]);
-    domeBowl(mesh, M.cloth, 0.08, 0.27, 0.165, 0.175, false);
+    // Thick cylindrical fur brim with a softer cloth crown, matching the northern/fur-hat silhouette.
+    const brim = column([
+      [0.025, 0.188, 0.198, 0, -0.002],
+      [0.070, 0.196, 0.206, 0, -0.002],
+      [0.118, 0.180, 0.190, 0, -0.002],
+    ], { segs: 9 });
+    mesh(heightShade(brim, 0.025, 0.118, 0.78, 0.94), M.hair);
+    domeBowl(mesh, M.cloth, 0.10, 0.27, 0.160, 0.170, false);
   });
 
   addPart(root, 'helm_bearhead', (mesh) => {
@@ -387,19 +654,24 @@ export function buildHeads(root) {
     const comb = bladeExtrude([
       [-0.22, 0.14], [-0.12, 0.32], [0.0, 0.34], [0.12, 0.32], [0.22, 0.14], [0.0, 0.18],
     ], 0.018, 0.004);
-    mesh(comb, M.steel);
+    // bladeExtrude shapes lie in XY; rotate the median comb into the sagittal ZY plane.
+    mesh(comb, M.steel, [0, 0, 0], [0, -Math.PI / 2, 0]);
   });
 
   addPart(root, 'helm_barbute', (mesh) => {
+    // Deep cheek/neck shell open only at the front, so the wearer's face makes the T-opening read.
     const shell = column([
-      [-0.14, 0.175, 0.190, 0, -0.004],
-      [0.05, 0.178, 0.194, 0, -0.004],
-      [0.20, 0.150, 0.166, 0, -0.004],
-      [0.30, 0.042, 0.048, 0, 0],
-    ], { segs: 10, arc: [Math.PI * 0.62, Math.PI * 2.38] });
-    mesh(heightShade(shell, -0.14, 0.30, 0.82, 1.0), M.steel);
-    domeBowl(mesh, M.steel, 0.06, 0.30, 0.176, 0.192, false);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.028, 0.11, 0.024), () => 0.95), M.steel, [0, 0.0, 0.192]);
+      [-0.145, 0.174, 0.188, 0, -0.004],
+      [0.020, 0.180, 0.194, 0, -0.004],
+      [0.115, 0.172, 0.186, 0, -0.004],
+    ], { segs: 10, arc: [Math.PI * 0.78, Math.PI * 2.22] });
+    mesh(heightShade(shell, -0.145, 0.115, 0.82, 1.0), M.steel);
+    // Closed rounded crown above the brow; the lower front remains open.
+    domeBowl(mesh, M.steel, 0.090, 0.300, 0.174, 0.190, false);
+    // Crisp brow and central nasal stem form the metal upright of the barbute T.
+    mesh(shadeVerts(new THREE.BoxGeometry(0.214, 0.026, 0.024), () => 0.96), M.steel, [0, 0.060, 0.184]);
+    const stem = bladeExtrude([[-0.023, 0.048], [0.023, 0.048], [0.018, -0.072], [0.0, -0.096], [-0.018, -0.072]], 0.020, 0.002);
+    mesh(stem, M.steel, [0, -0.002, 0.190]);
   });
 
   addPart(root, 'helm_steppe', (mesh) => {
@@ -415,9 +687,9 @@ export function buildHeads(root) {
     mesh(neck, M.mail);
     domeBowl(mesh, M.steel, 0.04, 0.34, 0.184, 0.194, true);
     mesh(lathe([[0.024, 0.32], [0.006, 0.48]], 6), M.brass);
-    // Flowing horsetail tug plume trailing -Z
-    const tail = loft(V(0, 0.44, -0.02), V(0, 0.18, -0.38), [[0, 0.025, 0.025], [0.5, 0.060, 0.055], [1, 0.022, 0.022]], { segs: 6, fwd: V(0, 1, 0) });
-    mesh(tail, M.cloth);
+    // Flowing horsetail tug plume trailing -Z; narrow dark hair, not a cloth sail.
+    const tail = loft(V(0, 0.44, -0.02), V(0, 0.17, -0.36), [[0, 0.020, 0.020], [0.45, 0.034, 0.030], [1, 0.012, 0.012]], { segs: 6, fwd: V(0, 1, 0) });
+    mesh(tail, M.hair);
   });
 
   addPart(root, 'helm_brigand_hat', (mesh) => {
@@ -429,47 +701,50 @@ export function buildHeads(root) {
   });
 
   const buildVisoredHelm = (mesh, bodyMat, trimMat, snoutZ = 0.26, tailZ = -0.22) => {
-    domeBowl(mesh, bodyMat, 0.04, 0.28, 0.170, 0.185, false);
-    const gorget = column([[-0.16, 0.162, 0.172], [0.04, 0.172, 0.184]], { segs: 9 });
-    mesh(heightShade(gorget, -0.16, 0.04, 0.82, 0.96), bodyMat);
-    // Pointed visor (+Z)
-    const visor = loft(V(0, 0.04, 0.11), V(0, 0.01, snoutZ), [[0, 0.145, 0.095], [0.6, 0.095, 0.068], [1, 0.022, 0.026]], { segs: 7, fwd: V(0, 1, 0) });
-    mesh(visor, bodyMat);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.18, 0.020, 0.020), () => 0.12), M.dark, [0, 0.055, 0.195]);
+    domeBowl(mesh, bodyMat, 0.035, 0.280, 0.170, 0.184, false);
+    // Full lower shell: these are enclosed helms, so no skin head is emitted underneath.
+    const gorget = column([[-0.160, 0.158, 0.168], [-0.055, 0.168, 0.180], [0.038, 0.170, 0.182]], { segs: 9 });
+    mesh(heightShade(gorget, -0.160, 0.038, 0.82, 0.96), bodyMat);
+
+    // Pentagonal visor wedge: broad brow, cheek facets and one downward point, tapering forward in profile.
+    const depth = 0.060 + Math.max(0, snoutZ - 0.22) * 0.45;
+    mesh(visorWedge({ width: 0.126, top: 0.078, mid: -0.012, bottom: -0.108, y: 0.006, z0: snoutZ - depth, z1: snoutZ, sx: 0.60, sy: 0.72 }), bodyMat);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.142, 0.018, 0.006), () => 0.08), M.dark, [0, 0.060, snoutZ + 0.004]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.158, 0.014, 0.008), () => 0.98), trimMat, [0, 0.084, snoutZ + 0.002]);
+
+    // Sallet tails are close horizontal laminations, not upright fins.
     if (tailZ < -0.25) {
-      const tail = loft(V(0, 0.06, -0.12), V(0, -0.04, tailZ), [[0, 0.15, 0.06], [1, 0.09, 0.03]], { segs: 6, fwd: V(0, 1, 0) });
-      mesh(tail, bodyMat);
+      const tail = loft(V(0, 0.055, -0.115), V(0, -0.042, tailZ), [
+        [0.0, 0.142, 0.036],
+        [0.62, 0.120, 0.026],
+        [1.0, 0.086, 0.016],
+      ], { segs: 6, fwd: V(0, 1, 0) });
+      mesh(shadeVerts(tail, () => 0.88), bodyMat);
     }
     if (trimMat !== bodyMat) {
-      mesh(column([[0.055, 0.176, 0.190], [0.085, 0.174, 0.188]], { segs: 9 }), trimMat);
+      mesh(column([[0.052, 0.176, 0.190], [0.082, 0.174, 0.188]], { segs: 9 }), trimMat);
     }
   };
 
   addPart(root, 'helm_armet', (mesh) => buildVisoredHelm(mesh, M.steel, M.steel, 0.24, -0.19));
   addPart(root, 'helm_bascinet', (mesh) => {
-    // Crisp faceted kettle/bascinet helm with open face + mail aventail (matches Man-at-Arms reference!)
-    mailCoifBase(mesh, 0.04, 0.172);
-    // Clean sculpted low-poly face under the brim (since helm_bascinet skips head_0 in FullEnclosedHelm)
+    // Hounskull/pig-face bascinet: pointed visor over a steel face shell, mail aventail behind.
+    mailCoifBase(mesh, 0.025, 0.176);
+    domeBowl(mesh, M.steel, 0.040, 0.295, 0.176, 0.190, true);
     const face = column([
-      [-0.12, 0.095, 0.110, 0, 0.022],
-      [-0.03, 0.132, 0.146, 0, 0.018],
-      [0.05, 0.138, 0.150, 0, 0.012],
-    ], { segs: 6 });
-    mesh(heightShade(face, -0.12, 0.05, 0.82, 0.96), M.skin);
-    // Faceted steel kettle/bascinet dome + wide sloped brim
-    domeBowl(mesh, M.steel, 0.05, 0.30, 0.176, 0.190, true);
-    const brim = column([
-      [0.018, 0.278, 0.292, 0, -0.004],
-      [0.050, 0.242, 0.256, 0, -0.004],
-      [0.082, 0.178, 0.192, 0, -0.006],
-    ], { segs: 6 });
-    mesh(heightShade(brim, 0.018, 0.082, 0.84, 0.98), M.steel);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.026, 0.044, 0.24), () => 0.98), M.steel, [0, 0.272, -0.006]);
+      [-0.135, 0.148, 0.162, 0, 0.012],
+      [-0.040, 0.164, 0.180, 0, 0.018],
+      [0.046, 0.166, 0.182, 0, 0.014],
+    ], { segs: 8, arc: [Math.PI * 0.07, Math.PI * 0.93] });
+    mesh(heightShade(face, -0.135, 0.046, 0.82, 0.96), M.steel);
+    mesh(visorWedge({ width: 0.130, top: 0.082, mid: -0.010, bottom: -0.126, y: 0.002, z0: 0.232, z1: 0.315, sx: 0.56, sy: 0.70, dy: -0.010 }), M.steel);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.142, 0.018, 0.006), () => 0.08), M.dark, [0, 0.064, 0.319]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.158, 0.015, 0.009), () => 0.98), M.steel, [0, 0.090, 0.313]);
   });
   addPart(root, 'helm_sallet_crest', (mesh) => {
     buildVisoredHelm(mesh, M.steel, M.brass, 0.20, -0.42);
     const comb = bladeExtrude([[-0.22, 0.16], [-0.08, 0.34], [0.08, 0.33], [0.16, 0.18]], 0.020, 0.004);
-    mesh(comb, M.brass);
+    mesh(comb, M.brass, [0, 0, 0], [0, -Math.PI / 2, 0]);
   });
   addPart(root, 'helm_dragon', (mesh) => {
     buildVisoredHelm(mesh, M.mail, M.brass, 0.28, -0.30);
@@ -477,7 +752,7 @@ export function buildHeads(root) {
     const crest = bladeExtrude([
       [-0.28, 0.14], [-0.18, 0.44], [-0.02, 0.47], [0.14, 0.36], [0.22, 0.16], [0.0, 0.18],
     ], 0.022, 0.004);
-    mesh(crest, M.brass);
+    mesh(crest, M.brass, [0, 0, 0], [0, -Math.PI / 2, 0]);
   });
   addPart(root, 'helm_spike', (mesh) => {
     domeBowl(mesh, M.steel, 0.04, 0.27, 0.175, 0.185, false);
@@ -493,22 +768,31 @@ export function buildHeads(root) {
   });
   addPart(root, 'helm_rose_sallet', (mesh) => {
     buildVisoredHelm(mesh, M.steel, M.trim, 0.21, -0.43);
-    const crest = loft(V(0, 0.24, 0.04), V(0, 0.42, -0.36), [[0, 0.04, 0.05], [0.5, 0.07, 0.08], [1, 0.02, 0.03]], { segs: 6, fwd: V(0, 1, 0) });
+    const crest = loft(V(0, 0.24, 0.04), V(0, 0.42, -0.36), [[0, 0.026, 0.030], [0.5, 0.040, 0.044], [1, 0.012, 0.016]], { segs: 6, fwd: V(0, 1, 0) });
     mesh(crest, M.cloth);
   });
   addPart(root, 'helm_tarn_cowl', (mesh) => {
-    // Hooded iron-masked Order of the Tarn cowl
-    const hood = column([
-      [-0.17, 0.188, 0.20, 0, -0.02],
-      [0.06, 0.192, 0.205, 0, -0.02],
-      [0.24, 0.145, 0.165, 0, -0.03],
+    // Deep hood with a recessed angular iron mask, matching the dark order specialist silhouette.
+    const cowl = column([
+      [-0.185, 0.196, 0.204, 0, -0.018],
+      [-0.060, 0.194, 0.206, 0, -0.020],
+      [0.075, 0.184, 0.196, 0, -0.020],
+    ], { segs: 9, arc: [Math.PI * 0.80, Math.PI * 2.20] });
+    mesh(heightShade(cowl, -0.185, 0.075, 0.76, 0.96), M.clothDark);
+    const crown = column([
+      [0.060, 0.188, 0.200, 0, -0.018],
+      [0.170, 0.158, 0.172, 0, -0.026],
+      [0.245, 0.072, 0.084, 0, -0.034],
     ], { segs: 9 });
-    mesh(heightShade(hood, -0.17, 0.24, 0.78, 1.0), M.clothDark);
-    const tail = loft(V(0, 0.18, -0.14), V(0, 0.10, -0.32), [[0, 0.10, 0.09], [1, 0.02, 0.02]], { segs: 6, fwd: V(0, 1, 0) });
+    mesh(heightShade(crown, 0.060, 0.245, 0.80, 1.0), M.clothDark);
+    const tail = loft(V(0, 0.17, -0.14), V(0, 0.09, -0.31), [[0, 0.075, 0.064], [1, 0.014, 0.014]], { segs: 6, fwd: V(0, 1, 0) });
     mesh(tail, M.clothDark);
-    // Iron faceplate
-    const mask = column([[-0.12, 0.142, 0.165], [0.12, 0.148, 0.170]], { segs: 7, arc: [Math.PI * 0.15, Math.PI * 0.85] });
-    mesh(mask, M.mail, [0, 0, 0.032]);
+    // Black recess, then one bold trapezoidal mask plate with a single eye slit.
+    mesh(shadeVerts(new THREE.BoxGeometry(0.190, 0.230, 0.018), () => 0.12), M.dark, [0, -0.010, 0.145]);
+    const mask = bladeExtrude([[-0.082, -0.112], [0.082, -0.112], [0.092, 0.070], [0.060, 0.120], [-0.060, 0.120], [-0.092, 0.070]], 0.024, 0.003);
+    mesh(mask, M.mail, [0, -0.006, 0.164]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.112, 0.018, 0.012), () => 0.08), M.dark, [0, 0.040, 0.181]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.020, 0.142, 0.012), () => 0.92), M.mail, [0, -0.030, 0.182]);
   });
   addPart(root, 'helm_hollow_crown', (mesh) => {
     buildGreathelm(mesh, M.brass);
@@ -523,11 +807,12 @@ export function buildHeads(root) {
     mailCoifBase(mesh, 0.04, 0.175);
     domeBowl(mesh, M.mail, 0.03, 0.28, 0.178, 0.190, false);
     // Wolf skull/snout crest + pointed wolf ears
-    const snout = loft(V(0, 0.15, 0.10), V(0, 0.12, 0.24), [[0, 0.075, 0.065], [1, 0.032, 0.032]], { segs: 6 });
+    const snout = loft(V(0, 0.15, 0.10), V(0, 0.12, 0.245), [[0, 0.072, 0.046], [1, 0.030, 0.024]], { segs: 6, fwd: V(0, 1, 0) });
     mesh(snout, M.coat);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.046, 0.030, 0.018), () => 0.14), M.dark, [0, 0.118, 0.246]);
     for (const sx of [-1, 1]) {
-      const ear = shadeVerts(new THREE.ConeGeometry(0.038, 0.14, 5), () => 0.94);
-      mesh(ear, M.coat, [sx * 0.11, 0.34, 0.01], [0, 0, -sx * 0.22]);
+      const ear = shadeVerts(new THREE.ConeGeometry(0.046, 0.17, 5), () => 0.94);
+      mesh(ear, M.coat, [sx * 0.112, 0.355, 0.005], [0, 0, -sx * 0.20]);
     }
   });
   addPart(root, 'helm_falcon_kulah', (mesh) => {
@@ -547,16 +832,17 @@ export function buildHeads(root) {
     // Sculpted bronze face mask (+Z)
     const face = column([[-0.13, 0.148, 0.170], [0.10, 0.155, 0.176]], { segs: 8, arc: [Math.PI * 0.14, Math.PI * 0.86] });
     mesh(face, M.brass, [0, 0, 0.035]);
-    mesh(shadeVerts(new THREE.BoxGeometry(0.034, 0.060, 0.034), () => 1.0), M.brass, [0, -0.005, 0.205]);
+    for (const sx of [-1, 1]) mesh(shadeVerts(new THREE.BoxGeometry(0.042, 0.014, 0.010), () => 0.10), M.dark, [sx * 0.044, 0.030, 0.213]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.034, 0.060, 0.034), () => 1.0), M.brass, [0, -0.005, 0.212]);
   });
   addPart(root, 'helm_lantern_burgonet', (mesh) => {
     domeBowl(mesh, M.steel, 0.04, 0.30, 0.175, 0.190, false);
     const cheek = column([[-0.12, 0.168, 0.178], [0.05, 0.176, 0.188]], { segs: 9, arc: [Math.PI * 0.72, Math.PI * 2.28] });
     mesh(cheek, M.steel);
-    // Peak brim (+Z) + high brass comb
-    const peak = bladeExtrude([[0.12, 0.05], [0.24, 0.03], [0.16, 0.10]], 0.22, 0.003);
-    mesh(peak, M.brass);
+    // Horizontal forward peak (+Z) with a brass lip, plus a sagittal brass comb.
+    mesh(shadeVerts(new THREE.BoxGeometry(0.238, 0.018, 0.118), () => 0.94), M.steel, [0, 0.067, 0.204], [-0.10, 0, 0]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.250, 0.014, 0.020), () => 0.98), M.brass, [0, 0.064, 0.260]);
     const comb = bladeExtrude([[-0.18, 0.18], [-0.04, 0.35], [0.10, 0.33], [0.18, 0.18]], 0.022, 0.004);
-    mesh(comb, M.brass);
+    mesh(comb, M.brass, [0, 0, 0], [0, -Math.PI / 2, 0]);
   });
 }

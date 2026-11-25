@@ -1,0 +1,1449 @@
+{
+  "version": 1,
+  "purpose": "Machine-readable authoring contract for Ironfield modular IMSH unit meshes. maxTris values are a ratchet: parts and assembled rigs may shrink, but never grow without a conscious manifest edit.",
+  "axes": {
+    "up": "+Y",
+    "forward": "+Z",
+    "units": "metres"
+  },
+  "materialSlots": {
+    "0": "neutral / bone / teeth",
+    "1": "team cloth",
+    "2": "team dark cloth",
+    "3": "team trim / heraldry",
+    "4": "bright steel",
+    "5": "mail / dark steel",
+    "6": "brass / gold",
+    "7": "leather",
+    "8": "wood",
+    "9": "skin",
+    "10": "hair",
+    "11": "coat or beast body",
+    "12": "dark coat or beast accent",
+    "13": "dark leather / shadow"
+  },
+  "pivots": {
+    "unitBone": "Origin at the parent joint; the bone extends along +Y and is length-normalised to y=1. EmitBone scales +Y to the runtime joint distance. Toes/claws/muzzle details face +Z.",
+    "bodySpace": "Humanoid body coordinates with the unit origin at the feet: chest, belt, skirt and shoulder layers are authored at their final heights.",
+    "headJoint": "Origin at the neck/head joint. Faces/muzzles look +Z; helmets sit upward from this joint.",
+    "grip": "Origin at the hand grip or rear end; the shaft/blade runs along +Y. Straight sword edges are +/-X; axes, curved blades and polearm bits are +/-Z.",
+    "shieldFace": "Origin at the shield centre; the decorated face points +Z; local +Y is up.",
+    "bodyCenter": "Origin inside the body mass at the emitter point; +Z is forward.",
+    "wingRoot": "Origin at the wing shoulder/root; span along the authored lateral axis and feathers trail as sculpted.",
+    "emblemPlane": "Flat relief in shield/tabard local space, front toward +Z.",
+    "groundFigure": "A complete far-LOD figure with origin at the ground/feet.",
+    "prop": "Miscellaneous authored pivot documented beside the part; keep the existing pivot stable."
+  },
+  "budgets": {
+    "total": {
+      "targetTris": 32000,
+      "maxTris": 50876
+    },
+    "note": "maxTris is the committed baseline/ratchet. targetTris is where new or remade work should move. Never spend target budget on invisible detail: IMSH parts are CPU-re-emitted for every soldier, camera pass and shadow pass."
+  },
+  "parts": {
+    "chest_tunic": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 192
+    },
+    "skirt_tunic": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 60
+    },
+    "shld_collar_cloth": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 48
+    },
+    "belt_leather": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 48
+    },
+    "chest_brigandine": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 132
+    },
+    "shld_pauldrons_steel": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 204
+    },
+    "chest_surcoat": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 84
+    },
+    "chest_leather": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 108
+    },
+    "chest_mail": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 84
+    },
+    "chest_plate": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 204
+    },
+    "chest_plate_fluted": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 300
+    },
+    "chest_plate_dark": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 204
+    },
+    "chest_plate_gilded": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 204
+    },
+    "chest_plate_lily": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 212
+    },
+    "chest_plate_vespran": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 212
+    },
+    "chest_plate_tarn": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 204
+    },
+    "chest_plate_hollow": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 216
+    },
+    "chest_plate_lantern": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 212
+    },
+    "chest_breastplate": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 132
+    },
+    "chest_mirror": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 204
+    },
+    "chest_mirror_qadir": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 364
+    },
+    "chest_lamellar": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 260
+    },
+    "chest_lamellar_khan": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 316
+    },
+    "chest_scale": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 260
+    },
+    "chest_jarl_scale": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 316
+    },
+    "chest_robe": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 112
+    },
+    "chest_jubbah": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 144
+    },
+    "chest_tarn_habit": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 124
+    },
+    "chest_buffcoat": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 144
+    },
+    "chest_bones": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 468
+    },
+    "shld_pauldrons_gilded": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 320
+    },
+    "shld_pauldrons_fluted": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 344
+    },
+    "shld_pauldrons_dark": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 320
+    },
+    "shld_pauldrons_lance": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 332
+    },
+    "shld_pauldrons_hollow": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 336
+    },
+    "shld_mail_aventail": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 156
+    },
+    "shld_gorget_steel": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 60
+    },
+    "shld_lamellar": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 60
+    },
+    "shld_scale": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 60
+    },
+    "shld_linen_shawl": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 60
+    },
+    "shld_cowl_cloth": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 60
+    },
+    "shld_tarn_mantle": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 60
+    },
+    "shld_fur_mantle": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 120
+    },
+    "shld_fur_collar": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 60
+    },
+    "shld_wolf_mantle": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 108
+    },
+    "belt_pouch": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 68
+    },
+    "belt_gilded": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 44
+    },
+    "belt_sash_trim": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 44
+    },
+    "belt_sash_dark": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 44
+    },
+    "belt_plate": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 68
+    },
+    "belt_baldric": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 76
+    },
+    "belt_cross_straps": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 108
+    },
+    "belt_stole": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 68
+    },
+    "skirt_mail": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 60
+    },
+    "skirt_fauld_steel": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 100
+    },
+    "skirt_fauld_gilded": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 100
+    },
+    "skirt_fauld_dark": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 220
+    },
+    "skirt_fauld_long": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 260
+    },
+    "skirt_fauld_hollow": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 180
+    },
+    "skirt_lamellar": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 220
+    },
+    "skirt_scale": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 180
+    },
+    "skirt_deel": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 100
+    },
+    "skirt_kaftan": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 100
+    },
+    "skirt_tabard": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 48
+    },
+    "skirt_tarn_scapular": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 84
+    },
+    "uarm_cloth": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 48
+    },
+    "farm_cloth": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 108
+    },
+    "thigh_cloth": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 36
+    },
+    "shin_cloth": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 156
+    },
+    "uarm_mail": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 72
+    },
+    "farm_mail": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 96
+    },
+    "thigh_mail": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 36
+    },
+    "shin_mail": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 156
+    },
+    "uarm_plate": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 56
+    },
+    "farm_plate": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 96
+    },
+    "thigh_plate": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 44
+    },
+    "shin_plate": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 96
+    },
+    "uarm_bones": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 60
+    },
+    "farm_bones": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 60
+    },
+    "thigh_bones": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 60
+    },
+    "shin_bones": {
+      "module": "limbs",
+      "pivot": "unitBone",
+      "maxTris": 60
+    },
+    "helm_cap": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 152
+    },
+    "helm_hood": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 196
+    },
+    "helm_kettle": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 140
+    },
+    "helm_sallet": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 176
+    },
+    "head_0": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 470
+    },
+    "head_1": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 538
+    },
+    "head_2": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 506
+    },
+    "head_3": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 438
+    },
+    "head_goblin": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 192
+    },
+    "head_troll": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 120
+    },
+    "head_skull": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 172
+    },
+    "head_ghoul": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 136
+    },
+    "helm_greathelm": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 120
+    },
+    "helm_greathelm_wings": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 208
+    },
+    "helm_greathelm_sun": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 160
+    },
+    "helm_greathelm_horns": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 216
+    },
+    "helm_nasal": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 156
+    },
+    "helm_spangen": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 212
+    },
+    "helm_spangen_horns": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 252
+    },
+    "helm_coif": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 108
+    },
+    "helm_turban": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 288
+    },
+    "helm_spike_turban": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 252
+    },
+    "helm_furcap": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 192
+    },
+    "helm_bearhead": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 262
+    },
+    "helm_morion": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 156
+    },
+    "helm_barbute": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 144
+    },
+    "helm_steppe": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 138
+    },
+    "helm_tug": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 138
+    },
+    "helm_brigand_hat": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 130
+    },
+    "helm_armet": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 162
+    },
+    "helm_bascinet": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 192
+    },
+    "helm_sallet_crest": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 250
+    },
+    "helm_dragon": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 266
+    },
+    "helm_spike": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 120
+    },
+    "helm_lily_armet": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 234
+    },
+    "helm_rose_sallet": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 258
+    },
+    "helm_tarn_cowl": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 92
+    },
+    "helm_hollow_crown": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 168
+    },
+    "helm_wolfsworn": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 152
+    },
+    "helm_falcon_kulah": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 176
+    },
+    "helm_sky_mask": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 148
+    },
+    "helm_lantern_burgonet": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 138
+    },
+    "shield_round": {
+      "module": "weapons",
+      "pivot": "shieldFace",
+      "maxTris": 280
+    },
+    "weapon_axe": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 152
+    },
+    "weapon_daneaxe": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 92
+    },
+    "weapon_spear": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 132
+    },
+    "weapon_pike": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 132
+    },
+    "weapon_sword": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 120
+    },
+    "weapon_longsword": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 120
+    },
+    "weapon_greatsword": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 144
+    },
+    "weapon_halberd": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 128
+    },
+    "weapon_billhook": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 136
+    },
+    "weapon_mace": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 168
+    },
+    "weapon_warhammer": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 132
+    },
+    "weapon_bow": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 120
+    },
+    "weapon_crossbow": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 304
+    },
+    "weapon_flamberge": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 412
+    },
+    "weapon_scimitar": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 176
+    },
+    "weapon_falchion": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 136
+    },
+    "weapon_morningstar": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 302
+    },
+    "weapon_club": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 256
+    },
+    "weapon_staff": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 320
+    },
+    "weapon_lance": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 248
+    },
+    "weapon_glaive": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 160
+    },
+    "weapon_sling": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 164
+    },
+    "weapon_arrow": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 84
+    },
+    "weapon_javelin": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 84
+    },
+    "shield_heater": {
+      "module": "weapons",
+      "pivot": "shieldFace",
+      "maxTris": 148
+    },
+    "shield_kite": {
+      "module": "weapons",
+      "pivot": "shieldFace",
+      "maxTris": 220
+    },
+    "shield_pavise": {
+      "module": "weapons",
+      "pivot": "shieldFace",
+      "maxTris": 132
+    },
+    "shield_tower": {
+      "module": "weapons",
+      "pivot": "shieldFace",
+      "maxTris": 172
+    },
+    "shield_kalkan": {
+      "module": "weapons",
+      "pivot": "shieldFace",
+      "maxTris": 416
+    },
+    "shield_lantern_pavise": {
+      "module": "weapons",
+      "pivot": "shieldFace",
+      "maxTris": 140
+    },
+    "shield_tarn_kite": {
+      "module": "weapons",
+      "pivot": "shieldFace",
+      "maxTris": 188
+    },
+    "shield_sun_kalkan": {
+      "module": "weapons",
+      "pivot": "shieldFace",
+      "maxTris": 344
+    },
+    "plume": {
+      "module": "props",
+      "pivot": "headJoint",
+      "maxTris": 84
+    },
+    "cape": {
+      "module": "props",
+      "pivot": "bodySpace",
+      "maxTris": 36
+    },
+    "quiver": {
+      "module": "props",
+      "pivot": "prop",
+      "maxTris": 192
+    },
+    "web_snare": {
+      "module": "props",
+      "pivot": "bodySpace",
+      "maxTris": 576
+    },
+    "banner_pole": {
+      "module": "props",
+      "pivot": "prop",
+      "maxTris": 108
+    },
+    "emblem_chevron": {
+      "module": "props",
+      "pivot": "emblemPlane",
+      "maxTris": 24
+    },
+    "emblem_saltire": {
+      "module": "props",
+      "pivot": "emblemPlane",
+      "maxTris": 24
+    },
+    "emblem_lozenge": {
+      "module": "props",
+      "pivot": "emblemPlane",
+      "maxTris": 12
+    },
+    "emblem_bend": {
+      "module": "props",
+      "pivot": "emblemPlane",
+      "maxTris": 12
+    },
+    "emblem_cross": {
+      "module": "props",
+      "pivot": "emblemPlane",
+      "maxTris": 24
+    },
+    "emblem_pale": {
+      "module": "props",
+      "pivot": "emblemPlane",
+      "maxTris": 12
+    },
+    "emblem_fess": {
+      "module": "props",
+      "pivot": "emblemPlane",
+      "maxTris": 12
+    },
+    "emblem_sun": {
+      "module": "props",
+      "pivot": "emblemPlane",
+      "maxTris": 104
+    },
+    "lod_foot": {
+      "module": "props",
+      "pivot": "groundFigure",
+      "maxTris": 68
+    },
+    "lod_horse": {
+      "module": "props",
+      "pivot": "groundFigure",
+      "maxTris": 208
+    },
+    "horse_body": {
+      "module": "mounts",
+      "pivot": "bodyCenter",
+      "maxTris": 728
+    },
+    "horse_body_barded": {
+      "module": "mounts",
+      "pivot": "bodyCenter",
+      "maxTris": 884
+    },
+    "horse_body_half": {
+      "module": "mounts",
+      "pivot": "bodyCenter",
+      "maxTris": 912
+    },
+    "horse_body_scale": {
+      "module": "mounts",
+      "pivot": "bodyCenter",
+      "maxTris": 940
+    },
+    "horse_body_fur": {
+      "module": "mounts",
+      "pivot": "bodyCenter",
+      "maxTris": 808
+    },
+    "horse_neck": {
+      "module": "mounts",
+      "pivot": "unitBone",
+      "maxTris": 160
+    },
+    "horse_neck_barded": {
+      "module": "mounts",
+      "pivot": "unitBone",
+      "maxTris": 304
+    },
+    "horse_neck_scale": {
+      "module": "mounts",
+      "pivot": "unitBone",
+      "maxTris": 304
+    },
+    "horse_head": {
+      "module": "mounts",
+      "pivot": "headJoint",
+      "maxTris": 602
+    },
+    "horse_head_barded": {
+      "module": "mounts",
+      "pivot": "prop",
+      "maxTris": 662
+    },
+    "horse_head_scale": {
+      "module": "mounts",
+      "pivot": "prop",
+      "maxTris": 662
+    },
+    "horse_leg_up": {
+      "module": "mounts",
+      "pivot": "unitBone",
+      "maxTris": 64
+    },
+    "horse_leg_hind_up": {
+      "module": "mounts",
+      "pivot": "unitBone",
+      "maxTris": 64
+    },
+    "horse_leg_low": {
+      "module": "mounts",
+      "pivot": "unitBone",
+      "maxTris": 144
+    },
+    "horse_tail": {
+      "module": "mounts",
+      "pivot": "unitBone",
+      "maxTris": 70
+    },
+    "camel_body": {
+      "module": "mounts",
+      "pivot": "bodyCenter",
+      "maxTris": 188
+    },
+    "camel_neck": {
+      "module": "mounts",
+      "pivot": "unitBone",
+      "maxTris": 64
+    },
+    "camel_head": {
+      "module": "mounts",
+      "pivot": "headJoint",
+      "maxTris": 200
+    },
+    "quad_thigh": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 120
+    },
+    "quad_shin": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 240
+    },
+    "bear_thigh": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 140
+    },
+    "bear_shin": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 356
+    },
+    "wolf_body": {
+      "module": "beasts",
+      "pivot": "bodyCenter",
+      "maxTris": 424
+    },
+    "wolf_head": {
+      "module": "beasts",
+      "pivot": "headJoint",
+      "maxTris": 664
+    },
+    "wolf_leg": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 100,
+      "status": "legacy-unused"
+    },
+    "wolf_tail": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 96
+    },
+    "bear_body": {
+      "module": "beasts",
+      "pivot": "bodyCenter",
+      "maxTris": 500
+    },
+    "bear_head": {
+      "module": "beasts",
+      "pivot": "headJoint",
+      "maxTris": 912
+    },
+    "bear_leg": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 120,
+      "status": "legacy-unused"
+    },
+    "spider_abdomen": {
+      "module": "beasts",
+      "pivot": "bodyCenter",
+      "maxTris": 952
+    },
+    "spider_head": {
+      "module": "beasts",
+      "pivot": "headJoint",
+      "maxTris": 932
+    },
+    "spider_leg": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 92
+    },
+    "wyvern_body": {
+      "module": "beasts",
+      "pivot": "bodyCenter",
+      "maxTris": 290
+    },
+    "wyvern_neck": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 152
+    },
+    "wyvern_head": {
+      "module": "beasts",
+      "pivot": "headJoint",
+      "maxTris": 576
+    },
+    "wyvern_wing": {
+      "module": "beasts",
+      "pivot": "wingRoot",
+      "maxTris": 236
+    },
+    "wyvern_leg": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 224
+    },
+    "wyvern_tail": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 92
+    },
+    "wyvern_sting": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 92
+    },
+    "boar_body": {
+      "module": "beasts",
+      "pivot": "bodyCenter",
+      "maxTris": 298
+    },
+    "boar_head": {
+      "module": "beasts",
+      "pivot": "headJoint",
+      "maxTris": 476
+    },
+    "boar_leg": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 140
+    },
+    "harpy_body": {
+      "module": "beasts",
+      "pivot": "bodyCenter",
+      "maxTris": 412
+    },
+    "harpy_head": {
+      "module": "beasts",
+      "pivot": "headJoint",
+      "maxTris": 514
+    },
+    "harpy_wing": {
+      "module": "beasts",
+      "pivot": "wingRoot",
+      "maxTris": 604
+    },
+    "griffon_body": {
+      "module": "beasts",
+      "pivot": "bodyCenter",
+      "maxTris": 760
+    },
+    "griffon_head": {
+      "module": "beasts",
+      "pivot": "headJoint",
+      "maxTris": 436
+    },
+    "basilisk_body": {
+      "module": "beasts",
+      "pivot": "bodyCenter",
+      "maxTris": 280
+    },
+    "basilisk_head": {
+      "module": "beasts",
+      "pivot": "headJoint",
+      "maxTris": 520
+    },
+    "wurm_head": {
+      "module": "beasts",
+      "pivot": "headJoint",
+      "maxTris": 464
+    },
+    "wurm_seg": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 510
+    },
+    "werewolf_body": {
+      "module": "beasts",
+      "pivot": "bodyCenter",
+      "maxTris": 496
+    },
+    "werewolf_arm": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 380
+    },
+    "brute_body": {
+      "module": "beasts",
+      "pivot": "bodyCenter",
+      "maxTris": 888
+    },
+    "brute_head": {
+      "module": "beasts",
+      "pivot": "headJoint",
+      "maxTris": 442
+    },
+    "brute_arm": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 280
+    },
+    "brute_leg": {
+      "module": "beasts",
+      "pivot": "unitBone",
+      "maxTris": 180
+    },
+    "brute_club": {
+      "module": "beasts",
+      "pivot": "grip",
+      "maxTris": 468
+    },
+    "head_broad": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 284
+    },
+    "head_plain": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 284
+    },
+    "head_narrow": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 284
+    },
+    "nose_short": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 30
+    },
+    "nose_plain": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 30
+    },
+    "nose_long": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 30
+    },
+    "brow_fine": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 24
+    },
+    "brow_plain": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 24
+    },
+    "brow_heavy": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 24
+    },
+    "scar_brow": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 24
+    },
+    "scar_cheek": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 12
+    },
+    "hair_short": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 132
+    },
+    "hair_long": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 184
+    },
+    "hair_long_under": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 104
+    },
+    "hair_tied": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 192
+    },
+    "hair_cropped": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 96
+    },
+    "hair_bald_fringe": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 32
+    },
+    "beard_full": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 68
+    },
+    "beard_moustache": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 36
+    },
+    "beard_forked": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 108
+    }
+  },
+  "kits": {
+    "infantry_light": {
+      "targetTris": 1400,
+      "maxTris": 1806,
+      "parts": {
+        "chest_tunic": 1,
+        "belt_leather": 1,
+        "skirt_tunic": 1,
+        "head_0": 1,
+        "helm_cap": 1,
+        "weapon_spear": 1,
+        "uarm_cloth": 2,
+        "farm_cloth": 2,
+        "thigh_cloth": 2,
+        "shin_cloth": 2,
+        "shield_round": 1
+      }
+    },
+    "infantry_veteran": {
+      "targetTris": 950,
+      "maxTris": 1790,
+      "parts": {
+        "chest_surcoat": 1,
+        "belt_pouch": 1,
+        "skirt_mail": 1,
+        "head_0": 1,
+        "helm_kettle": 1,
+        "weapon_sword": 1,
+        "uarm_mail": 2,
+        "farm_mail": 2,
+        "thigh_cloth": 2,
+        "shin_cloth": 2,
+        "shld_mail_aventail": 1,
+        "shield_heater": 1,
+        "skirt_tabard": 1
+      }
+    },
+    "infantry_plate": {
+      "targetTris": 1050,
+      "maxTris": 1842,
+      "parts": {
+        "chest_plate": 1,
+        "belt_plate": 1,
+        "skirt_fauld_steel": 1,
+        "head_0": 1,
+        "helm_greathelm": 1,
+        "weapon_longsword": 1,
+        "uarm_plate": 2,
+        "farm_plate": 2,
+        "thigh_plate": 2,
+        "shin_plate": 2,
+        "shld_pauldrons_steel": 1,
+        "shield_heater": 1,
+        "skirt_tabard": 1
+      }
+    },
+    "crossbowman": {
+      "targetTris": 1100,
+      "maxTris": 1946,
+      "parts": {
+        "chest_tunic": 1,
+        "belt_pouch": 1,
+        "skirt_tunic": 1,
+        "head_0": 1,
+        "helm_kettle": 1,
+        "weapon_crossbow": 1,
+        "uarm_cloth": 2,
+        "farm_cloth": 2,
+        "thigh_cloth": 2,
+        "shin_cloth": 2,
+        "shld_collar_cloth": 1,
+        "quiver": 1
+      }
+    },
+    "horse_plain": {
+      "targetTris": 1400,
+      "maxTris": 2392,
+      "parts": {
+        "horse_body": 1,
+        "horse_neck": 1,
+        "horse_head": 1,
+        "horse_tail": 1,
+        "horse_leg_up": 2,
+        "horse_leg_hind_up": 2,
+        "horse_leg_low": 4
+      }
+    },
+    "horse_barded": {
+      "targetTris": 1700,
+      "maxTris": 2752,
+      "parts": {
+        "horse_body_barded": 1,
+        "horse_neck_barded": 1,
+        "horse_head_barded": 1,
+        "horse_tail": 1,
+        "horse_leg_up": 2,
+        "horse_leg_hind_up": 2,
+        "horse_leg_low": 4
+      }
+    },
+    "wolf": {
+      "targetTris": 1000,
+      "maxTris": 2624,
+      "parts": {
+        "wolf_body": 1,
+        "wolf_head": 1,
+        "wolf_tail": 1,
+        "quad_thigh": 4,
+        "quad_shin": 4
+      }
+    },
+    "bear": {
+      "targetTris": 1600,
+      "maxTris": 3396,
+      "parts": {
+        "bear_body": 1,
+        "bear_head": 1,
+        "bear_thigh": 4,
+        "bear_shin": 4
+      }
+    },
+    "spider": {
+      "targetTris": 1200,
+      "maxTris": 3356,
+      "parts": {
+        "spider_abdomen": 1,
+        "spider_head": 1,
+        "spider_leg": 16
+      }
+    },
+    "wyvern": {
+      "targetTris": 1600,
+      "maxTris": 2454,
+      "parts": {
+        "wyvern_body": 1,
+        "wyvern_neck": 1,
+        "wyvern_head": 1,
+        "wyvern_wing": 2,
+        "quad_thigh": 2,
+        "wyvern_leg": 2,
+        "wyvern_tail": 2,
+        "wyvern_sting": 1
+      }
+    },
+    "brute": {
+      "targetTris": 1800,
+      "maxTris": 3278,
+      "parts": {
+        "brute_body": 1,
+        "brute_head": 1,
+        "brute_club": 1,
+        "brute_arm": 4,
+        "brute_leg": 2
+      }
+    }
+  }
+}

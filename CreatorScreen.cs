@@ -135,7 +135,7 @@ sealed class CreatorScreen
 
     void Refresh()
     {
-        string choices = $"{M.Realm}|{M.FreeStart}|{M.Birth}|{M.Past}|{M.Road}|{M.Visage}|{M.Arms}";
+        string choices = $"{M.Realm}|{M.FreeStart}|{M.Birth}|{M.Past}|{M.Road}|{M.Visage}|{M.Cut}|{M.Beard}|{M.Eye}|{M.Brow}|{M.Nose}|{M.Jaw}|{M.Scar}|{M.Arms}";
         if (choices != choiceKey)
         {
             if (choiceKey != "")
@@ -540,30 +540,33 @@ sealed class CreatorScreen
         // Its soldiers at their prime: foot, bow and horse.
         string[] roles = { "infantry", "archers", "horse" };
         var ties = Factions.Relations.Where(x => x.A == d.Name || x.B == d.Name).OrderByDescending(x => x.War).ToList();
-        int tiesH = ties.Count == 0 ? U(24) : U(30) + ties.Count * U(12);
-        int ps = Math.Min((pane.Width - U(40)) / 3, pane.Bottom - py - U(24) - tiesH);
+        int ps = Math.Min((pane.Width - U(40)) / 3, U(82));
+        int availH = pane.Bottom - py - U(24) - (ties.Count == 0 ? U(20) : U(26) + ties.Count * U(10));
+        if (availH < ps) ps = Math.Max(U(48), availH);
         if (ps < U(30)) return;
+        float pk = ps / (float)U(44) * ui.S;
         int px = pane.Center.X - (3 * ps + 2 * U(10)) / 2;
         for (int k = 0; k < 3; k++)
         {
             var pr = new Rectangle(px + k * (ps + U(10)), py, ps, ps);
             var troop = Troops.Get(Factions.Line(show, roles[k], 4));
             ui.VGrad(pr, Kit.Mul(Style.Sides[d.Palette].Cloth, 0.5f), Kit.IronDark, 2);
-            ui.Portrait(troop, pr, Math.Max(1, ps / U(40)) * ui.S, palette: d.Palette);
+            ui.Portrait(troop, pr, pk, palette: d.Palette);
             ui.Frame(pr, Color.Black * 0.6f, U(1));
             ui.TextFitC(troop.Name.ToUpperInvariant(), pr.Center.X, pr.Bottom + U(5), ps + U(4), Style.Dim, 1);
         }
         // Its wars and truces: what you inherit by starting here.
-        int ty = py + ps + U(22), tx0 = pane.X + U(14), tw0 = pane.Width - U(28);
-        ui.Divider(tx0, ty, tw0, Kit.Gilt * 0.45f); ty += U(10);
+        int ty = py + ps + U(20), tx0 = pane.X + U(14), tw0 = pane.Width - U(28);
+        ui.Divider(tx0, ty, tw0, Kit.Gilt * 0.45f); ty += U(8);
         if (ties.Count == 0) { ui.TextC("AT PEACE WITH EVERY REALM", pane.Center.X, ty, Style.Dim, 1); return; }
+        int rowStep = ties.Count > 4 ? U(10) : U(11);
         foreach (var t in ties)
         {
-            if (ty + U(10) > pane.Bottom - U(4)) break;
+            if (ty + U(9) > pane.Bottom - U(4)) break;
             string other = (t.A == d.Name ? t.B : t.A).ToUpperInvariant();
             ui.Text(t.War ? "AT WAR" : "TRUCE", tx0, ty, t.War ? Style.Bad : Kit.Gilt, 1);
             ui.TextFit(other + (t.War ? "" : $", {t.TruceDays:0} DAYS"), tx0 + U(56), ty, tw0 - U(56), t.War ? Style.Text : Style.Dim, 1);
-            ty += U(12);
+            ty += rowStep;
         }
     }
 

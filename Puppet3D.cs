@@ -30,7 +30,7 @@ sealed partial class Puppet3D
     public bool DeferHaze;
     public readonly List<(Vector3 Pos, float Size, Color Col, float Alpha, float Seed)> PendingHaze = new();
 
-    const float RearDeg = 38f, Saddle = 0.87f, Shank = 0.34f, UpperArm = 0.29f, Forearm = 0.28f;
+    const float RearDeg = 38f, Saddle = 0.62f, Shank = 0.34f, UpperArm = 0.29f, Forearm = 0.28f;
 
     Vector3 origin, fwd, right;
     Vector3 camRight = Vector3.UnitX;
@@ -444,9 +444,9 @@ sealed partial class Puppet3D
             float legBob = -stirrupBounce * 0.65f;
             for (int side = -1; side <= 1; side += 2)
             {
-                var hip = new Vector3(side * 0.12f, 0.68f, -0.02f - legTuck * 0.4f);
-                var knee = new Vector3(side * (barrel + 0.07f), 0.30f + legBob + legTuck * 0.5f, 0.22f + legTuck);
-                var foot = new Vector3(side * (barrel + 0.01f), -0.10f + legBob * 1.2f + legTuck * 0.7f, 0.04f - legTuck * 0.8f);
+                var hip = new Vector3(side * 0.12f, 0.68f, -0.16f - legTuck * 0.4f);
+                var knee = new Vector3(side * (barrel + 0.07f), 0.36f + legBob + legTuck * 0.5f, 0.08f + legTuck);
+                var foot = new Vector3(side * (barrel + 0.02f), 0.06f + legBob * 1.2f + legTuck * 0.7f, -0.08f - legTuck * 0.6f);
                 EmitBone(lm.Thigh, hip, knee, Vector3.UnitZ, 1f, lm.LegPat);
                 EmitBone(lm.Shin, knee, foot, Vector3.UnitZ, 1f, lm.LegPat);
             }
@@ -462,7 +462,7 @@ sealed partial class Puppet3D
         if (p.ShieldUp && u.Action == UnitAction.Block) combatTwist -= 14f;
         twist = combatTwist + ((u.Action == UnitAction.None && !(ranged && p.Aim)) ? gaitTwist : gaitTwist * 0.2f) + seatTwist;
 
-        Vector3 torsoPos = new(hipShiftX * 0.75f, breath * 0.008f, 0);
+        Vector3 torsoPos = new(hipShiftX * 0.75f, breath * 0.008f, u.Mounted ? -0.14f : 0f);
         Vector3 tR = RotY(Vector3.UnitX, twist);
         Vector3 tF = RotY(Vector3.UnitZ, twist);
         float syB = 1f + breath * 0.012f, szB = 1f + breath * 0.018f;
@@ -530,8 +530,8 @@ sealed partial class Puppet3D
         {
             // Secondary motion: speed-driven cape billow, flutter, and turn-delta whip lag around the shoulder pin!
             float capeSpeed = Math.Clamp(speed, 0f, 10f);
-            float capePitch = Math.Clamp(capeSpeed * 3.8f + (u.Action == UnitAction.Recover ? 9f : 0f), 0f, 34f)
-                + MathF.Sin(Now * (5.2f + capeSpeed * 1.25f) + phase * 11f) * (3.0f + capeSpeed * 0.9f);
+            float capePitch = Math.Clamp(capeSpeed * 2.2f + (u.Action == UnitAction.Recover ? 7f : 0f), 0f, 20f)
+                + MathF.Sin(Now * (5.2f + capeSpeed * 1.25f) + phase * 11f) * (2.2f + capeSpeed * 0.6f);
             float capeYaw = twist + Math.Clamp(-MathHelper.ToDegrees(u.Mounted ? mountTurn : turnDelta) * 0.65f, -24f, 24f)
                 + MathF.Sin(Now * 3.6f + phase * 7f) * (2.4f + capeSpeed * 0.65f);
             Vector3 cR = RotY(Vector3.UnitX, capeYaw);
@@ -550,7 +550,12 @@ sealed partial class Puppet3D
         Vector3 hF = RotY(RotX(Vector3.UnitZ, headPitch), headYaw);
         Vector3 headPos = torsoPos + new Vector3(0, 1.53f + breath * 0.01f, 0.01f);
         if (!lm.FullEnclosedHelm)
-            EmitLocal(lm.Head, headPos, hR, hU, hF);
+        {
+            if (lm.IsHumanFace && kit.HeadJaw.Length == 3 && kit.HeadJaw[1].Length > 0)
+                EmitHumanHead(look, lm, Variety.Seed(u), headPos, hR, hU, hF);
+            else
+                EmitLocal(lm.Head, headPos, hR, hU, hF);
+        }
         if (lm.Helm.Length > 0)
             EmitLocal(lm.Helm, headPos, hR, hU, hF);
         if (lm.HasPlume && Detail == 0)
@@ -928,6 +933,61 @@ sealed partial class Puppet3D
     }
 
     /// Full directional 3D death animation matching `Puppet.Fallen` (Fall.Cut spin, Thrust crumple, Flung arc, Saddle slide).
+    /// Compose a human head from portrait-aligned modular parts (jaw, eyes, lips, nose, brows, scar, hair cut, beard).
+    void EmitHumanHead(Look look, MeshKit3D.LookMeshes lm, int seed, Vector3 pos, Vector3 rx, Vector3 uy, Vector3 fz)
+    {
+        int style = look.Visage >= 0 ? Variety.Parts(look.Visage).Style : 0;
+        var feat = look.Features >= 0 ? Variety.UnpackFeatures(look.Features) : Variety.DeriveFeatures(seed, style);
+
+        // Temporarily repurpose unused mount coat slots (11 = iris, 12 = lip/scar) for facial detail (zero allocations).
+        Vector3 saved11 = palCols[11], saved12 = palCols[12];
+        if (!ShadowOnly)
+        {
+            var tv = palCols[0];
+            var eyeC = PortraitPainter.EyeColours[Math.Clamp(feat.Eye, 0, PortraitPainter.EyeColours.Length - 1)];
+            palCols[11] = new Vector3(eyeC.R / 255f * tv.X, eyeC.G / 255f * tv.Y, eyeC.B / 255f * tv.Z);
+            var skin = palCols[9];
+            palCols[12] = Vector3.Lerp(skin * 0.62f, new Vector3(150f / 255f, 52f / 255f, 56f / 255f) * tv, 0.34f);
+        }
+
+        var headMesh = kit.HeadJaw[Math.Clamp(feat.Jaw, 0, 2)];
+        EmitLocal(headMesh.Length > 0 ? headMesh : lm.Head, pos, rx, uy, fz);
+
+        if (Detail == 0)
+        {
+            var nose = kit.NoseStyle[Math.Clamp(feat.Nose, 0, 2)];
+            if (nose.Length > 0) EmitLocal(nose, pos, rx, uy, fz);
+            var brow = kit.BrowStyle[Math.Clamp(feat.Brow, 0, 2)];
+            if (brow.Length > 0) EmitLocal(brow, pos, rx, uy, fz);
+            if (feat.Scar > 0 && feat.Scar < kit.ScarStyle.Length && kit.ScarStyle[feat.Scar].Length > 0)
+            {
+                if (!ShadowOnly)
+                    palCols[12] = Vector3.Lerp(palCols[9], new Vector3(150f / 255f, 56f / 255f, 60f / 255f) * palCols[0], 0.70f);
+                EmitLocal(kit.ScarStyle[feat.Scar], pos, rx, uy, fz);
+            }
+        }
+
+        if (feat.Beard > 0 && feat.Beard < kit.BeardStyle.Length && kit.BeardStyle[feat.Beard].Length > 0)
+            EmitLocal(kit.BeardStyle[feat.Beard], pos, rx, uy, fz);
+
+        if (lm.Helm.Length == 0)
+        {
+            int cut = Math.Clamp(feat.Cut, 0, 4);
+            // Bald (4): young shaved heads stay bare; older/selected men keep the portrait's side fringe.
+            bool emitHair = cut != 4 || feat.Age >= 30 || Ease.Hash(seed * 31 + 42 * 977) >= 0.6f;
+            if (emitHair && kit.HairCut[cut].Length > 0)
+                EmitLocal(kit.HairCut[cut], pos, rx, uy, fz);
+        }
+        else if (feat.Cut == 1 && !lm.HoodOrCoif && kit.HairLongUnder.Length > 0)
+        {
+            // Long hair flows out cleanly from beneath open helms without crown clipping.
+            EmitLocal(kit.HairLongUnder, pos, rx, uy, fz);
+        }
+
+        palCols[11] = saved11;
+        palCols[12] = saved12;
+    }
+
     void DrawFallen3D(Unit u, float ground, float size, float phase, int palIdx, Look look, MeshKit3D.LookMeshes lm)
     {
         var away = u.Pos - u.DiedFrom;
@@ -1001,7 +1061,12 @@ sealed partial class Puppet3D
         float hPitch = -22f * Ease.Out(k);
         Vector3 hU = RotX(Vector3.UnitY, hPitch), hF = RotX(Vector3.UnitZ, hPitch);
         if (!lm.FullEnclosedHelm && (Detail == 0 || lm.Helm.Length == 0))
-            EmitLocal(lm.Head, new Vector3(0, 1.53f, 0.01f), Vector3.UnitX, hU, hF);
+        {
+            if (lm.IsHumanFace && kit.HeadJaw.Length == 3 && kit.HeadJaw[1].Length > 0)
+                EmitHumanHead(look, lm, Variety.Seed(u), new Vector3(0, 1.53f, 0.01f), Vector3.UnitX, hU, hF);
+            else
+                EmitLocal(lm.Head, new Vector3(0, 1.53f, 0.01f), Vector3.UnitX, hU, hF);
+        }
         if (lm.Helm.Length > 0)
             EmitLocal(lm.Helm, new Vector3(0, 1.53f, 0.01f), Vector3.UnitX, hU, hF);
 

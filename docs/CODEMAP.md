@@ -724,8 +724,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Bind** (struct, L39): ToString:41, Parse:67
 - **Controls** (class, L100): Controls:162, SaveUser:170, ResetDefaults:179, AnyPressed:187, FindFile:195, Load:205, WriteDefaults:232, Update:241, IsDown:247, Down:257, WasDown:258, Pressed:259, Released:260, Axis:261, First:264, Name:267
 
-## CreatorScreen.cs (893 lines)
-- **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:68, Show:76, U:87, RandomName:91, RandomCompany:99, Randomise:102, RandomFace:115, Go:124, Refresh:136, Keys:158, Begin:183, Draw:192, DrawScreen:200, Likeness:243, Ledger:318, Tip:327, Card:342, LedgerBody:366, Homeland:469, Choices:571, Detail:614, RoadKit:669, InTheField:697, BoonCard:714, Face:738, Stepper:800, Unroll:815, Field:818, Swatches:832, Oath:848, Footer:885
+## CreatorScreen.cs (896 lines)
+- **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:68, Show:76, U:87, RandomName:91, RandomCompany:99, Randomise:102, RandomFace:115, Go:124, Refresh:136, Keys:158, Begin:183, Draw:192, DrawScreen:200, Likeness:243, Ledger:318, Tip:327, Card:342, LedgerBody:366, Homeland:469, Choices:574, Detail:617, RoadKit:672, InTheField:700, BoonCard:717, Face:741, Stepper:803, Unroll:818, Field:821, Swatches:835, Oath:851, Footer:888
 
 ## CreatorStage.cs (261 lines)
 - **CreatorStage** (class, L10): CreatorStage:45, React:56, Render:59, Build:147, Perform:168, readonly:195, Drill:204, Shoot:217, Salute:229, Camera:240
@@ -855,11 +855,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapLife.Holdouts.cs (132 lines)
 - **MapLife** (class, L7): SetHoldouts:24, BuildHoldouts:30, DrawHoldout:35
 
-## MapLife.People.cs (502 lines)
-- **MapLife** (class, L10): FindPlaces:69, SetCaravans:77, UpdatePeople:90, PopulatePeople:129, NewPerson:165, Jitter:171, StepPerson:175, Lengths:212, Length:221, At:229, NearRoads:244, SpawnTraveller:252, StepTraveller:271, SpawnBoat:285, Shallows:305, SpawnSeaBoat:307, StepSeaBoat:318, BuildPeople:329, DrawPerson:349, DrawTraveller:369, DrawHorse:385, DrawCart:400, DrawBoat:422, DrawSeaBoat:450, DrawCaravan:465, Behind:486, Lit:501
+## MapLife.People.cs (507 lines)
+- **MapLife** (class, L10): FindPlaces:69, SetCaravans:77, UpdatePeople:90, PopulatePeople:129, NewPerson:165, Jitter:171, StepPerson:175, Lengths:212, Length:221, At:229, NearRoads:244, SpawnTraveller:252, StepTraveller:271, SpawnBoat:285, Shallows:305, SpawnSeaBoat:307, StepSeaBoat:318, BuildPeople:329, DrawPerson:349, DrawTraveller:369, DrawHorse:385, DrawCart:400, DrawBoat:427, DrawSeaBoat:455, DrawCaravan:470, Behind:491, Lit:506
 
-## MapProps3D.cs (49 lines)
-- **MapProps3D** (class, L6): TryLoad:10, EmitShip:27
+## MapProps3D.cs (66 lines)
+- **MapProps3D** (class, L6): TryLoad:10, Part:20, Has:23, Emit:27, EmitShip:52, EmitCart:56, EmitBridge:60, EmitSite:64
 
 ## MapScreen.Armoury.cs (169 lines)
 - **MapScreen** (class, L7): ArmourerWell:12, Baggage:31, GearRow:49, GearStats:161
@@ -968,9 +968,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Upgrade.cs (355 lines)
 - **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:187, Leads:343
 
-## Mesh3D.cs (471 lines)
-- **MeshKit3D** (class, L9): TryLoad:75, Load:88, Get:179, Resolve:181, MapLimb:313, MapHelm:321, MapWeapon:365, MapShield:392
-- **UnitMatTable** (struct, L407): Fill:420, FillBeast:458
+## Mesh3D.cs (483 lines)
+- **MeshKit3D** (class, L9): TryLoad:78, Load:91, Get:189, Resolve:191, MapLimb:325, MapHelm:333, MapWeapon:377, MapShield:404
+- **UnitMatTable** (struct, L419): Fill:432, FillBeast:470
 
 ## MusicDirector.cs (129 lines)
 - **MusicDirector** (class, L12): Cue:17, MusicDirector:28, Pool:36, Reset:51, Adopt:59, Update:68, BackToMap:99, Next:109, Start:121
@@ -1015,10 +1015,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## PortraitBust.Dress.cs (362 lines)
 - **Bust** (class, L6): Charged:10, Background:31, BodyTop:53, Noise:62, Body:66, FurAt:141, Collar:148, HairHalf:186, Hairline:196, BackHair:213, Hair:227, Curtains:251, Bun:269, Braid:284, BaldFringe:302, Beard:316, Crown:347
 
-## PortraitPainter.cs (141 lines)
+## PortraitPainter.cs (139 lines)
 - **Face** (record, L8)
-- **PortraitPainter** (class, L13): MoodOf:17, Of:21, SoldierSeed:53, Of:58, OfMan:62, CohesionMood:77, Captain:80, Of:84, Paint:88, Resample:95
-- **Portraits** (class, L121): Of:126, Sized:129
+- **PortraitPainter** (class, L13): MoodOf:17, Of:21, SoldierSeed:53, Of:58, OfMan:62, CohesionMood:75, Captain:78, Of:82, Paint:86, Resample:93
+- **Portraits** (class, L119): Of:124, Sized:127
 
 ## Program.cs (165 lines)
 
@@ -1028,8 +1028,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Puppet3D.Beasts.cs (526 lines)
 - **Puppet3D** (class, L7): BeastRearing:9, DrawBeast3D:13, DrawWolfUnit3D:34, DrawWolfRig:52, DrawWarg3D:99, DrawBear3D:107, DrawSpider3D:156, DrawWyvern3D:192, DrawBoar3D:256, DrawHarpy3D:286, DrawGriffon3D:312, DrawBasilisk3D:351, DrawSandWurm3D:382, DrawWerewolf3D:403, DrawBrute3D:441
 
-## Puppet3D.cs (1489 lines)
-- **Puppet3D** (class, L12): BuildPatAlpha:41, Puppet3D:58, BeginCamera:64, Rad:71, Frame:73, WorldFrame:82, Lean:91, W:100, WDir:111, EmitLocal:126, EmitBone:195, EmitDir:211, EmitWeapon:223, RotX:248, RotZ:254, RotY:260, Elbow:266, Sink:288, TryDraw:297, EmblemOf:796, EmitSlashArc:806, EmitShield:879, DrawFallen3D:931, Banner:1036, DrawMissile:1174, HorseScale:1192, Joint:1202, DrawHorse3D:1216, DrawLooseHorse:1369, DrawDeadHorse:1383, Bench:1427
+## Puppet3D.cs (1554 lines)
+- **Puppet3D** (class, L12): BuildPatAlpha:41, Puppet3D:58, BeginCamera:64, Rad:71, Frame:73, WorldFrame:82, Lean:91, W:100, WDir:111, EmitLocal:126, EmitBone:195, EmitDir:211, EmitWeapon:223, RotX:248, RotZ:254, RotY:260, Elbow:266, Sink:288, TryDraw:297, EmblemOf:801, EmitSlashArc:811, EmitShield:884, EmitHumanHead:937, DrawFallen3D:991, Banner:1101, DrawMissile:1239, HorseScale:1257, Joint:1267, DrawHorse3D:1281, DrawLooseHorse:1434, DrawDeadHorse:1448, Bench:1492
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, SheetRect:133, OtherBeastCorpse:136
@@ -1210,7 +1210,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/OfficerTests.cs (214 lines)
 - **SelfTest** (class, L6): OfficerSkill:24, AiOnPosts:112, SkirmishersRead:143, PostsInDeployment:164, CompanySergeants:182
 
-## Tests/OriginTests.cs (113 lines)
+## Tests/OriginTests.cs (120 lines)
 - **SelfTest** (class, L4): CharacterCreator:8
 
 ## Tests/SergeantTests.cs (98 lines)
@@ -1276,15 +1276,15 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **LooseHorse** (class, L275)
 - **DeadHorse** (struct, L284)
 
-## Variety.cs (148 lines)
-- **Variety** (class, L9): static:16, Seed:72, Of:75, Of:83, Stature:111, Kin:113, Pick:116, Visage:125, Weighted:142
+## Variety.cs (188 lines)
+- **Variety** (class, L9): static:16, Seed:72, Of:75, Of:83, Stature:111, Kin:113, Pick:116, Visage:125, Weighted:142, FaceFeatures:150, PackFeatures:153, PackFeatures:163, UnpackFeatures:165, DeriveFeatures:177
 
 ## Verts.cs (45 lines)
 - **Verts<T>** (class, L6): Reserve:13, Add:22, Draw:28, Dispose:44
 
-## World.cs (1378 lines)
+## World.cs (1380 lines)
 - **VertexPNCT** (struct, L7): VertexPNCT:19
-- **World** (class, L25): Baked:50, World:59, World:63, Checksum:81, Mark:113, Upload:122, Image:147, FoliageBuffer:154, RebuildFoliage:162, Lit:170, Draw:188, SetFog:215, DrawShaded:222, DrawShadowCasters:250, DrawGeometry:260, SetExtra:297, Dispose:299, Smooth:312, GroundColor:319, BuildDetail:400, WorldToMinimap:454, MinimapToWorld:455, BuildSky:459, BuildFoliage:481, Item:533, DrawTerrain:582, DrawFoliage:615, Jitter:644, Broadleaf:650, Pine:667, Bush:681, Rock:691, House:703, Windows:732, Chimney:762, Village:770, Town:783, SiteModel:819, Wheel:928, Wagon:963, TownHouse:1025, TowerHouse:1034, GreatCastle:1059, Castle:1097, Grass:1115, Skirt:1171
+- **World** (class, L25): Baked:50, World:59, World:63, Checksum:81, Mark:113, Upload:122, Image:147, FoliageBuffer:154, RebuildFoliage:162, Lit:170, Draw:188, SetFog:215, DrawShaded:222, DrawShadowCasters:250, DrawGeometry:260, SetExtra:297, Dispose:299, Smooth:312, GroundColor:319, BuildDetail:400, WorldToMinimap:454, MinimapToWorld:455, BuildSky:459, BuildFoliage:481, Item:533, DrawTerrain:582, DrawFoliage:615, Jitter:644, Broadleaf:650, Pine:667, Bush:681, Rock:691, House:703, Windows:732, Chimney:762, Village:770, Town:783, SiteModel:819, Wheel:930, Wagon:965, TownHouse:1027, TowerHouse:1036, GreatCastle:1061, Castle:1099, Grass:1117, Skirt:1173
 
 ## World.Dress.cs (207 lines)
 - **World** (class, L7): Parched:13, Shrub:16, Tussock:26, ReedClump:35, Blades:46, Heather:59, DeadTree:69, Palm:84, Flowers:108, Driftwood:128, Marram:146, Milestone:154, Wayside:163, Well:177, Rowboat:190
@@ -1323,7 +1323,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## World.Villages.cs (79 lines)
 - **World** (class, L8): VillagePlace:12, Cottage:48, VillageHeight:56, Well:66
 
-## World.Water.cs (414 lines)
+## World.Water.cs (419 lines)
 - **World** (class, L9): NormalAt:20, Roads:53, AddTile:138, Sea:151, Water:207, Ship:221, RiverWater:239, Reeds:332, Lake:354, Bridge:388
 
 ## World.Works.cs (169 lines)

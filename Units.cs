@@ -39,7 +39,7 @@ public sealed record Mount(string Id, string Name, float Hp, float Trot, float G
 /// Face is whose head it is ("man", or a creature's: "goblin" = "head.goblin.f/s/b").
 /// Visage is one man's own face (skin, hair, beard; see Variety), -1 for the troop's plain head. Drawing only.
 public sealed record Look(string Head, string Body, string Legs, string Feet, string Hands, string Shield, string Weapon,
-    bool Tabard, bool Plume, bool Cape, string Face = "man", int Visage = -1)
+    bool Tabard, bool Plume, bool Cape, string Face = "man", int Visage = -1, int Features = -1)
 {
     /// "wolf", "bear", "spider" and "wyvern" are whole beasts: the puppet draws each with its own rig and sprites
     /// (w*, b*, s*, y*), ignoring the rest of the look.

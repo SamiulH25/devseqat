@@ -63,14 +63,12 @@ public static class PortraitPainter
     {
         int seed = SoldierSeed(soldierId);
         var (skin, hair, style) = Variety.Parts(Variety.Visage(t.Culture, seed));
-        float H(int salt) => Ease.Hash(seed * 31 + salt * 977);
-        int cut = style == 3 ? 4 : H(1) < 0.45f ? 0 : H(1) < 0.8f ? 3 : H(1) < 0.92f ? 2 : 1;
-        int beard = age < ComeOfAgeBeard ? 0 : style switch { 0 => 0, 1 => 1, 2 => 2, _ => 1 + (H(9) < 0.5f ? 0 : 2) };
+        var feat = Variety.DeriveFeatures(seed, style, false, age);
         int dress = knight || t.Tier >= 6 ? 3 : t.Tier >= 4 ? 2 : t.Tier >= 3 ? 4 : 0;
         var charge = (Emblem)(banner % 9);
         if (charge == Emblem.None) charge = Style.Sides[2].Charge == Emblem.None ? Emblem.Fess : Style.Sides[2].Charge;
-        return new Face(seed, skin, hair, cut, beard, (int)(H(6) * EyeColours.Length) % EyeColours.Length, (int)(H(7) * 3) % 3, (int)(H(8) * 3) % 3,
-            (int)(H(10) * 3) % 3, false, age, Math.Min(2, wounds / 2), dress, false, mood, 2, charge, 0);
+        return new Face(seed, skin, hair, feat.Cut, feat.Beard, feat.Eye, feat.Brow, feat.Nose, feat.Jaw,
+            false, age, Math.Min(2, wounds / 2), dress, false, mood, 2, charge, 0);
     }
 
     /// A company's cohesion as a man's mood: warm when it is high, cold when it frays.

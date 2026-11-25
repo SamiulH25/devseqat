@@ -31,7 +31,7 @@ sealed class MeshKit3D
     {
         public required Vert[] Chest, Shoulders, Belt, Skirt, TabardPanel;
         public required Vert[] Head, Helm, UArm, FArm, Thigh, Shin, Weapon, Shield;
-        public required bool FullEnclosedHelm, HasCape, HasPlume, HasShield, HasTabard;
+        public required bool FullEnclosedHelm, HoodOrCoif, IsHumanFace, HasCape, HasPlume, HasShield, HasTabard;
         public required byte ChestPat, ShldPat, SkirtPat, LimbPat, LegPat;
         public required byte BeltVarGroup, ShldVarGroup;
         public required string ShieldKind;
@@ -44,6 +44,9 @@ sealed class MeshKit3D
 
     // Pre-cached common, mount, beast, prop, emblem, and LOD parts (zero dictionary lookups in hot loop).
     public Vert[] Plume = Array.Empty<Vert>(), Cape = Array.Empty<Vert>(), Bow = Array.Empty<Vert>();
+    public Vert[][] HeadJaw = Array.Empty<Vert[]>(), HairCut = Array.Empty<Vert[]>(), BeardStyle = Array.Empty<Vert[]>();
+    public Vert[][] BrowStyle = Array.Empty<Vert[]>(), NoseStyle = Array.Empty<Vert[]>(), ScarStyle = Array.Empty<Vert[]>();
+    public Vert[] HairLongUnder = Array.Empty<Vert>();
     public Vert[] Quiver = Array.Empty<Vert>(), Arrow = Array.Empty<Vert>(), Javelin = Array.Empty<Vert>();
     public Vert[] WebSnare = Array.Empty<Vert>(), BannerPole = Array.Empty<Vert>();
     public Vert[][] Emblems = Array.Empty<Vert[]>();
@@ -165,6 +168,13 @@ sealed class MeshKit3D
         kit.WurmHead = kit.Get("wurm_head"); kit.WurmSeg = kit.Get("wurm_seg");
         kit.WerewolfBody = kit.Get("werewolf_body"); kit.WerewolfArm = kit.Get("werewolf_arm");
         kit.BruteBody = kit.Get("brute_body"); kit.BruteHead = kit.Get("brute_head"); kit.BruteArm = kit.Get("brute_arm"); kit.BruteLeg = kit.Get("brute_leg"); kit.BruteClub = kit.Get("brute_club");
+        kit.HeadJaw = new[] { kit.Get("head_broad"), kit.Get("head_plain"), kit.Get("head_narrow") };
+        kit.HairCut = new[] { kit.Get("hair_short"), kit.Get("hair_long"), kit.Get("hair_tied"), kit.Get("hair_cropped"), kit.Get("hair_bald_fringe") };
+        kit.HairLongUnder = kit.Get("hair_long_under");
+        kit.BeardStyle = new[] { Array.Empty<Vert>(), kit.Get("beard_full"), kit.Get("beard_moustache"), kit.Get("beard_forked") };
+        kit.BrowStyle = new[] { kit.Get("brow_fine"), kit.Get("brow_plain"), kit.Get("brow_heavy") };
+        kit.NoseStyle = new[] { kit.Get("nose_short"), kit.Get("nose_plain"), kit.Get("nose_long") };
+        kit.ScarStyle = new[] { Array.Empty<Vert>(), kit.Get("scar_brow"), kit.Get("scar_cheek") };
         kit.LodFoot = kit.Get("lod_foot"); kit.LodHorse = kit.Get("lod_horse");
         kit.BeltPoolLight = new[] { kit.Get("belt_leather"), kit.Get("belt_pouch"), kit.Get("belt_baldric") };
         kit.BeltPoolHeavy = new[] { kit.Get("belt_plate"), kit.Get("belt_leather"), kit.Get("belt_baldric"), kit.Get("belt_gilded") };
@@ -222,6 +232,8 @@ sealed class MeshKit3D
             Weapon = weaponKey.Length > 0 ? Get(weaponKey) : Array.Empty<Vert>(),
             Shield = shieldKey.Length > 0 ? Get(shieldKey) : Array.Empty<Vert>(),
             FullEnclosedHelm = helmKey is "helm_greathelm" or "helm_greathelm_wings" or "helm_greathelm_sun" or "helm_greathelm_horns" or "helm_dragon" or "helm_armet" or "helm_bascinet" or "helm_lily_armet" or "helm_rose_sallet" or "helm_tarn_cowl" or "helm_hollow_crown" or "helm_sky_mask",
+            HoodOrCoif = helmKey is "helm_hood" or "helm_coif" or "helm_tarn_cowl",
+            IsHumanFace = look.Face == "man",
             HasCape = look.Cape,
             HasPlume = look.Plume,
             HasShield = look.Shield != "none",

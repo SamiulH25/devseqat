@@ -145,4 +145,44 @@ public static class Variety
         for (int i = 0; i < w.Length; i++) { t -= w[i]; if (t < 0) return i; }
         return w.Length - 1;
     }
+
+    /// Modular facial features shared between 2D portraits (PortraitPainter) and 3D heads (Puppet3D).
+    public readonly record struct FaceFeatures(int Cut, int Beard, int Eye, int Brow, int Nose, int Jaw, int Scar, bool Female = false, int Age = 26);
+
+    /// Pack facial features into a non-negative int for `Look.Features` (zero heap allocation, value equality).
+    public static int PackFeatures(int cut, int beard, int eye, int brow, int nose, int jaw, int scar, bool female = false) =>
+        (Math.Clamp(cut, 0, 4) & 7)
+        | ((Math.Clamp(beard, 0, 3) & 3) << 3)
+        | ((Math.Clamp(eye, 0, 3) & 3) << 5)
+        | ((Math.Clamp(brow, 0, 2) & 3) << 7)
+        | ((Math.Clamp(nose, 0, 2) & 3) << 9)
+        | ((Math.Clamp(jaw, 0, 2) & 3) << 11)
+        | ((Math.Clamp(scar, 0, 2) & 3) << 13)
+        | ((female ? 1 : 0) << 15);
+
+    public static int PackFeatures(CaptainLook l) => PackFeatures(l.Cut, l.Beard, l.Eye, l.Brow, l.Nose, l.Jaw, l.Scar);
+
+    public static FaceFeatures UnpackFeatures(int code, int age = 26) => new(
+        Cut: Math.Clamp(code & 7, 0, 4),
+        Beard: Math.Clamp((code >> 3) & 3, 0, 3),
+        Eye: Math.Clamp((code >> 5) & 3, 0, 3),
+        Brow: Math.Clamp((code >> 7) & 3, 0, 2),
+        Nose: Math.Clamp((code >> 9) & 3, 0, 2),
+        Jaw: Math.Clamp((code >> 11) & 3, 0, 2),
+        Scar: Math.Clamp((code >> 13) & 3, 0, 2),
+        Female: ((code >> 15) & 1) != 0,
+        Age: age);
+
+    /// Derive portrait-identical facial features from a man's seed and visage style (single source of truth for PortraitPainter & Puppet3D).
+    public static FaceFeatures DeriveFeatures(int seed, int style, bool female = false, int age = 26)
+    {
+        float H(int salt) => Ease.Hash(seed * 31 + salt * 977);
+        int cut = female ? (H(1) < 0.7f ? 1 : 2) : style == 3 ? 4 : H(1) < 0.45f ? 0 : H(1) < 0.8f ? 3 : H(1) < 0.92f ? 2 : 1;
+        int beard = female || age < 18 ? 0 : style switch { 0 => 0, 1 => 1, 2 => 2, _ => 1 + (H(9) < 0.5f ? 0 : 2) };
+        int eye = (int)(H(6) * 4) % 4;
+        int brow = (int)(H(7) * 3) % 3;
+        int nose = (int)(H(8) * 3) % 3;
+        int jaw = (int)(H(10) * 3) % 3;
+        return new FaceFeatures(cut, beard, eye, brow, nose, jaw, 0, female, age);
+    }
 }

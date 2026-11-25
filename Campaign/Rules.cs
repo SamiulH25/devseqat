@@ -256,7 +256,7 @@ public static class Rules
         var shield = Gear.Get(w.TwoHanded ? "no_shield" : k.Shield);
         GearDef body = Gear.Get(k.Body), helm = Gear.Get(k.Helm);
         var t = Troops.Get("captain").Clone();
-        t.Look = t.Look with { Weapon = w.Look, Shield = shield.Look, Body = body.Look, Legs = body.Legs, Feet = body.Feet, Head = helm.Look, Visage = c.Visage }; // the face from the creator
+        t.Look = t.Look with { Weapon = w.Look, Shield = shield.Look, Body = body.Look, Legs = body.Legs, Feet = body.Feet, Head = helm.Look, Visage = c.Visage, Features = c.Likeness != null ? Variety.PackFeatures(c.Likeness) : -1 }; // the face from the creator
         // Base + skills + kit, as every soldier (docs/pre-demo/KIT.md). His legs, feet and hands come with his body piece and share
         // how well it is made; how well each piece is made (C9) scales its own numbers.
         var kit = new FighterKit(w, shield, body, helm, Gear.Piece("legs", body.Legs), Gear.Piece("feet", body.Feet), Gear.Piece("hands", t.Look.Hands));
