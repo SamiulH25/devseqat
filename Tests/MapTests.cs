@@ -390,6 +390,9 @@ public static partial class SelfTest
     static void RoadsideStops()
     {
         var c = Campaign.New(7, layout: WorldMap.DraftLayout);
+        Check(c.S.Settlements.Where(s => s.Kind == SettlementKind.Town).All(t => c.S.Settlements.Count(v => v.Kind == SettlementKind.Village && v.Holder == t.Id) >= 2), "layout 6: every town has at least 2 villages");
+        var bareCastles = c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && c.S.Settlements.Count(v => v.Kind == SettlementKind.Village && v.Holder == s.Id) < 1).ToList();
+        Check(bareCastles.Count == 0, "layout 6: every castle has at least 1 village (missing: " + string.Join(", ", bareCastles.Select(k => $"{k.Name}#{k.Id}")) + ")");
         var stops = c.Sites.Where(x => Campaign.RoadSiteKinds.Contains(x.Kind)).ToList();
         int inns = stops.Count(x => x.Kind == "inn"), tolls = stops.Count(x => x.Kind == "toll");
         float far = stops.Max(x => c.Map.RoadDist(x.Pos));
@@ -637,6 +640,8 @@ public static partial class SelfTest
         Check(nTowns <= 25 && castles >= 90, $"towns are rare and castles common ({nTowns} towns, {castles} castles)");
         Check(m.Provinces.All(p => a.S.Settlements.Any(s => s.Province == p.Id && s.Kind != SettlementKind.Village)), "every province has a seat");
         Check(a.S.Settlements.Where(s => s.Kind == SettlementKind.Village).All(v => v.Holder >= 0 && a.S.Settlements[v.Holder].Province == v.Province), "every village is bound to a seat of its province");
+        Check(a.S.Settlements.Where(s => s.Kind == SettlementKind.Town).All(t => a.S.Settlements.Count(v => v.Kind == SettlementKind.Village && v.Holder == t.Id) >= 2), "every town has at least 2 villages");
+        Check(a.S.Settlements.Where(s => s.Kind == SettlementKind.Castle).All(c => a.S.Settlements.Count(v => v.Kind == SettlementKind.Village && v.Holder == c.Id) >= 1), "every castle has at least 1 village");
         Check(Enumerable.Range(0, a.S.Factions.Count).All(f => a.S.Settlements.Any(s => s.Faction == f && s.Kind == SettlementKind.Town)), "every realm has a town for its capital");
         Check(a.S.Settlements.Where(s => s.Kind == SettlementKind.Castle).Select(s => s.Size).Distinct().Count() == 3, "castles come in three sizes");
         var low = m.Settlements.MinBy(s => m.Height(s.Pos.X, s.Pos.Y))!;

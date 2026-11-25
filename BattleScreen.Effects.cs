@@ -207,4 +207,138 @@ partial class BattleScreen
             else puppet.Banner(f.Pos, f.Ground, f.Palette, 0, f.Charge, 0, lean, f.Dir);
         }
     }
+
+    // ---------- 3D melee slash arcs & parry starbursts ----------
+
+    struct SlashArc { public Vector3 Origin; public float Yaw, Reach, Born, Life; public AttackDir Dir; public Color Col; public bool Heavy; }
+    struct SparkFlash { public Vector3 At; public float Born, Life, Size; public int Seed; public Color Col; }
+    readonly List<SlashArc> slashArcs = new();
+    readonly List<SparkFlash> sparkFlashes = new();
+    readonly Dictionary<int, float> lastSlashAt = new();
+
+    void ResetCombatFx() { slashArcs.Clear(); sparkFlashes.Clear(); lastSlashAt.Clear(); }
+
+    void AddSparkFlash(Vector2 at, float y, float size, Color col)
+    {
+        if (quality == Quality.Low || sparkFlashes.Count > 48) return;
+        sparkFlashes.Add(new SparkFlash
+        {
+            At = G(at, y),
+            Born = battle.Time,
+            Life = 0.15f,
+            Size = size,
+            Seed = fx.Next(),
+            Col = col,
+        });
+    }
+
+    void TrackSlashes()
+    {
+        if (quality == Quality.Low || slashArcs.Count > 40) return;
+        float now = battle.Time;
+        var eye2 = new Vector2(eye.X, eye.Z);
+        float maxD2 = 42f * 42f;
+        var units = battle.Units;
+        for (int i = 0; i < units.Count; i++)
+        {
+            var u = units[i];
+            if (!u.Active || u.Action != UnitAction.Recover) continue;
+            if (u.Type.Class is UnitClass.Archer or UnitClass.Caster) continue;
+            bool priority = u.IsPlayer || u.IsLeader || u.Hero || u.Type.Reach >= 2.2f;
+            if (!priority && Vector2.DistanceSquared(u.Pos, eye2) > maxD2) continue;
+            if (lastSlashAt.TryGetValue(u.Index, out float prev) && now - prev < 0.28f) continue;
+            // Spawn right at the start of Recover (the strike moment)
+            float recLen = u.Type.Recover;
+            if (recLen > 0.05f && u.ActionTimer < recLen - 0.08f) continue;
+            lastSlashAt[u.Index] = now;
+
+            Color col = u.IsPlayer && battle.AuraBlade ? AuraColour
+                : u.IsPlayer || u.IsLeader || u.Hero ? new Color(255, 232, 168)
+                : new Color(224, 232, 245);
+            float h = u.Mounted ? 2.05f : 1.28f;
+            slashArcs.Add(new SlashArc
+            {
+                Origin = G(u.Pos, h),
+                Yaw = u.ViewFacing,
+                Reach = Math.Clamp(u.Type.Reach * 0.72f, 1.05f, 2.35f),
+                Born = now,
+                Life = priority ? 0.20f : 0.15f,
+                Dir = u.Swing,
+                Col = col,
+                Heavy = priority || u.Type.Reach >= 2.1f,
+            });
+            if (slashArcs.Count > 40) break;
+        }
+    }
+
+    /// Render tapered 3D weapon swing ribbons and steel parry starbursts in the alpha-blended ribbon pass.
+    void DrawCombatFx()
+    {
+        float now = battle.Time;
+        slashArcs.RemoveAll(s => now - s.Born > s.Life || now < s.Born);
+        foreach (var s in slashArcs)
+        {
+            float k = (now - s.Born) / s.Life;
+            float fade = Math.Clamp(1f - k * k, 0f, 1f);
+            var fwd = new Vector3(MathF.Cos(s.Yaw), 0, MathF.Sin(s.Yaw));
+            var right = new Vector3(-fwd.Z, 0, fwd.X);
+            var up = Vector3.UnitY;
+
+            if (s.Dir == AttackDir.Thrust)
+            {
+                var p0 = s.Origin + fwd * (0.35f + k * 0.45f);
+                var p1 = s.Origin + fwd * (s.Reach * 1.15f + k * 0.25f);
+                var core = Color.Lerp(s.Col, Color.White, 0.65f) * (0.85f * fade);
+                BeamQuad(p0, p1, 0.04f * fade, 0.14f * fade, Color.Transparent, core);
+                continue;
+            }
+
+            const int segs = 6;
+            float r = s.Reach;
+            float wBase = (s.Heavy ? 0.26f : 0.18f) * fade;
+            Vector3 ArcPt(float t)
+            {
+                if (s.Dir == AttackDir.Overhead)
+                {
+                    float a = MathHelper.Lerp(-0.95f, 0.85f, t); // high overhead down to front
+                    return s.Origin + fwd * (MathF.Cos(a) * r) + up * (MathF.Sin(-a) * r * 0.88f + 0.15f);
+                }
+                float sign = s.Dir == AttackDir.Left ? -1f : 1f;
+                float ang = MathHelper.Lerp(-1.15f, 1.05f, t) * sign;
+                return s.Origin + (fwd * MathF.Cos(ang) + right * MathF.Sin(ang)) * r + up * ((t - 0.5f) * 0.22f * sign);
+            }
+
+            // Sweep advances smoothly across the arc while trailing edge fades
+            float headT = Math.Clamp(0.45f + k * 0.85f, 0.1f, 1f);
+            float tailT = Math.Clamp(headT - 0.72f, 0f, headT);
+            var prev = ArcPt(tailT);
+            for (int j = 1; j <= segs; j++)
+            {
+                float f0 = (j - 1) / (float)segs, f1 = j / (float)segs;
+                float t1 = MathHelper.Lerp(tailT, headT, f1);
+                var next = ArcPt(t1);
+                var c0 = Color.Lerp(s.Col, Color.White, f0 * 0.55f) * (fade * f0 * 0.78f);
+                var c1 = Color.Lerp(s.Col, Color.White, f1 * 0.75f) * (fade * f1 * 0.92f);
+                BeamQuad(prev, next, wBase * (0.25f + 0.75f * f0), wBase * (0.25f + 0.75f * f1), c0, c1);
+                prev = next;
+            }
+        }
+
+        sparkFlashes.RemoveAll(sp => now - sp.Born > sp.Life || now < sp.Born);
+        foreach (var sp in sparkFlashes)
+        {
+            float k = (now - sp.Born) / sp.Life;
+            float fade = Math.Clamp(1f - k, 0f, 1f);
+            var core = Color.Lerp(sp.Col, Color.White, 0.7f) * (0.95f * fade);
+            var outer = sp.Col * (0.55f * fade);
+            float reach = sp.Size * (0.45f + 0.95f * Ease.OutCubic(k));
+            for (int j = 0; j < 5; j++)
+            {
+                float a = j * MathF.Tau / 5f + (sp.Seed % 100) * 0.06f;
+                float elev = ((j % 2) * 2 - 1) * 0.45f;
+                var dir = Vector3.Normalize(new Vector3(MathF.Cos(a), elev, MathF.Sin(a)));
+                BeamQuad(sp.At + dir * (reach * 0.15f), sp.At + dir * reach, 0.07f * fade, 0.01f, core, outer);
+            }
+        }
+    }
 }

@@ -236,12 +236,15 @@ partial class BattleScreen
             switch (cue)
             {
                 case Cue.ParrySteel:
-                    Spray(at, 1.35f, 12, new Color(255, 240, 175), 4.4f, 0.34f, 0.08f, true);
-                    Spray(at, 1.35f, 1, new Color(255, 248, 220), 0.2f, 0.16f, 0.42f, false, 3.2f);
+                    Spray(at, 1.35f, 14, new Color(255, 240, 175), 4.6f, 0.36f, 0.085f, true);
+                    Spray(at, 1.35f, 1, new Color(255, 248, 220), 0.2f, 0.16f, 0.46f, false, 3.4f);
+                    AddSparkFlash(at, 1.35f, 0.95f, new Color(255, 240, 175));
+                    AddGlow(at, 1.35f, new Color(255, 234, 165), 1.3f, 5.5f);
                     break;
                 case Cue.Clash: case Cue.BlockMetal: case Cue.BluntPlate:
-                    Spray(at, 1.3f, 8, new Color(255, 226, 140), 3.6f, 0.30f, 0.075f, true);
+                    Spray(at, 1.3f, 9, new Color(255, 226, 140), 3.8f, 0.30f, 0.075f, true);
                     Spray(at, 1.3f, 1, new Color(255, 236, 190), 0.3f, 0.14f, 0.32f, false, 2.6f);
+                    AddSparkFlash(at, 1.3f, 0.68f, new Color(255, 222, 130));
                     break;
                 case Cue.ArrowPlate:
                     Spray(at, 1.3f, 5, new Color(255, 232, 160), 3.2f, 0.24f, 0.06f, true);
@@ -261,8 +264,10 @@ partial class BattleScreen
                     Spray(at, 1.2f, 4, new Color(255, 226, 150), 2.9f, 0.22f, 0.06f, true);
                     break;
                 case Cue.LanceImpact:
-                    Spray(at, 1.2f, 11, new Color(165, 16, 20), 3.1f, 0.6f, 0.09f, true);
-                    Spray(at, 0.35f, 8, new Color(172, 154, 120), 2.2f, 0.9f, 0.28f, false, 0.9f);
+                    Spray(at, 1.2f, 12, new Color(165, 16, 20), 3.2f, 0.6f, 0.095f, true);
+                    Spray(at, 0.35f, 10, new Color(172, 154, 120), 2.5f, 1.05f, 0.32f, false, 1.1f);
+                    AddRipple(at, 0.4f, 3.8f, 0.42f, new Color(196, 178, 138), 0.14f);
+                    AddSparkFlash(at, 1.3f, 0.85f, new Color(255, 232, 165));
                     break;
                 case Cue.BoneHit: case Cue.BoneCollapse:
                     Spray(at, 1.1f, cue == Cue.BoneCollapse ? 11 : 6, new Color(224, 214, 188), 2.8f, 0.48f, 0.075f, true);
@@ -271,10 +276,13 @@ partial class BattleScreen
                     Spray(at, 1.1f, 4, new Color(210, 192, 155), 1.8f, 0.38f, 0.20f, false, 0.9f);
                     break;
                 case Cue.Impact:
-                    Spray(at, 0.2f, 10, new Color(168, 150, 116), 1.6f, 1.3f, 0.25f, false, 0.6f);
+                    Spray(at, 0.2f, 12, new Color(168, 150, 116), 1.9f, 1.35f, 0.28f, false, 0.85f);
+                    AddRipple(at, 0.5f, 4.2f, 0.48f, new Color(188, 170, 132), 0.14f);
                     break;
             }
         GroundSteps(dt);
+        TrackSlashes();
+        AtmosphereFx(dt);
         MagicFx(dt);
         for (int i = motes.Count - 1; i >= 0; i--)
         {
@@ -288,6 +296,50 @@ partial class BattleScreen
             float ground = battle.Terrain.Height(new Vector2(m.Pos.X, m.Pos.Z));
             if (m.Pos.Y < ground) { m.Pos.Y = ground + 0.01f; m.Vel = Vector3.Zero; if (m.Heavy) m.Life = MathF.Min(m.Life, 0.08f); } // a drop or spark that lands is gone (blood stays as the ground mark)
             motes[i] = m;
+        }
+    }
+
+    float atmoAcc;
+
+    /// Ambient battlefield atmosphere: siege fire smoke & embers, desert/steppe wind dust, winter snow gusts, forest leaves, rain splashes.
+    void AtmosphereFx(float dt)
+    {
+        if (quality == Quality.Low || motes.Count > 1350) return;
+        atmoAcc += dt;
+        if (atmoAcc < 0.08f) return;
+        float step = atmoAcc;
+        atmoAcc = 0;
+        var focus2 = new Vector2(focusPoint.X, focusPoint.Z);
+
+        // Siege smoke & embers drifting from the wall/gate line
+        if (battle.Options.Siege && battle.Terrain.Wall is { Gates.Count: > 0 } wall)
+        {
+            var gate = wall.Gates[0].Pos;
+            if (fx.NextSingle() < step * 6f)
+                Spray(gate + new Vector2((fx.NextSingle() - 0.5f) * 2f, (fx.NextSingle() - 0.5f) * 8f), 1.6f, 1, new Color(86, 80, 74), 0.35f, 3.6f, 0.75f, false, 0.55f, -1.3f);
+            if (fx.NextSingle() < step * 9f)
+                Spray(gate + new Vector2((fx.NextSingle() - 0.5f) * 1.5f, (fx.NextSingle() - 0.5f) * 6f), 0.9f, 1, new Color(255, 168, 56), 0.8f, 1.4f, 0.065f, false, 0, -1.6f);
+        }
+
+        // Biome & weather ambient particles around the camera focus
+        var p = focus2 + new Vector2((fx.NextSingle() - 0.5f) * 34f, (fx.NextSingle() - 0.5f) * 34f);
+        if (battle.Weather.Snow && fx.NextSingle() < step * 14f)
+        {
+            motes.Add(new Mote { Pos = G(p, 4.5f + fx.NextSingle() * 3f), Vel = new Vector3(1.6f, -1.3f, 0.6f), Life = 3.2f, Max = 3.2f, Size = 0.065f, Col = new Color(236, 242, 250) });
+        }
+        else if (battle.Weather.Rain > 0.35f && fx.NextSingle() < step * 12f)
+        {
+            if (battle.Terrain.WaterDepth(p) > 0.04f || battle.Terrain.GroundAt(p) == GroundKind.Mud)
+                Spray(p, 0.06f, 2, new Color(190, 206, 218), 1.2f, 0.25f, 0.045f, true);
+        }
+        else if (battle.Terrain.Params == TerrainParams.Desert || battle.Terrain.Params == TerrainParams.Steppe)
+        {
+            if (fx.NextSingle() < step * 5f)
+                motes.Add(new Mote { Pos = G(p, 0.45f), Vel = new Vector3(3.4f, 0.15f, 0.9f), Life = 2.1f, Max = 2.1f, Size = 0.45f, Grow = 0.35f, Col = new Color(196, 174, 132) });
+        }
+        else if (battle.Terrain.Params == TerrainParams.Forest && fx.NextSingle() < step * 4f)
+        {
+            motes.Add(new Mote { Pos = G(p, 3.8f + fx.NextSingle() * 2f), Vel = new Vector3(0.7f, -0.55f, 0.4f), Life = 3.4f, Max = 3.4f, Size = 0.08f, Col = fx.Next(2) == 0 ? new Color(164, 128, 52) : new Color(102, 132, 54) });
         }
     }
 

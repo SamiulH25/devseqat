@@ -126,4 +126,35 @@ sealed partial class BattleScreen
             Line(l.At, l.At - l.Dir * len, ArrowColor);
         }
     }
+
+    /// Tapered alpha-blended volley ribbons & glowing fire-arrow trails (at dusk, night, or during sieges).
+    void DrawArrowRibbons()
+    {
+        if (quality == Quality.Low || battle.Arrows.Count == 0) return;
+        bool flaming = battle.Options.Siege || battle.Weather.Hour < 6.5f || battle.Weather.Hour > 18.2f;
+        var eye2 = new Vector2(eye.X, eye.Z);
+        float maxD2 = 110f * 110f;
+        int drawn = 0;
+        foreach (var a in battle.Arrows)
+        {
+            if (a.Stuck >= 0 || a.Kind == Grip.Sling) continue;
+            if (Vector2.DistanceSquared(new Vector2(a.Pos.X, a.Pos.Z), eye2) > maxD2) continue;
+            var dir = a.Vel.LengthSquared() > 1e-4f ? Vector3.Normalize(a.Vel) : Vector3.Down;
+            if (flaming)
+            {
+                var core = new Color(255, 240, 170) * 0.92f;
+                var tail = new Color(255, 118, 28) * 0.52f;
+                BeamQuad(a.Pos, a.Pos - dir * 0.45f, 0.085f, 0.055f, core, tail);
+                BeamQuad(a.Pos - dir * 0.45f, a.Pos - dir * 1.9f, 0.055f, 0.01f, tail, Color.Transparent);
+                if (motes.Count < 1400 && fx.NextSingle() < 0.08f)
+                    motes.Add(new Mote { Pos = a.Pos - dir * 0.2f, Vel = new Vector3((fx.NextSingle() - 0.5f) * 0.6f, 0.4f, (fx.NextSingle() - 0.5f) * 0.6f), Life = 0.45f, Max = 0.45f, Size = 0.055f, Col = new Color(255, 165, 52) });
+            }
+            else
+            {
+                var streak = new Color(236, 234, 222) * 0.36f;
+                BeamQuad(a.Pos - dir * 0.35f, a.Pos - dir * 2.1f, 0.045f, 0.008f, streak, Color.Transparent);
+            }
+            if (++drawn >= 160) break;
+        }
+    }
 }

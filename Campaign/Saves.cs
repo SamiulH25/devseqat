@@ -12,6 +12,11 @@ public sealed class SaveMeta
     public string Captain = "", Company = "", Service = "", Label = "";
     public int Day, Gold, Men, Palette = 2, Version;
     public bool Ironman, GameOver;
+    /// Dynamic title-screen context saved with the card (defaults cleanly for older saves).
+    public float Hour = 19.2f, Rain;
+    public string Biome = "Plains", Place = "";
+    public bool Winter, Mounted = true;
+    public int Infantry, Archers, Cavalry, Mages;
     /// When it was written (UTC). Wall-clock time is fine here: it never reaches the campaign's dice.
     public DateTime Saved;
 
@@ -20,19 +25,79 @@ public sealed class SaveMeta
     {
         int f = s.Captain.Contract;
         bool serving = f >= 0 && f < s.Factions.Count;
+        int day = (int)(s.Hours / 24) + 1;
+        float hour = (float)(s.Hours % 24);
+        int season = ((day - 1) / Math.Max(1, Campaign.DaysPerYear / 4)) % 4;
+        var player = s.Parties.Count > 0 ? s.Parties[0] : null;
+        int inf = 0, arch = 0, cav = 0, mage = 0;
+        if (player != null)
+            foreach (var co in player.Companies)
+                foreach (var st in co.Stacks)
+                {
+                    if (st.Men <= 0 || !Troops.Has(st.Troop)) continue;
+                    switch (Troops.Get(st.Troop).Class)
+                    {
+                        case UnitClass.Cavalry: cav += st.Men; break;
+                        case UnitClass.Archer or UnitClass.Skirmisher: arch += st.Men; break;
+                        case UnitClass.Caster: mage += st.Men; break;
+                        default: inf += st.Men; break;
+                    }
+                }
+        string biome = "Plains", place = "";
+        if (player != null)
+        {
+            if (s.Settlements.Count > 0)
+            {
+                var near = s.Settlements.MinBy(st => Vector2.DistanceSquared(st.Pos, player.Pos));
+                if (near != null)
+                {
+                    place = near.Name.ToUpperInvariant();
+                    biome = near.Culture switch
+                    {
+                        "northern" or "northern_fjord" or "northern_taiga" => "Highlands",
+                        "steppe" => "Steppe",
+                        "sunward" => "Badlands",
+                        "league" or "azure_coast" => "Coast",
+                        _ => "Plains",
+                    };
+                }
+            }
+            if (s.Layout >= WorldMap.DesignLayout)
+            {
+                try
+                {
+                    var d = s.Layout >= WorldMap.DraftLayout ? WorldDesign.Draft() : WorldDesign.Get();
+                    int pi = d.ProvinceAt(player.Pos / WorldMap.DesignScale);
+                    if (pi >= 0 && pi < d.Provinces.Length && d.Provinces[pi].Kind != "Sea")
+                        biome = d.Provinces[pi].Kind;
+                }
+                catch { }
+            }
+        }
+        float rain = Weather.For(hour, season, Rng.Mix(s.Seed, (int)s.Hours, 7)).Rain;
         return new SaveMeta
         {
             Captain = (s.Characters.FirstOrDefault(c => c.Id == s.CaptainChar)?.Name ?? "THE CAPTAIN").ToUpperInvariant(),
-            Company = (s.Parties.Count > 0 ? s.Parties[0].Name : "").ToUpperInvariant(),
+            Company = (player?.Name ?? "").ToUpperInvariant(),
             Service = (!serving ? "A FREE COMPANY" : (s.Captain.Fealty ? "SWORN TO THE " : "IN THE PAY OF THE ") + s.Factions[f].Name).ToUpperInvariant(),
             Label = label,
-            Day = (int)(s.Hours / 24) + 1,
+            Day = day,
             Gold = (int)s.Gold,
-            Men = s.Parties.Count > 0 ? s.Parties[0].Men : 0,
+            Men = player?.Men ?? 0,
             Palette = !serving ? 2 : s.Factions[f].Founded ? s.Factions[f].Palette : Factions.All[Math.Min(f, Factions.All.Count - 1)].Palette,
             Version = s.Version,
             Ironman = s.Ironman,
             GameOver = s.GameOver,
+            Hour = hour,
+            Rain = rain,
+            Biome = biome,
+            Place = place,
+            Winter = season == 3 || biome is "Snow" or "Tundra",
+            Mounted = s.Captain.Kit.Horse != "",
+            Infantry = inf,
+            Archers = arch,
+            Cavalry = cav,
+            Mages = mage,
             Saved = DateTime.UtcNow,
         };
     }

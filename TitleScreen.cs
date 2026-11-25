@@ -106,9 +106,10 @@ sealed partial class TitleScreen
         Sword(x, ty + 7 * k + U(14), 53 * k);
         Spaced("A CAPTAIN'S WAR", x + U(40), ty + 7 * k + U(34), Kit.Parchment, 2, U(5));
         if (saves.Open) nav = 0;
-        Menu(x, (int)(ui.H * 0.43f), save);
-        if (host.TitleNote != "") ui.Text(host.TitleNote, x, (int)(ui.H * 0.43f) + Items.Length * U(35) + U(10), Style.Warn, 1);
-        if (save != null) Company(save, x, ui.H - U(92));
+        int menuY = (int)(ui.H * 0.39f);
+        Menu(x, menuY, save);
+        if (host.TitleNote != "") ui.Text(host.TitleNote, x, menuY + Items.Length * U(35) + U(10), Style.Warn, 1);
+        if (save != null) Company(save, x, ui.H - U(100));
         if (saves.Open) saves.Draw(ui, ms.ScrollWheelValue - pms.ScrollWheelValue, kb, pkb);
         else if (legends.Open) legends.Draw(ui, ms.ScrollWheelValue - pms.ScrollWheelValue, kb, pkb);
         string hints = "W/S CHOOSE   ENTER SELECT   F2 GRAPHICS";
@@ -200,9 +201,11 @@ sealed partial class TitleScreen
         if (sel < 0 || !can[sel]) sel = can[1] ? 1 : 0;
         for (; nav != 0; nav -= Math.Sign(nav))
             do sel = (sel + Math.Sign(nav) + Items.Length) % Items.Length; while (!can[sel]);
-        int w = U(270), h = U(30), gap = U(5);
-        ui.HGrad(new Rectangle(x - U(22), y - U(8), w + U(96), Items.Length * (h + gap) - gap + U(16)), Color.Black * 0.54f, Color.Black * 0f, 4);
-        ui.Rect(new Rectangle(x - U(10), y - U(2), Math.Max(1, U(1)), Items.Length * (h + gap) - gap + U(4)), Kit.Gilt * 0.35f);
+        int w = U(270), h = U(30), gap = U(5), totalH = Items.Length * (h + gap) - gap;
+        ui.HGrad(new Rectangle(x - U(22), y - U(10), w + U(96), totalH + U(20)), Color.Black * 0.64f, Color.Black * 0f, 4);
+        ui.HGrad(new Rectangle(x - U(10), y - U(10), w + U(40), Math.Max(1, U(1))), Kit.Gilt * 0.48f, Kit.Gilt * 0f, 4);
+        ui.HGrad(new Rectangle(x - U(10), y + totalH + U(9), w + U(40), Math.Max(1, U(1))), Kit.Gilt * 0.36f, Kit.Gilt * 0f, 4);
+        ui.Rect(new Rectangle(x - U(10), y - U(10), Math.Max(1, U(2)), totalH + U(20)), Kit.Gilt * 0.50f);
         int hit = -1;
         for (int i = 0; i < Items.Length; i++)
         {
@@ -248,15 +251,18 @@ sealed partial class TitleScreen
     /// The last save as the company's card: its arms, the captain, whom he serves, the day, the purse and the men.
     void Company(SaveMeta save, int x, int y)
     {
-        var c = ui.Plate(new Rectangle(x - U(10), y, U(270), U(66)), null, Kit.Gilt);
-        ui.Shield(new Rectangle(c.X - U(2), c.Y - U(4), U(40), U(48)), Style.Sides[Math.Clamp(save.Palette, 0, Style.Sides.Length - 1)]);
-        int tx = c.X + U(48);
-        ui.TextFit(save.Captain, tx, c.Y - U(4), c.Right - tx, Kit.Gilt, ui.FitScale(save.Captain, c.Right - tx));
-        ui.TextFit(save.Service, tx, c.Y + U(14), c.Right - tx, Style.Dim, 1);
-        ui.Rect(new Rectangle(tx, c.Y + U(25), c.Right - tx, Math.Max(1, U(1))), Kit.Gilt * 0.3f);
-        ui.Icon("clock", tx, c.Y + U(31), Style.Dim, 1); ui.Text($"DAY {save.Day}", tx + U(12), c.Y + U(31), Style.Text, 1);
-        ui.Icon("coin", tx + U(62), c.Y + U(31), Kit.Gilt, 1); ui.Text($"{save.Gold:N0}", tx + U(74), c.Y + U(31), Style.Text, 1);
-        ui.Icon("shield", tx + U(124), c.Y + U(31), Style.Dim, 1); ui.Text($"{save.Men} MEN", tx + U(136), c.Y + U(31), Style.Text, 1);
+        var c = ui.Plate(new Rectangle(x - U(10), y, U(296), U(78)), null, Kit.Gilt);
+        ui.Shield(new Rectangle(c.X - U(2), c.Y + U(2), U(42), U(50)), Style.Sides[Math.Clamp(save.Palette, 0, Style.Sides.Length - 1)]);
+        int tx = c.X + U(50);
+        ui.TextFit(save.Captain, tx, c.Y - U(2), c.Right - tx, Kit.Gilt, ui.FitScale(save.Captain, c.Right - tx));
+        string loc = save.Place != "" ? $"{save.Place} · {TimeLabel(save.Hour)}" : $"{save.Biome.ToUpperInvariant()} · {TimeLabel(save.Hour)}";
+        ui.TextFit(save.Service, tx, c.Y + U(16), c.Right - tx, Style.Dim, 1);
+        ui.TextFit(loc, tx, c.Y + U(26), c.Right - tx, Kit.Parchment * 0.76f, 1);
+        ui.Rect(new Rectangle(tx, c.Y + U(37), c.Right - tx, Math.Max(1, U(1))), Kit.Gilt * 0.3f);
+        int sy = c.Y + U(43);
+        ui.Icon("clock", tx, sy, Style.Dim, 1); ui.Text($"DAY {save.Day}", tx + U(12), sy, Style.Text, 1);
+        ui.Icon("coin", tx + U(72), sy, Kit.Gilt, 1); ui.Text($"{save.Gold:N0}", tx + U(84), sy, Style.Text, 1);
+        ui.Icon("shield", tx + U(144), sy, Style.Dim, 1); ui.Text($"{save.Men} MEN", tx + U(156), sy, Style.Text, 1);
     }
 
     /// The title as one PNG and the loading screen, part done, as another (IRONFIELD_TITLE_SHOTS), then quit.

@@ -941,7 +941,52 @@ sealed partial class MapScreen
                 var col = Color.Lerp(new Color(95, 88, 82), new Color(175, 172, 168), age);
                 puppet.Haze(p, size, col, alpha, seed * 15f + j * 1.9f + age * 1.2f);
             }
+            // Rising embers out of siege & raid fires
+            for (int e = 0; e < 2; e++)
+            {
+                float ea = (time * 0.42f + seed * 3f + e * 0.5f) % 1f;
+                var ep = at + new Vector3(MathF.Sin(ea * 9f + fires + e * 3f) * 0.45f, 0.35f + ea * 2.8f, MathF.Cos(ea * 7f + fires) * 0.45f);
+                puppet.Haze(ep, 0.24f * (1f - ea * 0.5f), new Color(255, 204, 96), (1f - ea) * 0.85f, ea * 6f);
+            }
             fires++;
+        }
+
+        // Marching dust wakes behind moving armies on the campaign map
+        int dustCap = lifeQuality == Quality.High ? 24 : 10, dustDrawn = 0;
+        var dustCol = C.Winter ? new Color(224, 234, 244) : new Color(188, 170, 136);
+        foreach (var p in C.S.Parties)
+        {
+            if (dustDrawn >= dustCap || p.Down || !p.Moving || p.Men < 10) continue;
+            if (Vector2.DistanceSquared(p.Pos, focus) > reach2) continue;
+            if (C.Map.InSea(p.Pos)) continue;
+            var back = p.Goal - p.Pos;
+            back = back.LengthSquared() > 1e-4f ? -Vector2.Normalize(back) : new Vector2(-1, 0);
+            float scale = Math.Clamp(0.45f + p.Men / 110f, 0.45f, 1.35f);
+            for (int j = 0; j < 3; j++)
+            {
+                float age = (time * 0.55f + (p.Id * 0.37f) + j / 3f) % 1f;
+                var wp = p.Pos + back * (0.8f + age * 2.4f);
+                var at3 = new Vector3(wp.X, Surface(wp) + 0.25f + age * 0.7f, wp.Y);
+                float a = MathF.Sin(MathF.Min(1f, age * 3f) * MathF.PI * 0.5f) * (1f - age) * 0.34f;
+                puppet.Haze(at3, (0.45f + age * 0.85f) * scale, dustCol, a, p.Id + j * 1.7f + age);
+            }
+            dustDrawn++;
+        }
+
+        // Active map battles: flickering steel clash sparks & battle dust
+        foreach (var b in C.S.Skirmishes)
+        {
+            if (Vector2.DistanceSquared(b.Pos, focus) > reach2 * 1.5f) continue;
+            var center = G(b.Pos, 0.45f);
+            float dustA = 0.38f + 0.12f * MathF.Sin(time * 4.2f + b.Id);
+            puppet.Haze(center, 1.9f, new Color(182, 166, 134), dustA, time * 0.6f + b.Id);
+            for (int j = 0; j < 3; j++)
+            {
+                float age = (time * 1.4f + b.Id * 0.61f + j / 3f) % 1f;
+                float ang = j * MathF.Tau / 3f + time * 1.7f + b.Id;
+                var sp = center + new Vector3(MathF.Cos(ang) * (0.4f + age * 0.9f), 0.3f + age * 1.1f, MathF.Sin(ang) * (0.4f + age * 0.9f));
+                puppet.Haze(sp, 0.36f * (1f - age * 0.5f), new Color(255, 232, 148), (1f - age) * 0.9f, ang);
+            }
         }
     }
 

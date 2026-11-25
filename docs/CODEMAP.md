@@ -218,8 +218,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleRescue.cs (46 lines)
 - **Battle** (class, L8): NameOf:19, Rescuable:22, UpdateRescue:25, KillForTest:42, GoalText:45
 
-## BattleScreen.Arrows.cs (129 lines)
-- **BattleScreen** (class, L10): Landed:13, ResetArrows:25, TrackArrows:29, Steep:51, Puff:61, DrawMissiles:78, MissileLines:103
+## BattleScreen.Arrows.cs (160 lines)
+- **BattleScreen** (class, L10): Landed:13, ResetArrows:25, TrackArrows:29, Steep:51, Puff:61, DrawMissiles:78, MissileLines:103, DrawArrowRibbons:131
 
 ## BattleScreen.Controls.cs (406 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:94, CapSector:95, Sector:96, CommandControls:103, CommandCursor:300, BoxOf:318, OnScreen:320, PickSquad:327, GroundUnderMouse:341, GroundUnder:343, UpdateCamera:369
@@ -227,11 +227,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.cs (724 lines)
 - **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:130, Load:144, QuickGround:175, BeginCampaign:185, StartDeployment:222, StageCommandView:237, BenchStage:247, FinishCampaignBattle:288, BeginQuickBattle:304, NewBattle:331, WithMages:376, SetWorld:384, SetCommand:399, Pressed:411, Update:419, PlaySounds:529, PlayPlayerSounds:558, Soundscape:580, SyncHud:674, MenuChoice:706
 
-## BattleScreen.Draw.cs (1153 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:60, Total3DVerts:160, DrawBlobs:162, EaseFacings:204, Spray:220, Effects:233, GroundSteps:299, BuildSprites:364, EnsureSkinned:572, DrawUnits3D:580, LensFill:607, SpriteStates:610, DrawSpritesBasic:618, DrawSpritesShaded:628, DrawSoft:639, Line:653, G:654, OrderArrows:663, OrderArrowLines:665, FortressPointRings:681, Ring:692, DashedRing:703, SelectionBox:718, Band:751, BeamQuad:773, BattleTutorialRibbon:798, TorchRow:845, Precipitation:855, Fall:866, Stakes:886, SpellColor:920, Spells:926, AuraGlow:942, ChampionGlow:952, PlayerGlow:965, PendingFormsDrawn:979, RouteDots:1004, PlanHook:1017, DrawLines:1047
+## BattleScreen.Draw.cs (1205 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:60, Total3DVerts:160, DrawBlobs:162, EaseFacings:204, Spray:220, Effects:233, AtmosphereFx:305, GroundSteps:351, BuildSprites:416, EnsureSkinned:624, DrawUnits3D:632, LensFill:659, SpriteStates:662, DrawSpritesBasic:670, DrawSpritesShaded:680, DrawSoft:691, Line:705, G:706, OrderArrows:715, OrderArrowLines:717, FortressPointRings:733, Ring:744, DashedRing:755, SelectionBox:770, Band:803, BeamQuad:825, BattleTutorialRibbon:850, TorchRow:897, Precipitation:907, Fall:918, Stakes:938, SpellColor:972, Spells:978, AuraGlow:994, ChampionGlow:1004, PlayerGlow:1017, PendingFormsDrawn:1031, RouteDots:1056, PlanHook:1069, DrawLines:1099
 
-## BattleScreen.Effects.cs (210 lines)
-- **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:73, Stamp:98, Trample:107, MenMap:125, TrampleTexture:148, RearOf:165, BannerFalls:187, DrawFallingBanners:198
+## BattleScreen.Effects.cs (344 lines)
+- **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:73, Stamp:98, Trample:107, MenMap:125, TrampleTexture:148, RearOf:165, BannerFalls:187, DrawFallingBanners:198, ResetCombatFx:219, AddSparkFlash:221, TrackSlashes:235, DrawCombatFx:275
 
 ## BattleScreen.Engines.cs (323 lines)
 - **BattleScreen** (class, L9): Timber:22, EngineLines:29, DrawEngine:63, Wound:79, ArmAngle:83, Wheel:92, Pennant:104, Bolter:112, Thrower:141, Ram:189, Tower:219, Wreck:260, EngineMarks:275
@@ -255,8 +255,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **BattleScreen** (class, L9): ResetLod:20, UpdateLod:23
 - **LodGovernor** (class, L40): Pin:58, Reset:59, Frame:62
 
-## BattleScreen.Magic.cs (364 lines)
-- **BattleScreen** (class, L8): OrderColour:31, FlashColour:40, ResetMagicFx:54, AddRipple:56, Rise:60, MagicFx:70, FlashFx:83, FieldFx:179, BuffFx:221, AuraFx:236, MagicLines:271
+## BattleScreen.Magic.cs (446 lines)
+- **BattleScreen** (class, L8): OrderColour:31, FlashColour:40, ResetMagicFx:54, AddRipple:56, Rise:60, MagicFx:70, FlashFx:83, FieldFx:179, BuffFx:236, AuraFx:251, MagicLines:296
 
 ## BattleScreen.Orders.cs (437 lines)
 - **BattleScreen** (class, L8): Targets:12, SelectedCrews:16, EngineOrder:19, Issue:29, Send:42, Move:61, Charge:74, NextRule:84, GiveGoal:103, OrderDivisionCompanies:118, Command:125, MergeSelected:194, RelieveSelected:214, SplitSelected:228, GroupKey:242, Group:245, OrderKeys:266, NextSpell:298, CastAt:311, PlantStakes:325, CommandClick:340, MoveTo:365, SoundHorn:375, NextDivision:382, LineAt:392, Distribute:409, PreviewSlots:428
@@ -604,12 +604,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **BattleSetup** (class, L37)
 - **Rules** (class, L57): RoleOf:61, TroopRole:64, Fits:68, TierWeight:76, Cap:80, PerMan:84, Places:87, Room:90, CapOf:94, Strength:96, Strength:106, Might:109, MightAt:111, Might:113, Strength:114, Monstrous:118, BeastWeight:124, DrillFactor:127, FootFighter:145, MightAgainst:153, HasBeasts:171, Outweighs:175, static:182, WageCost:190, Wage:192, Upkeep:193, UpgradeReady:196, PromoteCost:200, NeedsHorse:209, AddMen:212, CanMerge:218, Merge:221, CompanyName:242, CaptainType:252, CaptainMount:286, WithCaptain:295, CompanySlots:317, MenLimit:319, static:323, AutoResolve:334, Army:390
 
-## Campaign/Saves.cs (303 lines)
+## Campaign/Saves.cs (368 lines)
 - **SaveKind** (enum, L7)
-- **SaveMeta** (class, L10): Of:19
-- **SaveEntry** (class, L42)
-- **CampaignEntry** (class, L55)
-- **Saves** (class, L66): DirOf:76, EnsureId:79, Slug:89, CannotSave:100, PathFor:108, Save:116, WriteMeta:131, Prune:138, KindOf:143, List:150, ReadMeta:164, Campaigns:184, Changed:193, Scan:195, Latest:208, Load:212, Delete:220, DeleteCampaign:231, EndCampaign:240, WriteThumb:248, Migrate:269, Forget:302
+- **SaveMeta** (class, L10): Of:24
+- **SaveEntry** (class, L107)
+- **CampaignEntry** (class, L120)
+- **Saves** (class, L131): DirOf:141, EnsureId:144, Slug:154, CannotSave:165, PathFor:173, Save:181, WriteMeta:196, Prune:203, KindOf:208, List:215, ReadMeta:229, Campaigns:249, Changed:258, Scan:260, Latest:273, Load:277, Delete:285, DeleteCampaign:296, EndCampaign:305, WriteThumb:313, Migrate:334, Forget:367
 
 ## Campaign/Ships.cs (68 lines)
 - **Campaign** (class, L8): IsPort:13, Fare:20, SailHours:22, CannotSail:25, Sail:34, Sail:51
@@ -879,8 +879,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Castle.cs (58 lines)
 - **MapScreen** (class, L6): MusterTab:8
 
-## MapScreen.cs (1289 lines)
-- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:100, Prepared:115, Prepare:120, PlaceStateOf:129, Open:153, ShowResults:177, Pressed:185, Update:189, readonly:294, LaterTips:308, Pan:332, ScreenKeys:334, OpenScreen:342, Soundscape:353, CameFrom:447, Camera:449, Rename:473, Trails:486, MapPick:499, OnScreen:505, PickAt:520, ClickWorld:551, Ground:560, Draw:574, UpdateBearers:742, FinishLife:799, UpdateLife:806, BuildSprites:840, BuildSpritesInner:847, BuildUnits3D:854, DrawUnits3D:878, DrawSprites:889, BuildSmoke:901, DrawSoft:948, Surface:962, G:964, DrawLines:966, MapWeather:1025, DrawMapAmbience:1048, Stage:1111
+## MapScreen.cs (1334 lines)
+- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:100, Prepared:115, Prepare:120, PlaceStateOf:129, Open:153, ShowResults:177, Pressed:185, Update:189, readonly:294, LaterTips:308, Pan:332, ScreenKeys:334, OpenScreen:342, Soundscape:353, CameFrom:447, Camera:449, Rename:473, Trails:486, MapPick:499, OnScreen:505, PickAt:520, ClickWorld:551, Ground:560, Draw:574, UpdateBearers:742, FinishLife:799, UpdateLife:806, BuildSprites:840, BuildSpritesInner:847, BuildUnits3D:854, DrawUnits3D:878, DrawSprites:889, BuildSmoke:901, DrawSoft:993, Surface:1007, G:1009, DrawLines:1011, MapWeather:1070, DrawMapAmbience:1093, Stage:1156
 
 ## MapScreen.Dialogs.cs (241 lines)
 - **MapScreen** (class, L8): MeetingPanel:11, OfRealm:46, SiegeWorksRows:52, SiegePanel:75, BeatPanel:143, GameOverPanel:169, StoryFaceRow:187, MenuPanel:213, SavesPanel:229
@@ -1198,8 +1198,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186
 - **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543, ArcanaCensus:585, WellsFromSites:596, TideFeedsOffers:637, TideShared:655, Overreach:678, CourtMage:711, DoctrinesAndUnweave:743, WorkingsBite:776, WorkingsRemembered:806
 
-## Tests/MapTests.cs (872 lines)
-- **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:280, ReliefRaised:308, MarchTakesMinutes:362, RoadsideStops:390, CliffsBar:413, SegmentGap:461, NewLands:472, FieldsApart:511, MapDressed:531, ShipTravel:569, DesignedMap:617, PlacesPlanned:683, TownsLaidOut:713, PlanSvg:736, VillagesLaidOut:761, FieldsStyled:786, PlacesShowState:817
+## Tests/MapTests.cs (877 lines)
+- **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:280, ReliefRaised:308, MarchTakesMinutes:362, RoadsideStops:390, CliffsBar:416, SegmentGap:464, NewLands:475, FieldsApart:514, MapDressed:534, ShipTravel:572, DesignedMap:620, PlacesPlanned:688, TownsLaidOut:718, PlanSvg:741, VillagesLaidOut:766, FieldsStyled:791, PlacesShowState:822
 
 ## Tests/MeleeTests.cs (455 lines)
 - **SelfTest** (class, L7): HoldsRanks:22, RecklessCharge:41, RearRanksWait:68, StepsUp:89, FightsItsTarget:105, LeviesLoseRanks:143, TierWins:157, PartsByCompany:180, UrgeLunges:201, RefusesFlank:231, VeteransWrap:270, ElitePincer:286, Reforms:318, HorseRegroup:348, BowsFallBack:392, MusterGrade:431, MightWeighsDrill:446
@@ -1231,14 +1231,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tips.cs (69 lines)
 - **Tips** (class, L6): Show:14, Dismiss:28, Draw:38, Lines:48, Height:50, DrawAt:53, Card:61
 
-## TitleScreen.cs (300 lines)
-- **TitleScreen** (class, L8): OpenQuickBattle:26, TitleScreen:32, Update:49, U:69, BeginPicture:72, Draw:80, Logo:125, Sword:154, Spaced:189, Menu:195, Company:249, TitleShot:263, QbShots:274, Shots:288
+## TitleScreen.cs (306 lines)
+- **TitleScreen** (class, L8): OpenQuickBattle:26, TitleScreen:32, Update:49, U:69, BeginPicture:72, Draw:80, Logo:126, Sword:155, Spaced:190, Menu:196, Company:252, TitleShot:269, QbShots:280, Shots:294
 
 ## TitleScreen.Loading.cs (90 lines)
 - **TitleScreen** (class, L9): BeginLoading:30, Loading:41, DrawLoading:49, Flare:77
 
-## TitleScreen.Scene.cs (487 lines)
-- **TitleScreen** (class, L8): readonly:10, Q:48, Tri:49, R:50, Scene:53, PaintSky:85, Sun:98, Streak:113, Clouds:125, ShootingStar:142, Flock:155, FarY:172, CragY:181, MidY:189, NearY:195, FrontY:202, Foreground:209, Layer:226, Haze:238, Castle:246, Flag:282, Pines:298, Hamlet:311, Column:339, Man:359, Horse:406, Rider:426, Wagon:455, Grass:465, Embers:477
+## TitleScreen.Scene.cs (835 lines)
+- **TitleScreen** (class, L8): readonly:11, readonly:16, readonly:21, readonly:26, TimeLabel:57, ResolveSceneState:65, EnsureMarch:147, Q:231, Tri:232, R:233, Scene:236, SampleStops:277, SkyAt:284, PaintSky:302, CelestialBody:310, Streak:353, Clouds:364, ShootingStar:394, Flock:406, FarY:423, CragY:438, MidY:447, NearY:454, FrontY:460, SeaExpanse:467, Foreground:490, Layer:506, Haze:517, Castle:524, Flag:570, BiomeFlora:585, Hamlet:613, Column:641, Man:662, Horse:734, Rider:754, Wagon:782, Grass:791, Embers:802, Snowfall:813, Rainfall:824
 
 ## Troops.cs (377 lines)
 - **Troops** (class, L7): Has:15, Get:16, HasMount:17, Mount:18, Path:58, Load:71, BuildMan:102, Validate:125, WorseUpgrade:176, Toughness:187, Offence:189, Tree:192

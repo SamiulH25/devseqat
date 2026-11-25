@@ -174,7 +174,7 @@ public sealed partial class WorldMap
             bool town = capitals.Contains(p) || p.Id % 2 == 0;
             m.Settlements.Add(new Settlement { Id = id++, Province = p.Id, Faction = p.Faction, Culture = Factions.CultureOf(p.Faction), Name = p.Name, Pos = p.Center,
                 Kind = town ? SettlementKind.Town : SettlementKind.Castle });
-            int villages = 2 + rng.Next(2);
+            int villages = town ? 2 : 1;
             for (int v = 0, tries = 0; v < villages && tries < 200; tries++)
             {
                 float a = rng.NextSingle() * MathF.Tau, d = (16 + rng.NextSingle() * 16) * span;

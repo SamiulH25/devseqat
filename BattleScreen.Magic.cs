@@ -51,7 +51,7 @@ partial class BattleScreen
     static Color Fade => Color.Lerp(Sky.Horizon, Color.Black, 0.15f);
 
     /// A new battle: nothing of the last one's magic stays on screen.
-    void ResetMagicFx() { ripples.Clear(); beams.Clear(); bladeTrail.Clear(); motes.Clear(); presencePulse = 0; breakAt = -10; ResetWorkings(); ResetLadder(); }
+    void ResetMagicFx() { ripples.Clear(); beams.Clear(); bladeTrail.Clear(); motes.Clear(); presencePulse = 0; breakAt = -10; ResetWorkings(); ResetLadder(); ResetCombatFx(); }
 
     void AddRipple(Vector2 at, float r0, float r1, float life, Color col, float y = 0.12f) =>
         ripples.Add(new Ripple { At = at, R0 = r0, R1 = r1, Born = battle.Time, Life = life, Col = col, Y = y });
@@ -178,6 +178,21 @@ partial class BattleScreen
     /// Fields burn, drift or shine: fire and smoke over burning ground, grey banks of mist and smoke, light at a ward's edge.
     void FieldFx(float dt)
     {
+        // Channeling casters pull arcane motes inward while winding up a working
+        if (quality != Quality.Low && motes.Count < 1400)
+            foreach (var s in battle.Squads)
+            {
+                if (s.Alive == 0 || s.Units.Count == 0 || s.Units[0].Type.Class != UnitClass.Caster) continue;
+                foreach (var u in s.Units)
+                {
+                    if (!u.Active || u.Action != UnitAction.Windup || fx.NextSingle() > dt * 14f) continue;
+                    float a = fx.NextSingle() * MathF.Tau, r = 1.4f + fx.NextSingle() * 1.2f;
+                    var off = new Vector2(MathF.Cos(a), MathF.Sin(a)) * r;
+                    var col = u.Team == 0 ? new Color(135, 220, 255) : new Color(210, 110, 255);
+                    motes.Add(new Mote { Pos = G(u.Pos + off, 0.25f + fx.NextSingle() * 0.8f), Vel = new Vector3(-off.X, 0.9f, -off.Y) * 1.15f, Life = 0.65f, Max = 0.65f, Size = 0.075f, Col = col });
+                }
+            }
+
         foreach (var f in battle.Fields)
         {
             string id = f.Effect?.Id ?? "";
@@ -243,8 +258,18 @@ partial class BattleScreen
             var tip = G(p.Pos + p.Dir * (p.Type.Reach + 0.3f), 1.0f + lift);
             var root = G(p.Pos + p.Dir * 0.35f, 1.25f + lift);
             bladeTrail.Add((tip, root, battle.Time));
+            AddGlow(p.Pos + p.Dir * 0.8f, 1.2f + lift, col, 0.85f, 5.2f);
             for (int i = 0; i < 3; i++) // a haze of sparks along the edge, thicker at a higher tier
-                if (fx.NextSingle() < dt * (8 + 6 * battle.AuraTier)) motes.Add(new Mote { Pos = Vector3.Lerp(root, tip, fx.NextSingle()) + new Vector3(fx.NextSingle() - 0.5f, fx.NextSingle() - 0.5f, fx.NextSingle() - 0.5f) * 0.12f, Vel = new Vector3(0, 0.6f, 0), Life = 0.45f, Max = 0.45f, Size = 0.06f, Col = Color.Lerp(col, Color.White, fx.NextSingle() * 0.5f) });
+                if (fx.NextSingle() < dt * (10 + 7 * battle.AuraTier))
+                {
+                    var drift = AuraOrder switch
+                    {
+                        "hollow" => new Vector3((fx.NextSingle() - 0.5f) * 0.4f, 0.9f, (fx.NextSingle() - 0.5f) * 0.4f),
+                        "wolfsworn" => new Vector3(-p.Dir.X * 1.1f, 0.45f, -p.Dir.Y * 1.1f),
+                        _ => new Vector3((fx.NextSingle() - 0.5f) * 0.25f, 0.75f, (fx.NextSingle() - 0.5f) * 0.25f),
+                    };
+                    motes.Add(new Mote { Pos = Vector3.Lerp(root, tip, fx.NextSingle()) + new Vector3(fx.NextSingle() - 0.5f, fx.NextSingle() - 0.5f, fx.NextSingle() - 0.5f) * 0.12f, Vel = drift, Life = 0.52f, Max = 0.52f, Size = 0.068f, Col = Color.Lerp(col, Color.White, fx.NextSingle() * 0.55f) });
+                }
         }
         bladeTrail.RemoveAll(b => battle.Time - b.At > TrailLife || battle.Time < b.At);
         if (battle.AuraTier >= 4 && !battle.Spent && p.Active)
@@ -272,16 +297,71 @@ partial class BattleScreen
     {
         float now = battle.Time;
         ripples.RemoveAll(r => now - r.Born > r.Life || now < r.Born - 1);
+        void DrawSigil(Vector2 at, float rad, float rot, Color sigCol, float y = 0.14f, int points = 6)
+        {
+            int seg = Math.Clamp((int)(rad * 5), 14, 36);
+            var ringC = sigCol * 0.68f;
+            var starC = Color.Lerp(sigCol, Color.White, 0.45f) * 0.52f;
+            for (int i = 0; i < seg; i++)
+            {
+                float a0 = rot + i * MathF.Tau / seg, a1 = rot + (i + 1) * MathF.Tau / seg;
+                Band(G(at + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * rad, y), G(at + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * rad, y), ringC, 0.35f);
+            }
+            // Inscribed geometric star (two overlapping triangles for 6-point, or pentagram/square)
+            int step = points >= 6 ? 2 : 1;
+            for (int i = 0; i < points; i++)
+            {
+                float a0 = rot + i * MathF.Tau / points, a1 = rot + ((i + step) % points) * MathF.Tau / points;
+                Band(G(at + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * (rad * 0.94f), y + 0.02f), G(at + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * (rad * 0.94f), y + 0.02f), starC, 0.22f);
+            }
+        }
+
+        // Rotating ground rune sigils under active magical fields & channeling casters
+        if (quality != Quality.Low)
+        {
+            foreach (var f in battle.Fields)
+            {
+                string id = f.Effect?.Id ?? "";
+                if (id is "mist" or "smoke") continue;
+                Color sc = id switch
+                {
+                    "warded" => new Color(255, 240, 182),
+                    "burning" => f.A.Tradition == "necromancy" ? new Color(160, 72, 220) : new Color(255, 138, 48),
+                    "storm" => new Color(140, 200, 255),
+                    "mirage" => new Color(205, 185, 255),
+                    _ => f.Effect?.Harmful == true ? new Color(168, 76, 210) : new Color(150, 220, 255),
+                };
+                float pulse = 0.72f + 0.28f * MathF.Sin(now * 3.4f + f.Pos.X);
+                DrawSigil(f.Pos, MathF.Min(f.Radius, 10f), now * 0.35f, sc * pulse, 0.14f, 6);
+            }
+            foreach (var s in battle.Squads)
+            {
+                if (s.Alive == 0 || s.Units.Count == 0 || s.Units[0].Type.Class != UnitClass.Caster) continue;
+                foreach (var u in s.Units)
+                {
+                    if (!u.Active || u.Action != UnitAction.Windup) continue;
+                    Color cc = u.Team == 0 ? new Color(128, 218, 255) : new Color(215, 108, 255);
+                    DrawSigil(u.Pos, 1.45f, now * 1.4f + u.Index, cc * 0.85f, 0.14f, 6);
+                }
+            }
+            if (battle.AuraTier >= 4 && !battle.Spent && battle.Player.Active)
+                DrawSigil(battle.Player.Pos, 2.3f, -now * 0.55f, AuraColour * 0.55f, 0.12f, 6);
+        }
+
         foreach (var r in ripples)
         {
             if (now < r.Born) continue;
             float k = (now - r.Born) / r.Life, rad = MathHelper.Lerp(r.R0, r.R1, Ease.OutCubic(k));
-            var c = r.Col * ((1 - k) * 0.65f);
+            float fade = 1 - k;
+            var c = r.Col * (fade * 0.72f);
+            var inner = Color.Lerp(r.Col, Color.White, 0.65f) * (fade * fade * 0.80f);
             int seg = Math.Clamp((int)(rad * 4), 12, 48);
             for (int i = 0; i < seg; i++)
             {
                 float a0 = i * MathF.Tau / seg, a1 = (i + 1) * MathF.Tau / seg;
-                Band(G(r.At + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * rad, r.Y), G(r.At + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * rad, r.Y), c, 0.85f);
+                Band(G(r.At + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * rad, r.Y), G(r.At + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * rad, r.Y), c, 0.90f);
+                if (rad > 0.6f)
+                    Band(G(r.At + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * (rad * 0.88f), r.Y + 0.03f), G(r.At + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * (rad * 0.88f), r.Y + 0.03f), inner, 0.35f);
             }
         }
         beams.RemoveAll(b => now - b.Born > b.Life || now < b.Born);
@@ -358,6 +438,8 @@ partial class BattleScreen
             BeamQuad(bladeTrail[i - 1].Tip, bladeTrail[i].Tip, 0.15f * fadeT, 0.15f * fadeT, c, c);
             BeamQuad(Vector3.Lerp(bladeTrail[i - 1].Base, bladeTrail[i - 1].Tip, 0.6f), Vector3.Lerp(bladeTrail[i].Base, bladeTrail[i].Tip, 0.6f), 0.1f * fadeT, 0.1f * fadeT, c * 0.6f, c * 0.6f);
         }
+        DrawCombatFx();
+        DrawArrowRibbons();
         WorkingLines();
         LadderLines();
     }
