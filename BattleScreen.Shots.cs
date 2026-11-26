@@ -86,7 +86,7 @@ partial class BattleScreen
                 zoom = 8.5f; camPitch = 0.08f; camFocus = new Vector2(-9.8f, 0.6f);
                 pendingShot = "gallery-north-close"; shotIndex++; break;
             case 20 when pendingShot == null:
-                Gallery(new[] { "goblin", "goblin_archer", "hobgoblin", "goblin_boss", "goblin_wolf_rider", "wolf", "dire_wolf", "troll", "war_hounds", "ogre", "beast_hunters", "shieldmen" }, 3); // creatures (docs/archive/CREATURES.md), a man for scale
+                Gallery(new[] { "goblin", "goblin_archer", "hobgoblin", "goblin_boss", "goblin_wolf_rider", "wolf", "dire_wolf", "troll", "war_hounds", "ogre", "beast_hunters", "manor_foot" }, 3); // creatures (docs/archive/CREATURES.md), a man for scale
                 shotFrames = 0; shotIndex++; break;
             case 21 when shotFrames > 20:
                 zoom = 11f; camPitch = 0.1f; camFocus = new Vector2(-9.8f, 0.6f);
@@ -103,7 +103,7 @@ partial class BattleScreen
             case 25 when shotFrames > 20:
                 pendingShot = "gallery-troll"; shotIndex++; break;
             case 26 when pendingShot == null:
-                Gallery(new[] { "skeleton", "ghoul", "necromancer", "skeleton", "ghoul", "shieldmen" }, 3); // the undead (phase 5), a man for scale
+                Gallery(new[] { "skeleton", "ghoul", "necromancer", "skeleton", "ghoul", "manor_foot" }, 3); // the undead (phase 5), a man for scale
                 zoom = 9f; camPitch = 0.1f;
                 shotFrames = 0; shotIndex++; break;
             case 27 when shotFrames > 20:
@@ -127,14 +127,14 @@ partial class BattleScreen
                 pendingShot = new[] { "pose-sheet", "pose-sheet2", "pose-horses" }[(shotIndex - 39) / 2]; shotIndex++; break;
             case 44 or 46 when pendingShot == null:
                 // Variety: a row of one troop, every man with his own face, and some another helm or weapon.
-                Gallery(Enumerable.Repeat(shotIndex == 44 ? "shieldmen" : "levies", 7).ToArray());
+                Gallery(Enumerable.Repeat(shotIndex == 44 ? "manor_foot" : "brevon_fyrd", 7).ToArray());
                 zoom = 12f; camPitch = 0.06f;
                 shotFrames = 0; shotIndex++; break;
             case 45 or 47 when shotFrames > 20:
                 pendingShot = shotIndex == 45 ? "gallery-variety" : "gallery-variety2"; shotIndex++; break;
             case 48 when pendingShot == null:
                 // Armour: one man in each body armour, close up, front then side.
-                Gallery(new[] { "shieldmen", "men_at_arms", "ironguard", "dune_spears", "league_pikes", "steppe_bows", "clansmen", "foot_knights" });
+                Gallery(new[] { "manor_foot", "men_at_arms", "ironguard", "dune_spears", "league_pikes", "steppe_bows", "clansmen", "foot_knights" });
                 zoom = 9.5f; camPitch = 0.06f; camFocus = new Vector2(-5.6f, 0.6f);
                 shotFrames = 0; shotIndex++; break;
             case 49 when shotFrames > 20:
@@ -150,7 +150,7 @@ partial class BattleScreen
                 pendingShot = "gallery-armour-side"; shotIndex++; break;
             case 53 or 55 when pendingShot == null:
                 // Melee (docs/archive/MELEE.md): three companies a side, 14 s after they charged; levies, then elites.
-                Clash(shotIndex == 53 ? "levies" : "iron_legionaries"); shotFrames = 0; shotIndex++; break;
+                Clash(shotIndex == 53 ? "brevon_fyrd" : "iron_legionaries"); shotFrames = 0; shotIndex++; break;
             case 54 or 56 when shotFrames > 20:
                 pendingShot = shotIndex == 54 ? "clash-levies" : "clash-elites"; shotIndex++; break;
             case 57 or 59 when pendingShot == null:
@@ -183,7 +183,7 @@ partial class BattleScreen
                 pendingShot = "pose-life"; shotIndex++; break;
             case 99 or 101 when pendingShot == null:
                 // The beasts of docs/archive/MONSTERS.md and the leaders of monster hosts, a man for scale; the wyvern on the wing.
-                Gallery(new[] { "goblin_chief", "alpha_wolf", "spiderling", "spider", "bear", "brood_mother", "troll_elder", "wyvern", "shieldmen" }, 3);
+                Gallery(new[] { "goblin_chief", "alpha_wolf", "spiderling", "spider", "bear", "brood_mother", "troll_elder", "wyvern", "manor_foot" }, 3);
                 zoom = shotIndex == 99 ? 17 : 14; camPitch = shotIndex == 99 ? 0.22f : 0.12f;
                 camFocus = battle.Units.First(u => u.Type.Id == (shotIndex == 99 ? "spider" : "brood_mother")).Pos + new Vector2(shotIndex == 99 ? -1.5f : -3f, 0.6f);
                 foreach (var u in battle.Units.Where(u => !u.IsLeader))
@@ -302,8 +302,8 @@ partial class BattleScreen
     {
         battle = Battle.Empty(11);
         SetWorld();
-        battle.AddSquad(0, Troops.Get("shieldmen"), 20, new Vector2(-6, -4), 10, Vector2.UnitY);
-        battle.AddSquad(0, Troops.Get("bowmen"), 12, new Vector2(10, -8), 6, Vector2.UnitY);
+        battle.AddSquad(0, Troops.Get("manor_foot"), 20, new Vector2(-6, -4), 10, Vector2.UnitY);
+        battle.AddSquad(0, Troops.Get("commons_bowmen"), 12, new Vector2(10, -8), 6, Vector2.UnitY);
         battle.AddSquad(1, Troops.Get("spider"), 10, new Vector2(-6, 10), 5, -Vector2.UnitY).Order = Order.Charge;
         battle.AddSquad(1, Troops.Get("brood_mother"), 1, new Vector2(-6, 16), 1, -Vector2.UnitY).Order = Order.Charge;
         battle.AddSquad(1, Troops.Get("wyvern"), 1, new Vector2(14, 18), 1, -Vector2.UnitY).Order = Order.Charge;
@@ -555,8 +555,8 @@ partial class BattleScreen
         b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
         b.AddSquad(0, Troops.Get("men_at_arms"), 8, new Vector2(-7, 0), 4, Vector2.UnitY);
         b.AddSquad(0, Troops.Get("men_at_arms"), 8, new Vector2(7, 0), 4, Vector2.UnitY);
-        b.AddSquad(1, Troops.Get("levies"), 1, new Vector2(1, -4), 1, Vector2.UnitY).Drill = 0.1f; // behind you: an edge mark
-        var mob = b.AddSquad(1, Troops.Get("levies"), 10, new Vector2(-2, 7), 5, -Vector2.UnitY);
+        b.AddSquad(1, Troops.Get("brevon_fyrd"), 1, new Vector2(1, -4), 1, Vector2.UnitY).Drill = 0.1f; // behind you: an edge mark
+        var mob = b.AddSquad(1, Troops.Get("brevon_fyrd"), 10, new Vector2(-2, 7), 5, -Vector2.UnitY);
         mob.Drill = 0.1f;
         var vets = b.AddSquad(1, Troops.Get("men_at_arms"), 8, new Vector2(5, 9), 4, -Vector2.UnitY);
         vets.Drill = 0.7f;
@@ -583,7 +583,7 @@ partial class BattleScreen
         };
         var mine = new Company("men_at_arms", 12, "infantry", 7, "Fallowby Shields", Banner: 2, Named: named, Streamers: 3, Fringe: true);
         battle = new Battle(16, new ArmySpec("mine", 0, new List<Company> { mine }),
-            new ArmySpec("theirs", 0, new List<Company> { new("levies", 14, "infantry", 9), new("outriders", 4, "cavalry", 10) }), new BattleOptions());
+            new ArmySpec("theirs", 0, new List<Company> { new("brevon_fyrd", 14, "infantry", 9), new("march_scouts", 4, "cavalry", 10) }), new BattleOptions());
         SetWorld();
         var b = battle;
         var sq = b.SquadsOf(0).First(s => s.Company?.Id == 7);
@@ -677,8 +677,8 @@ partial class BattleScreen
         var b = battle;
         var circle = b.AddSquad(0, Troops.Get("saints_militant"), 3, new Vector2(-6, -14), 3, Vector2.UnitY);
         var mine = b.AddSquad(0, Troops.Get("men_at_arms"), 16, new Vector2(6, -10), 8, Vector2.UnitY);
-        var foes = b.AddSquad(1, Troops.Get("levies"), 24, new Vector2(0, 12), 8, -Vector2.UnitY);
-        var foes2 = b.AddSquad(1, Troops.Get("bowmen"), 16, new Vector2(-18, 16), 8, -Vector2.UnitY);
+        var foes = b.AddSquad(1, Troops.Get("brevon_fyrd"), 24, new Vector2(0, 12), 8, -Vector2.UnitY);
+        var foes2 = b.AddSquad(1, Troops.Get("commons_bowmen"), 16, new Vector2(-18, 16), 8, -Vector2.UnitY);
         circle.Order = mine.Order = foes.Order = foes2.Order = Order.Hold;
         b.Player.Pos = new Vector2(0, 2);
         b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
@@ -730,7 +730,7 @@ partial class BattleScreen
         var b = battle;
         var circle = b.AddSquad(0, Troops.Get("saints_militant"), 3, new Vector2(-8, -14), 3, Vector2.UnitY);
         var mine = b.AddSquad(0, Troops.Get("men_at_arms"), 20, new Vector2(4, -6), 10, Vector2.UnitY);
-        var foes = b.AddSquad(1, Troops.Get("levies"), 30, new Vector2(0, 12), 10, -Vector2.UnitY);
+        var foes = b.AddSquad(1, Troops.Get("brevon_fyrd"), 30, new Vector2(0, 12), 10, -Vector2.UnitY);
         circle.Order = mine.Order = foes.Order = Order.Hold;
         b.Player.Pos = new Vector2(0, 0);
         b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
@@ -786,7 +786,7 @@ partial class BattleScreen
         var b = battle;
         var circle = b.AddSquad(0, Troops.Get(shot is "miracle" or "smite-strike" ? "saints_militant" : "sky_callers"), 3, new Vector2(-10, -16), 3, Vector2.UnitY);
         var mine = b.AddSquad(0, Troops.Get("men_at_arms"), 20, new Vector2(4, -6), 10, Vector2.UnitY);
-        var foes = b.AddSquad(1, Troops.Get("levies"), 30, new Vector2(0, 12), 10, -Vector2.UnitY);
+        var foes = b.AddSquad(1, Troops.Get("brevon_fyrd"), 30, new Vector2(0, 12), 10, -Vector2.UnitY);
         circle.Order = mine.Order = foes.Order = Order.Hold;
         foreach (var s in b.Squads) s.Will = 0; // no casts of their own in the shot
         b.Player.Pos = shot == "aura-ladder" ? new Vector2(-6, 2) : Vector2.Zero;
@@ -839,8 +839,8 @@ partial class BattleScreen
     {
         battle = Battle.Empty(1);
         SetWorld();
-        var order = only ?? new[] { "levies", "shieldmen", "men_at_arms", "ironguard", "spearrunners", "pikemen", "bowmen", "longbowmen",
-            "outriders", "lancers", "knights", "captain" };
+        var order = only ?? new[] { "brevon_fyrd", "manor_foot", "men_at_arms", "ironguard", "shire_billmen", "pikemen", "commons_bowmen", "longbowmen",
+            "march_scouts", "brevon_lancers", "knights", "captain" };
         float x = 0;
         foreach (var id in order)
         {

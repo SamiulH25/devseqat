@@ -186,7 +186,7 @@ sealed partial class Puppet
         bool two = TwoHanded(grip, t.HasShield, u.Mounted);
         bool backhand = u.Swing == AttackDir.Left || (u.Swing != AttackDir.Right && phase > 0.5f);
         var (idle, raise, strike) = grip is Grip.Thrown
-            ? Keys(Grip.Pole, u.Swing, u.Mounted, true, backhand) // out of javelins, he fights with the last one like a spear
+            ? Keys(t.Look.Weapon == "throwing_axe" ? Grip.One : Grip.Pole, u.Swing, u.Mounted, true, backhand)
             : Keys(grip, u.Swing, u.Mounted, t.HasShield, backhand);
         idle = idle with { Alpha = idle.Alpha + (phase - 0.5f) * 14 + MathF.Sin(now * 0.4f + phase * 11) * 3 }; // each man rests his weapon his own way
         var arm = idle;

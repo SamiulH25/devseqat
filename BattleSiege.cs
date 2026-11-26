@@ -527,7 +527,7 @@ public sealed partial class Battle
             var seg = segs[k % segs.Count];
             var at = seg.Mid - seg.Out * 2.0f;
             var def = Ironfield.Engines.Get("springald");
-            var crew = AddSquad(1, Troops.Get("levies"), def.Crew, at - seg.Out * 2.2f, def.Crew, seg.Out);
+            var crew = AddSquad(1, Troops.Get("brevon_fyrd"), def.Crew, at - seg.Out * 2.2f, def.Crew, seg.Out);
             crew.Order = Order.Hold;
             AddEngine(1, "springald", at, seg.Out, crew);
         }

@@ -29,7 +29,7 @@ public sealed partial class Campaign
     {
         for (int g = 0; g < 4 && Player.Companies.Count < 4; g++) Split(Player.Companies.OrderByDescending(k => k.Men).First());
         // Other troops at the other fires, so the shot shows bows and better men too.
-        var others = Troops.All.Where(t => t.Culture == "common" && t.Mount == null && t.Tier is >= 2 and <= 4).OrderBy(t => t.Class == UnitClass.Archer ? 0 : 1).ThenByDescending(t => t.Tier).ToList();
+        var others = Troops.All.Where(t => !t.Wild && t.Mount == null && t.Tier is >= 2 and <= 4).OrderBy(t => t.Class == UnitClass.Archer ? 0 : 1).ThenByDescending(t => t.Tier).ToList();
         var cos = Player.Companies.OrderByDescending(k => k.Men).Take(4).ToList();
         for (int i = 1; i < cos.Count && i - 1 < others.Count; i++) foreach (var st in cos[i].Stacks) st.Troop = others[(i - 1) * 2 % others.Count].Id;
         int[] count = { 6, 4, 5, 3 };

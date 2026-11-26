@@ -503,7 +503,7 @@ public static partial class SelfTest
         var ns = spec.Named!.First(n => n.Id == vet.Id);
         Check(ns.Armed && ns.Banner && ns.Battles == 12, "NamedSpec carries Armed, Banner and Battles");
 
-        var b = new Battle(77, army, new ArmySpec("foe", 1, new List<Company> { new("levies", 12, "infantry") }));
+        var b = new Battle(77, army, new ArmySpec("foe", 1, new List<Company> { new("brevon_fyrd", 12, "infantry") }));
         var sq = b.Squads.First(s => s.Team == 0);
         var namedU = sq.Units.First(u => u.SoldierId == vet.Id);
         var plainU = sq.Units.First(u => u.SoldierId == 0 && u.Type.Id == vet.Troop);

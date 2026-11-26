@@ -5,7 +5,9 @@ namespace Ironfield;
 /// A culture (CAMPAIGN_OVERHAUL.md 4.1): what its villages raise, and the lines only its men may enter.
 public sealed class CultureDef
 {
-    public string Id = "", Name = "", Root = "levies", Text = "";
+    public string Id = "", Name = "", Root = "brevon_fyrd", Text = "";
+    /// Per-culture noble castle roots and T2 mage initiate (docs/pre-demo/FACTION_TREES.md FT0); empty falls back to parent people.
+    public string NobleFoot = "", NobleHorse = "", MageRoot = "";
     /// One line on what its towns look like (the town screen's flavour line).
     public string Flavour = "Thatch and mud lanes";
     /// Cultures whose troops this culture's lines may borrow and its men may train as (docs/archive/WORLD.md W3).
@@ -100,10 +102,40 @@ public static class Factions
     }
 
     /// May men of `culture` serve as troops of `troop`'s culture? Their own, common troops, and their kin's.
-    public static bool Open(string culture, string troop) => troop == Common || troop == culture || (Culture(culture)?.Kin.Contains(troop) ?? false);
+    public static bool Open(string culture, string troop) => troop == Common || troop == culture || (Culture(culture)?.Kin is { } kin && (kin.Contains(troop) || kin.Contains(PeopleOf(troop))));
 
     /// The T1 troop a culture's villages raise ("common" and unknown cultures raise levies).
-    public static string Root(string culture) => Culture(culture)?.Root ?? "levies";
+    public static string Root(string culture) => Culture(culture)?.Root ?? "brevon_fyrd";
+
+    /// The castle noble foot root for a culture (or its parent realm culture).
+    public static string NobleFoot(string culture)
+    {
+        var c = Culture(culture);
+        if (c != null && c.NobleFoot.Length > 0) return c.NobleFoot;
+        var p = Culture(PeopleOf(culture));
+        if (p != null && p.NobleFoot.Length > 0) return p.NobleFoot;
+        return "brevon_esquires";
+    }
+
+    /// The castle noble horse root for a culture (or its parent realm culture).
+    public static string NobleHorse(string culture)
+    {
+        var c = Culture(culture);
+        if (c != null && c.NobleHorse.Length > 0) return c.NobleHorse;
+        var p = Culture(PeopleOf(culture));
+        if (p != null && p.NobleHorse.Length > 0) return p.NobleHorse;
+        return "tourney_squires";
+    }
+
+    /// The T2 mage initiate for a culture (or its parent realm culture).
+    public static string MageRoot(string culture)
+    {
+        var c = Culture(culture);
+        if (c != null && c.MageRoot.Length > 0) return c.MageRoot;
+        var p = Culture(PeopleOf(culture));
+        if (p != null && p.MageRoot.Length > 0) return p.MageRoot;
+        return "vigil_novices";
+    }
 
     /// The troop a realm's line fields at a tier (1-7).
     public static string Line(int faction, string role, int tier) =>
@@ -153,6 +185,9 @@ public static class Factions
             if (!Troops.All.Any(t => t.Id == c.Root)) yield return $"culture {c.Id}: unknown root {c.Root}";
             foreach (var k in c.Kin) if (cultures.All(o => o.Id != k) || k == c.Id) yield return $"culture {c.Id}: unknown kin {k}";
             if (!Open(c.Id, Troops.Get(c.Root).Culture)) yield return $"culture {c.Id}: its root {c.Root} is not of its culture or kin";
+            if (c.NobleFoot.Length > 0 && (!Troops.Has(c.NobleFoot) || !Troops.Get(c.NobleFoot).Noble)) yield return $"culture {c.Id}: invalid nobleFoot {c.NobleFoot}";
+            if (c.NobleHorse.Length > 0 && (!Troops.Has(c.NobleHorse) || !Troops.Get(c.NobleHorse).Noble)) yield return $"culture {c.Id}: invalid nobleHorse {c.NobleHorse}";
+            if (c.MageRoot.Length > 0 && (!Troops.Has(c.MageRoot) || Troops.Get(c.MageRoot).Class != UnitClass.Caster)) yield return $"culture {c.Id}: invalid mageRoot {c.MageRoot}";
             if (c.Waiting && factions.Any(f => f.Culture == c.Id)) yield return $"culture {c.Id}: a realm holds it, so it is no longer waiting";
         }
         foreach (var f in factions)

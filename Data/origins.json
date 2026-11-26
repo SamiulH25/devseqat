@@ -10,7 +10,7 @@
     {
       "id": "yeoman", "name": "Born to the Plough", "icon": "bread", "age": 4,
       "text": "Free farmers on good land. You walked behind oxen, shot at the butts every Sunday and know what men eat.",
-      "effects": ["skill:Bowcraft:10", "skill:Logistics:10", "food:20", "men:levies:5", "buff:parish_lads:0"],
+      "effects": ["skill:Bowcraft:10", "skill:Logistics:10", "food:20", "men:brevon_fyrd:5", "buff:parish_lads:0"],
       "line": "Lads from your old parish walked out after you."
     },
     {
@@ -34,7 +34,7 @@
     {
       "id": "marcher", "name": "Born on the Marches", "icon": "tower", "age": 5,
       "text": "A border keep where the raiders came every harvest. You learned to ride before you could read, and to sleep with your boots on.",
-      "effects": ["skill:Riding:10", "skill:Tactics:5", "horses:6", "men:outriders:3", "buff:march_watch:0"],
+      "effects": ["skill:Riding:10", "skill:Tactics:5", "horses:6", "men:march_scouts:3", "buff:march_watch:0"],
       "line": "Three riders from the old keep followed the smoke of your fires."
     },
     {
@@ -54,7 +54,7 @@
     {
       "id": "sellsword", "name": "Sellsword", "icon": "coin", "age": 12, "perk": "Quartermaster",
       "text": "Twelve years in other men's companies. You know what a soldier costs and how to make him cost less.",
-      "effects": ["skill:Arms:10", "skill:Tactics:5", "skill:Logistics:5", "gold:200", "men:shieldmen:6"],
+      "effects": ["skill:Arms:10", "skill:Tactics:5", "skill:Logistics:5", "gold:200", "men:manor_foot:6"],
       "line": "Six of your old file signed on the day you raised your banner."
     },
     {
@@ -66,19 +66,19 @@
     {
       "id": "disinherited", "name": "Disinherited Heir", "icon": "crown", "age": 6, "perk": "Bannerman",
       "text": "The land was yours until your uncle bought the judge. Now you have a name, a grudge and men who remember your father.",
-      "effects": ["skill:Leadership:10", "skill:Charm:5", "renown:10", "men:outriders:3", "buff:fathers_riders:0"],
+      "effects": ["skill:Leadership:10", "skill:Charm:5", "renown:10", "men:march_scouts:3", "buff:fathers_riders:0"],
       "line": "Three of your father's riders came with you. They want the land back."
     },
     {
       "id": "deserter", "name": "Deserter", "icon": "flag", "age": 8, "perk": "Ambusher",
       "text": "You walked away from a lord's war when it turned to murder. Nobody pays a deserter, so you are your own master now.",
-      "effects": ["free", "skill:Tactics:10", "skill:Arms:5", "gold:250", "men:spearrunners:6", "opinion_realm:-10", "buff:run_before:0"],
+      "effects": ["free", "skill:Tactics:10", "skill:Arms:5", "gold:250", "men:shire_billmen:6", "opinion_realm:-10", "buff:run_before:0"],
       "line": "You fly no realm's colours. Some lords have not forgotten whose you once wore."
     },
     {
       "id": "poacher", "name": "Poacher", "icon": "arrow", "age": 7, "perk": "Pathfinder",
       "text": "The king's deer fed your village for six winters. You know every deer path, ford and hollow tree in the forest.",
-      "effects": ["skill:Bowcraft:15", "skill:Logistics:5", "gear:hunting_bow", "food:30", "men:bowmen:4", "buff:woodcraft:0"],
+      "effects": ["skill:Bowcraft:15", "skill:Logistics:5", "gear:hunting_bow", "food:30", "men:commons_bowmen:4", "buff:woodcraft:0"],
       "line": "The woods are as good as a road to you."
     },
     {
@@ -96,19 +96,19 @@
     {
       "id": "drillmaster", "name": "Drill Sergeant", "icon": "shield", "age": 16, "perk": "Drillmaster",
       "text": "Twenty years shouting at recruits on a lord's parade ground. You can make a soldier out of almost anything.",
-      "effects": ["skill:Training:20", "skill:Leadership:5", "skill:Arms:5", "men:levies:6", "buff:square_bashed:0"],
+      "effects": ["skill:Training:20", "skill:Leadership:5", "skill:Arms:5", "men:brevon_fyrd:6", "buff:square_bashed:0"],
       "line": "You have turned worse rabble than this into a line."
     },
     {
       "id": "pilgrim", "name": "Returned Pilgrim", "icon": "sun", "age": 8, "perk": "Rallying",
       "text": "You walked to the far shrine to wash off a sin, and came back with sunburnt feet and a stillness men follow.",
-      "effects": ["skill:Charm:5", "skill:Medicine:5", "skill:Leadership:5", "renown:10", "opinion_realm:4", "men:acolytes:4", "buff:pilgrim_blessing:0"],
+      "effects": ["skill:Charm:5", "skill:Medicine:5", "skill:Leadership:5", "renown:10", "opinion_realm:4", "men:vigil_novices:4", "buff:pilgrim_blessing:0"],
       "line": "Pilgrims you met on the road took up spears when you raised your banner."
     },
     {
       "id": "sapper", "name": "Siege Sapper", "icon": "tower", "age": 10, "perk": "Siegecraft",
       "text": "Ten years under other men's walls: digging saps, building mantlets, counting the stones on the parapet.",
-      "effects": ["skill:Tactics:10", "skill:Stewardship:5", "men:billmen:4", "buff:dug_in:0"],
+      "effects": ["skill:Tactics:10", "skill:Stewardship:5", "men:vespra_billmen:4", "buff:dug_in:0"],
       "line": "Your old diggers came with you. They still carry their shovels."
     },
     {

@@ -269,7 +269,7 @@ public static partial class SelfTest
         // Choose your start: a company raised in the Khaganate starts in its land with its villages' clansmen, and takes service there.
         var k = Campaign.New(5106, khaganate);
         var at = k.SettlementAt(k.Player.Pos) ?? k.S.Settlements.OrderBy(s => Vector2.Distance(s.Pos, k.Player.Pos)).First();
-        Check(at.Faction == khaganate && k.Player.Companies[0].Troop == "clansmen", $"a Khaganate start is in its land with clansmen ({at.Name}, {k.Player.Companies[0].Troop})");
+        Check(at.Faction == khaganate && k.Player.Companies[0].Troop == "steppe_herdsmen", $"a Khaganate start is in its land with steppe herdsmen ({at.Name}, {k.Player.Companies[0].Troop})");
         var pilot = new Pilot(k);
         pilot.Run(6);
         Check(k.Captain.Contract == khaganate, $"the stand-in takes service with the realm it started in (contract {k.Captain.Contract}, faction {k.Player.Faction}, over {k.S.GameOver} {k.S.EndReason})");

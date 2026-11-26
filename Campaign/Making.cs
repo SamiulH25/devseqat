@@ -43,7 +43,7 @@ public sealed partial class Campaign
     /// Men from the captain's past: into a company of theirs already in the party, else a company of their own.
     void FollowedYou(string troop, int men, Settlement home)
     {
-        if (men <= 0 || troop == "levies") return;
+        if (men <= 0 || troop == "brevon_fyrd") return;
         var same = Player.Companies.FirstOrDefault(c => c.Stacks.Any(s => s.Troop == troop));
         if (same != null) { Rules.AddMen(same, troop, men); return; }
         Player.Companies.Add(NewCompany(troop, Rules.TroopRole(troop), men, 0, home));

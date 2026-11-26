@@ -53,7 +53,7 @@ public static partial class SelfTest
         spider.Pos = new Vector2(0, 40);
         Run(b, 3);
         Check(man.Hp < bitten - 5 && man.Poison <= 0.01f, $"the poison works on after the bite, through his armour ({bitten:0} -> {man.Hp:0})");
-        var weak = b.AddSquad(0, Troops.Get("levies"), 1, new(5, 0), 1, Vector2.UnitY).Units[0];
+        var weak = b.AddSquad(0, Troops.Get("brevon_fyrd"), 1, new(5, 0), 1, Vector2.UnitY).Units[0];
         weak.Hp = 3; weak.Poison = 20; weak.PoisonedBy = spider;
         Run(b, 1);
         Check(weak.Dead, "poison can kill");
@@ -98,7 +98,7 @@ public static partial class SelfTest
         var f = Battle.Empty(205);
         var pack = f.AddSquad(1, Troops.Get("spider"), 10, new(0, 25), 5, -Vector2.UnitY);
         pack.Order = Order.Charge;
-        var lev = f.AddSquad(0, Troops.Get("levies"), 20, new(0, -5), 10, Vector2.UnitY);
+        var lev = f.AddSquad(0, Troops.Get("brevon_fyrd"), 20, new(0, -5), 10, Vector2.UnitY);
         for (int i = 0; i < 60 * 90 && f.Winner < 0; i++) f.Update(1 / 60f);
         Console.WriteLine($"spiders: 10 spiders vs 20 levies: winner {f.Winner} at {f.Time:0} s, {lev.Units.Count(u => u.Dead)} levies dead, {pack.Units.Count(u => u.Dead)} spiders dead");
         Check(lev.Units.Count(u => u.Dead) > pack.Units.Count(u => u.Dead), "spiders kill more levies than they lose");
@@ -164,7 +164,7 @@ public static partial class SelfTest
             for (int i = 0; i < 60 * 120 && fb.Winner < 0; i++) fb.Update(1 / 60f);
             return men.Units.Count(u => u.Dead);
         }
-        int lostToBows = Bows("bowmen", out var fbw, out var wb), lostFoot = Bows("shieldmen", out var fsh, out var ws);
+        int lostToBows = Bows("commons_bowmen", out var fbw, out var wb), lostFoot = Bows("manor_foot", out var fsh, out var ws);
         Console.WriteLine($"wyverns: 30 bowmen lose {lostToBows} men, wyvern {(wb.Dead ? "down" : $"{wb.Hp:0} hp")} at {fbw.Time:0} s; 30 shieldmen lose {lostFoot}, wyvern {(ws.Dead ? "down" : $"{ws.Hp:0} hp")} at {fsh.Time:0} s");
         Check(wb.Hp < ws.Hp || wb.Dead && !ws.Dead || wb.Dead && fbw.Time < fsh.Time, "archers hurt a wyvern more than foot do");
         Check(Rules.Strength(Troops.Get("wyvern"), 1) > Rules.Strength(UnitType.Shieldman, 15), "auto-resolve weighs a wyvern as many men");

@@ -399,8 +399,8 @@ public static partial class SelfTest
         var b = Campaign.New(8010);
         b.S.Hours = 31 * 24;
         var band = b.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
-        band.Companies.Add(b.NewCompany("levies", "infantry", b.Scaled(24), 0));
-        band.Companies.Add(b.NewCompany("levies", "spears", b.Scaled(12), 0));
+        band.Companies.Add(b.NewCompany("brevon_fyrd", "infantry", b.Scaled(24), 0));
+        band.Companies.Add(b.NewCompany("brevon_fyrd", "spears", b.Scaled(12), 0));
         band.Cooldown = 30; // kept out of fights for the day, so a passing lord cannot scatter it first
         Days(b, 1);
         var king = b.CharacterOf(band);

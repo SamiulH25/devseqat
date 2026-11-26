@@ -10,29 +10,29 @@
   // first; "arcana" (0-3, default 1): how many of four great lords keep a circle of mages (docs/archive/ARCANA.md AR5). Realms not listed in "relations" start at peace. A culture's "kin" are the cultures whose troops its men may also
   // train as (docs/archive/WORLD.md W3); since W4 every realm's four lines are its own culture's troops.
   "cultures": [
-    { "id": "azure", "name": "Brevon", "root": "levies", "text": "heavy foot, crossbows and lances", "flavour": "Blue roofs and quiet bells" },
-    { "id": "crimson", "name": "Vespra", "root": "levies", "text": "greatswords, halberds, longbows and heavy horse", "flavour": "Red banners and loud markets" },
-    { "id": "northern", "name": "Skar", "root": "clansmen", "text": "axes, round shields, glaives and light horse", "flavour": "Timber halls and smoke" },
-    { "id": "southern", "name": "Qadir", "root": "levies", "kin": ["crimson", "northern"], "text": "spears and javelins, light horse and mamluks", "flavour": "White domes, palms and the noon bell" },
-    { "id": "steppe", "name": "Naryn", "root": "clansmen", "kin": ["northern"], "text": "horse archers first, bows on foot, axes and spears", "flavour": "Felt tents around a wooden hall" },
-    { "id": "league", "name": "Brinemere", "root": "levies", "kin": ["azure"], "text": "pikes and pavise crossbows, hired steel", "flavour": "Canals, cranes and counting houses" },
-    { "id": "order", "name": "Tarn", "root": "levies", "kin": ["azure", "crimson"], "text": "sworn brothers on foot and knight-brothers", "flavour": "Bells, grey cloaks and a great stone chapter house" },
-    {"id": "azure_heart", "name": "Crownlanders", "root": "levies", "kin": ["azure"], "text": "river-valley billmen, halberdiers and heavy lancers", "flavour": "Stone bridges, tournaments and rich abbey lands"},
-    {"id": "azure_march", "name": "Marchers", "root": "levies", "kin": ["azure"], "text": "pass scouts, border crossbows and light horse", "flavour": "Watch-fires on the scarred eastern border"},
-    {"id": "azure_coast", "name": "Bayfolk", "root": "levies", "kin": ["azure"], "text": "harbour crossbows, shipboard marines and sea-wardens", "flavour": "Salt-stained docks and tall-masted cogs"},
-    {"id": "crimson_patrician", "name": "Vesprans", "root": "levies", "kin": ["crimson"], "text": "civic pikes, guild halberds and duelist blades", "flavour": "Marble forums, guildhalls and crimson banners"},
-    {"id": "crimson_alpine", "name": "Cragfolk", "root": "levies", "kin": ["crimson"], "text": "pass skirmishers, highland axes and crag halberdiers", "flavour": "Switchback trails and slate-roofed keeps"},
-    {"id": "northern_fjord", "name": "Fjordmen", "root": "clansmen", "kin": ["northern"], "text": "longship oarsmen, sea-raiders and axe huscarls", "flavour": "Dragon-prowed hulls and salt-spray cliffs"},
-    {"id": "northern_taiga", "name": "Holtmen", "root": "clansmen", "kin": ["northern"], "text": "taiga trappers, frost hunters and woodland rangers", "flavour": "Pine-log halls deep in the snow-bound woods"},
-    {"id": "southern_oasis", "name": "Qadiri", "root": "levies", "kin": ["southern"], "text": "oasis spearmen, river guards and gilded champions", "flavour": "Date palms, irrigation canals and white domes"},
-    {"id": "southern_dune", "name": "Rimal", "root": "levies", "kin": ["southern"], "text": "camel skirmishers, sand raiders and desert lancers", "flavour": "Black goat-hair tents by shifting dunes"},
-    {"id": "southern_rift", "name": "Marenites", "root": "levies", "kin": ["southern"], "text": "galley bowmen, sea marines and corsair captains", "flavour": "Lateen sails and spice-scented bazaars"},
-    {"id": "steppe_horde", "name": "Free Banners", "root": "clansmen", "kin": ["steppe", "northern"], "text": "steppe outriders, horse archers and free lancers", "flavour": "Endless grass and painted felt yurts"},
-    {"id": "steppe_salt", "name": "Saltmen", "root": "clansmen", "kin": ["steppe", "northern"], "text": "salt-sea scouts, armoured lancers and steppe cataphracts", "flavour": "Brine-crusted ports on the Salt Sea"},
-    {"id": "league_lagoon", "name": "Brinemen", "root": "levies", "kin": ["league"], "text": "galley pikes, lagoon crossbows and merchant captains", "flavour": "Gilded canals, arsenals and counting houses"},
-    {"id": "league_fen", "name": "Fenmen", "root": "levies", "kin": ["league"], "text": "fen slingers, marsh spears and pavise bowmen", "flavour": "Reed-thatched stilt villages in the mist"},
-    {"id": "order_chapter", "name": "The Sworn", "root": "levies", "kin": ["order"], "text": "sworn novices, chapter sergeants and sun paladins", "flavour": "Bell-towers and austere grey chapter-houses"},
-    {"id": "order_warden", "name": "Pass-Wardens", "root": "levies", "kin": ["order"], "text": "gate militia, pass halberds and canyon crossbows", "flavour": "Fortified stone gates spanning the Tarn Pass"},
+    { "id": "azure", "name": "Brevon", "root": "brevon_fyrd", "nobleFoot": "brevon_esquires", "nobleHorse": "tourney_squires", "mageRoot": "vigil_novices", "text": "heavy foot, crossbows and lances", "flavour": "Blue roofs and quiet bells" },
+    { "id": "crimson", "name": "Vespra", "root": "civic_militia", "nobleFoot": "signorial_cadets", "nobleHorse": "compagnia_squires", "mageRoot": "hedge_apprentices", "text": "greatswords, halberds, longbows and heavy horse", "flavour": "Red banners and loud markets" },
+    { "id": "northern", "name": "Skar", "root": "clansmen", "nobleFoot": "hearth_youths", "nobleHorse": "storm_squires", "mageRoot": "rune_apprentices", "text": "axes, round shields, glaives and light horse", "flavour": "Timber halls and smoke" },
+    { "id": "southern", "name": "Qadir", "root": "oasis_levy", "nobleFoot": "ghulam_foot", "nobleHorse": "mamluk_pages", "mageRoot": "star_students", "kin": ["crimson", "northern"], "text": "spears and javelins, light horse and mamluks", "flavour": "White domes, palms and the noon bell" },
+    { "id": "steppe", "name": "Naryn", "root": "steppe_herdsmen", "nobleFoot": "noyan_foot_youths", "nobleHorse": "kheshig_youths", "mageRoot": "sky_novices", "kin": ["northern"], "text": "horse archers first, bows on foot, axes and spears", "flavour": "Felt tents around a wooden hall" },
+    { "id": "league", "name": "Brinemere", "root": "charter_watch", "nobleFoot": "guild_ensigns", "nobleHorse": "condottieri_squires", "mageRoot": "lab_apprentices", "kin": ["azure"], "text": "pikes and pavise crossbows, hired steel", "flavour": "Canals, cranes and counting houses" },
+    { "id": "order", "name": "Tarn", "root": "lay_brothers", "nobleFoot": "vow_postulants", "nobleHorse": "squire_brothers", "mageRoot": "choir_novices", "kin": ["azure", "crimson"], "text": "sworn brothers on foot and knight-brothers", "flavour": "Bells, grey cloaks and a great stone chapter house" },
+    {"id": "azure_heart", "name": "Crownlanders", "root": "abbey_yeomen", "kin": ["azure"], "text": "river-valley billmen, halberdiers and heavy lancers", "flavour": "Stone bridges, tournaments and rich abbey lands"},
+    {"id": "azure_march", "name": "Marchers", "root": "march_watch", "kin": ["azure"], "text": "pass scouts, border crossbows and light horse", "flavour": "Watch-fires on the scarred eastern border"},
+    {"id": "azure_coast", "name": "Bayfolk", "root": "harbor_hands", "kin": ["azure"], "text": "harbour crossbows, shipboard marines and sea-wardens", "flavour": "Salt-stained docks and tall-masted cogs"},
+    {"id": "crimson_patrician", "name": "Vesprans", "root": "patrician_levies", "kin": ["crimson"], "text": "civic pikes, guild halberds and duelist blades", "flavour": "Marble forums, guildhalls and crimson banners"},
+    {"id": "crimson_alpine", "name": "Cragfolk", "root": "crag_herdsmen", "kin": ["crimson"], "text": "pass skirmishers, highland axes and crag halberdiers", "flavour": "Switchback trails and slate-roofed keeps"},
+    {"id": "northern_fjord", "name": "Fjordmen", "root": "fjord_oarsmen", "kin": ["northern"], "text": "longship oarsmen, sea-raiders and axe huscarls", "flavour": "Dragon-prowed hulls and salt-spray cliffs"},
+    {"id": "northern_taiga", "name": "Holtmen", "root": "taiga_trappers", "kin": ["northern"], "text": "taiga trappers, frost hunters and woodland rangers", "flavour": "Pine-log halls deep in the snow-bound woods"},
+    {"id": "southern_oasis", "name": "Qadiri", "root": "oasis_spearmen", "kin": ["southern"], "text": "oasis spearmen, river guards and gilded champions", "flavour": "Date palms, irrigation canals and white domes"},
+    {"id": "southern_dune", "name": "Rimal", "root": "dune_nomads", "kin": ["southern"], "text": "camel skirmishers, sand raiders and desert lancers", "flavour": "Black goat-hair tents by shifting dunes"},
+    {"id": "southern_rift", "name": "Marenites", "root": "rift_sailors", "kin": ["southern"], "text": "galley bowmen, sea marines and corsair captains", "flavour": "Lateen sails and spice-scented bazaars"},
+    {"id": "steppe_horde", "name": "Free Banners", "root": "banner_riders", "kin": ["steppe", "northern"], "text": "steppe outriders, horse archers and free lancers", "flavour": "Endless grass and painted felt yurts"},
+    {"id": "steppe_salt", "name": "Saltmen", "root": "salt_watch", "kin": ["steppe", "northern"], "text": "salt-sea scouts, armoured lancers and steppe cataphracts", "flavour": "Brine-crusted ports on the Salt Sea"},
+    {"id": "league_lagoon", "name": "Brinemen", "root": "lagoon_hands", "kin": ["league"], "text": "galley pikes, lagoon crossbows and merchant captains", "flavour": "Gilded canals, arsenals and counting houses"},
+    {"id": "league_fen", "name": "Fenmen", "root": "fen_skirmishers", "kin": ["league"], "text": "fen slingers, marsh spears and pavise bowmen", "flavour": "Reed-thatched stilt villages in the mist"},
+    {"id": "order_chapter", "name": "The Sworn", "root": "chapter_novices", "kin": ["order"], "text": "sworn novices, chapter sergeants and sun paladins", "flavour": "Bell-towers and austere grey chapter-houses"},
+    {"id": "order_warden", "name": "Pass-Wardens", "root": "gate_militia", "kin": ["order"], "text": "gate militia, pass halberds and canyon crossbows", "flavour": "Fortified stone gates spanning the Tarn Pass"},
     {"id": "bandit", "waiting": true, "name": "Outlaws", "root": "cutthroats", "kin": [], "text": "brigands, poachers, highwaymen and sea corsairs", "flavour": "Campfires hidden off the king's road"}
   ],
   "factions": [
@@ -40,20 +40,20 @@
       "name": "Kingdom of Brevon", "palette": 0, "culture": "azure", "home": [-0.75, -0.05],
       "siege": 1.1, "arcana": 1,
       "lines": {
-        "infantry": ["levies", "shieldmen", "men_at_arms", "ironguard", "paladins", "iron_legionaries"],
+        "infantry": ["brevon_fyrd", "manor_foot", "men_at_arms", "ironguard", "paladins", "iron_legionaries"],
         "archers": ["town_crossbows", "town_crossbows", "crossbowmen", "arbalests", "heavy_arbalests", "guild_sharpshooters"],
-        "spears": ["levies", "spearrunners", "pikemen", "phalanx_pikemen", "silver_pikes", "grand_phalanx"],
-        "horse": ["crown_squires", "crown_squires", "lancers", "demi_lancers", "banner_knights", "paladin_knights"]
+        "spears": ["brevon_fyrd", "shire_billmen", "pikemen", "phalanx_pikemen", "silver_pikes", "grand_phalanx"],
+        "horse": ["crown_squires", "crown_squires", "brevon_lancers", "demi_lancers", "banner_knights", "paladin_knights"]
       }
     },
     {
       "name": "Vespra Compact", "palette": 1, "culture": "crimson", "home": [0.45, 0.4],
       "aggression": 1.2, "siege": 1.2, "tribute": 0.8, "arcana": 3,
       "lines": {
-        "infantry": ["levies", "shieldmen", "greatswords", "zweihanders", "blademasters", "grand_blademasters"],
+        "infantry": ["civic_militia", "ward_swordsmen", "greatswords", "zweihanders", "blademasters", "grand_blademasters"],
         "archers": ["commons_bowmen", "commons_bowmen", "longbowmen", "yeoman_archers", "master_longbowmen", "royal_yeomen"],
-        "spears": ["levies", "spearrunners", "billmen", "halberdiers", "heavy_halberdiers", "royal_halberdiers"],
-        "horse": ["hobilars", "hobilars", "lancers", "knights", "cataphracts", "iron_cataphracts"]
+        "spears": ["civic_militia", "guild_billmen", "vespra_billmen", "halberdiers", "heavy_halberdiers", "royal_halberdiers"],
+        "horse": ["hobilars", "hobilars", "vespra_lancers", "knights", "cataphracts", "iron_cataphracts"]
       }
     },
     {
@@ -62,7 +62,7 @@
       "lines": {
         "infantry": ["clansmen", "axemen", "huscarls", "varangians", "einherjar", "thane_champions"],
         "archers": ["hunters", "hunters", "rangers", "woodland_stalkers", "shadow_hunters", "highland_marksmen"],
-        "spears": ["clansmen", "spearrunners", "billmen", "glaivemen", "vanguard_glaives", "dragon_glaives"],
+        "spears": ["clansmen", "spear_karls", "skar_atgeir", "glaivemen", "vanguard_glaives", "dragon_glaives"],
         "horse": ["fell_riders", "fell_riders", "horse_archers", "nomad_bows", "steppe_marksmen", "khan_guard"]
       }
     },
@@ -70,9 +70,9 @@
       "name": "Emirates of Qadir", "palette": 5, "culture": "southern", "home": [0.1, 0.85],
       "garrison": 1.2, "tribute": 1.4, "arcana": 2,
       "lines": {
-        "infantry": ["levies", "shieldmen", "ghazis", "jandars", "dervish_blades", "emir_guard"],
+        "infantry": ["oasis_levy", "qadir_foot", "ghazis", "jandars", "dervish_blades", "emir_guard"],
         "archers": ["slingers", "slingers", "sand_archers", "oasis_bows", "emir_archers", "falcon_eyes"],
-        "spears": ["levies", "spearrunners", "sun_javelins", "dune_spears", "sun_guard", "emir_spears"],
+        "spears": ["oasis_levy", "qadir_spears", "sun_javelins", "dune_spears", "sun_guard", "emir_spears"],
         "horse": ["camel_scouts", "camel_scouts", "desert_riders", "mamluks", "sun_lancers", "emir_mamluks"]
       }
     },
@@ -80,9 +80,9 @@
       "name": "Naryn Khaganate", "palette": 6, "culture": "steppe", "home": [0.88, -0.3],
       "aggression": 1.4, "garrison": 0.8, "siege": 0.6, "arcana": 2,
       "lines": {
-        "infantry": ["clansmen", "axemen", "yurt_guards", "torguud", "wolf_axes", "noyan_guard"],
+        "infantry": ["steppe_herdsmen", "yurt_foot", "yurt_guards", "torguud", "wolf_axes", "noyan_guard"],
         "archers": ["herd_boys", "herd_boys", "steppe_archers", "yurt_archers", "tengri_bows", "sky_wolf_archers"],
-        "spears": ["clansmen", "spearrunners", "grass_spears", "horde_spears", "tumen_spears", "sky_spears"],
+        "spears": ["steppe_herdsmen", "grass_skirmishers", "grass_spears", "horde_spears", "tumen_spears", "sky_spears"],
         "horse": ["herd_riders", "herd_riders", "steppe_bows", "kheshig_riders", "noyan_bows", "kheshig"]
       }
     },
@@ -90,9 +90,9 @@
       "name": "League of Brinemere", "palette": 7, "culture": "league", "home": [-0.8, 0.8],
       "aggression": 0.7, "garrison": 1.25, "tribute": 1.5, "arcana": 1,
       "lines": {
-        "infantry": ["levies", "shieldmen", "canal_guards", "guild_swords", "brigandiers", "doge_guard"],
+        "infantry": ["charter_watch", "canal_foot", "canal_guards", "guild_swords", "brigandiers", "doge_guard"],
         "archers": ["militia_crossbows", "militia_crossbows", "league_crossbows", "pavisiers", "guild_arbalesters", "doge_arbalesters"],
-        "spears": ["levies", "spearrunners", "league_pikes", "guild_pikes", "marsh_wardens", "doge_pikes"],
+        "spears": ["charter_watch", "arsenal_spears", "league_pikes", "guild_pikes", "marsh_wardens", "doge_pikes"],
         "horse": ["light_horse", "light_horse", "stradiots", "condottieri", "guild_lances", "doge_lances"]
       }
     },
@@ -100,9 +100,9 @@
       "name": "Chapter of Tarn", "palette": 8, "culture": "order", "home": [0, 0], "reach": -25,
       "aggression": 0.8, "garrison": 1.2, "hunts": "monsters", "arcana": 3,
       "lines": {
-        "infantry": ["levies", "shieldmen", "order_sergeants", "sun_brothers", "ashen_brothers", "sun_templars"],
+        "infantry": ["lay_brothers", "chapter_foot", "order_sergeants", "sun_brothers", "ashen_brothers", "sun_templars"],
         "archers": ["pilgrim_bows", "pilgrim_bows", "order_crossbows", "chapter_arbalests", "ashen_arbalests", "sun_arbalests"],
-        "spears": ["levies", "spearrunners", "order_spears", "chapter_pikes", "ashen_pikes", "pilgrim_guard"],
+        "spears": ["lay_brothers", "pass_spears", "order_spears", "chapter_pikes", "ashen_pikes", "pilgrim_guard"],
         "horse": ["pilgrim_riders", "pilgrim_riders", "order_riders", "knight_brothers", "sun_knights", "ashen_knights"]
       }
     }

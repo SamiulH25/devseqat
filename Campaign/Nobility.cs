@@ -7,10 +7,11 @@ namespace Ironfield;
 /// birth, so they train up the noble lines; commoners never do (CanEnterLine).
 public partial class Campaign
 {
-    public const string EsquireFoot = "esquires", EsquireHorse = "mounted_esquires";
+    public const string EsquireFoot = "brevon_esquires", EsquireHorse = "tourney_squires";
 
     /// The troop a castle's house sends: on foot or mounted.
     public static string NobleTroop(bool mounted) => mounted ? EsquireHorse : EsquireFoot;
+    public static string NobleTroop(string culture, bool mounted) => mounted ? Factions.NobleHorse(culture) : Factions.NobleFoot(culture);
 
     /// Why this castle will not send esquires with you now; null if it will.
     public string? CannotRecruitNobles(Settlement s)
@@ -26,12 +27,13 @@ public partial class Campaign
 
     /// Crowns for one batch of ArmyScale esquires (shown in the castle's recruit tab).
     public int NoblePrice(bool mounted) => (int)MathF.Ceiling(Troops.Get(NobleTroop(mounted)).Cost * B.NobleMarkup);
+    public int NoblePrice(Settlement s, bool mounted) => (int)MathF.Ceiling(Troops.Get(NobleTroop(s.Culture, mounted)).Cost * B.NobleMarkup);
 
     /// Take up to `n` esquires from this castle into companies of their role, or a new one.
     public string? RecruitNobles(Settlement s, bool mounted, int n)
     {
         if (CannotRecruitNobles(s) is string why) return why;
-        string troop = NobleTroop(mounted), role = mounted ? "horse" : "infantry";
+        string troop = NobleTroop(s.Culture, mounted), role = mounted ? "horse" : "infantry";
         n = Math.Min(n, s.Nobles);
         float each = Rules.PerMan(Troops.Get(troop).Cost) * B.NobleMarkup;
         int cost = (int)MathF.Ceiling(n * each);

@@ -197,7 +197,7 @@ public static partial class SelfTest
 
         // A great form: once a battle; Lily's Bastion steadies your companies near you.
         var (k, _) = FormField(46, 4, new[] { "lily_bastion" });
-        var mine = k.AddSquad(0, Troops.Get("shieldmen"), 6, k.Player.Pos + new Vector2(4, 0), 6, Vector2.UnitY);
+        var mine = k.AddSquad(0, Troops.Get("manor_foot"), 6, k.Player.Pos + new Vector2(4, 0), 6, Vector2.UnitY);
         Press(k, 3);
         Check(mine.Mods.Block > 0.3f, "Lily's Bastion raises your companies' shields");
         Check(k.GreatUsed && k.CannotForm(3) != null, "and a great form is spent for the battle");
@@ -329,7 +329,7 @@ public static partial class SelfTest
         var o = c.OrderById("lily")!;
         var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town);
         float st = o.Standing;
-        c.Player.Prisoners.Add(new PrisonerGroup { Troop = "levies", Count = 5 });
+        c.Player.Prisoners.Add(new PrisonerGroup { Troop = "brevon_fyrd", Count = 5 });
         c.SellPrisoners(town);
         Check(c.Captain.Penance && o.Standing <= st - Campaign.VowCost + 0.01f, "selling prisoners breaks the Lily's vow: a penance");
         Check(c.CannotRise() is string pen && pen.Contains("ATONE"), "no rising with a penance owed");
@@ -345,7 +345,7 @@ public static partial class SelfTest
         c.BreakVow("no_rob", "rob travellers on the road");
         Check(c.Captain.Order == "" && c.Captain.Forsworn.Contains("lily"), "broken again before atoning: cast out");
         c.Swear("rose"); // meet every foe in person, never rob the road: selling prisoners is no sin to the Rose
-        c.Player.Prisoners.Add(new PrisonerGroup { Troop = "levies", Count = 5 });
+        c.Player.Prisoners.Add(new PrisonerGroup { Troop = "brevon_fyrd", Count = 5 });
         c.SellPrisoners(town);
         Check(!c.Captain.Penance && c.Captain.Order == "rose", "a vow your creed lacks costs nothing");
         c.LeaveOrder();
@@ -608,7 +608,7 @@ public static partial class SelfTest
         var c = Campaign.New(130);
         Days(c, 30);
         Check(c.Captain.Corruption == 0 && !c.Captain.Pact, "a month of the world leaves no corruption in you");
-        Check(!c.CanEnterLine(c.Player, c.Player.Companies[0], "billmen", "hollow_squires", out _), "without the pact the Hollow Crown trains none of your men");
+        Check(!c.CanEnterLine(c.Player, c.Player.Companies[0], "vespra_billmen", "hollow_squires", out _), "without the pact the Hollow Crown trains none of your men");
         c.S.Event = null;
         c.Captain.AuraTier = 2;
         c.CrackCore();
@@ -616,7 +616,7 @@ public static partial class SelfTest
         c.Choose(0);
         Check(c.Captain.Pact && c.Captain.Corruption == Campaign.PactCost && c.Captain.Forms.Contains("black_flame") && c.Captain.Forms.Contains("devour"),
             "the pact: its price, and the Black Flame forms your aura can hold");
-        Check(c.CanEnterLine(c.Player, c.Player.Companies[0], "billmen", "hollow_squires", out _), "with the pact the Hollow Crown's troops are yours to train");
+        Check(c.CanEnterLine(c.Player, c.Player.Companies[0], "vespra_billmen", "hollow_squires", out _), "with the pact the Hollow Crown's troops are yours to train");
         c.Captain.AuraWall = true;
         Check(c.BurnWall() == null && c.Captain.AuraTier == 3 && c.Captain.Corruption == Campaign.PactCost + Campaign.BurnCost && c.Captain.Forms.Contains("hollow_crown"),
             "the flame burns through a wall with no trial, at a price");
@@ -745,7 +745,7 @@ public static partial class SelfTest
         b = Battle.Empty(32, new BattleOptions { AuraTier = 3, Forms = new[] { "aura_slash" } });
         b.EnemyCaptain.Pos = new Vector2(0, 400);
         b.Aura = Battle.AuraMax;
-        var foes = b.AddSquad(1, Troops.Get("levies"), 6, b.Player.Pos + new Vector2(0, 2.2f), 6, -Vector2.UnitY).Units;
+        var foes = b.AddSquad(1, Troops.Get("brevon_fyrd"), 6, b.Player.Pos + new Vector2(0, 2.2f), 6, -Vector2.UnitY).Units;
         for (int i = 0; i < 20 * 60 && b.Surge < Battle.SurgeMax; i++)
         {
             b.Aura = Battle.AuraMax;
@@ -778,9 +778,9 @@ public static partial class SelfTest
             var g = Battle.Empty(34, new BattleOptions { AuraTier = tier });
             g.EnemyCaptain.Pos = new Vector2(0, 400);
             g.Player.Horse = null;
-            var mine = g.AddSquad(0, Troops.Get("shieldmen"), 8, g.Player.Pos + new Vector2(away, -4), 8, Vector2.UnitY);
+            var mine = g.AddSquad(0, Troops.Get("manor_foot"), 8, g.Player.Pos + new Vector2(away, -4), 8, Vector2.UnitY);
             mine.Order = Order.Hold;
-            var foe = g.AddSquad(1, Troops.Get("levies"), 3, g.Player.Pos + new Vector2(0, 2.2f), 3, -Vector2.UnitY);
+            var foe = g.AddSquad(1, Troops.Get("brevon_fyrd"), 3, g.Player.Pos + new Vector2(0, 2.2f), 3, -Vector2.UnitY);
             foe.Order = Order.Hold;
             for (int i = 0; i < 4 * 60; i++)
             {
@@ -885,7 +885,7 @@ public static partial class SelfTest
     static void RelicRaised()
     {
         var b = AuraField(85, 3, "relic");
-        var men = b.AddSquad(0, Troops.Get("levies"), 8, b.Player.Pos + new Vector2(5, 0), 4, Vector2.UnitY);
+        var men = b.AddSquad(0, Troops.Get("brevon_fyrd"), 8, b.Player.Pos + new Vector2(5, 0), 4, Vector2.UnitY);
         b.Aura = 90;
         b.Input = new PlayerInput { Relic = true };
         b.Update(1 / 60f);
@@ -963,7 +963,7 @@ public static partial class SelfTest
             return b;
         }
         var b = Field(true);
-        var men = b.AddSquad(0, Troops.Get("levies"), 6, b.Player.Pos + new Vector2(6, 0), 3, Vector2.UnitY);
+        var men = b.AddSquad(0, Troops.Get("brevon_fyrd"), 6, b.Player.Pos + new Vector2(6, 0), 3, Vector2.UnitY);
         foreach (var u in men.Units) { u.Routing = true; u.Morale = 5; }
         b.Aura = 30;
         b.Kill(b.EnemyCaptain, b.Player);
@@ -980,8 +980,8 @@ public static partial class SelfTest
     {
         var b = Battle.Empty(92, new BattleOptions { AuraTier = 3, EnemyAura = 3 });
         b.EnemyCaptain.Pos = b.Player.Pos + new Vector2(0, 2.2f);
-        b.AddSquad(0, Troops.Get("levies"), 12, b.Player.Pos + new Vector2(0, -4), 6, Vector2.UnitY);
-        b.AddSquad(1, Troops.Get("levies"), 12, b.Player.Pos + new Vector2(0, 7), 6, -Vector2.UnitY);
+        b.AddSquad(0, Troops.Get("brevon_fyrd"), 12, b.Player.Pos + new Vector2(0, -4), 6, Vector2.UnitY);
+        b.AddSquad(1, Troops.Get("brevon_fyrd"), 12, b.Player.Pos + new Vector2(0, 7), 6, -Vector2.UnitY);
         float started = -1, worst = 99;
         for (int i = 0; i < 14 * 60; i++)
         {
@@ -1006,7 +1006,7 @@ public static partial class SelfTest
         bool Cursed(int tier)
         {
             var b = AuraField(93, tier);
-            var men = b.AddSquad(0, Troops.Get("levies"), 8, b.Player.Pos + new Vector2(5, 0), 4, Vector2.UnitY);
+            var men = b.AddSquad(0, Troops.Get("brevon_fyrd"), 8, b.Player.Pos + new Vector2(5, 0), 4, Vector2.UnitY);
             var witches = b.AddSquad(1, Troops.Get("war_witches"), 3, new Vector2(0, 80), 3, -Vector2.UnitY);
             witches.HoldSpells = true;
             CastNow(b, witches, "fever", men.Center);
@@ -1018,7 +1018,7 @@ public static partial class SelfTest
         int Cut(bool lit)
         {
             var a = AuraField(94, 5);
-            var bows = a.AddSquad(1, Troops.Get("bowmen"), 4, a.Player.Pos + new Vector2(0, 40), 4, -Vector2.UnitY);
+            var bows = a.AddSquad(1, Troops.Get("commons_bowmen"), 4, a.Player.Pos + new Vector2(0, 40), 4, -Vector2.UnitY);
             int hits = 0;
             for (int i = 0; i < 40; i++)
             {
@@ -1113,7 +1113,7 @@ public static partial class SelfTest
         {
             var (b, _) = FormField(132, 1, Array.Empty<string>());
             b.Options.Path = path;
-            var own = b.AddSquad(0, Troops.Get("shieldmen"), 6, b.Player.Pos + new Vector2(-13, 0), 6, Vector2.UnitY);
+            var own = b.AddSquad(0, Troops.Get("manor_foot"), 6, b.Player.Pos + new Vector2(-13, 0), 6, Vector2.UnitY);
             own.Order = Order.Hold;
             Run(b, 2);
             return own.Timed.Any(t => t.Effect.Id == "inspired");

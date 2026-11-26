@@ -752,8 +752,8 @@ sealed partial class MapScreen
                 var type = p.Kind switch
                 {
                     PartyKind.Player => Rules.CaptainType(C.Captain),
-                    PartyKind.Bandit => Troops.Get("levies"),
-                    PartyKind.Caravan => Troops.Get(p.Breed == "pilgrims" ? "levies" : "outriders"),
+                    PartyKind.Bandit => Troops.Get("brevon_fyrd"),
+                    PartyKind.Caravan => Troops.Get(p.Breed == "pilgrims" ? "brevon_fyrd" : "march_scouts"),
                     PartyKind.Monster => Troops.Get(Campaign.MonsterLeader(p) is { Length: > 0 } lead ? lead : "goblin"), // the beast that leads it
                     _ => Troops.Get(p.Tier >= 3 ? "knights" : "captain"),
                 };

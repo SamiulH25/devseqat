@@ -41,16 +41,16 @@ public static partial class SelfTest
     static void HoldTheLine()
     {
         var b = Battle.Empty(76);
-        var mine = b.AddSquad(0, Troops.Get("shieldmen"), 12, new(0, 0), 6, Vector2.UnitY, new Company("shieldmen", 12, Hero: "Osric", HeroGifts: new[] { "hold_the_line", "rally_to_me" }, HeroLevel: 3));
-        var foe = b.AddSquad(1, Troops.Get("shieldmen"), 16, new(0, 6), 8, -Vector2.UnitY);
+        var mine = b.AddSquad(0, Troops.Get("manor_foot"), 12, new(0, 0), 6, Vector2.UnitY, new Company("manor_foot", 12, Hero: "Osric", HeroGifts: new[] { "hold_the_line", "rally_to_me" }, HeroLevel: 3));
+        var foe = b.AddSquad(1, Troops.Get("manor_foot"), 16, new(0, 6), 8, -Vector2.UnitY);
         mine.Order = foe.Order = Order.Charge;
         mine.Target = foe; foe.Target = mine;
         for (int i = 0; i < 25 * 60 && !mine.Timed.Any(t => t.Effect.Id == "held"); i++) b.Update(1 / 60f);
         Check(mine.Timed.Any(t => t.Effect.Id == "held") && mine.Units.Where(u => u.Active).All(u => u.Mods.Holdfast > 0), "a Shield companion holds the line when his company is fighting");
 
         var r = Battle.Empty(77);
-        var rs = r.AddSquad(0, Troops.Get("shieldmen"), 10, new(0, 0), 5, Vector2.UnitY, new Company("shieldmen", 10, Hero: "Osric", HeroGifts: new[] { "rally_to_me" }));
-        r.AddSquad(1, Troops.Get("shieldmen"), 6, new(0, 60), 3, -Vector2.UnitY);
+        var rs = r.AddSquad(0, Troops.Get("manor_foot"), 10, new(0, 0), 5, Vector2.UnitY, new Company("manor_foot", 10, Hero: "Osric", HeroGifts: new[] { "rally_to_me" }));
+        r.AddSquad(1, Troops.Get("manor_foot"), 6, new(0, 60), 3, -Vector2.UnitY);
         Run(r, 0.2f);
         foreach (var u in rs.Units.Where(u => !u.Hero).Take(6)) { u.Routing = true; u.Routs = 1; u.Morale = 5; }
         Run(r, 9);

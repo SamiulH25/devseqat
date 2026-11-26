@@ -16,9 +16,9 @@ public static partial class SelfTest
     static void EngineShoots()
     {
         var b = Battle.Empty(11);
-        var crew = b.AddSquad(0, Troops.Get("levies"), 3, new Vector2(0, -42), 3, Vector2.UnitY);
-        var own = b.AddSquad(0, Troops.Get("levies"), 12, new Vector2(0, -30), 6, Vector2.UnitY);
-        var foe = b.AddSquad(1, Troops.Get("levies"), 30, new Vector2(0, 40), 3, -Vector2.UnitY); // a deep column: bolts go down its files
+        var crew = b.AddSquad(0, Troops.Get("brevon_fyrd"), 3, new Vector2(0, -42), 3, Vector2.UnitY);
+        var own = b.AddSquad(0, Troops.Get("brevon_fyrd"), 12, new Vector2(0, -30), 6, Vector2.UnitY);
+        var foe = b.AddSquad(1, Troops.Get("brevon_fyrd"), 30, new Vector2(0, 40), 3, -Vector2.UnitY); // a deep column: bolts go down its files
         foe.Order = own.Order = Order.Hold;
         var e = b.AddEngine(0, "scorpion", new Vector2(0, -40), Vector2.UnitY, crew);
         Check(b.CrewAt(e) == 3, "the crew stands at its engine");
@@ -40,9 +40,9 @@ public static partial class SelfTest
     static void EngineOrders()
     {
         var b = Battle.Empty(21);
-        var crew = b.AddSquad(0, Troops.Get("levies"), 8, new Vector2(0, -62), 4, Vector2.UnitY);
-        var near = b.AddSquad(1, Troops.Get("levies"), 12, new Vector2(-20, 30), 6, -Vector2.UnitY);
-        var far = b.AddSquad(1, Troops.Get("levies"), 12, new Vector2(30, 60), 6, -Vector2.UnitY);
+        var crew = b.AddSquad(0, Troops.Get("brevon_fyrd"), 8, new Vector2(0, -62), 4, Vector2.UnitY);
+        var near = b.AddSquad(1, Troops.Get("brevon_fyrd"), 12, new Vector2(-20, 30), 6, -Vector2.UnitY);
+        var far = b.AddSquad(1, Troops.Get("brevon_fyrd"), 12, new Vector2(30, 60), 6, -Vector2.UnitY);
         near.Order = far.Order = Order.Hold;
         var e = b.AddEngine(0, "mangonel", new Vector2(0, -60), Vector2.UnitY, crew);
         b.AimEngine(e, far, null);
@@ -64,8 +64,8 @@ public static partial class SelfTest
     static void MannedEngine()
     {
         var b = Battle.Empty(22);
-        var crew = b.AddSquad(0, Troops.Get("levies"), 3, new Vector2(0, -42), 3, Vector2.UnitY);
-        var foe = b.AddSquad(1, Troops.Get("levies"), 20, new Vector2(0, 40), 5, -Vector2.UnitY);
+        var crew = b.AddSquad(0, Troops.Get("brevon_fyrd"), 3, new Vector2(0, -42), 3, Vector2.UnitY);
+        var foe = b.AddSquad(1, Troops.Get("brevon_fyrd"), 20, new Vector2(0, 40), 5, -Vector2.UnitY);
         foe.Order = Order.Hold;
         var e = b.AddEngine(0, "scorpion", new Vector2(0, -40), Vector2.UnitY, crew);
         b.Player.Pos = e.Pos + new Vector2(1.5f, 0);
@@ -90,14 +90,14 @@ public static partial class SelfTest
     static void EngineNeedsCrew()
     {
         var b = Battle.Empty(12);
-        var crew = b.AddSquad(0, Troops.Get("levies"), 3, new Vector2(0, -42), 3, Vector2.UnitY);
-        var foe = b.AddSquad(1, Troops.Get("levies"), 12, new Vector2(0, 40), 6, -Vector2.UnitY);
+        var crew = b.AddSquad(0, Troops.Get("brevon_fyrd"), 3, new Vector2(0, -42), 3, Vector2.UnitY);
+        var foe = b.AddSquad(1, Troops.Get("brevon_fyrd"), 12, new Vector2(0, 40), 6, -Vector2.UnitY);
         foe.Order = Order.Hold;
         var e = b.AddEngine(0, "scorpion", new Vector2(0, -40), Vector2.UnitY, crew);
         foreach (var u in crew.Units) { u.Dead = true; u.Hp = 0; }
         for (int i = 0; i < 60 * 20; i++) b.Update(1 / 60f);
         Check(e.Shots == 0, "an engine with no crew stands silent");
-        var raider = b.AddSquad(1, Troops.Get("levies"), 4, new Vector2(0, -38), 4, -Vector2.UnitY);
+        var raider = b.AddSquad(1, Troops.Get("brevon_fyrd"), 4, new Vector2(0, -38), 4, -Vector2.UnitY);
         raider.Order = Order.Hold; raider.Anchor = e.Pos;
         for (int i = 0; i < 60 * 30 && !e.Wrecked; i++) b.Update(1 / 60f);
         Check(e.Wrecked, "foes at an engine hack it apart");
@@ -107,8 +107,8 @@ public static partial class SelfTest
     static void StoneSplashes()
     {
         var b = Battle.Empty(13);
-        var crew = b.AddSquad(0, Troops.Get("levies"), 8, new Vector2(0, -62), 4, Vector2.UnitY);
-        var foe = b.AddSquad(1, Troops.Get("levies"), 40, new Vector2(0, 40), 8, -Vector2.UnitY);
+        var crew = b.AddSquad(0, Troops.Get("brevon_fyrd"), 8, new Vector2(0, -62), 4, Vector2.UnitY);
+        var foe = b.AddSquad(1, Troops.Get("brevon_fyrd"), 40, new Vector2(0, 40), 8, -Vector2.UnitY);
         foe.Order = Order.Hold;
         var e = b.AddEngine(0, "mangonel", new Vector2(0, -60), Vector2.UnitY, crew);
         for (int i = 0; i < 60 * 60; i++) b.Update(1 / 60f);
@@ -117,8 +117,8 @@ public static partial class SelfTest
         Check(e.Shots >= 3, "the mangonel keeps throwing");
         Check(hurt > e.Shots, "a stone hurts more than one man");
         var near = Battle.Empty(14);
-        var c2 = near.AddSquad(0, Troops.Get("levies"), 8, new Vector2(0, -12), 4, Vector2.UnitY);
-        var close = near.AddSquad(1, Troops.Get("levies"), 20, new Vector2(0, 0), 5, -Vector2.UnitY);
+        var c2 = near.AddSquad(0, Troops.Get("brevon_fyrd"), 8, new Vector2(0, -12), 4, Vector2.UnitY);
+        var close = near.AddSquad(1, Troops.Get("brevon_fyrd"), 20, new Vector2(0, 0), 5, -Vector2.UnitY);
         close.Order = Order.Hold;
         var e2 = near.AddEngine(0, "mangonel", new Vector2(0, -10), Vector2.UnitY, c2);
         bool tooClose = false;
@@ -140,7 +140,7 @@ public static partial class SelfTest
             if (engine)
             {
                 var mg = b.Wall!.MainGate;
-                var crew = b.AddSquad(0, Troops.Get("levies"), 8, mg.Pos + mg.Out * 72f + mg.Along * 20f, 4, Vector2.UnitY);
+                var crew = b.AddSquad(0, Troops.Get("brevon_fyrd"), 8, mg.Pos + mg.Out * 72f + mg.Along * 20f, 4, Vector2.UnitY);
                 e = b.AddEngine(0, "mangonel", mg.Pos + mg.Out * 70f + mg.Along * 20f, Vector2.UnitY, crew);
             }
             for (int i = 0; i < 60 * 60 && b.Winner < 0 && b.Wall!.MainGate.Hp > 0; i++) b.Update(1 / 60f);

@@ -142,12 +142,12 @@ public static partial class SelfTest
     /// M2: levies start in a line but cannot keep it at blows; drilled men can.
     static void LeviesLoseRanks()
     {
-        var levies = ClashOrder(45, "levies");
+        var levies = ClashOrder(45, "brevon_fyrd");
         var drilled = ClashOrder(45, "ironguard");
         Console.WriteLine($"melee: levies rank error {levies.err:0.00} m, intermix {levies.mix:P0}; ironguard {drilled.err:0.00} m, {drilled.mix:P0}");
-        Check(Battle.GradeOf(Battle.DrillOf(Troops.Get("levies"))) == Grade.Rabble && Battle.GradeOf(Battle.DrillOf(Troops.Get("iron_legionaries"))) == Grade.Elite, "levies are rabble, tier 6 elite");
+        Check(Battle.GradeOf(Battle.DrillOf(Troops.Get("brevon_fyrd"))) == Grade.Rabble && Battle.GradeOf(Battle.DrillOf(Troops.Get("iron_legionaries"))) == Grade.Elite, "levies are rabble, tier 6 elite");
         Check(levies.err > drilled.err * 1.5f && levies.mix > drilled.mix, "levies end up a crowd, drilled men a line");
-        var (b, a, _) = Clash(46, "levies", "levies");
+        var (b, a, _) = Clash(46, "brevon_fyrd", "brevon_fyrd");
         for (int i = 0; i < 60 * 20 && !a.Broken; i++) b.Update(1 / 60f);
         Check(a.Broken, "a rabble's ranks break in a long melee");
     }
@@ -217,8 +217,8 @@ public static partial class SelfTest
             if (sq.Order == Order.Charge) tip = b.Time;
             return (peak, sq.Order == Order.Charge && sq.BrokeRanks, tip, first);
         }
-        var alone = Run1("levies", false);
-        var led = Run1("levies", true);
+        var alone = Run1("brevon_fyrd", false);
+        var led = Run1("brevon_fyrd", true);
         var drilled = Run1("men_at_arms", false);
         Console.WriteLine($"urge: levies lunge first at {alone.firstAt:0.0} s, tip at {alone.tipAt:0.0} s (peak {alone.lunging} lunging); with a sergeant peak {led.lunging}, charged {led.charged}; drilled peak {drilled.lunging}");
         Check(alone.charged, "levies near the enemy tip into a charge on their own");
@@ -243,7 +243,7 @@ public static partial class SelfTest
             return (Vector2.Dot(s.Front, Vector2.Normalize(e.Center - s.Center)), plan);
         }
         var trained = Face("men_at_arms");
-        var rabble = Face("levies");
+        var rabble = Face("brevon_fyrd");
         Console.WriteLine($"melee: struck from the flank, men-at-arms face it {trained.dot:0.00} ({trained.plan}), levies {rabble.dot:0.00}");
         Check(trained.dot > 0.8f && trained.plan == Plan.Refuse, "a trained company turns to face a flank attack");
         Check(rabble.plan != Plan.Refuse, "rabble do not see it coming (they may break ranks and charge it, but they do not wheel)");
@@ -350,9 +350,9 @@ public static partial class SelfTest
         (int rallied, float spread) Charges(float drill)
         {
             var b = Battle.Empty(55);
-            var foot = b.AddSquad(0, Troops.Get("levies"), 24, new(0, -10), 8, Vector2.UnitY);
+            var foot = b.AddSquad(0, Troops.Get("brevon_fyrd"), 24, new(0, -10), 8, Vector2.UnitY);
             foot.HoldInPlace();
-            var horse = b.AddSquad(1, Troops.Get("lancers"), 12, new(0, 50), 6, -Vector2.UnitY);
+            var horse = b.AddSquad(1, Troops.Get("brevon_lancers"), 12, new(0, 50), 6, -Vector2.UnitY);
             horse.Drill = drill;
             horse.Order = Order.Charge;
             horse.Target = foot;
@@ -377,9 +377,9 @@ public static partial class SelfTest
         Check(vet.rallied >= 1, "veteran horse rally behind their side after a charge");
         Check(vet.spread is > 0 and < 10, $"and go again together ({vet.spread:0.0} m from their centre)");
         var b2 = Battle.Empty(55);
-        var f2 = b2.AddSquad(0, Troops.Get("levies"), 24, new(0, -10), 8, Vector2.UnitY);
+        var f2 = b2.AddSquad(0, Troops.Get("brevon_fyrd"), 24, new(0, -10), 8, Vector2.UnitY);
         f2.HoldInPlace();
-        var h2 = b2.AddSquad(1, Troops.Get("lancers"), 12, new(0, 50), 6, -Vector2.UnitY);
+        var h2 = b2.AddSquad(1, Troops.Get("brevon_lancers"), 12, new(0, 50), 6, -Vector2.UnitY);
         h2.Drill = 0.45f;
         h2.Order = Order.Charge;
         h2.Target = f2;
@@ -396,7 +396,7 @@ public static partial class SelfTest
             var b = Battle.Empty(56);
             var foot = b.AddSquad(0, Troops.Get("men_at_arms"), 20, new(0, 0), 10, Vector2.UnitY);
             foot.HoldInPlace();
-            var bows = b.AddSquad(0, Troops.Get("bowmen"), 12, new(22, -2), 6, Vector2.UnitY);
+            var bows = b.AddSquad(0, Troops.Get("commons_bowmen"), 12, new(22, -2), 6, Vector2.UnitY);
             bows.HoldInPlace();
             bows.Drill = drill;
             var e = b.AddSquad(1, Troops.Get("men_at_arms"), 16, new(22, 40), 8, -Vector2.UnitY);
@@ -410,7 +410,7 @@ public static partial class SelfTest
             var e2 = c.AddSquad(1, Troops.Get("men_at_arms"), 16, new(0, 18), 8, -Vector2.UnitY);
             f2.Order = e2.Order = Order.Charge;
             f2.Target = e2; e2.Target = f2;
-            var b2 = c.AddSquad(0, Troops.Get("bowmen"), 12, new(0, -14), 6, Vector2.UnitY);
+            var b2 = c.AddSquad(0, Troops.Get("commons_bowmen"), 12, new(0, -14), 6, Vector2.UnitY);
             b2.HoldInPlace();
             b2.Drill = drill;
             b2.Target = e2;
@@ -445,7 +445,7 @@ public static partial class SelfTest
     /// the greater Might.
     static void MightWeighsDrill()
     {
-        var lev = Troops.Get("levies");
+        var lev = Troops.Get("brevon_fyrd");
         var elite = Troops.Get(Armies.LineTroop("infantry", 7));
         int n = (int)MathF.Round(60 * Rules.Strength(lev, 1) / Rules.Strength(elite, 1));
         float ratio = Rules.Might(elite, n) / Rules.Might(lev, 60), even = Rules.Strength(elite, n) / Rules.Strength(lev, 60);

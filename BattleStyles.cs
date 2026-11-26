@@ -12,19 +12,19 @@ public partial class Battle
     /// The style a troop's weapon gives it, when troops.json names none.
     public static AttackStyle StyleFor(UnitType t) => t.Look.Weapon switch
     {
-        "daneaxe" or "warhammer" or "bardiche" => AttackStyle.Crush,
-        "greatsword" or "flamberge" => AttackStyle.Sweep,
-        "longsword" or "longsword_gilded" => t.HasShield ? AttackStyle.Riposte : AttackStyle.Sweep,
-        "scimitar" => t.Mounted() ? AttackStyle.CutWheel : t.HasShield ? AttackStyle.Riposte : AttackStyle.Sweep, // the curved blade turns a blow and cuts back
+        "daneaxe" or "daneaxe_bearded" or "warhammer" or "great_maul" or "bardiche" => AttackStyle.Crush,
+        "greatsword" or "greatsword_claymore" or "flamberge" or "kriegsmesser" => AttackStyle.Sweep,
+        "longsword" or "longsword_estoc" or "longsword_gilded" => t.HasShield ? AttackStyle.Riposte : AttackStyle.Sweep,
+        "scimitar" or "steppe_sabre" => t.Mounted() ? AttackStyle.CutWheel : t.HasShield ? AttackStyle.Riposte : AttackStyle.Sweep, // the curved blade turns a blow and cuts back
         "morningstar" when !t.Mounted() && !t.HasShield => AttackStyle.Crush, // the spiked head two-handed comes down over a guard
-        "sword" or "axe" or "mace" or "morningstar" or "falchion" => t.Mounted() ? AttackStyle.CutWheel : t.HasShield ? AttackStyle.Bash : AttackStyle.None,
-        "pike" or "halberd" or "billhook" => AttackStyle.Thrust,
-        "spear" or "glaive" or "javelin" => AttackStyle.HoldOff,
+        "sword" or "sword_viking" or "sword_knightly" or "schiavona" or "axe" or "axe_bearded" or "boarding_axe" or "tabarzin" or "mace" or "shestoper" or "morningstar" or "falchion" => t.Mounted() ? AttackStyle.CutWheel : t.HasShield ? AttackStyle.Bash : AttackStyle.None,
+        "pike" or "halberd" or "billhook" or "poleaxe" or "lucerne_hammer" or "partisan" => AttackStyle.Thrust,
+        "spear" or "spear_winged" or "boar_spear" or "marsh_fork" or "goedendag" or "glaive" or "atgeir" or "javelin" or "jarid" or "throwing_axe" => AttackStyle.HoldOff,
         "sling" => AttackStyle.QuickLoose,
-        "lance" or "pennonlance" => AttackStyle.RideDown,
+        "lance" or "pennonlance" or "cane_lance" or "hooked_lance" or "stradiot_lance" => AttackStyle.RideDown,
         "longbow" => AttackStyle.Plunge,
-        "bow" or "recurve" => AttackStyle.QuickLoose,
-        "crossbow" or "arbalest" => AttackStyle.Punch,
+        "bow" or "bow_horn" or "recurve" => AttackStyle.QuickLoose,
+        "crossbow" or "crossbow_heavy" or "arbalest" => AttackStyle.Punch,
         _ => AttackStyle.None,
     };
 

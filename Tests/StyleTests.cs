@@ -13,7 +13,7 @@ public static partial class SelfTest
     {
         var b = Battle.Empty(61);
         var a = b.AddSquad(0, troop, 1, Vector2.Zero, 1, Vector2.UnitY).Units[0];
-        var list = foes.Select(p => b.AddSquad(1, Troops.Get("levies"), 1, p, 1, Vector2.UnitY).Units[0]).ToList();
+        var list = foes.Select(p => b.AddSquad(1, Troops.Get("brevon_fyrd"), 1, p, 1, Vector2.UnitY).Units[0]).ToList();
         b.Update(1 / 60f);
         a.Pos = Vector2.Zero;
         a.Face(Vector2.UnitY);
@@ -158,7 +158,7 @@ public static partial class SelfTest
             }
             return got / 400f;
         }
-        var shields = Troops.Get("levies");
+        var shields = Troops.Get("brevon_fyrd");
         Check(shields.HasShield, "levies carry a shield for this test");
         float far = Through(Troops.Get("royal_yeomen"), true), near = Through(Troops.Get("royal_yeomen"), false), plain = Through(Plain("royal_yeomen"), true);
         Console.WriteLine($"styles: arrows past a front shield: longbow long shot {far:P0}, short shot {near:P0}, plain bow long shot {plain:P0}");

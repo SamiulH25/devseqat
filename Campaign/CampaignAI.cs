@@ -35,7 +35,7 @@ public partial class Campaign
         {
             string nRole = rng.Next(2) == 0 ? "horse" : "infantry";
             string noble = Armies.LineTroop(nRole, tier, faction);
-            if (!Troops.Get(noble).Noble) noble = nRole == "horse" ? EsquireHorse : EsquireFoot;
+            if (!Troops.Get(noble).Noble) noble = NobleTroop(Factions.CultureOf(faction), nRole == "horse");
             string actualNobleRole = Rules.TroopRole(noble);
             lord.Companies.Add(NewCompany(noble, actualNobleRole, Math.Max(Scaled(3), (int)(Rules.CapOf(noble, actualNobleRole) * 0.45f)), 0, home));
         }
@@ -129,9 +129,9 @@ public partial class Campaign
         int tide = TideAt(t.Pos).Strength;
         if ((Level(t, "chapel") > 0 || tide > 0) && (t.Id + Day / 7) % 6 == 0)
         {
-            string mage = Day >= 60 ? Armies.MageTroop(t.Culture, tide >= 3 && Day >= 120 ? 5 : 4) : "acolytes";
+            string mage = Day >= 60 ? Armies.MageTroop(t.Culture, tide >= 3 && Day >= 120 ? 5 : 4) : Factions.MageRoot(t.Culture);
             var m = NewCompany(mage, "casters", (int)(Rules.CapOf(mage, "casters") * 0.8f), 0);
-            m.Name = Day >= 60 ? $"The {t.Name} {Troops.Get(mage).Name}" : $"Acolytes of {t.Name}";
+            m.Name = Day >= 60 ? $"The {t.Name} {Troops.Get(mage).Name}" : $"{Troops.Get(mage).Name} of {t.Name}";
             t.Mercenaries.Add(m);
         }
         // Now and then a few ogres sell their clubs (docs/archive/CREATURES.md phase 4): costly, and the only big beasts for hire.
@@ -255,7 +255,7 @@ public partial class Campaign
         float share = MathF.Min(250 * Map.LordScale, MathF.Max(0, fs.Treasury - RefitReserve) * 0.5f / lordsOfFaction);
         float budget = Math.Clamp(share, 0, 250 * Map.LordScale);
         string levy = RecruitTroop(p.Faction);
-        if (p.Companies.Count == 0) p.Companies.Add(NewCompany(levy, "infantry", Scaled(12), 0, home)); // the lord's household, raised again
+        if (p.Companies.Count == 0) p.Companies.Add(NewCompany(levy, Rules.TroopRole(levy) == "horse" ? "horse" : "infantry", Scaled(12), 0, home)); // the lord's household, raised again
         if (p.KnightOrder != "") RefitOrder(p, home); // a knight order's own brothers come from its chapter
         foreach (var v in S.Settlements.Where(v => v.Province == home.Province))
         {
@@ -265,7 +265,8 @@ public partial class Campaign
             levy = RecruitTroop(v); // each village raises its own culture's men (4.2)
             // Recruits fill the green companies; a lord keeps his veterans' companies for promoted men.
             var into = p.Companies.Where(c => c.Type.Tier <= 1 && Rules.Room(c, levy) > 0).OrderByDescending(c => Rules.Room(c, levy)).FirstOrDefault();
-            if (into == null && p.Companies.Count < 5) p.Companies.Add(into = NewCompany(levy, rng.Pick(new[] { "infantry", "spears", "archers" }), 0, 0, v));
+            string newRole = Rules.TroopRole(levy) == "horse" ? "horse" : rng.Pick(new[] { "infantry", "spears", "archers" });
+            if (into == null && p.Companies.Count < 5) p.Companies.Add(into = NewCompany(levy, newRole, 0, 0, v));
             if (into == null) break;
             n = Math.Min(n, Rules.Room(into, levy));
             if (n <= 0) break;

@@ -390,6 +390,67 @@ export function buildBodies(root) {
     mesh(column([[1.320, 0.146, 0.130], [1.380, 0.132, 0.118]], { segs: 8 }), M.leather);
   });
 
+  // chest_oilskin: Bayfolk waxed mariner coat (M.leather) with dark blue storm collar & brass clasps (matches 2D sprite)
+  addPart(root, 'chest_oilskin', (mesh) => {
+    mesh(heightShade(torsoShell(0.194, 0.144, 0.242, 0.162, 0.012, 0.80, 1.38), 0.80, 1.38, 0.80, 1.0), M.leather);
+    mesh(column([[1.310, 0.162, 0.145], [1.410, 0.178, 0.158]], { segs: 8 }), M.clothDark);
+    for (const y of [0.96, 1.10, 1.24]) mesh(box(0.048, 0.022, 0.018, 0.98), M.brass, [0, y, 0.168]);
+  });
+
+  // chest_slashed: Vespran renaissance puffed-and-slashed cloth doublet with proud trim slashes
+  addPart(root, 'chest_slashed', (mesh) => {
+    mesh(heightShade(torsoShell(0.194, 0.144, 0.264, 0.172, 0.014, 0.80, 1.38), 0.80, 1.38, 0.84, 1.0), M.cloth);
+    for (const sx of [-0.095, 0, 0.095]) mesh(box(0.026, 0.340, 0.016, 0.98), M.trim, [sx, 1.07, 0.188]);
+    mesh(column([[1.320, 0.156, 0.140], [1.400, 0.148, 0.132]], { segs: 8 }), M.clothDark);
+  });
+
+  // chest_bear_pelt: Holtmen bear-cult berserker fur torso (M.hair matching bearhead) with leather cross-harness
+  addPart(root, 'chest_bear_pelt', (mesh) => {
+    mesh(heightShade(torsoShell(0.200, 0.150, 0.256, 0.172, 0.014, 0.80, 1.38), 0.80, 1.38, 0.78, 0.98), M.hair);
+    mesh(column([[0.80, 0.202, 0.152], [0.98, 0.206, 0.156]], { segs: 8 }), M.leather);
+    beamBetween(mesh, V(-0.17, 1.34, 0.184), V(0.16, 0.84, 0.186), 0.044, 0.018, M.leather, 0.92);
+    beamBetween(mesh, V(0.17, 1.34, 0.184), V(-0.16, 0.84, 0.186), 0.044, 0.018, M.leather, 0.92);
+  });
+
+  // chest_reed_cloak: Fenmen woven reed-and-oilcloth marsh smock with clean wide shoulder mantle
+  addPart(root, 'chest_reed_cloak', (mesh) => {
+    mesh(heightShade(torsoShell(0.194, 0.144, 0.238, 0.160, 0.012, 0.80, 1.38), 0.80, 1.38, 0.80, 0.98), M.leather);
+    mesh(column([[1.16, 0.315, 0.228, 0, 0.012], [1.39, 0.235, 0.180, 0, 0.012]], { segs: 8 }), M.clothDark);
+  });
+
+  // chest_grey_plate: Austere Tarn dark-iron plate cuirass under grey monastic scapular strip
+  addPart(root, 'chest_grey_plate', (mesh) => {
+    mesh(heightShade(torsoShell(0.196, 0.146, 0.250, 0.168, 0.014, 0.80, 1.38), 0.80, 1.38, 0.80, 0.98), M.mail);
+    for (const sz of [1, -1]) mesh(box(0.155, 0.54, 0.020, 0.92), M.clothDark, [0, 1.09, sz * 0.180]);
+  });
+
+  // chest_lacquered_lamellar: Naryn dark lacquered lamellar cuirass with proud octagonal brass bands
+  addPart(root, 'chest_lacquered_lamellar', (mesh) => {
+    mesh(heightShade(torsoShell(0.198, 0.148, 0.248, 0.168, 0.012, 0.80, 1.38), 0.80, 1.38, 0.80, 0.98), M.clothDark);
+    for (const [y, rx, rz] of [[0.92, 0.242, 0.182], [1.06, 0.258, 0.192], [1.20, 0.264, 0.192]]) {
+      mesh(column([[y, rx, rz, 0, 0.014], [y + 0.036, rx, rz, 0, 0.014]], { segs: 8 }), M.brass);
+    }
+  });
+
+  // chest_kazaghand: Qadiri silk-covered mail coat with gilded collar & wide brass clasps
+  addPart(root, 'chest_kazaghand', (mesh) => {
+    mesh(heightShade(torsoShell(0.196, 0.146, 0.246, 0.166, 0.012, 0.80, 1.38), 0.80, 1.38, 0.84, 1.0), M.cloth);
+    mesh(column([[1.31, 0.156, 0.140], [1.39, 0.150, 0.134]], { segs: 8 }), M.brass);
+    for (const y of [0.96, 1.09, 1.22]) mesh(box(0.084, 0.026, 0.020, 0.98), M.brass, [0, y, 0.180]);
+  });
+
+  // chest_corsair_vest: Marenite open embroidered sea-vest (proud dark vest panels over cream shirt)
+  addPart(root, 'chest_corsair_vest', (mesh) => {
+    mesh(heightShade(torsoShell(0.186, 0.136, 0.232, 0.154, 0.012, 0.80, 1.38), 0.80, 1.38, 0.88, 1.0), M.trim);
+    for (const sx of [-1, 1]) mesh(box(0.125, 0.50, 0.345, 0.84), M.clothDark, [sx * 0.135, 1.09, 0.012]);
+  });
+
+  // chest_crag_plaid: Cragfolk alpine checked-cloth tunic (M.cloth -> PatClothCheck) with bold hem band
+  addPart(root, 'chest_crag_plaid', (mesh) => {
+    mesh(heightShade(torsoShell(0.196, 0.146, 0.246, 0.166, 0.012, 0.80, 1.38), 0.80, 1.38, 0.84, 1.0), M.cloth);
+    mesh(column([[0.80, 0.200, 0.150], [0.88, 0.202, 0.152]], { segs: 8 }), M.clothDark);
+  });
+
   addPart(root, 'chest_bones', (mesh) => {
     mesh(column([[0.68, 0.032, 0.032], [1.36, 0.028, 0.028]], { segs: 6 }), M.skin, [0, 0, -0.05]);
     const pelvis = column([[0.66, 0.16, 0.09], [0.80, 0.19, 0.10]], { segs: 8 });

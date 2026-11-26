@@ -89,7 +89,7 @@ public static partial class SelfTest
     {
         var b = Battle.Empty(3);
         var jav = b.AddSquad(0, Troops.Get("sun_javelins"), 12, new Vector2(0, -12), 6, Vector2.UnitY);
-        var foe = b.AddSquad(1, Troops.Get("levies"), 12, new Vector2(0, 12), 6, -Vector2.UnitY);
+        var foe = b.AddSquad(1, Troops.Get("brevon_fyrd"), 12, new Vector2(0, 12), 6, -Vector2.UnitY);
         jav.Order = foe.Order = Order.Charge; jav.Target = foe; foe.Target = jav;
         bool flew = false;
         for (int i = 0; i < 60 * 20 && !flew; i++) { b.Update(1 / 60f); flew |= b.Arrows.Any(a => a.Kind == Grip.Thrown && a.Stuck < 0); }
@@ -169,7 +169,7 @@ public static partial class SelfTest
     static void KeepsDeployedFormation()
     {
         var b = Battle.Empty(73);
-        var s = b.AddSquad(0, Troops.Get("shieldmen"), 30, new(0, -20), 10, Vector2.UnitX);
+        var s = b.AddSquad(0, Troops.Get("manor_foot"), 30, new(0, -20), 10, Vector2.UnitX);
         s.Formation = Formation.Square; s.Order = Order.Hold; s.Anchor = new(20, -25); s.Front = Vector2.UnitX;
         b.SnapSquad(s);
         b.AddDivision(0, "Front", new[] { s }, Temper.Steady, 5, new Goal(Post.Front, Stance.Hold));
@@ -210,7 +210,7 @@ public static partial class SelfTest
             }
             return past.Count;
         }
-        int drilled = Through("men_at_arms", false), green = Through("levies", false), behind = Through("men_at_arms", true);
+        int drilled = Through("men_at_arms", false), green = Through("brevon_fyrd", false), behind = Through("men_at_arms", true);
         Console.WriteLine($"horse by weight: through men-at-arms head-on {drilled} of 20, levies head-on {green}, men-at-arms from behind {behind}");
         Check(green >= drilled + 5, $"knights ride through levies ({green}) far more than a drilled line ({drilled})");
         Check(behind >= drilled + 5, $"a drilled line taken from behind does not hold them ({behind} vs {drilled} head-on)");
@@ -248,9 +248,9 @@ public static partial class SelfTest
         (int recharges, int meleeTicks, int enemyLeft, int rallied) Sim(float drill)
         {
             var b = Battle.Empty(61);
-            var foot = b.AddSquad(0, Troops.Get("shieldmen"), 24, new(0, 0), 8, Vector2.UnitY);
+            var foot = b.AddSquad(0, Troops.Get("manor_foot"), 24, new(0, 0), 8, Vector2.UnitY);
             foot.Order = Order.Hold;
-            var horse = b.AddSquad(1, Troops.Get("lancers"), 16, new(0, 45), 8, -Vector2.UnitY);
+            var horse = b.AddSquad(1, Troops.Get("brevon_lancers"), 16, new(0, 45), 8, -Vector2.UnitY);
             horse.Drill = drill;
             horse.Order = Order.Charge;
             horse.Target = foot;
@@ -306,7 +306,7 @@ public static partial class SelfTest
         // Horse standing to receive foot (no charge of their own) still fight: they rein in and hack down from the saddle.
         var st = Battle.Empty(7);
         var riders = st.AddSquad(0, Troops.Get("light_horse"), 30, new(0, -1.5f), 10, Vector2.UnitY);
-        var come = st.AddSquad(1, Troops.Get("shieldmen"), 30, new(0, 1.5f), 10, -Vector2.UnitY);
+        var come = st.AddSquad(1, Troops.Get("manor_foot"), 30, new(0, 1.5f), 10, -Vector2.UnitY);
         riders.Order = Order.Hold; come.Order = Order.Charge;
         Run(st, 25);
         int lost = 30 - come.Alive, rode = 30 - riders.Alive;
@@ -315,8 +315,8 @@ public static partial class SelfTest
 
         // Sent at a company of bowmen, your horse break it and then ride back on Hold, not on into the next enemy.
         var rb = Battle.Empty(8);
-        var sent = rb.AddSquad(0, Troops.Get("lancers"), 30, new(0, -30), 10, Vector2.UnitY);
-        var bowmen = rb.AddSquad(1, Troops.Get("bowmen"), 30, new(0, 30), 10, -Vector2.UnitY);
+        var sent = rb.AddSquad(0, Troops.Get("brevon_lancers"), 30, new(0, -30), 10, Vector2.UnitY);
+        var bowmen = rb.AddSquad(1, Troops.Get("commons_bowmen"), 30, new(0, 30), 10, -Vector2.UnitY);
         sent.Order = Order.Charge; sent.Target = bowmen; bowmen.Order = Order.Hold;
         Run(rb, 30);
         Console.WriteLine($"lancers at bowmen: {sent.Alive} riders left, bowmen {bowmen.Alive} standing, horse {sent.Order}");
@@ -522,7 +522,7 @@ public static partial class SelfTest
         b.Input = new PlayerInput { Facing = up };
         Run(b, 0.6f);
         Check(p.Type.Look.Weapon == "crossbow" && p.Ammo == 16 && b.TwoHanded, "swapping takes up the crossbow, with its 16 bolts");
-        var foe = b.AddSquad(1, Troops.Get("levies"), 1, p.Pos + new Vector2(0, 25), 1, -Vector2.UnitY).Units[0];
+        var foe = b.AddSquad(1, Troops.Get("brevon_fyrd"), 1, p.Pos + new Vector2(0, 25), 1, -Vector2.UnitY).Units[0];
         foe.Type = foe.Type.Clone();
         foe.Type.BlockChance = 0;
         int shots = 0;
@@ -743,7 +743,7 @@ public static partial class SelfTest
     {
         var b = Battle.Empty(11);
         var xb = b.AddSquad(0, Troops.Get("crossbowmen"), 1, new(0, 0), 1, Vector2.UnitY).Units[0];
-        var bow = b.AddSquad(0, Troops.Get("bowmen"), 1, new(4, 0), 1, Vector2.UnitY).Units[0];
+        var bow = b.AddSquad(0, Troops.Get("commons_bowmen"), 1, new(4, 0), 1, Vector2.UnitY).Units[0];
         var knight = b.AddSquad(1, Troops.Get("ironguard"), 1, new(0, 20), 1, -Vector2.UnitY).Units[0];
         knight.Type = knight.Type.Clone();
         knight.Type.BlockChance = 0;
@@ -839,7 +839,7 @@ public static partial class SelfTest
         {
             var b = Battle.Empty(7);
             b.Terrain.Paint(new Vector2(0, 0), 12, k);
-            b.AddSquad(1, Troops.Get("spearrunners"), 12, new(0, 0), 6, -Vector2.UnitY);
+            b.AddSquad(1, Troops.Get("shire_billmen"), 12, new(0, 0), 6, -Vector2.UnitY);
             var l = Lancer(b);
             float hp = l.HorseHp;
             Run(b, 3.5f);
@@ -1069,12 +1069,12 @@ public static partial class SelfTest
     static void HorseAvoidsBadGround()
     {
         var flat = TerrainParams.Steppe with { HillsMin = 0, HillsMax = 0, Layouts = new[] { FieldLayout.Open } };
-        var mine = new ArmySpec("a", 1, new List<Company> { new("bowmen", 16, "archers"), new("bowmen", 16, "archers") });
-        var theirs = new ArmySpec("b", 1, new List<Company> { new("lancers", 12, "horse") });
+        var mine = new ArmySpec("a", 1, new List<Company> { new("commons_bowmen", 16, "archers"), new("commons_bowmen", 16, "archers") });
+        var theirs = new ArmySpec("b", 1, new List<Company> { new("brevon_lancers", 12, "horse") });
         foreach (int muddy in new[] { 0, 1 })
         {
             var b = new Battle(4, mine, theirs, new BattleOptions { Ground = flat, PlayerWounded = true });
-            var bows = b.SquadsOf(0).Where(s => s.Company?.Troop == "bowmen").ToList();
+            var bows = b.SquadsOf(0).Where(s => s.Company?.Troop == "commons_bowmen").ToList();
             b.Terrain.Paint(bows[muddy].Center, 6, GroundKind.Mud);
             var horse = b.SquadsOf(1).First(s => s.Cavalry && s.Company != null);
             while (horse.Target == null && b.Time < 60) b.Update(1 / 60f);
@@ -1114,7 +1114,7 @@ public static partial class SelfTest
 
         var b = Battle.Empty(5);
         b.Terrain.Paint(new Vector2(0, 40), 12, GroundKind.Wood);
-        var horse = b.AddSquad(0, Troops.Get("lancers"), 6, Vector2.Zero, 6, Vector2.UnitY);
+        var horse = b.AddSquad(0, Troops.Get("brevon_lancers"), 6, Vector2.Zero, 6, Vector2.UnitY);
         var foot = b.AddSquad(0, UnitType.Shieldman, 6, new(20, 0), 6, Vector2.UnitY);
         Run(b, 0.1f);
         Check(b.GroundWarning(new[] { horse }, new Vector2(0, 40)) == "HORSE IN THE WOOD: SLOWED, NO CHARGE.", "sending horse into a wood warns you");
@@ -1127,7 +1127,7 @@ public static partial class SelfTest
     static void Stakes()
     {
         var bows = Troops.Get("longbowmen");
-        Check(bows.Has("stakes") && !Troops.Get("bowmen").Has("stakes"), "longbowmen carry stakes");
+        Check(bows.Has("stakes") && !Troops.Get("town_crossbows").Has("stakes"), "longbowmen carry stakes");
         float Crossed(bool mounted, out string? second)
         {
             var b = Battle.Empty(5);
@@ -1140,7 +1140,7 @@ public static partial class SelfTest
             second = b.PlantStakes(archers);
             foreach (var u in archers.Units) u.Pos += new Vector2(0, -30); // out of the way
             archers.Anchor = new(0, -34);
-            var came = b.AddSquad(1, mounted ? Troops.Get("lancers") : UnitType.Shieldman, 8, new(0, 14), 8, -Vector2.UnitY);
+            var came = b.AddSquad(1, mounted ? Troops.Get("brevon_lancers") : UnitType.Shieldman, 8, new(0, 14), 8, -Vector2.UnitY);
             came.Order = Order.Hold; came.Anchor = new(0, -12); came.Front = -Vector2.UnitY;
             var stakes = b.Terrain.Features.Where(f => f.Kind == FeatureKind.Stakes).ToList();
             float half = stakes.Max(f => MathF.Max(MathF.Abs(f.A.X), MathF.Abs(f.B.X))), line = stakes[0].A.Y;
@@ -1169,7 +1169,7 @@ public static partial class SelfTest
         foreach (var u in archers.Units) u.Pos += new Vector2(60, 0); // out of the way
         archers.Anchor = new(60, -4);
         var line = b.Terrain.Features.First(f => f.Kind == FeatureKind.Stakes).A.Y;
-        var own = b.AddSquad(0, Troops.Get("lancers"), 8, new(0, -14), 8, Vector2.UnitY);
+        var own = b.AddSquad(0, Troops.Get("brevon_lancers"), 8, new(0, -14), 8, Vector2.UnitY);
         own.Order = Order.Hold; own.Anchor = new(0, 12); own.Front = Vector2.UnitY;
         Run(b, 10);
         int over = own.Units.Count(u => u.Pos.Y > line + 1);
@@ -1319,7 +1319,7 @@ public static partial class SelfTest
     {
         var rng = new Random(3);
         var a = Armies.Random(rng, 2, 0);
-        a = a with { Companies = a.Companies.Concat(new[] { new Company("shieldmen", 16, "infantry"), new Company("shieldmen", 12, "infantry") }).ToList() };
+        a = a with { Companies = a.Companies.Concat(new[] { new Company("manor_foot", 16, "infantry"), new Company("manor_foot", 12, "infantry") }).ToList() };
         var b = new Battle(14, a, Armies.Random(rng, 2, 1), new BattleOptions { AutoPlayer = true, PlayerWounded = true });
         bool heldBack = false;
         for (int step = 0; b.Winner < 0 && step < 60 * 600; step++)
@@ -1386,7 +1386,7 @@ public static partial class SelfTest
     static void TroopTree()
     {
         Check(!Troops.Validate().Any(), "troops.json validates: " + string.Join("; ", Troops.Validate()));
-        var levies = Troops.Get("levies");
+        var levies = Troops.Get("brevon_fyrd");
         var clansmen = Troops.Get("clansmen");
         Check(levies.Tier == 1 && levies.UpgradesTo.Length >= 4, "levies branch into several lines");
         Check(clansmen.Tier == 1 && clansmen.UpgradesTo.Length >= 4, "clansmen branch into several lines");
@@ -1395,14 +1395,18 @@ public static partial class SelfTest
         Check(weaker.Count == 0, "every upgrade is a better soldier: " + string.Join("; ", weaker));
         for (int tier = 1; tier <= Troops.MaxTier; tier++)
         {
-            Check(Troops.Tree("levies").Any(t => t.Tier == tier), $"levies tree reaches tier {Style.Numerals[tier]}");
+            Check(Troops.Tree("brevon_fyrd").Any(t => t.Tier == tier), $"levies tree reaches tier {Style.Numerals[tier]}");
             Check(Troops.Tree("clansmen").Any(t => t.Tier == tier), $"clansmen tree reaches tier {Style.Numerals[tier]}");
         }
         Check(Troops.All.Count(t => !t.Leader && !t.Wild) >= 80, $"6-tier troop tree ({Troops.All.Count(t => !t.Leader)} troops)");
-        var reachable = Troops.Tree("levies").Concat(Troops.Tree("clansmen")).Concat(Troops.Tree("cutthroats")).Concat(Troops.Tree("esquires")).Concat(Troops.Tree("mounted_esquires")).Select(t => t.Id).ToHashSet(); // nobles: from the castle roots (docs/pre-demo/NOBILITY.md); bandits: from cutthroats
-        Check(Troops.All.Where(t => !t.Leader && !t.Wild && t.Class != UnitClass.Caster).All(t => reachable.Contains(t.Id)), "every troop can be reached by upgrading a culture's recruits");
-        var magi = Troops.Tree("acolytes").Select(t => t.Id).ToHashSet(); // mages are super units: hired as Acolytes, never drilled from recruits
-        Check(Troops.All.Where(t => !t.Wild && t.Class == UnitClass.Caster).All(t => magi.Contains(t.Id) && !reachable.Contains(t.Id)), "every mage rises from Acolytes, and no recruit becomes one");
+        var roots = Factions.Cultures.SelectMany(cul => new[] { cul.Root, Factions.NobleFoot(cul.Id), Factions.NobleHorse(cul.Id) }).Where(id => id != "").Append("cutthroats").Distinct();
+        var reachable = roots.SelectMany(Troops.Tree).Select(t => t.Id).ToHashSet(); // all culture/subculture roots, castle noble roots, and cutthroats
+        var missed = Troops.All.Where(t => !t.Leader && !t.Wild && t.Class != UnitClass.Caster && !reachable.Contains(t.Id)).Select(t => t.Id).ToList();
+        Check(missed.Count == 0, "every troop can be reached by upgrading a culture's recruits: " + string.Join(", ", missed));
+        var mageRoots = Factions.Cultures.Select(cul => Factions.MageRoot(cul.Id)).Where(id => id != "").Distinct();
+        var magi = mageRoots.SelectMany(Troops.Tree).Select(t => t.Id).ToHashSet(); // mages are super units: hired at each realm's mage root, never drilled from recruits
+        var badMagi = Troops.All.Where(t => !t.Wild && t.Class == UnitClass.Caster && (!magi.Contains(t.Id) || reachable.Contains(t.Id))).Select(t => t.Id).ToList();
+        Check(badMagi.Count == 0, "every mage rises from its culture's mage root, and no recruit becomes one: " + string.Join(", ", badMagi));
     }
 
     /// The sprites are PNG files (SpriteBake): Data/sprites holds every part the code paints, at the size the rig expects,
@@ -1469,7 +1473,7 @@ public static partial class SelfTest
     {
         var sheet = new SpriteSheet();
         var b = Battle.Empty(3);
-        var men = b.AddSquad(1, Troops.Get("shieldmen"), 40, new(0, 20), 8, -Vector2.UnitY).Units;
+        var men = b.AddSquad(1, Troops.Get("manor_foot"), 40, new(0, 20), 8, -Vector2.UnitY).Units;
         var looks = men.Select(Variety.Of).ToList();
         Check(looks.Select(l => l.Visage).Distinct().Count() >= 12, $"forty shieldmen show many faces ({looks.Select(l => l.Visage).Distinct().Count()})");
         Check(looks.Select(l => l.Head).Distinct().Count() > 1 && looks.Select(l => l.Weapon).Distinct().Count() > 1, "some wear another helm or carry another weapon");
@@ -1537,8 +1541,8 @@ public static partial class SelfTest
         c.Player.Pos = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && !c.Refuses(t)).Pos;
         c.S.Gold = 2000;
         var co = c.Player.Companies.First(k => Rules.RoleOf(k) == "infantry");
-        co.Stack("levies").AddXp(1e6f);
-        c.Promote(co, co.Stack("levies"), "shieldmen", 5);
+        co.Stack("brevon_fyrd").AddXp(1e6f);
+        c.Promote(co, co.Stack("brevon_fyrd"), "manor_foot", 5);
         var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit);
         bandit.Pos = c.Player.Pos;
         c.Encounter = bandit;
@@ -1636,8 +1640,8 @@ public static partial class SelfTest
     /// carries; the "bring him home" goal names him and is lost if he dies; your named men are heard in the log.
     static void PullBack()
     {
-        var spec = new Company("shieldmen", 10, "infantry", 7, "Test Guard", Named: new[] { new NamedSpec(5, "shieldmen", "Hob the Red") });
-        var b = new Battle(5, new ArmySpec("mine", 0, new List<Company> { spec }), new ArmySpec("theirs", 0, new List<Company> { new("levies", 30, "infantry", 9) }),
+        var spec = new Company("manor_foot", 10, "infantry", 7, "Test Guard", Named: new[] { new NamedSpec(5, "manor_foot", "Hob the Red") });
+        var b = new Battle(5, new ArmySpec("mine", 0, new List<Company> { spec }), new ArmySpec("theirs", 0, new List<Company> { new("brevon_fyrd", 30, "infantry", 9) }),
             new BattleOptions { Goals = true });
         var hob = b.Units.First(u => u.SoldierId == 5);
         Check(Battle.NameOf(hob) == "Hob the Red", "a named man is known by name in the battle");
@@ -1655,7 +1659,7 @@ public static partial class SelfTest
         Check(b.Result().Companies.First(r => r.Id == 7).Named!.First(n => n.Id == 5) is { Fell: true, Saved: true }, "the result says he fell but was saved");
         Check(b.GoalState(goal) >= 0, "and the goal is not lost");
         // A second battle: he dies and nobody comes.
-        var b2 = new Battle(6, new ArmySpec("mine", 0, new List<Company> { spec }), new ArmySpec("theirs", 0, new List<Company> { new("levies", 30, "infantry", 9) }), new BattleOptions());
+        var b2 = new Battle(6, new ArmySpec("mine", 0, new List<Company> { spec }), new ArmySpec("theirs", 0, new List<Company> { new("brevon_fyrd", 30, "infantry", 9) }), new BattleOptions());
         var hob2 = b2.Units.First(u => u.SoldierId == 5);
         b2.Ward = hob2;
         b2.KillForTest(hob2, b2.SquadsOf(1).First().Units[0]);
@@ -1668,9 +1672,9 @@ public static partial class SelfTest
     /// 20 s; he speaks by his nature when he fells a captain or a horseman and when his brother falls; the battle plays as before.
     static void NamedInTheFight()
     {
-        var named = new[] { new NamedSpec(5, "shieldmen", "Hob the Red", Nature: "Grim", Brothers: new[] { 6 }), new NamedSpec(6, "shieldmen", "Wat", Nature: "Merry", Brothers: new[] { 5 }, Lad: true) };
-        Battle Make() => new(5, new ArmySpec("mine", 0, new List<Company> { new("shieldmen", 10, "infantry", 7, "Test Guard", Named: named) }),
-            new ArmySpec("theirs", 0, new List<Company> { new("levies", 30, "infantry", 9), new("outriders", 6, "cavalry", 10) }), new BattleOptions());
+        var named = new[] { new NamedSpec(5, "manor_foot", "Hob the Red", Nature: "Grim", Brothers: new[] { 6 }), new NamedSpec(6, "manor_foot", "Wat", Nature: "Merry", Brothers: new[] { 5 }, Lad: true) };
+        Battle Make() => new(5, new ArmySpec("mine", 0, new List<Company> { new("manor_foot", 10, "infantry", 7, "Test Guard", Named: named) }),
+            new ArmySpec("theirs", 0, new List<Company> { new("brevon_fyrd", 30, "infantry", 9), new("march_scouts", 6, "cavalry", 10) }), new BattleOptions());
         var b = Make();
         var hob = b.Units.First(u => u.SoldierId == 5);
         var foe = b.SquadsOf(1).First().Units[0];
@@ -1689,8 +1693,8 @@ public static partial class SelfTest
         b.KillForTest(b.Units.First(u => u.SoldierId == 6), foe);
         Check(b.Spoken.Count == 3 && b.Spoken[2].Text == "They killed Wat. They will pay for it.", "and when his brother falls");
         // Words change nothing: two battles from the same start, one with men who speak, end the same.
-        var quiet = new Battle(5, new ArmySpec("mine", 0, new List<Company> { new("shieldmen", 10, "infantry", 7, "Test Guard") }),
-            new ArmySpec("theirs", 0, new List<Company> { new("levies", 30, "infantry", 9), new("outriders", 6, "cavalry", 10) }), new BattleOptions());
+        var quiet = new Battle(5, new ArmySpec("mine", 0, new List<Company> { new("manor_foot", 10, "infantry", 7, "Test Guard") }),
+            new ArmySpec("theirs", 0, new List<Company> { new("brevon_fyrd", 30, "infantry", 9), new("march_scouts", 6, "cavalry", 10) }), new BattleOptions());
         var loud = Make();
         for (int i = 0; i < 60 * 40 && loud.Winner < 0; i++) { loud.Update(1 / 60f); quiet.Update(1 / 60f); }
         Check(loud.Units.Count(u => u.Active) == quiet.Units.Count(u => u.Active) && loud.Time == quiet.Time, "the fight goes the same with or without them");
@@ -1733,9 +1737,9 @@ public static partial class SelfTest
     /// company's result still counts its own men, refusals have reasons, and a replay repeats the fold.
     static void FoldCompanies()
     {
-        ArmySpec Mine() => new("mine", 0, new List<Company> { new("shieldmen", 16, "infantry", 1, "Full"), new("shieldmen", 12, "infantry", 2, "Worn",
-            Named: new[] { new NamedSpec(9, "shieldmen", "Wat") }), new("outriders", 8, "cavalry", 3, "Horse") });
-        ArmySpec Theirs() => new("theirs", 0, new List<Company> { new("levies", 30, "infantry", 9) });
+        ArmySpec Mine() => new("mine", 0, new List<Company> { new("manor_foot", 16, "infantry", 1, "Full"), new("manor_foot", 12, "infantry", 2, "Worn",
+            Named: new[] { new NamedSpec(9, "manor_foot", "Wat") }), new("march_scouts", 8, "cavalry", 3, "Horse") });
+        ArmySpec Theirs() => new("theirs", 0, new List<Company> { new("brevon_fyrd", 30, "infantry", 9) });
         var b = new Battle(41, Mine(), Theirs(), new BattleOptions());
         b.StartRecording(41);
         Squad Of(Battle x, int id) => x.Squads.First(s => s.Company?.Id == id);
@@ -1758,7 +1762,7 @@ public static partial class SelfTest
         Check(r1.Start == 16 && r2.Start == 12 && r2.Fallen >= 8, $"each company's result counts its own men (full {r1.Start}, worn {r2.Start}, worn fallen {r2.Fallen})");
         Check(r2.Named!.Any(m => m.Id == 9) && r1.Named!.All(m => m.Id != 9), "the named man's deeds go home to his own company");
         // A replay: archers thin a company (hand-made kills are not recorded), then it folds in.
-        var levies = new ArmySpec("mine", 0, new List<Company> { new("levies", 16, "infantry", 1), new("levies", 12, "infantry", 2) });
+        var levies = new ArmySpec("mine", 0, new List<Company> { new("brevon_fyrd", 16, "infantry", 1), new("brevon_fyrd", 12, "infantry", 2) });
         var c = new Battle(42, levies, new ArmySpec("theirs", 0, new List<Company> { new("crossbowmen", 30, "archers", 9) }), new BattleOptions());
         c.StartRecording(42);
         var (cFull, cWorn) = (Of(c, 1), Of(c, 2));
@@ -1796,8 +1800,8 @@ public static partial class SelfTest
         var b = Battle.Empty(61);
         var tired = b.AddSquad(0, Troops.Get("men_at_arms"), 16, new(0, 0), 8, Vector2.UnitY); // relieving the line needs tier III (TI1)
         var fresh = b.AddSquad(0, Troops.Get("men_at_arms"), 16, new(0, -18), 8, Vector2.UnitY);
-        var foe = b.AddSquad(1, Troops.Get("levies"), 30, new(0, 8), 10, -Vector2.UnitY);
-        var horse = b.AddSquad(0, Troops.Get("outriders"), 8, new(20, -10), 8, Vector2.UnitY);
+        var foe = b.AddSquad(1, Troops.Get("brevon_fyrd"), 30, new(0, 8), 10, -Vector2.UnitY);
+        var horse = b.AddSquad(0, Troops.Get("march_scouts"), 8, new(20, -10), 8, Vector2.UnitY);
         tired.Order = Order.Charge;
         tired.Target = foe;
         for (int i = 0; i < 60 * 20 && !tired.InContact; i++) b.Update(1 / 60f);
@@ -1810,7 +1814,7 @@ public static partial class SelfTest
         Check(broke && tired.RelievedBy == null && behind < -4, $"the tired men broke off and stand behind the fresh line ({behind:0.0} m)");
 
         // A split company stands as two halves that report as one, and rejoin whole.
-        var c = new Battle(62, new ArmySpec("mine", 0, new List<Company> { new("men_at_arms", 20, "infantry", 5), new("shieldmen", 20, "infantry", 6) }), new ArmySpec("theirs", 0, new List<Company> { new("levies", 20, "infantry", 9) }), new BattleOptions());
+        var c = new Battle(62, new ArmySpec("mine", 0, new List<Company> { new("men_at_arms", 20, "infantry", 5), new("manor_foot", 20, "infantry", 6) }), new ArmySpec("theirs", 0, new List<Company> { new("brevon_fyrd", 20, "infantry", 9) }), new BattleOptions());
         c.StartRecording(62);
         var s = c.Squads.First(q => q.Company?.Id == 5);
         Check(c.CannotSplit(c.Squads.First(q => q.Company?.Id == 6)) == "SPLITTING NEEDS TIER III", "a tier II company cannot split (TI1)");
@@ -1831,7 +1835,7 @@ public static partial class SelfTest
     {
         // A queue of two marches: the company walks the first leg, then the second.
         var b = Battle.Empty(71);
-        var s = b.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, 0), 8, Vector2.UnitY);
+        var s = b.AddSquad(0, Troops.Get("manor_foot"), 16, new(0, 0), 8, Vector2.UnitY);
         s.Queue.Add(new OrderStep(Order.Hold, new(0, -20), Vector2.UnitY, 8));
         s.Queue.Add(new OrderStep(Order.Hold, new(20, -20), Vector2.UnitY, 8));
         bool firstLeg = false;
@@ -1840,8 +1844,8 @@ public static partial class SelfTest
 
         // Charge when they close: it holds until the enemy is near, then charges.
         var c = Battle.Empty(72);
-        var w = c.AddSquad(0, Troops.Get("spearrunners"), 16, new(0, 0), 8, Vector2.UnitY);
-        var foe = c.AddSquad(1, Troops.Get("levies"), 16, new(0, 70), 8, -Vector2.UnitY);
+        var w = c.AddSquad(0, Troops.Get("shire_billmen"), 16, new(0, 0), 8, Vector2.UnitY);
+        var foe = c.AddSquad(1, Troops.Get("brevon_fyrd"), 16, new(0, 70), 8, -Vector2.UnitY);
         w.Rule = StandingRule.ChargeWhenClose;
         foe.Order = Order.Charge;
         foe.Target = w;
@@ -1855,8 +1859,8 @@ public static partial class SelfTest
 
         // Skirmish: bows walk back from foot coming at them.
         var d = Battle.Empty(73);
-        var bows = d.AddSquad(0, Troops.Get("bowmen"), 12, new(0, 0), 6, Vector2.UnitY);
-        var rush = d.AddSquad(1, Troops.Get("levies"), 20, new(0, 45), 10, -Vector2.UnitY);
+        var bows = d.AddSquad(0, Troops.Get("commons_bowmen"), 12, new(0, 0), 6, Vector2.UnitY);
+        var rush = d.AddSquad(1, Troops.Get("brevon_fyrd"), 20, new(0, 45), 10, -Vector2.UnitY);
         bows.Rule = StandingRule.Skirmish;
         rush.Order = Order.Charge;
         rush.Target = bows;
@@ -1865,8 +1869,8 @@ public static partial class SelfTest
 
         // Fall back when worn: half the company down, it walks out of the fight.
         var e = Battle.Empty(74);
-        var worn = e.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, 0), 8, Vector2.UnitY);
-        var killer = e.AddSquad(1, Troops.Get("levies"), 4, new(0, 60), 4, -Vector2.UnitY).Units[0];
+        var worn = e.AddSquad(0, Troops.Get("manor_foot"), 16, new(0, 0), 8, Vector2.UnitY);
+        var killer = e.AddSquad(1, Troops.Get("brevon_fyrd"), 4, new(0, 60), 4, -Vector2.UnitY).Units[0];
         worn.Rule = StandingRule.FallBackWhenWorn;
         foreach (var u in worn.Units.Take(9).ToList()) e.KillForTest(u, killer);
         e.Update(1 / 60f);
@@ -1889,9 +1893,9 @@ public static partial class SelfTest
     static void AlertsRaise()
     {
         var b = Battle.Empty(81);
-        var bows = b.AddSquad(0, Troops.Get("bowmen"), 10, new(-20, 0), 5, Vector2.UnitY);
-        var foot = b.AddSquad(0, Troops.Get("shieldmen"), 20, new(20, 0), 10, Vector2.UnitY);
-        var killer = b.AddSquad(1, Troops.Get("levies"), 4, new(0, 80), 4, -Vector2.UnitY).Units[0];
+        var bows = b.AddSquad(0, Troops.Get("commons_bowmen"), 10, new(-20, 0), 5, Vector2.UnitY);
+        var foot = b.AddSquad(0, Troops.Get("manor_foot"), 20, new(20, 0), 10, Vector2.UnitY);
+        var killer = b.AddSquad(1, Troops.Get("brevon_fyrd"), 4, new(0, 80), 4, -Vector2.UnitY).Units[0];
         foreach (var u in bows.Units) u.Ammo = 0;
         foreach (var u in foot.Units.Take(14).ToList()) b.KillForTest(u, killer);
         for (int i = 0; i < 60 * 3; i++) b.Update(1 / 60f);
@@ -1913,8 +1917,8 @@ public static partial class SelfTest
     /// Remembered deployments and control groups (docs/archive/COMBAT_QOL.md Q6).
     static void DeploymentMemory()
     {
-        ArmySpec Mine(params int[] ids) => new("mine", 0, ids.Select(i => new Company(i == 3 ? "bowmen" : "shieldmen", 12, i == 3 ? "archers" : "infantry", i)).ToList());
-        var theirs = new ArmySpec("theirs", 0, new List<Company> { new("levies", 20, "infantry", 9) });
+        ArmySpec Mine(params int[] ids) => new("mine", 0, ids.Select(i => new Company(i == 3 ? "commons_bowmen" : "manor_foot", 12, i == 3 ? "archers" : "infantry", i)).ToList());
+        var theirs = new ArmySpec("theirs", 0, new List<Company> { new("brevon_fyrd", 20, "infantry", 9) });
         var a = new Battle(91, Mine(1, 2, 3), theirs, new BattleOptions());
         // Draw them up out of the usual: the foot on the right wing (one company a shield wall), the bows on the left.
         Squad Of(Battle x, int id) => x.Squads.First(s => s.Company?.Id == id);
@@ -1947,7 +1951,7 @@ public static partial class SelfTest
     static void SpearsStopHorse()
     {
         var b = Battle.Empty(7);
-        b.AddSquad(1, Troops.Get("spearrunners"), 12, new(0, 0), 6, -Vector2.UnitY);
+        b.AddSquad(1, Troops.Get("shire_billmen"), 12, new(0, 0), 6, -Vector2.UnitY);
         var l = Lancer(b);                       // team 0, galloping at the spears
         Run(b, 6);
         Check(l.Dead || l.Hp < l.Type.MaxHp, "braced spears hurt a charging lancer");
@@ -1963,7 +1967,7 @@ public static partial class SelfTest
         Console.WriteLine($"command cap: {b.Armies[0]!.Companies.Count} companies, {led} led, {under} under {b.DivisionsOf(0).Count()} sergeants");
         Check(led <= Armies.CommandCap, $"the captain leads at most {Armies.CommandCap} companies ({led})");
         Check(under > 0, "the rest serve under sergeants");
-        var plain = new ArmySpec("plain", 2, Enumerable.Range(1, 14).Select(i => new Company("levies", 20, Id: i)).ToList());
+        var plain = new ArmySpec("plain", 2, Enumerable.Range(1, 14).Select(i => new Company("brevon_fyrd", 20, Id: i)).ToList());
         var p = new Battle(4, plain, Armies.Standard(1), new BattleOptions { Cap = 4000 });
         Check(p.Commanded.Count() == Armies.CommandCap, $"an army with no sergeants fields only {Armies.CommandCap} companies ({p.Commanded.Count()})");
         foreach (var u in p.Commanded.First().Units) u.Fled = true;
@@ -2019,7 +2023,7 @@ public static partial class SelfTest
 
         // Orders land at once (docs/archive/OFFICERS.md OF0); a newer one replaces the last.
         var b = Battle.Empty(21);
-        var a = b.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, -20), 8, Vector2.UnitY);
+        var a = b.AddSquad(0, Troops.Get("manor_foot"), 16, new(0, -20), 8, Vector2.UnitY);
         var d = b.AddDivision(0, "Sgt Test", new[] { a }, Temper.Steady, 3);
         Run(b, 0.5f);
         b.IssueGoal(d, new Goal(Post.Front, Stance.Advance));
@@ -2040,7 +2044,7 @@ public static partial class SelfTest
         // Hold against an enemy that comes close and then draws off: the line stands, fights what reaches it, and does not chase.
         b = Battle.Empty(22);
         var mine = b.AddSquad(0, Troops.Get("men_at_arms"), 20, new(0, 0), 10, Vector2.UnitY);
-        var bait = b.AddSquad(1, Troops.Get("levies"), 12, new(0, 14), 6, -Vector2.UnitY);
+        var bait = b.AddSquad(1, Troops.Get("brevon_fyrd"), 12, new(0, 14), 6, -Vector2.UnitY);
         d = b.AddDivision(0, "Sgt Hold", new[] { mine }, Temper.Bold, 5, new Goal(Post.Front, Stance.Hold));
         bait.Order = Order.Charge;
         float farthest = 0;
@@ -2057,8 +2061,8 @@ public static partial class SelfTest
 
         // Advance: the line walks forward and halts at contact.
         b = Battle.Empty(26);
-        var adv = b.AddSquad(0, Troops.Get("shieldmen"), 20, new(0, -20), 10, Vector2.UnitY);
-        var wall = b.AddSquad(1, Troops.Get("shieldmen"), 20, new(0, 40), 10, -Vector2.UnitY);
+        var adv = b.AddSquad(0, Troops.Get("manor_foot"), 20, new(0, -20), 10, Vector2.UnitY);
+        var wall = b.AddSquad(1, Troops.Get("manor_foot"), 20, new(0, 40), 10, -Vector2.UnitY);
         wall.Order = Order.Hold; wall.Anchor = new(0, 40);
         d = b.AddDivision(0, "Sgt Advance", new[] { adv }, Temper.Steady, 5, new Goal(Post.Front, Stance.Advance));
         Run(b, 12);
@@ -2071,9 +2075,9 @@ public static partial class SelfTest
 
         // Guard: a wing stands beside the end of the line on its side.
         b = Battle.Empty(27);
-        var mid = b.AddSquad(0, Troops.Get("shieldmen"), 30, new(0, 0), 15, Vector2.UnitY);
-        b.AddSquad(1, Troops.Get("shieldmen"), 30, new(0, 90), 15, -Vector2.UnitY).Order = Order.Hold;
-        var rw = b.AddSquad(0, Troops.Get("lancers"), 12, new(0, -20), 6, Vector2.UnitY);
+        var mid = b.AddSquad(0, Troops.Get("manor_foot"), 30, new(0, 0), 15, Vector2.UnitY);
+        b.AddSquad(1, Troops.Get("manor_foot"), 30, new(0, 90), 15, -Vector2.UnitY).Order = Order.Hold;
+        var rw = b.AddSquad(0, Troops.Get("brevon_lancers"), 12, new(0, -20), 6, Vector2.UnitY);
         d = b.AddDivision(0, "Sgt Right", new[] { rw }, Temper.Steady, 5, new Goal(Post.RightWing, Stance.Guard));
         Run(b, 15);
         var line = b.FrontLine(0);
@@ -2082,7 +2086,7 @@ public static partial class SelfTest
 
         // Swing: around the side of a holding line, then into it.
         b = Battle.Empty(23);
-        var held = b.AddSquad(1, Troops.Get("shieldmen"), 30, new(0, 30), 15, -Vector2.UnitY);
+        var held = b.AddSquad(1, Troops.Get("manor_foot"), 30, new(0, 30), 15, -Vector2.UnitY);
         var wing = b.AddSquad(0, Troops.Get("men_at_arms"), 16, new(0, -10), 8, Vector2.UnitY);
         d = b.AddDivision(0, "Sgt Wing", new[] { wing }, Temper.Bold, 6, new Goal(Post.RightWing, Stance.Swing));
         float wide = 0, pressure = 0;
@@ -2098,9 +2102,9 @@ public static partial class SelfTest
 
         // Loose: bows stand ahead of the line and give way behind it when foot comes.
         b = Battle.Empty(28);
-        b.AddSquad(0, Troops.Get("shieldmen"), 20, new(0, 0), 10, Vector2.UnitY);
-        var bows = b.AddSquad(0, Troops.Get("bowmen"), 12, new(0, 10), 6, Vector2.UnitY);
-        var foot = b.AddSquad(1, Troops.Get("levies"), 20, new(0, 110), 10, -Vector2.UnitY);
+        b.AddSquad(0, Troops.Get("manor_foot"), 20, new(0, 0), 10, Vector2.UnitY);
+        var bows = b.AddSquad(0, Troops.Get("commons_bowmen"), 12, new(0, 10), 6, Vector2.UnitY);
+        var foot = b.AddSquad(1, Troops.Get("brevon_fyrd"), 20, new(0, 110), 10, -Vector2.UnitY);
         foot.Order = Order.Hold; foot.Anchor = new(0, 110);
         d = b.AddDivision(0, "Sgt Bows", new[] { bows }, Temper.Steady, 5, new Goal(Post.Skirmish, Stance.Loose));
         Run(b, 8);
@@ -2113,7 +2117,7 @@ public static partial class SelfTest
 
         // Plug: a breaking company of the line gets a reserve company sent in.
         b = Battle.Empty(29);
-        var weak = b.AddSquad(0, Troops.Get("levies"), 20, new(0, 0), 10, Vector2.UnitY);
+        var weak = b.AddSquad(0, Troops.Get("brevon_fyrd"), 20, new(0, 0), 10, Vector2.UnitY);
         var press = b.AddSquad(1, Troops.Get("men_at_arms"), 20, new(0, 6), 10, -Vector2.UnitY);
         press.Order = Order.Charge; press.Target = weak;
         var fresh = b.AddSquad(0, Troops.Get("men_at_arms"), 16, new(0, -30), 8, Vector2.UnitY);
@@ -2126,8 +2130,8 @@ public static partial class SelfTest
 
         // A fallen sergeant: the men fight on, then someone takes over.
         b = Battle.Empty(24);
-        var c1 = b.AddSquad(0, Troops.Get("shieldmen"), 12, new(-10, 0), 6, Vector2.UnitY);
-        var c2 = b.AddSquad(0, Troops.Get("bowmen"), 10, new(10, 0), 5, Vector2.UnitY);
+        var c1 = b.AddSquad(0, Troops.Get("manor_foot"), 12, new(-10, 0), 6, Vector2.UnitY);
+        var c2 = b.AddSquad(0, Troops.Get("commons_bowmen"), 10, new(10, 0), 5, Vector2.UnitY);
         d = b.AddDivision(0, "Sgt Doomed", new[] { c1, c2 }, Temper.Steady, 3);
         var first = d.Leader!;
         Run(b, 1);
@@ -2285,8 +2289,8 @@ public static partial class SelfTest
         gs.Leader = true;
         var b = Battle.Empty(11);
         b.Player.Type = gs; b.Player.Horse = null; b.Player.Pos = Vector2.Zero; b.Player.Facing = 0;
-        var f1 = b.AddSquad(1, Troops.Get("levies"), 1, new Vector2(1.6f, -0.7f), 1, -Vector2.UnitX).Units[0];
-        var f2 = b.AddSquad(1, Troops.Get("levies"), 1, new Vector2(1.6f, 0.7f), 1, -Vector2.UnitX).Units[0];
+        var f1 = b.AddSquad(1, Troops.Get("brevon_fyrd"), 1, new Vector2(1.6f, -0.7f), 1, -Vector2.UnitX).Units[0];
+        var f2 = b.AddSquad(1, Troops.Get("brevon_fyrd"), 1, new Vector2(1.6f, 0.7f), 1, -Vector2.UnitX).Units[0];
         f1.Type = f1.Type.Clone(); f1.Type.BlockChance = 0;
         f2.Type = f2.Type.Clone(); f2.Type.BlockChance = 0;
         // Charge then release a Left horizontal sweep.
@@ -2379,8 +2383,8 @@ public static partial class SelfTest
         var b3 = Battle.Empty(23);
         var pole = Troops.Get("halberdiers").Clone(); pole.Leader = true;
         b3.Player.Type = pole; b3.Player.Horse = null; b3.Player.Pos = Vector2.Zero; b3.Player.Facing = 0; b3.Player.Swing = AttackDir.Thrust;
-        var nearFoe = b3.AddSquad(1, Troops.Get("levies"), 1, new Vector2(0.7f, 0), 1, -Vector2.UnitX).Units[0];
-        var tipFoe = b3.AddSquad(1, Troops.Get("levies"), 1, new Vector2(2.2f, 0), 1, -Vector2.UnitX).Units[0];
+        var nearFoe = b3.AddSquad(1, Troops.Get("brevon_fyrd"), 1, new Vector2(0.7f, 0), 1, -Vector2.UnitX).Units[0];
+        var tipFoe = b3.AddSquad(1, Troops.Get("brevon_fyrd"), 1, new Vector2(2.2f, 0), 1, -Vector2.UnitX).Units[0];
         nearFoe.Type = nearFoe.Type.Clone(); nearFoe.Type.BlockChance = 0;
         tipFoe.Type = tipFoe.Type.Clone(); tipFoe.Type.BlockChance = 0;
         b3.Hit(b3.Player, nearFoe, 25f, false);
@@ -2457,7 +2461,7 @@ public static partial class SelfTest
         mc.Player.HorseHp = mc.Player.Horse.Hp;
         mc.Player.Pos = Vector2.Zero;
         mc.Player.Facing = mc.Player.Heading = 0f;
-        var rearSq = mc.AddSquad(1, Troops.Get("levies"), 1, new(-1.8f, 0f), 1, Vector2.UnitX);
+        var rearSq = mc.AddSquad(1, Troops.Get("brevon_fyrd"), 1, new(-1.8f, 0f), 1, Vector2.UnitX);
         var rearFoe = rearSq.Units[0];
         rearFoe.Pos = new(-1.8f, 0f);
         float rearHp0 = rearFoe.Hp;
@@ -2470,7 +2474,7 @@ public static partial class SelfTest
         // 3. Manual 3D ranged aiming respects camera Pitch (higher pitch launches steeper) and crossbows fire on quick click.
         var r = Battle.Empty(904);
         r.Player.Horse = null;
-        var bowType = Troops.Get("bowmen").Clone();
+        var bowType = Troops.Get("commons_bowmen").Clone();
         bowType.Class = UnitClass.Captain;
         r.Player.Type = bowType;
         r.Player.Ammo = 10;

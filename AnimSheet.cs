@@ -53,9 +53,9 @@ sealed class AnimSheet
         Swing("great right", "greatswords", AttackDir.Right),
         Swing("great overhead", "greatswords", AttackDir.Overhead),
         Swing("pike thrust", "pikemen", AttackDir.Thrust),
-        Swing("spear+shield", "spearrunners", AttackDir.Thrust),
+        Swing("spear+shield", "shire_billmen", AttackDir.Thrust),
         new("block", "men_at_arms", (u, k) => { u.Action = k < 0.5f ? UnitAction.Block : UnitAction.Stagger; u.HitFlash = k >= 0.5f ? 0.15f * (1 - (k - 0.5f) * 2) : 0; }),
-        new("bow", "bowmen", (u, k) => { u.Ammo = 10; u.EnemyDist = 20; if (k > 0.75f) { u.Action = UnitAction.Recover; u.ActionTimer = 0.25f * (1 - (k - 0.75f) * 4); } else u.Cooldown = 1.1f * (1 - k / 0.75f); }),
+        new("bow", "commons_bowmen", (u, k) => { u.Ammo = 10; u.EnemyDist = 20; if (k > 0.75f) { u.Action = UnitAction.Recover; u.ActionTimer = 0.25f * (1 - (k - 0.75f) * 4); } else u.Cooldown = 1.1f * (1 - k / 0.75f); }),
         new("crossbow", "crossbowmen", (u, k) => { u.Ammo = 10; u.EnemyDist = 20;
             if (k < 0.5f) u.Cooldown = 2.0f - k * 1.5f;
             else if (k < 0.75f) u.Cooldown = 1.0f - (k - 0.5f) / 0.25f;

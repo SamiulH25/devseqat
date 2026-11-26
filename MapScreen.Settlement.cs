@@ -137,7 +137,7 @@ partial class MapScreen
         TroopOffer(row, levy, Style.PaletteOf(s.Faction), $"{s.Culture.ToUpperInvariant()} MEN", willing, s.Recruits, C.LevyPrice(s), new[]
         {
             ("helm", "JOIN A COMPANY OF THEIR KIND, OR FORM ONE", 0),
-            ("up", $"TRAIN INTO {s.Culture.ToUpperInvariant()} AND COMMON LINES", 1),
+            ("up", $"TRAIN INTO {s.Culture.ToUpperInvariant()} LINES", 1),
             ("star", "NEW MEN BRING NO XP", -1),
         }, willing > 0, n => C.RecruitLevies(s, n), () => $"RECRUITED. {s.Recruits} LEFT");
         if (s.ThreatUntil > C.S.Hours) Outcome(body.X, row.Bottom + ui.U(12), body.Width, "fire", "THE VILLAGE WAS THREATENED: NO RECRUITS FOR NOW", -1);
@@ -150,8 +150,8 @@ partial class MapScreen
         int cap = Math.Max(1, C.Scaled(Balance.Get().NobleRecruitsMax)), y = body.Y;
         foreach (bool mounted in new[] { false, true })
         {
-            var t = Troops.Get(Campaign.NobleTroop(mounted));
-            TroopOffer(new Rectangle(body.X, y, body.Width, ui.U(104)), t, Style.PaletteOf(s.Faction), "NOBLE", s.Nobles, cap, C.NoblePrice(mounted), new[]
+            var t = Troops.Get(Campaign.NobleTroop(s.Culture, mounted));
+            TroopOffer(new Rectangle(body.X, y, body.Width, ui.U(104)), t, Style.PaletteOf(s.Faction), "NOBLE", s.Nobles, cap, C.NoblePrice(s, mounted), new[]
             {
                 ("crown", "TRAIN ONLY INTO THE NOBLE LINES: KNIGHTS, ORDERS", 1),
                 ("chain", "NO DRILL MAKES COMMON MEN NOBLE, NOR THEM COMMON", 0),

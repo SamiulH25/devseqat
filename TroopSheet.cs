@@ -61,11 +61,13 @@ sealed class TroopSheet
     void One(UnitType t, string path, float angleOffset = 0.6f)
     {
         const float Facing = MathHelper.PiOver2;
-        var u = new Unit { Index = 3, Palette = t.Culture == "wild" ? 5 : 0, Coat = 1, Type = t, Facing = Facing, ViewFacing = Facing, Heading = Facing, ViewHeading = Facing, EnemyDist = 2 };
+        int pal = t.Culture == "wild" ? 5 : Factions.All.FirstOrDefault(f => f.Culture == Factions.PeopleOf(t.Culture))?.Palette ?? 0;
+        var u = new Unit { Index = 3, Palette = pal, Coat = 1, Type = t, Facing = Facing, ViewFacing = Facing, Heading = Facing, ViewHeading = Facing, EnemyDist = 2 };
         if (t.Mount != null) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; }
         bool rider = u.Mounted;
+        bool tall = Look.GripOf(t.Look.Weapon) is Grip.Pole or Grip.Lance;
         float fit = MathF.Max(1f, t.Size * (t.Flying ? 1.25f : 1.05f));
-        float dist = (rider ? 9.2f : 4.6f) * fit, y = (rider ? 1.85f : 1.0f) * MathF.Max(1f, t.Size * 0.9f), a = Facing + angleOffset;
+        float dist = (rider ? 9.2f : tall ? 5.8f : 4.6f) * fit, y = (rider ? 1.85f : tall ? 1.22f : 1.0f) * MathF.Max(1f, t.Size * 0.9f), a = Facing + angleOffset;
         var target = new Vector3(0, y, 0);
         var eye = target + new Vector3(MathF.Cos(a) * dist, 0.9f * fit, MathF.Sin(a) * dist);
         var view = Matrix.CreateLookAt(eye, target, Vector3.Up);

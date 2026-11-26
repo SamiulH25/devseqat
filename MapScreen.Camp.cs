@@ -69,7 +69,7 @@ partial class MapScreen
                 float a = MathF.PI * 0.9f + MathF.PI * 1.2f * (j + 1) / (n + 1);
                 var pos = new Vector2(fire.X + MathF.Cos(a) * r, fire.Z + MathF.Sin(a) * r * 0.75f);
                 float face = MathF.Atan2(fire.Z - pos.Y, fire.X - pos.X) * 0.6f + MathHelper.PiOver2 * 0.4f; // half to the fire, half to you
-                var t = Troops.Get(Troops.Has(m.Troop) ? m.Troop : "levies");
+                var t = Troops.Get(Troops.Has(m.Troop) ? m.Troop : "brevon_fyrd");
                 var u = new Unit
                 {
                     Index = index++, SoldierId = m.Id, Type = t, Palette = pal, Coat = m.Id % Style.Coats.Length, Hp = t.MaxHp, Anim = Ease.Hash(m.Id) * 2,
@@ -552,7 +552,7 @@ partial class MapScreen
         ui.Rect(new Rectangle(fb.X - ui.U(2), fb.Y - ui.U(2), fb.Width + ui.U(4), fb.Height + ui.U(4)), Campaign.OfBanner(m) ? Kit.Gilt : Kit.GiltDark);
         ui.Face(PortraitPainter.Of(m, k), fb);
         int x = fb.Right + ui.U(20), w = r.Right - ui.U(24) - x, y = fb.Y;
-        var t = Troops.Get(Troops.Has(m.Troop) ? m.Troop : "levies");
+        var t = Troops.Get(Troops.Has(m.Troop) ? m.Troop : "brevon_fyrd");
         ui.Text(t.Name.ToUpperInvariant() + (m.Hurt ? "  .  HURT" : ""), x, y, m.Hurt ? Style.Warn : Kit.Gilt, 2);
         y += ui.U(20);
         ui.TextFit($"{k.Name.ToUpperInvariant()}. AGE {Soldier.AgeOf(m)}" + (m.Home != "" ? $", FROM {m.Home.ToUpperInvariant()}" : "") + $". ON THE ROLL SINCE DAY {m.Joined}.", x, y, w, Style.Text, 1);

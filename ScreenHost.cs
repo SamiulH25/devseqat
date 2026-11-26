@@ -782,7 +782,7 @@ sealed class ScreenHost : Game
             case 11:
             {
                 mode = Mode.Map;
-                c.TakePrisoners("levies", 12);
+                c.TakePrisoners("brevon_fyrd", 12);
                 map.Stage("contract");
                 Shot("campaign-contract");
                 break;
@@ -1172,7 +1172,7 @@ sealed class ScreenHost : Game
                     var main = c.Player.Companies[0].Main!;
                     main.Wounded = 14; main.Xp = main.PoolCap * 0.7f;
                     c.Player.Prisoners.Clear();
-                    foreach (var (troop, n) in new[] { ("levies", 23), ("spearmen", 9), ("archers", 6) }) if (Troops.Has(troop)) c.Player.Prisoners.Add(new PrisonerGroup { Troop = troop, Count = n });
+                    foreach (var (troop, n) in new[] { ("brevon_fyrd", 23), ("spearmen", 9), ("archers", 6) }) if (Troops.Has(troop)) c.Player.Prisoners.Add(new PrisonerGroup { Troop = troop, Count = n });
                     if (c.S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Lord && p.Faction != town.Faction) is Party lord && !c.Player.Captives.Contains(lord.Id)) c.Player.Captives.Add(lord.Id);
                     foreach (var def in Campaign.TrainDefs.Take(2)) c.Player.Train.Add(def.Id);
                     fief.Owner = c.Player.Id; fief.Prosperity = 68; fief.Unrest = 34;

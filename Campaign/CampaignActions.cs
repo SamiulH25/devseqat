@@ -47,7 +47,7 @@ public partial class Campaign
         Fill(Player.Companies.Where(co => co.Culture == s.Culture || co.Culture == ""));
         while (left > 0 && Player.Companies.Count < Slots)
         {
-            var co = NewCompany(levy, "infantry", 0, 0, s);
+            var co = NewCompany(levy, Rules.TroopRole(levy) == "horse" ? "horse" : "infantry", 0, 0, s);
             Player.Companies.Add(co);
             int k = Math.Min(left, Rules.Room(co, levy));
             Enlist(co, levy, k, s);

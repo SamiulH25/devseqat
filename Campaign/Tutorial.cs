@@ -165,8 +165,8 @@ public sealed partial class Campaign
             Tier = 1,
             Gold = 80,
         };
-        p.Companies.Add(NewCompany("levies", "infantry", Math.Max(10, Scaled(6)), 0));
-        p.Companies.Add(NewCompany("levies", "archers", Math.Max(6, Scaled(3)), 0));
+        p.Companies.Add(NewCompany("brevon_fyrd", "infantry", Math.Max(10, Scaled(6)), 0));
+        p.Companies.Add(NewCompany("brevon_fyrd", "archers", Math.Max(6, Scaled(3)), 0));
         S.Parties.Add(p);
         S.TutorialBanditId = p.Id;
     }

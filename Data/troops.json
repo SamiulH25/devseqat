@@ -259,55 +259,99 @@
       "accel": 4.2,
       "turnRate": 1.7,
       "barding": "mailbarding"
+    },
+    {
+      "id": "march_hobby",
+      "name": "Marcher Hobby",
+      "hp": 145,
+      "trot": 6.2,
+      "gallop": 13.0,
+      "accel": 5.6,
+      "turnRate": 2.4,
+      "barding": "saddle"
+    },
+    {
+      "id": "tourney_destrier",
+      "name": "Tourney Destrier",
+      "hp": 240,
+      "trot": 5.1,
+      "gallop": 11.3,
+      "accel": 4.0,
+      "turnRate": 1.6,
+      "barding": "caparison"
+    },
+    {
+      "id": "crag_cob",
+      "name": "Crag Cob",
+      "hp": 170,
+      "trot": 5.6,
+      "gallop": 11.8,
+      "accel": 4.8,
+      "turnRate": 2.2,
+      "barding": "furbarding"
+    },
+    {
+      "id": "fjord_pony",
+      "name": "Fjord Pony",
+      "hp": 145,
+      "trot": 6.0,
+      "gallop": 12.6,
+      "accel": 5.6,
+      "turnRate": 2.5,
+      "barding": "furbarding"
+    },
+    {
+      "id": "war_camel",
+      "name": "War Camel",
+      "hp": 240,
+      "trot": 5.3,
+      "gallop": 11.2,
+      "accel": 4.0,
+      "turnRate": 1.8,
+      "barding": "camel"
+    },
+    {
+      "id": "desert_arabian",
+      "name": "Desert Arabian",
+      "hp": 150,
+      "trot": 6.5,
+      "gallop": 13.8,
+      "accel": 5.8,
+      "turnRate": 2.6,
+      "barding": "steppetack"
+    },
+    {
+      "id": "salt_cataphract_charger",
+      "name": "Salt Cataphract Charger",
+      "hp": 270,
+      "trot": 5.1,
+      "gallop": 11.3,
+      "accel": 4.0,
+      "turnRate": 1.6,
+      "barding": "lamellarbarding"
+    },
+    {
+      "id": "stradiot_courser",
+      "name": "Stradiot Courser",
+      "hp": 155,
+      "trot": 6.3,
+      "gallop": 13.4,
+      "accel": 5.6,
+      "turnRate": 2.5,
+      "barding": "saddle"
+    },
+    {
+      "id": "chapter_iron_charger",
+      "name": "Chapter Iron Charger",
+      "hp": 265,
+      "trot": 5.1,
+      "gallop": 11.2,
+      "accel": 4.0,
+      "turnRate": 1.6,
+      "barding": "mailbarding"
     }
   ],
   "troops": [
-    {
-      "id": "levies",
-      "name": "Levies",
-      "class": "Infantry",
-      "culture": "common",
-      "tier": 1,
-      "upgradesTo": [
-        "shieldmen",
-        "spearrunners",
-        "bowmen",
-        "outriders",
-        "town_crossbows",
-        "crown_squires",
-        "commons_bowmen",
-        "hobilars",
-        "slingers",
-        "camel_scouts",
-        "militia_crossbows",
-        "light_horse",
-        "pilgrim_bows",
-        "pilgrim_riders",
-        "crown_yeomen",
-        "march_scouts",
-        "harbor_watch",
-        "guild_levies",
-        "crag_skirmishers",
-        "oasis_spearmen",
-        "dune_skirmishers",
-        "rift_sailors",
-        "galley_pikemen",
-        "fen_slingers",
-        "chapter_novices",
-        "gate_militia"
-      ],
-      "cost": 10,
-      "upgradeXp": 60,
-      "look": {
-        "head": "cap",
-        "body": "tunic",
-        "legs": "cloth",
-        "feet": "boots",
-        "hands": "skin",
-        "shield": "round",
-        "weapon": "axe"
-      }
-    },
     {
       "id": "clansmen",
       "name": "Clansmen",
@@ -317,17 +361,9 @@
       "upgradesTo": [
         "axemen",
         "raiders",
-        "spearrunners",
-        "bowmen",
-        "outriders",
         "hunters",
         "fell_riders",
-        "herd_boys",
-        "herd_riders",
-        "fjord_oarsmen",
-        "taiga_trappers",
-        "banner_outriders",
-        "salt_scouts"
+        "spear_karls"
       ],
       "cost": 10,
       "upgradeXp": 60,
@@ -339,33 +375,6 @@
         "hands": "skin",
         "shield": "round",
         "weapon": "axe"
-      }
-    },
-    {
-      "id": "shieldmen",
-      "name": "Shieldmen",
-      "class": "Infantry",
-      "culture": "common",
-      "tier": 2,
-      "upgradesTo": [
-        "men_at_arms",
-        "greatswords",
-        "sergeants",
-        "order_sergeants",
-        "ghazis",
-        "canal_guards",
-        "marines"
-      ],
-      "cost": 24,
-      "upgradeXp": 150,
-      "look": {
-        "head": "kettle",
-        "body": "gambeson",
-        "legs": "cloth",
-        "feet": "boots",
-        "hands": "skin",
-        "shield": "kite",
-        "weapon": "sword"
       }
     },
     {
@@ -823,8 +832,7 @@
       "tier": 2,
       "upgradesTo": [
         "huscarls",
-        "berserkers",
-        "yurt_guards"
+        "berserkers"
       ],
       "cost": 26,
       "upgradeXp": 160,
@@ -1170,33 +1178,6 @@
       }
     },
     {
-      "id": "spearrunners",
-      "name": "Spearrunners",
-      "class": "Skirmisher",
-      "culture": "common",
-      "tier": 2,
-      "upgradesTo": [
-        "pikemen",
-        "billmen",
-        "beast_hunters",
-        "sun_javelins",
-        "league_pikes",
-        "grass_spears",
-        "order_spears"
-      ],
-      "cost": 22,
-      "upgradeXp": 150,
-      "look": {
-        "head": "hood",
-        "body": "tunic",
-        "legs": "cloth",
-        "feet": "boots",
-        "hands": "skin",
-        "shield": "none",
-        "weapon": "spear"
-      }
-    },
-    {
       "id": "pikemen",
       "name": "Pikemen",
       "class": "Skirmisher",
@@ -1216,29 +1197,6 @@
         "hands": "skin",
         "shield": "none",
         "weapon": "pike"
-      }
-    },
-    {
-      "id": "billmen",
-      "name": "Billmen",
-      "class": "Skirmisher",
-      "culture": "common",
-      "tier": 3,
-      "upgradesTo": [
-        "halberdiers",
-        "glaivemen",
-        "hollow_squires"
-      ],
-      "cost": 42,
-      "upgradeXp": 250,
-      "look": {
-        "head": "kettle",
-        "body": "gambeson",
-        "legs": "cloth",
-        "feet": "boots",
-        "hands": "skin",
-        "shield": "none",
-        "weapon": "billhook"
       }
     },
     {
@@ -1446,33 +1404,6 @@
         "cape": true
       },
       "stock": "noble"
-    },
-    {
-      "id": "bowmen",
-      "name": "Bowmen",
-      "class": "Archer",
-      "culture": "common",
-      "tier": 2,
-      "upgradesTo": [
-        "longbowmen",
-        "crossbowmen",
-        "rangers",
-        "steppe_archers",
-        "league_crossbows",
-        "sand_archers",
-        "order_crossbows"
-      ],
-      "cost": 26,
-      "upgradeXp": 160,
-      "look": {
-        "head": "hood",
-        "body": "tunic",
-        "legs": "cloth",
-        "feet": "boots",
-        "hands": "skin",
-        "shield": "none",
-        "weapon": "bow"
-      }
     },
     {
       "id": "longbowmen",
@@ -1865,60 +1796,6 @@
         "tabard": true
       },
       "stock": "noble"
-    },
-    {
-      "id": "outriders",
-      "name": "Outriders",
-      "class": "Cavalry",
-      "culture": "common",
-      "tier": 2,
-      "upgradesTo": [
-        "lancers",
-        "horse_archers",
-        "mounted_yeomen",
-        "desert_riders",
-        "steppe_bows",
-        "stradiots",
-        "order_riders",
-        "steppe_lancers"
-      ],
-      "mount": "courser",
-      "cost": 40,
-      "upgradeXp": 200,
-      "look": {
-        "head": "kettle",
-        "body": "gambeson",
-        "legs": "cloth",
-        "feet": "boots",
-        "hands": "skin",
-        "shield": "none",
-        "weapon": "lance"
-      }
-    },
-    {
-      "id": "lancers",
-      "name": "Lancers",
-      "class": "Cavalry",
-      "culture": "common",
-      "tier": 3,
-      "upgradesTo": [
-        "knights",
-        "demi_lancers"
-      ],
-      "mount": "warhorse",
-      "cost": 68,
-      "upgradeXp": 320,
-      "look": {
-        "head": "nasal",
-        "body": "mail",
-        "legs": "mail",
-        "feet": "boots",
-        "hands": "skin",
-        "shield": "none",
-        "weapon": "lance",
-        "tabard": true,
-        "plume": true
-      }
     },
     {
       "id": "mounted_yeomen",
@@ -2351,36 +2228,6 @@
         "tabard": true,
         "plume": true,
         "cape": true
-      }
-    },
-    {
-      "id": "acolytes",
-      "name": "Acolytes",
-      "class": "Caster",
-      "culture": "common",
-      "tier": 2,
-      "upgradesTo": [
-        "chaplains",
-        "lectors",
-        "rune_singers",
-        "drummers",
-        "star_readers",
-        "hedge_witches",
-        "apothecaries"
-      ],
-      "cost": 320,
-      "upgradeXp": 700,
-      "spells": [
-        "mend"
-      ],
-      "look": {
-        "head": "hood",
-        "body": "robe",
-        "legs": "cloth",
-        "feet": "boots",
-        "hands": "skin",
-        "shield": "none",
-        "weapon": "staff"
       }
     },
     {
@@ -4113,7 +3960,7 @@
       "cost": 106,
       "upgradeXp": 450,
       "look": {
-        "head": "greathelm",
+        "head": "austere_greathelm",
         "body": "mail",
         "legs": "plate",
         "feet": "boots",
@@ -4133,7 +3980,7 @@
       "upgradesTo": [
         "ashen_knights"
       ],
-      "mount": "destrier",
+      "mount": "chapter_iron_charger",
       "cost": 160,
       "upgradeXp": 620,
       "look": {
@@ -4156,7 +4003,7 @@
       "stock": "noble",
       "tier": 6,
       "upgradesTo": [],
-      "mount": "royal_destrier",
+      "mount": "chapter_iron_charger",
       "cost": 215,
       "upgradeXp": 800,
       "look": {
@@ -4635,7 +4482,7 @@
       "upgradesTo": [
         "condottieri"
       ],
-      "mount": "warhorse",
+      "mount": "stradiot_courser",
       "cost": 68,
       "upgradeXp": 320,
       "look": {
@@ -4645,7 +4492,7 @@
         "feet": "boots",
         "hands": "skin",
         "shield": "targe",
-        "weapon": "spear",
+        "weapon": "stradiot_lance",
         "tabard": true,
         "plume": true
       }
@@ -5505,7 +5352,7 @@
       "culture": "azure",
       "tier": 2,
       "upgradesTo": [
-        "lancers"
+        "brevon_lancers"
       ],
       "mount": "courser",
       "cost": 40,
@@ -5552,7 +5399,7 @@
       "culture": "crimson",
       "tier": 2,
       "upgradesTo": [
-        "lancers"
+        "vespra_lancers"
       ],
       "mount": "courser",
       "cost": 40,
@@ -5595,7 +5442,8 @@
       "culture": "northern",
       "tier": 2,
       "upgradesTo": [
-        "horse_archers"
+        "horse_archers",
+        "mounted_yeomen"
       ],
       "mount": "courser",
       "cost": 40,
@@ -5683,7 +5531,8 @@
       "tier": 2,
       "upgradesTo": [
         "steppe_bows",
-        "wolf_scouts"
+        "wolf_scouts",
+        "steppe_lancers"
       ],
       "mount": "steppe_pony",
       "cost": 40,
@@ -6482,14 +6331,13 @@
       "cost": 163,
       "upgradeXp": 750,
       "look": {
-        "head": "greathelm",
-        "body": "plate",
+        "head": "austere_greathelm",
+        "body": "grey_plate_surcoat",
         "legs": "plate",
         "feet": "sabatons",
         "hands": "gauntlets",
         "shield": "none",
-        "weapon": "warhammer",
-        "tabard": true,
+        "weapon": "great_maul",
         "cape": true
       }
     },
@@ -6974,8 +6822,19 @@
       "speed": 6.6,
       "block": 0,
       "size": 1.1,
-      "traits": ["trample"],
-      "look": { "head": "none", "body": "tunic", "legs": "cloth", "feet": "boots", "hands": "skin", "shield": "none", "weapon": "sword", "face": "bear" }
+      "traits": [
+        "trample"
+      ],
+      "look": {
+        "head": "none",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "sword",
+        "face": "bear"
+      }
     },
     {
       "id": "tusker",
@@ -6996,8 +6855,20 @@
       "speed": 6.8,
       "block": 0,
       "size": 1.25,
-      "traits": ["trample", "rage"],
-      "look": { "head": "none", "body": "tunic", "legs": "cloth", "feet": "boots", "hands": "skin", "shield": "none", "weapon": "sword", "face": "bear" }
+      "traits": [
+        "trample",
+        "rage"
+      ],
+      "look": {
+        "head": "none",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "sword",
+        "face": "bear"
+      }
     },
     {
       "id": "great_boar",
@@ -7018,8 +6889,23 @@
       "speed": 7.2,
       "block": 0,
       "size": 1.65,
-      "traits": ["trample", "knockback", "rage", "fear", "boss"],
-      "look": { "head": "none", "body": "tunic", "legs": "cloth", "feet": "boots", "hands": "skin", "shield": "none", "weapon": "sword", "face": "bear" }
+      "traits": [
+        "trample",
+        "knockback",
+        "rage",
+        "fear",
+        "boss"
+      ],
+      "look": {
+        "head": "none",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "sword",
+        "face": "bear"
+      }
     },
     {
       "id": "hill_giant",
@@ -7040,8 +6926,23 @@
       "speed": 4.4,
       "block": 0,
       "size": 2.1,
-      "traits": ["boulder", "sweep", "knockback", "fear", "fearless"],
-      "look": { "head": "none", "body": "fur", "legs": "hide", "feet": "bare", "hands": "claw", "shield": "none", "weapon": "mace", "face": "troll" }
+      "traits": [
+        "boulder",
+        "sweep",
+        "knockback",
+        "fear",
+        "fearless"
+      ],
+      "look": {
+        "head": "none",
+        "body": "fur",
+        "legs": "hide",
+        "feet": "bare",
+        "hands": "claw",
+        "shield": "none",
+        "weapon": "mace",
+        "face": "troll"
+      }
     },
     {
       "id": "giant_chief",
@@ -7062,8 +6963,24 @@
       "speed": 4.6,
       "block": 0,
       "size": 2.3,
-      "traits": ["boulder", "sweep", "knockback", "fear", "fearless", "boss"],
-      "look": { "head": "kettle", "body": "fur", "legs": "hide", "feet": "bare", "hands": "claw", "shield": "none", "weapon": "mace", "face": "troll" }
+      "traits": [
+        "boulder",
+        "sweep",
+        "knockback",
+        "fear",
+        "fearless",
+        "boss"
+      ],
+      "look": {
+        "head": "kettle",
+        "body": "fur",
+        "legs": "hide",
+        "feet": "bare",
+        "hands": "claw",
+        "shield": "none",
+        "weapon": "mace",
+        "face": "troll"
+      }
     },
     {
       "id": "goblin_shaman",
@@ -7084,9 +7001,23 @@
       "speed": 4.6,
       "block": 0.1,
       "size": 0.9,
-      "traits": ["craven"],
-      "spells": ["dread_drums", "war_song"],
-      "look": { "head": "hood", "body": "robe", "legs": "cloth", "feet": "boots", "hands": "skin", "shield": "none", "weapon": "staff", "face": "goblin" }
+      "traits": [
+        "craven"
+      ],
+      "spells": [
+        "dread_drums",
+        "war_song"
+      ],
+      "look": {
+        "head": "hood",
+        "body": "robe",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "staff",
+        "face": "goblin"
+      }
     },
     {
       "id": "harpy",
@@ -7107,8 +7038,20 @@
       "speed": 8.6,
       "block": 0,
       "size": 1.0,
-      "traits": ["flying", "prey_bows"],
-      "look": { "head": "none", "body": "tunic", "legs": "cloth", "feet": "boots", "hands": "skin", "shield": "none", "weapon": "sword", "face": "wyvern" }
+      "traits": [
+        "flying",
+        "prey_bows"
+      ],
+      "look": {
+        "head": "none",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "sword",
+        "face": "wyvern"
+      }
     },
     {
       "id": "griffon",
@@ -7129,8 +7072,22 @@
       "speed": 9.2,
       "block": 0,
       "size": 1.7,
-      "traits": ["flying", "seize", "knockback", "fear"],
-      "look": { "head": "none", "body": "tunic", "legs": "cloth", "feet": "boots", "hands": "skin", "shield": "none", "weapon": "sword", "face": "wyvern" }
+      "traits": [
+        "flying",
+        "seize",
+        "knockback",
+        "fear"
+      ],
+      "look": {
+        "head": "none",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "sword",
+        "face": "wyvern"
+      }
     },
     {
       "id": "basilisk",
@@ -7151,8 +7108,21 @@
       "speed": 5.2,
       "block": 0,
       "size": 1.5,
-      "traits": ["gaze", "poison", "fear"],
-      "look": { "head": "none", "body": "tunic", "legs": "cloth", "feet": "boots", "hands": "skin", "shield": "none", "weapon": "sword", "face": "spider" }
+      "traits": [
+        "gaze",
+        "poison",
+        "fear"
+      ],
+      "look": {
+        "head": "none",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "sword",
+        "face": "spider"
+      }
     },
     {
       "id": "sand_wurm",
@@ -7173,8 +7143,23 @@
       "speed": 5.8,
       "block": 0,
       "size": 2.2,
-      "traits": ["burrow", "sweep", "knockback", "fear", "fearless"],
-      "look": { "head": "none", "body": "tunic", "legs": "cloth", "feet": "boots", "hands": "skin", "shield": "none", "weapon": "sword", "face": "wyvern" }
+      "traits": [
+        "burrow",
+        "sweep",
+        "knockback",
+        "fear",
+        "fearless"
+      ],
+      "look": {
+        "head": "none",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "sword",
+        "face": "wyvern"
+      }
     },
     {
       "id": "drowned_dead",
@@ -7195,8 +7180,21 @@
       "speed": 3.8,
       "block": 0.15,
       "size": 1.0,
-      "traits": ["raised", "fearless", "damp"],
-      "look": { "head": "none", "body": "bones", "legs": "bones", "feet": "boots", "hands": "skin", "shield": "none", "weapon": "axe", "face": "skull" }
+      "traits": [
+        "raised",
+        "fearless",
+        "damp"
+      ],
+      "look": {
+        "head": "none",
+        "body": "bones",
+        "legs": "bones",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "axe",
+        "face": "skull"
+      }
     },
     {
       "id": "werewolf",
@@ -7217,8 +7215,22 @@
       "speed": 7.6,
       "block": 0,
       "size": 1.3,
-      "traits": ["regen", "rage", "silver_weak", "fear"],
-      "look": { "head": "none", "body": "tunic", "legs": "cloth", "feet": "boots", "hands": "skin", "shield": "none", "weapon": "sword", "face": "wolf" }
+      "traits": [
+        "regen",
+        "rage",
+        "silver_weak",
+        "fear"
+      ],
+      "look": {
+        "head": "none",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "sword",
+        "face": "wolf"
+      }
     },
     {
       "id": "wraith",
@@ -7239,8 +7251,22 @@
       "speed": 5.5,
       "block": 0.1,
       "size": 1.05,
-      "traits": ["spectral", "fear", "fearless", "raised"],
-      "look": { "head": "hood", "body": "robe", "legs": "bones", "feet": "boots", "hands": "skin", "shield": "none", "weapon": "sword", "face": "skull" }
+      "traits": [
+        "spectral",
+        "fear",
+        "fearless",
+        "raised"
+      ],
+      "look": {
+        "head": "hood",
+        "body": "robe",
+        "legs": "bones",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "sword",
+        "face": "skull"
+      }
     },
     {
       "id": "barrow_king",
@@ -7261,8 +7287,23 @@
       "speed": 4.2,
       "block": 0.35,
       "size": 1.25,
-      "traits": ["raise", "fear", "fearless", "boss", "raised"],
-      "look": { "head": "greathelm", "body": "plate", "legs": "bones", "feet": "bone", "hands": "bone", "shield": "kite", "weapon": "greatsword", "face": "skull" }
+      "traits": [
+        "raise",
+        "fear",
+        "fearless",
+        "boss",
+        "raised"
+      ],
+      "look": {
+        "head": "greathelm",
+        "body": "plate",
+        "legs": "bones",
+        "feet": "bone",
+        "hands": "bone",
+        "shield": "kite",
+        "weapon": "greatsword",
+        "face": "skull"
+      }
     },
     {
       "id": "bear_king",
@@ -7283,70 +7324,22 @@
       "speed": 6.0,
       "block": 0,
       "size": 1.75,
-      "traits": ["knockback", "sweep", "rage", "fear", "boss"],
-      "look": { "head": "none", "body": "tunic", "legs": "cloth", "feet": "boots", "hands": "skin", "shield": "none", "weapon": "sword", "face": "bear" }
-    },
-    {
-      "id": "esquires",
-      "name": "Esquires",
-      "class": "Infantry",
-      "culture": "common",
-      "stock": "noble",
-      "tier": 3,
-      "upgradesTo": [
-        "foot_knights",
-        "lily_squires",
-        "rose_blades",
-        "wolf_thegns",
-        "hollow_squires",
-        "compact_knights",
-        "faris_foot",
-        "noyan_foot",
-        "patrician_guard",
-        "northern_hearthguard"
+      "traits": [
+        "knockback",
+        "sweep",
+        "rage",
+        "fear",
+        "boss"
       ],
-      "cost": 60,
-      "upgradeXp": 280,
       "look": {
-        "head": "kettle",
-        "body": "mail",
-        "legs": "mail",
-        "feet": "boots",
-        "hands": "skin",
-        "shield": "heater",
-        "weapon": "sword",
-        "tabard": true
-      }
-    },
-    {
-      "id": "mounted_esquires",
-      "name": "Mounted Esquires",
-      "class": "Cavalry",
-      "culture": "common",
-      "stock": "noble",
-      "tier": 3,
-      "upgradesTo": [
-        "knights",
-        "demi_lancers",
-        "falcon_riders",
-        "sky_riders",
-        "thane_riders",
-        "faris_riders",
-        "noyan_squires",
-        "signoria_lancers"
-      ],
-      "mount": "courser",
-      "cost": 66,
-      "upgradeXp": 300,
-      "look": {
-        "head": "nasal",
-        "body": "mail",
+        "head": "none",
+        "body": "tunic",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
         "shield": "none",
-        "weapon": "lance",
-        "tabard": true
+        "weapon": "sword",
+        "face": "bear"
       }
     },
     {
@@ -8137,7 +8130,7 @@
     {
       "id": "crown_yeomen",
       "name": "Crown Yeomen",
-      "class": "Infantry",
+      "class": "Skirmisher",
       "culture": "azure_heart",
       "tier": 2,
       "stock": "common",
@@ -8147,13 +8140,13 @@
       "cost": 24,
       "upgradeXp": 100,
       "look": {
-        "head": "cap",
+        "head": "kettle",
         "body": "gambeson",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
-        "shield": "heater",
-        "weapon": "sword"
+        "shield": "none",
+        "weapon": "goedendag"
       }
     },
     {
@@ -8186,6 +8179,7 @@
       "tier": 4,
       "stock": "common",
       "upgradesTo": [
+        "crown_poleaxemen",
         "vale_wardens"
       ],
       "cost": 74,
@@ -8234,13 +8228,13 @@
       "cost": 160,
       "upgradeXp": 750,
       "look": {
-        "head": "frogmouth",
+        "head": "lily_armet",
         "body": "plate",
         "legs": "plate",
         "feet": "sabatons",
         "hands": "gauntlets",
-        "shield": "heater",
-        "weapon": "longsword",
+        "shield": "none",
+        "weapon": "poleaxe",
         "tabard": true
       }
     },
@@ -8252,7 +8246,7 @@
       "tier": 2,
       "stock": "common",
       "upgradesTo": [
-        "reiver_crossbows"
+        "border_outriders"
       ],
       "cost": 38,
       "upgradeXp": 100,
@@ -8265,20 +8259,20 @@
         "shield": "none",
         "weapon": "spear"
       },
-      "mount": "courser"
+      "mount": "march_hobby"
     },
     {
       "id": "reiver_crossbows",
       "name": "Reiver Crossbows",
       "class": "Archer",
       "culture": "azure_march",
-      "tier": 3,
+      "tier": 2,
       "stock": "common",
       "upgradesTo": [
         "march_arbalests"
       ],
-      "cost": 54,
-      "upgradeXp": 160,
+      "cost": 26,
+      "upgradeXp": 140,
       "look": {
         "head": "kettle",
         "body": "gambeson",
@@ -8294,17 +8288,17 @@
       "name": "March Arbalests",
       "class": "Archer",
       "culture": "azure_march",
-      "tier": 4,
+      "tier": 3,
       "stock": "common",
       "upgradesTo": [
-        "pass_reivers"
+        "border_sharpshooters"
       ],
-      "cost": 76,
-      "upgradeXp": 230,
+      "cost": 52,
+      "upgradeXp": 240,
       "look": {
-        "head": "sallet",
-        "body": "mail",
-        "legs": "mail",
+        "head": "kettle",
+        "body": "gambeson",
+        "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
         "shield": "none",
@@ -8324,8 +8318,8 @@
       "cost": 142,
       "upgradeXp": 340,
       "look": {
-        "head": "sallet",
-        "body": "mail_fur",
+        "head": "kettle_bevor",
+        "body": "brigandine",
         "legs": "mail",
         "feet": "boots",
         "hands": "gauntlets",
@@ -8363,18 +8357,18 @@
       "tier": 2,
       "stock": "common",
       "upgradesTo": [
-        "bay_crossbows"
+        "bay_marines"
       ],
       "cost": 24,
       "upgradeXp": 100,
       "look": {
         "head": "cap",
-        "body": "gambeson",
+        "body": "oilskin_coat",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
         "shield": "round",
-        "weapon": "spear"
+        "weapon": "boarding_axe"
       }
     },
     {
@@ -8382,16 +8376,16 @@
       "name": "Bay Crossbows",
       "class": "Archer",
       "culture": "azure_coast",
-      "tier": 3,
+      "tier": 2,
       "stock": "common",
       "upgradesTo": [
-        "bay_marines"
+        "deck_arbalests"
       ],
-      "cost": 52,
-      "upgradeXp": 160,
+      "cost": 26,
+      "upgradeXp": 140,
       "look": {
         "head": "kettle",
-        "body": "gambeson",
+        "body": "oilskin_coat",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -8404,22 +8398,22 @@
       "name": "Bay Marines",
       "class": "Infantry",
       "culture": "azure_coast",
-      "tier": 4,
+      "tier": 3,
       "stock": "common",
       "upgradesTo": [
-        "sea_wardens",
-        "harbour_guard"
+        "harbour_guard",
+        "sea_wardens"
       ],
-      "cost": 74,
-      "upgradeXp": 230,
+      "cost": 48,
+      "upgradeXp": 240,
       "look": {
-        "head": "morion",
-        "body": "breastplate",
-        "legs": "mail",
+        "head": "kettle",
+        "body": "oilskin_coat",
+        "legs": "cloth",
         "feet": "boots",
         "hands": "gauntlets",
-        "shield": "heater",
-        "weapon": "falchion"
+        "shield": "targe",
+        "weapon": "boarding_axe"
       }
     },
     {
@@ -8427,24 +8421,21 @@
       "name": "Harbour Guard",
       "class": "Infantry",
       "culture": "azure_coast",
-      "tier": 5,
+      "tier": 4,
       "stock": "common",
       "upgradesTo": [
-        "tide_wardens"
+        "bay_wardens"
       ],
-      "cost": 115,
-      "upgradeXp": 560,
+      "cost": 78,
+      "upgradeXp": 400,
       "look": {
-        "head": "kettle",
-        "body": "gambeson",
-        "legs": "splint",
+        "head": "kettle_bevor",
+        "body": "oilskin_coat",
+        "legs": "mail",
         "feet": "boots",
         "hands": "gauntlets",
         "shield": "targe",
-        "weapon": "falchion"
-      },
-      "skills": {
-        "arms": 81
+        "weapon": "boarding_axe"
       }
     },
     {
@@ -8459,8 +8450,8 @@
       "upgradeXp": 750,
       "look": {
         "head": "morion",
-        "body": "brigandine",
-        "legs": "splint",
+        "body": "plate_surcoat",
+        "legs": "plate",
         "feet": "boots",
         "hands": "gauntlets",
         "shield": "targe",
@@ -8470,7 +8461,7 @@
     {
       "id": "guild_levies",
       "name": "Guild Levies",
-      "class": "Infantry",
+      "class": "Skirmisher",
       "culture": "crimson_patrician",
       "tier": 2,
       "stock": "common",
@@ -8480,13 +8471,13 @@
       "cost": 24,
       "upgradeXp": 100,
       "look": {
-        "head": "cap",
+        "head": "kettle",
         "body": "gambeson",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
-        "shield": "heater",
-        "weapon": "sword"
+        "shield": "none",
+        "weapon": "partisan"
       }
     },
     {
@@ -8519,7 +8510,7 @@
       "tier": 4,
       "stock": "common",
       "upgradesTo": [
-        "compact_duelists"
+        "signoria_halberds"
       ],
       "cost": 74,
       "upgradeXp": 230,
@@ -8547,12 +8538,13 @@
       "upgradeXp": 340,
       "look": {
         "head": "sallet_crest",
-        "body": "mail",
-        "legs": "plate",
+        "body": "brigandine",
+        "legs": "mail",
         "feet": "boots",
         "hands": "gauntlets",
         "shield": "none",
-        "weapon": "greatsword"
+        "weapon": "kriegsmesser",
+        "tabard": true
       }
     },
     {
@@ -8567,12 +8559,13 @@
       "upgradeXp": 750,
       "look": {
         "head": "galea",
-        "body": "breastplate",
+        "body": "plate_vespran",
         "legs": "plate",
         "feet": "sabatons",
         "hands": "gauntlets",
         "shield": "none",
-        "weapon": "greatsword"
+        "weapon": "flamberge",
+        "tabard": true
       }
     },
     {
@@ -8583,15 +8576,15 @@
       "tier": 2,
       "stock": "common",
       "upgradesTo": [
-        "alpine_axemen"
+        "crag_pikemen"
       ],
       "cost": 24,
       "upgradeXp": 100,
       "look": {
         "head": "hood",
-        "body": "gambeson",
-        "legs": "cloth",
-        "feet": "boots",
+        "body": "crag_plaid",
+        "legs": "furlegs",
+        "feet": "furboots",
         "hands": "skin",
         "shield": "none",
         "weapon": "spear"
@@ -8602,21 +8595,21 @@
       "name": "Alpine Axemen",
       "class": "Infantry",
       "culture": "crimson_alpine",
-      "tier": 3,
+      "tier": 2,
       "stock": "common",
       "upgradesTo": [
-        "crag_halberdiers"
+        "crag_cleavers"
       ],
-      "cost": 46,
-      "upgradeXp": 160,
+      "cost": 26,
+      "upgradeXp": 140,
       "look": {
-        "head": "spangen",
-        "body": "mail",
-        "legs": "cloth",
-        "feet": "boots",
+        "head": "cap",
+        "body": "crag_plaid",
+        "legs": "furlegs",
+        "feet": "furboots",
         "hands": "skin",
-        "shield": "none",
-        "weapon": "daneaxe"
+        "shield": "round",
+        "weapon": "axe"
       }
     },
     {
@@ -8627,7 +8620,7 @@
       "tier": 4,
       "stock": "common",
       "upgradesTo": [
-        "summit_wardens"
+        "summit_halberdiers"
       ],
       "cost": 74,
       "upgradeXp": 230,
@@ -8655,8 +8648,8 @@
       "upgradeXp": 340,
       "look": {
         "head": "spangen",
-        "body": "mail",
-        "legs": "splint",
+        "body": "mail_fur",
+        "legs": "mail",
         "feet": "boots",
         "hands": "gauntlets",
         "shield": "none",
@@ -8688,13 +8681,17 @@
       "name": "Fjord Oarsmen",
       "class": "Infantry",
       "culture": "northern_fjord",
-      "tier": 2,
+      "tier": 1,
       "stock": "common",
       "upgradesTo": [
-        "longship_raiders"
+        "fjord_raiders",
+        "prow_axemen",
+        "axemen",
+        "hunters",
+        "fell_riders"
       ],
-      "cost": 24,
-      "upgradeXp": 100,
+      "cost": 10,
+      "upgradeXp": 60,
       "look": {
         "head": "cap",
         "body": "fur",
@@ -8762,8 +8759,8 @@
       "cost": 116,
       "upgradeXp": 340,
       "look": {
-        "head": "gjermundbu",
-        "body": "mail",
+        "head": "vendel_helm",
+        "body": "mail_fur",
         "legs": "mail",
         "feet": "boots",
         "hands": "gauntlets",
@@ -8783,7 +8780,7 @@
       "upgradeXp": 760,
       "look": {
         "head": "dragon",
-        "body": "mail_fur",
+        "body": "jarl_scale",
         "legs": "mail",
         "feet": "boots",
         "hands": "gauntlets",
@@ -8796,13 +8793,17 @@
       "name": "Taiga Trappers",
       "class": "Archer",
       "culture": "northern_taiga",
-      "tier": 2,
+      "tier": 1,
       "stock": "common",
       "upgradesTo": [
-        "frost_hunters"
+        "holt_bowmen",
+        "bear_cultists",
+        "axemen",
+        "hunters",
+        "fell_riders"
       ],
-      "cost": 24,
-      "upgradeXp": 100,
+      "cost": 10,
+      "upgradeXp": 60,
       "look": {
         "head": "hood",
         "body": "leather",
@@ -8904,13 +8905,17 @@
       "name": "Oasis Spearmen",
       "class": "Skirmisher",
       "culture": "southern_oasis",
-      "tier": 2,
+      "tier": 1,
       "stock": "common",
       "upgradesTo": [
-        "river_guards"
+        "oasis_foot",
+        "oasis_pikemen",
+        "qadir_foot",
+        "slingers",
+        "camel_scouts"
       ],
-      "cost": 24,
-      "upgradeXp": 100,
+      "cost": 10,
+      "upgradeXp": 60,
       "look": {
         "head": "turban",
         "body": "tunic",
@@ -8929,7 +8934,7 @@
       "tier": 3,
       "stock": "common",
       "upgradesTo": [
-        "palm_halberdiers"
+        "oasis_guards"
       ],
       "cost": 46,
       "upgradeXp": 160,
@@ -8951,7 +8956,7 @@
       "tier": 4,
       "stock": "common",
       "upgradesTo": [
-        "oasis_champions"
+        "sun_guard"
       ],
       "cost": 74,
       "upgradeXp": 230,
@@ -9072,7 +9077,7 @@
         "feet": "boots",
         "hands": "gauntlets",
         "shield": "kalkan",
-        "weapon": "lance"
+        "weapon": "spear"
       },
       "mount": "camel"
     },
@@ -9095,9 +9100,9 @@
         "feet": "ridingboots",
         "hands": "gauntlets",
         "shield": "round",
-        "weapon": "lance"
+        "weapon": "cane_lance"
       },
-      "mount": "camel",
+      "mount": "war_camel",
       "skills": {
         "arms": 53.5
       }
@@ -9119,9 +9124,9 @@
         "feet": "ridingboots",
         "hands": "gauntlets",
         "shield": "kalkan",
-        "weapon": "lance"
+        "weapon": "cane_lance"
       },
-      "mount": "camel",
+      "mount": "war_camel",
       "skills": {
         "arms": 67.75
       }
@@ -9131,16 +9136,20 @@
       "name": "Maren Sailors",
       "class": "Infantry",
       "culture": "southern_rift",
-      "tier": 2,
+      "tier": 1,
       "stock": "common",
       "upgradesTo": [
-        "galley_bowmen"
+        "corsair_raiders",
+        "galley_slingers",
+        "qadir_foot",
+        "slingers",
+        "camel_scouts"
       ],
-      "cost": 24,
-      "upgradeXp": 100,
+      "cost": 10,
+      "upgradeXp": 60,
       "look": {
         "head": "turban",
-        "body": "tunic",
+        "body": "corsair_vest",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -9156,7 +9165,7 @@
       "tier": 3,
       "stock": "common",
       "upgradesTo": [
-        "rift_marines"
+        "oasis_bows"
       ],
       "cost": 46,
       "upgradeXp": 160,
@@ -9247,8 +9256,8 @@
       "cost": 40,
       "upgradeXp": 100,
       "look": {
-        "head": "cap",
-        "body": "gambeson",
+        "head": "furcap",
+        "body": "deel",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -9265,18 +9274,18 @@
       "tier": 3,
       "stock": "common",
       "upgradesTo": [
-        "free_lancers"
+        "kheshig_riders"
       ],
       "cost": 66,
       "upgradeXp": 160,
       "look": {
         "head": "steppe",
-        "body": "lamellar",
+        "body": "deel_fur",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
         "shield": "none",
-        "weapon": "recurve"
+        "weapon": "bow"
       },
       "mount": "steppe_horse"
     },
@@ -9293,13 +9302,13 @@
       "cost": 98,
       "upgradeXp": 230,
       "look": {
-        "head": "steppe_horns",
+        "head": "steppe_plumed_helm",
         "body": "lamellar",
         "legs": "mail",
         "feet": "ridingboots",
         "hands": "gauntlets",
         "shield": "kalkan",
-        "weapon": "lance"
+        "weapon": "hooked_lance"
       },
       "mount": "steppe_horse"
     },
@@ -9316,13 +9325,13 @@
       "cost": 144,
       "upgradeXp": 340,
       "look": {
-        "head": "steppe_mask",
+        "head": "steppe_plumed_helm",
         "body": "lamellar",
         "legs": "mail",
         "feet": "ridingboots",
         "hands": "gauntlets",
         "shield": "kalkan",
-        "weapon": "lance"
+        "weapon": "hooked_lance"
       },
       "mount": "steppe_destrier",
       "skills": {
@@ -9346,7 +9355,7 @@
         "feet": "ridingboots",
         "hands": "gauntlets",
         "shield": "kalkan",
-        "weapon": "lance"
+        "weapon": "hooked_lance"
       },
       "mount": "destrier"
     },
@@ -9358,7 +9367,7 @@
       "tier": 2,
       "stock": "common",
       "upgradesTo": [
-        "salt_skirmishers"
+        "salt_riders"
       ],
       "cost": 38,
       "upgradeXp": 100,
@@ -9381,7 +9390,7 @@
       "tier": 3,
       "stock": "common",
       "upgradesTo": [
-        "salt_lancers"
+        "salt_guards"
       ],
       "cost": 46,
       "upgradeXp": 160,
@@ -9414,7 +9423,7 @@
         "feet": "boots",
         "hands": "gauntlets",
         "shield": "kalkan",
-        "weapon": "lance"
+        "weapon": "hooked_lance"
       },
       "mount": "warhorse"
     },
@@ -9431,16 +9440,16 @@
       "cost": 146,
       "upgradeXp": 340,
       "look": {
-        "head": "kulah",
-        "body": "scale",
+        "head": "steppe_plumed_helm",
+        "body": "lacquered_lamellar",
         "legs": "splint",
         "feet": "ridingboots",
         "hands": "gauntlets",
         "shield": "kalkan",
-        "weapon": "lance",
+        "weapon": "hooked_lance",
         "tabard": true
       },
-      "mount": "salt_charger"
+      "mount": "salt_cataphract_charger"
     },
     {
       "id": "brine_cataphracts",
@@ -9453,15 +9462,15 @@
       "cost": 180,
       "upgradeXp": 780,
       "look": {
-        "head": "faceplate",
-        "body": "mirror",
+        "head": "sky_mask",
+        "body": "lamellar_khan",
         "legs": "splint",
         "feet": "ridingboots",
         "hands": "gauntlets",
         "shield": "kalkan",
-        "weapon": "lance"
+        "weapon": "hooked_lance"
       },
-      "mount": "cataphract_horse"
+      "mount": "salt_cataphract_charger"
     },
     {
       "id": "galley_pikemen",
@@ -9471,12 +9480,12 @@
       "tier": 2,
       "stock": "common",
       "upgradesTo": [
-        "lagoon_crossbows"
+        "arsenal_marines"
       ],
       "cost": 24,
       "upgradeXp": 100,
       "look": {
-        "head": "cap",
+        "head": "cabasset",
         "body": "gambeson",
         "legs": "cloth",
         "feet": "boots",
@@ -9493,7 +9502,7 @@
       "tier": 3,
       "stock": "common",
       "upgradesTo": [
-        "guild_marines"
+        "pavisiers"
       ],
       "cost": 54,
       "upgradeXp": 160,
@@ -9579,13 +9588,13 @@
       "tier": 2,
       "stock": "common",
       "upgradesTo": [
-        "marsh_spears"
+        "fen_crossbows"
       ],
       "cost": 22,
       "upgradeXp": 100,
       "look": {
         "head": "hood",
-        "body": "tunic",
+        "body": "reed_cloak",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -9601,18 +9610,18 @@
       "tier": 3,
       "stock": "common",
       "upgradesTo": [
-        "fen_pavisiers"
+        "fen_wardens"
       ],
       "cost": 44,
       "upgradeXp": 160,
       "look": {
         "head": "kettle",
-        "body": "gambeson",
+        "body": "reed_cloak",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
         "shield": "none",
-        "weapon": "spear"
+        "weapon": "marsh_fork"
       }
     },
     {
@@ -9687,13 +9696,17 @@
       "name": "Chapter Novices",
       "class": "Infantry",
       "culture": "order_chapter",
-      "tier": 2,
+      "tier": 1,
       "stock": "common",
       "upgradesTo": [
-        "vow_sergeants"
+        "chapter_acolytes",
+        "iron_penitents",
+        "chapter_foot",
+        "pilgrim_bows",
+        "pilgrim_riders"
       ],
-      "cost": 26,
-      "upgradeXp": 100,
+      "cost": 10,
+      "upgradeXp": 60,
       "look": {
         "head": "hood",
         "body": "gambeson",
@@ -9798,13 +9811,17 @@
       "name": "Gate Militia",
       "class": "Skirmisher",
       "culture": "order_warden",
-      "tier": 2,
+      "tier": 1,
       "stock": "common",
       "upgradesTo": [
-        "pass_halberds"
+        "pass_spearmen",
+        "gate_crossbows",
+        "chapter_foot",
+        "pilgrim_bows",
+        "pilgrim_riders"
       ],
-      "cost": 24,
-      "upgradeXp": 100,
+      "cost": 10,
+      "upgradeXp": 60,
       "look": {
         "head": "kettle",
         "body": "gambeson",
@@ -9823,7 +9840,7 @@
       "tier": 3,
       "stock": "common",
       "upgradesTo": [
-        "canyon_crossbows"
+        "warden_polehammers"
       ],
       "cost": 46,
       "upgradeXp": 160,
@@ -9845,7 +9862,7 @@
       "tier": 4,
       "stock": "noble",
       "upgradesTo": [
-        "gate_champions"
+        "pass_arbalests"
       ],
       "cost": 88,
       "upgradeXp": 230,
@@ -9873,13 +9890,13 @@
       "cost": 120,
       "upgradeXp": 340,
       "look": {
-        "head": "kettle",
+        "head": "austere_greathelm",
         "body": "coatofplates",
         "legs": "plate",
         "feet": "boots",
         "hands": "gauntlets",
         "shield": "none",
-        "weapon": "halberd",
+        "weapon": "lucerne_hammer",
         "cape": true
       }
     },
@@ -9894,13 +9911,2254 @@
       "cost": 167,
       "upgradeXp": 740,
       "look": {
-        "head": "bascinet",
-        "body": "coatofplates",
+        "head": "austere_greathelm",
+        "body": "grey_plate_surcoat",
         "legs": "plate",
         "feet": "sabatons",
         "hands": "gauntlets",
         "shield": "none",
+        "weapon": "lucerne_hammer"
+      }
+    },
+    {
+      "id": "brevon_fyrd",
+      "name": "Brevon Fyrd",
+      "class": "Infantry",
+      "culture": "azure",
+      "tier": 1,
+      "upgradesTo": [
+        "manor_foot",
+        "shire_billmen",
+        "town_crossbows",
+        "crown_squires"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "cap",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "round",
+        "weapon": "axe"
+      }
+    },
+    {
+      "id": "manor_foot",
+      "name": "Manor Foot",
+      "class": "Infantry",
+      "culture": "azure",
+      "tier": 2,
+      "upgradesTo": [
+        "men_at_arms",
+        "sergeants"
+      ],
+      "cost": 24,
+      "upgradeXp": 150,
+      "look": {
+        "head": "kettle",
+        "body": "gambeson",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "kite",
+        "weapon": "sword"
+      }
+    },
+    {
+      "id": "shire_billmen",
+      "name": "Shire Billmen",
+      "class": "Skirmisher",
+      "culture": "azure",
+      "tier": 2,
+      "upgradesTo": [
+        "pikemen",
+        "royal_billmen",
+        "beast_hunters"
+      ],
+      "cost": 24,
+      "upgradeXp": 150,
+      "look": {
+        "head": "kettle",
+        "body": "gambeson",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "goedendag"
+      }
+    },
+    {
+      "id": "brevon_lancers",
+      "name": "Brevon Lancers",
+      "class": "Cavalry",
+      "culture": "azure",
+      "tier": 3,
+      "upgradesTo": [
+        "demi_lancers"
+      ],
+      "cost": 58,
+      "upgradeXp": 280,
+      "mount": "warhorse",
+      "look": {
+        "head": "bascinet",
+        "body": "mail",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "heater",
+        "weapon": "lance",
+        "tabard": true
+      }
+    },
+    {
+      "id": "brevon_esquires",
+      "name": "House Esquires",
+      "class": "Infantry",
+      "culture": "azure",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "foot_knights",
+        "lily_squires",
+        "sworn_brothers",
+        "hollow_squires"
+      ],
+      "cost": 54,
+      "upgradeXp": 260,
+      "look": {
+        "head": "bascinet",
+        "body": "mail_hauberk",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "heater_quartered",
+        "weapon": "sword",
+        "tabard": true
+      }
+    },
+    {
+      "id": "tourney_squires",
+      "name": "Tourney Squires",
+      "class": "Cavalry",
+      "culture": "azure",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "demi_lancers"
+      ],
+      "cost": 68,
+      "upgradeXp": 280,
+      "mount": "tourney_destrier",
+      "look": {
+        "head": "sallet",
+        "body": "mail_hauberk",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "heater_quartered",
+        "weapon": "lance",
+        "tabard": true
+      }
+    },
+    {
+      "id": "vigil_novices",
+      "name": "Vigil Novices",
+      "class": "Caster",
+      "culture": "azure",
+      "tier": 2,
+      "upgradesTo": [
+        "lectors"
+      ],
+      "cost": 40,
+      "upgradeXp": 160,
+      "spells": [
+        "mend"
+      ],
+      "look": {
+        "head": "hood",
+        "body": "robe",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "staff"
+      }
+    },
+    {
+      "id": "abbey_yeomen",
+      "name": "Abbey Yeomen",
+      "class": "Infantry",
+      "culture": "azure_heart",
+      "tier": 1,
+      "upgradesTo": [
+        "crown_yeomen",
+        "manor_foot",
+        "town_crossbows",
+        "crown_squires"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "cap",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "goedendag"
+      }
+    },
+    {
+      "id": "crown_poleaxemen",
+      "name": "Crown Poleaxemen",
+      "class": "Skirmisher",
+      "culture": "azure_heart",
+      "tier": 5,
+      "upgradesTo": [
+        "crown_vanguard"
+      ],
+      "cost": 118,
+      "upgradeXp": 540,
+      "look": {
+        "head": "kettle_bevor",
+        "body": "plate_surcoat",
+        "legs": "plate",
+        "feet": "sabatons",
+        "hands": "gauntlets",
+        "shield": "none",
+        "weapon": "poleaxe",
+        "tabard": true
+      }
+    },
+    {
+      "id": "march_watch",
+      "name": "March Watch",
+      "class": "Infantry",
+      "culture": "azure_march",
+      "tier": 1,
+      "upgradesTo": [
+        "march_scouts",
+        "reiver_crossbows",
+        "manor_foot",
+        "town_crossbows",
+        "crown_squires"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "hood",
+        "body": "leather",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "round",
+        "weapon": "axe"
+      }
+    },
+    {
+      "id": "border_outriders",
+      "name": "Border Outriders",
+      "class": "Cavalry",
+      "culture": "azure_march",
+      "tier": 3,
+      "upgradesTo": [
+        "border_lancers"
+      ],
+      "cost": 56,
+      "upgradeXp": 250,
+      "mount": "march_hobby",
+      "look": {
+        "head": "kettle",
+        "body": "gambeson_fur",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "heater",
+        "weapon": "spear"
+      }
+    },
+    {
+      "id": "border_lancers",
+      "name": "Border Lancers",
+      "class": "Cavalry",
+      "culture": "azure_march",
+      "tier": 4,
+      "upgradesTo": [
+        "pass_reivers"
+      ],
+      "cost": 88,
+      "upgradeXp": 380,
+      "mount": "march_warhorse",
+      "look": {
+        "head": "kettle_brimmed",
+        "body": "mail",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "heater",
+        "weapon": "lance"
+      }
+    },
+    {
+      "id": "border_sharpshooters",
+      "name": "Border Sharpshooters",
+      "class": "Archer",
+      "culture": "azure_march",
+      "tier": 4,
+      "upgradesTo": [
+        "heavy_arbalests"
+      ],
+      "cost": 78,
+      "upgradeXp": 360,
+      "look": {
+        "head": "kettle_brimmed",
+        "body": "gambeson_fur",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "none",
+        "weapon": "arbalest"
+      }
+    },
+    {
+      "id": "harbor_hands",
+      "name": "Harbor Hands",
+      "class": "Infantry",
+      "culture": "azure_coast",
+      "tier": 1,
+      "upgradesTo": [
+        "harbor_watch",
+        "bay_crossbows",
+        "manor_foot",
+        "town_crossbows",
+        "crown_squires"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "cap",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "buckler",
+        "weapon": "boarding_axe"
+      }
+    },
+    {
+      "id": "bay_wardens",
+      "name": "Bay Wardens",
+      "class": "Infantry",
+      "culture": "azure_coast",
+      "tier": 5,
+      "upgradesTo": [
+        "tide_wardens"
+      ],
+      "cost": 116,
+      "upgradeXp": 540,
+      "look": {
+        "head": "kettle_bevor",
+        "body": "brigandine",
+        "legs": "splint",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "targe",
+        "weapon": "boarding_axe"
+      }
+    },
+    {
+      "id": "deck_arbalests",
+      "name": "Deck Arbalests",
+      "class": "Archer",
+      "culture": "azure_coast",
+      "tier": 3,
+      "upgradesTo": [
+        "arbalests"
+      ],
+      "cost": 52,
+      "upgradeXp": 240,
+      "look": {
+        "head": "kettle_bevor",
+        "body": "oilskin_coat",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "arbalest"
+      }
+    },
+    {
+      "id": "civic_militia",
+      "name": "Civic Militia",
+      "class": "Infantry",
+      "culture": "crimson",
+      "tier": 1,
+      "upgradesTo": [
+        "ward_swordsmen",
+        "guild_billmen",
+        "commons_bowmen",
+        "hobilars"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "cap",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "buckler",
+        "weapon": "sword"
+      }
+    },
+    {
+      "id": "ward_swordsmen",
+      "name": "Ward Swordsmen",
+      "class": "Infantry",
+      "culture": "crimson",
+      "tier": 2,
+      "upgradesTo": [
+        "greatswords"
+      ],
+      "cost": 24,
+      "upgradeXp": 150,
+      "look": {
+        "head": "kettle",
+        "body": "slashed_doublet",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "rotella",
+        "weapon": "sword"
+      }
+    },
+    {
+      "id": "guild_billmen",
+      "name": "Guild Billmen",
+      "class": "Skirmisher",
+      "culture": "crimson",
+      "tier": 2,
+      "upgradesTo": [
+        "vespra_billmen"
+      ],
+      "cost": 24,
+      "upgradeXp": 150,
+      "look": {
+        "head": "kettle",
+        "body": "gambeson",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "billhook"
+      }
+    },
+    {
+      "id": "vespra_billmen",
+      "name": "Vespra Partisans",
+      "class": "Skirmisher",
+      "culture": "crimson",
+      "tier": 3,
+      "upgradesTo": [
+        "halberdiers"
+      ],
+      "cost": 46,
+      "upgradeXp": 250,
+      "look": {
+        "head": "kettle_brimmed",
+        "body": "mail",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "partisan"
+      }
+    },
+    {
+      "id": "vespra_lancers",
+      "name": "Vespra Lancers",
+      "class": "Cavalry",
+      "culture": "crimson",
+      "tier": 3,
+      "upgradesTo": [
+        "knights"
+      ],
+      "cost": 58,
+      "upgradeXp": 280,
+      "mount": "warhorse",
+      "look": {
+        "head": "sallet",
+        "body": "mail",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "heater",
+        "weapon": "lance",
+        "tabard": true
+      }
+    },
+    {
+      "id": "signorial_cadets",
+      "name": "Signorial Cadets",
+      "class": "Infantry",
+      "culture": "crimson",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "compact_knights",
+        "rose_blades",
+        "sworn_brothers",
+        "hollow_squires"
+      ],
+      "cost": 54,
+      "upgradeXp": 260,
+      "look": {
+        "head": "sallet_visored",
+        "body": "coatofplates",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "none",
+        "weapon": "kriegsmesser",
+        "tabard": true
+      }
+    },
+    {
+      "id": "compagnia_squires",
+      "name": "Compagnia Squires",
+      "class": "Cavalry",
+      "culture": "crimson",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "knights"
+      ],
+      "cost": 68,
+      "upgradeXp": 280,
+      "mount": "warhorse",
+      "look": {
+        "head": "sallet_visored",
+        "body": "mail_hauberk",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "heater",
+        "weapon": "lance",
+        "tabard": true
+      }
+    },
+    {
+      "id": "hedge_apprentices",
+      "name": "Hedge Apprentices",
+      "class": "Caster",
+      "culture": "crimson",
+      "tier": 2,
+      "upgradesTo": [
+        "hedge_witches"
+      ],
+      "cost": 40,
+      "upgradeXp": 160,
+      "spells": [
+        "mend"
+      ],
+      "look": {
+        "head": "hood",
+        "body": "robe",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "staff"
+      }
+    },
+    {
+      "id": "patrician_levies",
+      "name": "Patrician Levies",
+      "class": "Infantry",
+      "culture": "crimson_patrician",
+      "tier": 1,
+      "upgradesTo": [
+        "guild_levies",
+        "vespran_fencers",
+        "ward_swordsmen",
+        "commons_bowmen",
+        "hobilars"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "cap",
+        "body": "slashed_doublet",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "buckler",
+        "weapon": "sword"
+      }
+    },
+    {
+      "id": "vespran_fencers",
+      "name": "Vespran Fencers",
+      "class": "Infantry",
+      "culture": "crimson_patrician",
+      "tier": 2,
+      "upgradesTo": [
+        "compact_fencers"
+      ],
+      "cost": 26,
+      "upgradeXp": 150,
+      "look": {
+        "head": "cap",
+        "body": "slashed_doublet",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "rotella",
+        "weapon": "sword_knightly"
+      }
+    },
+    {
+      "id": "compact_fencers",
+      "name": "Compact Fencers",
+      "class": "Infantry",
+      "culture": "crimson_patrician",
+      "tier": 3,
+      "upgradesTo": [
+        "patrician_duelists"
+      ],
+      "cost": 48,
+      "upgradeXp": 250,
+      "look": {
+        "head": "sallet",
+        "body": "slashed_doublet",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "rotella",
+        "weapon": "longsword_estoc"
+      }
+    },
+    {
+      "id": "patrician_duelists",
+      "name": "Patrician Duelists",
+      "class": "Infantry",
+      "culture": "crimson_patrician",
+      "tier": 4,
+      "upgradesTo": [
+        "compact_duelists"
+      ],
+      "cost": 78,
+      "upgradeXp": 390,
+      "look": {
+        "head": "barbute_crest",
+        "body": "breastplate",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "none",
+        "weapon": "kriegsmesser",
+        "plume": true
+      }
+    },
+    {
+      "id": "signoria_halberds",
+      "name": "Signoria Halberds",
+      "class": "Skirmisher",
+      "culture": "crimson_patrician",
+      "tier": 5,
+      "upgradesTo": [
+        "royal_halberdiers"
+      ],
+      "cost": 115,
+      "upgradeXp": 540,
+      "look": {
+        "head": "sallet_crest",
+        "body": "plate_fluted",
+        "legs": "plate",
+        "feet": "sabatons",
+        "hands": "gauntlets",
+        "shield": "none",
+        "weapon": "partisan",
+        "tabard": true
+      }
+    },
+    {
+      "id": "crag_herdsmen",
+      "name": "Crag Herdsmen",
+      "class": "Infantry",
+      "culture": "crimson_alpine",
+      "tier": 1,
+      "upgradesTo": [
+        "crag_skirmishers",
+        "alpine_axemen",
+        "ward_swordsmen",
+        "commons_bowmen",
+        "hobilars"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "hood",
+        "body": "fur",
+        "legs": "furlegs",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "round",
+        "weapon": "axe"
+      }
+    },
+    {
+      "id": "crag_pikemen",
+      "name": "Crag Billmen",
+      "class": "Skirmisher",
+      "culture": "crimson_alpine",
+      "tier": 3,
+      "upgradesTo": [
+        "crag_halberdiers"
+      ],
+      "cost": 46,
+      "upgradeXp": 240,
+      "look": {
+        "head": "spangen",
+        "body": "crag_plaid",
+        "legs": "furlegs",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "billhook"
+      }
+    },
+    {
+      "id": "summit_halberdiers",
+      "name": "Summit Halberdiers",
+      "class": "Skirmisher",
+      "culture": "crimson_alpine",
+      "tier": 5,
+      "upgradesTo": [
+        "royal_halberdiers"
+      ],
+      "cost": 114,
+      "upgradeXp": 540,
+      "look": {
+        "head": "spangen",
+        "body": "plate_fur",
+        "legs": "plate",
+        "feet": "furboots",
+        "hands": "gauntlets",
+        "shield": "none",
         "weapon": "halberd"
+      }
+    },
+    {
+      "id": "crag_cleavers",
+      "name": "Crag Cleavers",
+      "class": "Infantry",
+      "culture": "crimson_alpine",
+      "tier": 3,
+      "upgradesTo": [
+        "crag_reavers"
+      ],
+      "cost": 48,
+      "upgradeXp": 250,
+      "look": {
+        "head": "spangen",
+        "body": "crag_plaid",
+        "legs": "mail",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "daneaxe"
+      }
+    },
+    {
+      "id": "crag_reavers",
+      "name": "Crag Reavers",
+      "class": "Infantry",
+      "culture": "crimson_alpine",
+      "tier": 4,
+      "upgradesTo": [
+        "summit_wardens"
+      ],
+      "cost": 78,
+      "upgradeXp": 390,
+      "look": {
+        "head": "spangen",
+        "body": "mail_fur",
+        "legs": "mail",
+        "feet": "furboots",
+        "hands": "gauntlets",
+        "shield": "none",
+        "weapon": "daneaxe_bearded"
+      }
+    },
+    {
+      "id": "spear_karls",
+      "name": "Spear-Karls",
+      "class": "Skirmisher",
+      "culture": "northern",
+      "tier": 2,
+      "upgradesTo": [
+        "skar_atgeir"
+      ],
+      "cost": 24,
+      "upgradeXp": 150,
+      "look": {
+        "head": "spangen",
+        "body": "fur",
+        "legs": "furlegs",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "boar_spear"
+      }
+    },
+    {
+      "id": "skar_atgeir",
+      "name": "Skar Atgeirmen",
+      "class": "Skirmisher",
+      "culture": "northern",
+      "tier": 3,
+      "upgradesTo": [
+        "glaivemen"
+      ],
+      "cost": 46,
+      "upgradeXp": 250,
+      "look": {
+        "head": "spangen",
+        "body": "gambeson_fur",
+        "legs": "furlegs",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "atgeir"
+      }
+    },
+    {
+      "id": "hearth_youths",
+      "name": "Hearth-Youths",
+      "class": "Infantry",
+      "culture": "northern",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "northern_hearthguard",
+        "wolf_thegns",
+        "sworn_brothers",
+        "hollow_squires"
+      ],
+      "cost": 54,
+      "upgradeXp": 260,
+      "look": {
+        "head": "vendel_helm",
+        "body": "gambeson_fur",
+        "legs": "mail",
+        "feet": "furboots",
+        "hands": "gauntlets",
+        "shield": "round_bossed",
+        "weapon": "sword_viking"
+      }
+    },
+    {
+      "id": "storm_squires",
+      "name": "Storm Squires",
+      "class": "Cavalry",
+      "culture": "northern",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "thane_riders"
+      ],
+      "cost": 66,
+      "upgradeXp": 280,
+      "mount": "fjord_pony",
+      "look": {
+        "head": "vendel_helm",
+        "body": "gambeson_fur",
+        "legs": "mail",
+        "feet": "furboots",
+        "hands": "gauntlets",
+        "shield": "round_bossed",
+        "weapon": "spear"
+      }
+    },
+    {
+      "id": "rune_apprentices",
+      "name": "Rune Apprentices",
+      "class": "Caster",
+      "culture": "northern",
+      "tier": 2,
+      "upgradesTo": [
+        "rune_singers"
+      ],
+      "cost": 40,
+      "upgradeXp": 160,
+      "spells": [
+        "mend"
+      ],
+      "look": {
+        "head": "hood",
+        "body": "robe",
+        "legs": "furlegs",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "staff"
+      }
+    },
+    {
+      "id": "fjord_raiders",
+      "name": "Fjord Raiders",
+      "class": "Skirmisher",
+      "culture": "northern_fjord",
+      "tier": 2,
+      "upgradesTo": [
+        "longship_raiders"
+      ],
+      "cost": 26,
+      "upgradeXp": 140,
+      "look": {
+        "head": "spangen",
+        "body": "fur",
+        "legs": "furlegs",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "round",
+        "weapon": "throwing_axe"
+      }
+    },
+    {
+      "id": "prow_axemen",
+      "name": "Prow Axemen",
+      "class": "Infantry",
+      "culture": "northern_fjord",
+      "tier": 2,
+      "upgradesTo": [
+        "prow_guards"
+      ],
+      "cost": 26,
+      "upgradeXp": 140,
+      "look": {
+        "head": "spangen",
+        "body": "fur",
+        "legs": "furlegs",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "daneaxe"
+      }
+    },
+    {
+      "id": "prow_guards",
+      "name": "Prow Guards",
+      "class": "Skirmisher",
+      "culture": "northern_fjord",
+      "tier": 3,
+      "upgradesTo": [
+        "sea_huscarls"
+      ],
+      "cost": 48,
+      "upgradeXp": 240,
+      "look": {
+        "head": "vendel_helm",
+        "body": "gambeson_fur",
+        "legs": "mail",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "atgeir"
+      }
+    },
+    {
+      "id": "holt_bowmen",
+      "name": "Holt Bowmen",
+      "class": "Archer",
+      "culture": "northern_taiga",
+      "tier": 2,
+      "upgradesTo": [
+        "frost_hunters"
+      ],
+      "cost": 24,
+      "upgradeXp": 140,
+      "look": {
+        "head": "furcap",
+        "body": "leather",
+        "legs": "furlegs",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "bow"
+      }
+    },
+    {
+      "id": "bear_cultists",
+      "name": "Bear-Cultists",
+      "class": "Skirmisher",
+      "culture": "northern_taiga",
+      "tier": 2,
+      "upgradesTo": [
+        "holt_berserkers"
+      ],
+      "cost": 26,
+      "upgradeXp": 150,
+      "look": {
+        "head": "bearhead",
+        "body": "bear_pelt",
+        "legs": "furlegs",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "boar_spear"
+      }
+    },
+    {
+      "id": "holt_berserkers",
+      "name": "Holt Berserkers",
+      "class": "Infantry",
+      "culture": "northern_taiga",
+      "tier": 3,
+      "upgradesTo": [
+        "ulfhednar"
+      ],
+      "cost": 48,
+      "upgradeXp": 250,
+      "look": {
+        "head": "bearhead",
+        "body": "bear_pelt",
+        "legs": "furlegs",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "daneaxe"
+      }
+    },
+    {
+      "id": "oasis_levy",
+      "name": "Oasis Levy",
+      "class": "Infantry",
+      "culture": "southern",
+      "tier": 1,
+      "upgradesTo": [
+        "qadir_foot",
+        "qadir_spears",
+        "slingers",
+        "camel_scouts"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "turban",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "dhal",
+        "weapon": "spear"
+      }
+    },
+    {
+      "id": "qadir_foot",
+      "name": "Qadiri Foot",
+      "class": "Infantry",
+      "culture": "southern",
+      "tier": 2,
+      "upgradesTo": [
+        "ghazis"
+      ],
+      "cost": 24,
+      "upgradeXp": 150,
+      "look": {
+        "head": "turban",
+        "body": "jubbah",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "dhal",
+        "weapon": "scimitar"
+      }
+    },
+    {
+      "id": "qadir_spears",
+      "name": "Qadiri Skirmishers",
+      "class": "Skirmisher",
+      "culture": "southern",
+      "tier": 2,
+      "upgradesTo": [
+        "sun_javelins"
+      ],
+      "cost": 24,
+      "upgradeXp": 150,
+      "look": {
+        "head": "turban",
+        "body": "jubbah",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "dhal",
+        "weapon": "jarid"
+      }
+    },
+    {
+      "id": "ghulam_foot",
+      "name": "Ghulam Foot",
+      "class": "Infantry",
+      "culture": "southern",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "faris_foot",
+        "sworn_brothers",
+        "hollow_squires"
+      ],
+      "cost": 54,
+      "upgradeXp": 260,
+      "look": {
+        "head": "spike_turban",
+        "body": "kazaghand",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "dhal",
+        "weapon": "tabarzin"
+      }
+    },
+    {
+      "id": "mamluk_pages",
+      "name": "Mamluk Pages",
+      "class": "Cavalry",
+      "culture": "southern",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "faris_riders",
+        "falcon_riders"
+      ],
+      "cost": 66,
+      "upgradeXp": 280,
+      "mount": "desert_arabian",
+      "look": {
+        "head": "spike_turban",
+        "body": "kazaghand",
+        "legs": "mail",
+        "feet": "ridingboots",
+        "hands": "gauntlets",
+        "shield": "kalkan",
+        "weapon": "cane_lance"
+      }
+    },
+    {
+      "id": "star_students",
+      "name": "Star Students",
+      "class": "Caster",
+      "culture": "southern",
+      "tier": 2,
+      "upgradesTo": [
+        "star_readers"
+      ],
+      "cost": 40,
+      "upgradeXp": 160,
+      "spells": [
+        "mend"
+      ],
+      "look": {
+        "head": "turban",
+        "body": "robe",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "staff"
+      }
+    },
+    {
+      "id": "oasis_foot",
+      "name": "Oasis Foot",
+      "class": "Infantry",
+      "culture": "southern_oasis",
+      "tier": 2,
+      "upgradesTo": [
+        "river_guards"
+      ],
+      "cost": 24,
+      "upgradeXp": 140,
+      "look": {
+        "head": "turban",
+        "body": "jubbah",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "dhal",
+        "weapon": "scimitar"
+      }
+    },
+    {
+      "id": "oasis_guards",
+      "name": "Oasis Guards",
+      "class": "Infantry",
+      "culture": "southern_oasis",
+      "tier": 4,
+      "upgradesTo": [
+        "oasis_champions"
+      ],
+      "cost": 74,
+      "upgradeXp": 360,
+      "look": {
+        "head": "kulah",
+        "body": "mirror_qadir",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "dhal",
+        "weapon": "scimitar",
+        "cape": true
+      }
+    },
+    {
+      "id": "oasis_pikemen",
+      "name": "Oasis Pikemen",
+      "class": "Skirmisher",
+      "culture": "southern_oasis",
+      "tier": 2,
+      "upgradesTo": [
+        "palm_spears"
+      ],
+      "cost": 24,
+      "upgradeXp": 140,
+      "look": {
+        "head": "turban",
+        "body": "jubbah",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "spear"
+      }
+    },
+    {
+      "id": "palm_spears",
+      "name": "Palm Spears",
+      "class": "Skirmisher",
+      "culture": "southern_oasis",
+      "tier": 3,
+      "upgradesTo": [
+        "palm_halberdiers"
+      ],
+      "cost": 46,
+      "upgradeXp": 240,
+      "look": {
+        "head": "spike_turban",
+        "body": "kazaghand",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "spear"
+      }
+    },
+    {
+      "id": "dune_nomads",
+      "name": "Dune Nomads",
+      "class": "Skirmisher",
+      "culture": "southern_dune",
+      "tier": 1,
+      "upgradesTo": [
+        "dune_skirmishers",
+        "dune_archers",
+        "qadir_foot",
+        "slingers",
+        "camel_scouts"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "litham",
+        "body": "burnous",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "dhal",
+        "weapon": "jarid"
+      }
+    },
+    {
+      "id": "dune_archers",
+      "name": "Dune Archers",
+      "class": "Archer",
+      "culture": "southern_dune",
+      "tier": 2,
+      "upgradesTo": [
+        "sand_archers"
+      ],
+      "cost": 24,
+      "upgradeXp": 140,
+      "look": {
+        "head": "litham",
+        "body": "burnous",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "bow"
+      }
+    },
+    {
+      "id": "corsair_raiders",
+      "name": "Corsair Raiders",
+      "class": "Infantry",
+      "culture": "southern_rift",
+      "tier": 2,
+      "upgradesTo": [
+        "maren_marines"
+      ],
+      "cost": 26,
+      "upgradeXp": 140,
+      "look": {
+        "head": "corsair",
+        "body": "corsair_vest",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "dhal",
+        "weapon": "tabarzin"
+      }
+    },
+    {
+      "id": "maren_marines",
+      "name": "Maren Marines",
+      "class": "Infantry",
+      "culture": "southern_rift",
+      "tier": 3,
+      "upgradesTo": [
+        "rift_marines"
+      ],
+      "cost": 48,
+      "upgradeXp": 240,
+      "look": {
+        "head": "corsair",
+        "body": "kazaghand",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "dhal",
+        "weapon": "tabarzin"
+      }
+    },
+    {
+      "id": "galley_slingers",
+      "name": "Galley Bowmen",
+      "class": "Archer",
+      "culture": "southern_rift",
+      "tier": 2,
+      "upgradesTo": [
+        "galley_bowmen"
+      ],
+      "cost": 24,
+      "upgradeXp": 140,
+      "look": {
+        "head": "corsair",
+        "body": "corsair_vest",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "bow"
+      }
+    },
+    {
+      "id": "steppe_herdsmen",
+      "name": "Steppe Herdsmen",
+      "class": "Infantry",
+      "culture": "steppe",
+      "tier": 1,
+      "upgradesTo": [
+        "yurt_foot",
+        "grass_skirmishers",
+        "herd_boys",
+        "herd_riders"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "furcap",
+        "body": "deel",
+        "legs": "cloth",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "kalkan",
+        "weapon": "axe"
+      }
+    },
+    {
+      "id": "yurt_foot",
+      "name": "Yurt Foot",
+      "class": "Infantry",
+      "culture": "steppe",
+      "tier": 2,
+      "upgradesTo": [
+        "yurt_guards"
+      ],
+      "cost": 24,
+      "upgradeXp": 150,
+      "look": {
+        "head": "furcap",
+        "body": "deel_fur",
+        "legs": "cloth",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "kalkan",
+        "weapon": "steppe_sabre"
+      }
+    },
+    {
+      "id": "grass_skirmishers",
+      "name": "Grass Skirmishers",
+      "class": "Skirmisher",
+      "culture": "steppe",
+      "tier": 2,
+      "upgradesTo": [
+        "grass_spears"
+      ],
+      "cost": 24,
+      "upgradeXp": 150,
+      "look": {
+        "head": "furcap",
+        "body": "deel",
+        "legs": "cloth",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "spear"
+      }
+    },
+    {
+      "id": "noyan_foot_youths",
+      "name": "Noyan Youths",
+      "class": "Infantry",
+      "culture": "steppe",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "noyan_foot",
+        "sworn_brothers",
+        "hollow_squires"
+      ],
+      "cost": 54,
+      "upgradeXp": 260,
+      "look": {
+        "head": "steppe_plumed_helm",
+        "body": "lamellar",
+        "legs": "mail",
+        "feet": "ridingboots",
+        "hands": "gauntlets",
+        "shield": "kalkan",
+        "weapon": "shestoper"
+      }
+    },
+    {
+      "id": "kheshig_youths",
+      "name": "Kheshig Youths",
+      "class": "Cavalry",
+      "culture": "steppe",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "noyan_squires",
+        "sky_riders"
+      ],
+      "cost": 66,
+      "upgradeXp": 280,
+      "mount": "steppe_pony",
+      "look": {
+        "head": "steppe",
+        "body": "deel_fur",
+        "legs": "cloth",
+        "feet": "ridingboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "spear"
+      }
+    },
+    {
+      "id": "sky_novices",
+      "name": "Sky Novices",
+      "class": "Caster",
+      "culture": "steppe",
+      "tier": 2,
+      "upgradesTo": [
+        "drummers"
+      ],
+      "cost": 40,
+      "upgradeXp": 160,
+      "spells": [
+        "mend"
+      ],
+      "look": {
+        "head": "furcap",
+        "body": "robe",
+        "legs": "cloth",
+        "feet": "furboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "staff"
+      }
+    },
+    {
+      "id": "banner_riders",
+      "name": "Banner Riders",
+      "class": "Cavalry",
+      "culture": "steppe_horde",
+      "tier": 1,
+      "upgradesTo": [
+        "banner_outriders",
+        "horde_lancers",
+        "yurt_foot",
+        "herd_boys",
+        "herd_riders"
+      ],
+      "cost": 16,
+      "upgradeXp": 60,
+      "mount": "steppe_pony",
+      "look": {
+        "head": "furcap",
+        "body": "deel",
+        "legs": "cloth",
+        "feet": "ridingboots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "bow"
+      }
+    },
+    {
+      "id": "horde_lancers",
+      "name": "Horde Outriders",
+      "class": "Cavalry",
+      "culture": "steppe_horde",
+      "tier": 2,
+      "upgradesTo": [
+        "banner_spear_riders"
+      ],
+      "cost": 36,
+      "upgradeXp": 150,
+      "mount": "steppe_pony",
+      "look": {
+        "head": "furcap",
+        "body": "deel_fur",
+        "legs": "cloth",
+        "feet": "ridingboots",
+        "hands": "skin",
+        "shield": "kalkan",
+        "weapon": "spear"
+      }
+    },
+    {
+      "id": "banner_spear_riders",
+      "name": "Banner Lancers",
+      "class": "Cavalry",
+      "culture": "steppe_horde",
+      "tier": 3,
+      "upgradesTo": [
+        "free_lancers"
+      ],
+      "cost": 58,
+      "upgradeXp": 260,
+      "mount": "steppe_horse",
+      "look": {
+        "head": "steppe",
+        "body": "deel_fur",
+        "legs": "mail",
+        "feet": "ridingboots",
+        "hands": "skin",
+        "shield": "kalkan",
+        "weapon": "hooked_lance"
+      }
+    },
+    {
+      "id": "salt_watch",
+      "name": "Salt Watch",
+      "class": "Infantry",
+      "culture": "steppe_salt",
+      "tier": 1,
+      "upgradesTo": [
+        "salt_scouts",
+        "salt_foot",
+        "yurt_foot",
+        "herd_boys",
+        "herd_riders"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "furcap",
+        "body": "deel",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "kalkan",
+        "weapon": "steppe_sabre"
+      }
+    },
+    {
+      "id": "salt_riders",
+      "name": "Salt Riders",
+      "class": "Cavalry",
+      "culture": "steppe_salt",
+      "tier": 3,
+      "upgradesTo": [
+        "salt_lancers"
+      ],
+      "cost": 58,
+      "upgradeXp": 260,
+      "mount": "steppe_horse",
+      "look": {
+        "head": "steppe",
+        "body": "lamellar",
+        "legs": "mail",
+        "feet": "ridingboots",
+        "hands": "skin",
+        "shield": "kalkan",
+        "weapon": "lance"
+      }
+    },
+    {
+      "id": "salt_foot",
+      "name": "Salt Foot",
+      "class": "Skirmisher",
+      "culture": "steppe_salt",
+      "tier": 2,
+      "upgradesTo": [
+        "salt_skirmishers"
+      ],
+      "cost": 24,
+      "upgradeXp": 140,
+      "look": {
+        "head": "steppe",
+        "body": "deel_fur",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "kalkan",
+        "weapon": "spear"
+      }
+    },
+    {
+      "id": "salt_guards",
+      "name": "Salt Guards",
+      "class": "Infantry",
+      "culture": "steppe_salt",
+      "tier": 4,
+      "upgradesTo": [
+        "wolf_axes"
+      ],
+      "cost": 78,
+      "upgradeXp": 380,
+      "look": {
+        "head": "steppe_plumed_helm",
+        "body": "lacquered_lamellar",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "kalkan",
+        "weapon": "shestoper"
+      }
+    },
+    {
+      "id": "charter_watch",
+      "name": "Charter Watch",
+      "class": "Infantry",
+      "culture": "league",
+      "tier": 1,
+      "upgradesTo": [
+        "canal_foot",
+        "arsenal_spears",
+        "militia_crossbows",
+        "light_horse"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "cap",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "buckler",
+        "weapon": "sword"
+      }
+    },
+    {
+      "id": "canal_foot",
+      "name": "Canal Foot",
+      "class": "Infantry",
+      "culture": "league",
+      "tier": 2,
+      "upgradesTo": [
+        "canal_guards",
+        "marines"
+      ],
+      "cost": 24,
+      "upgradeXp": 150,
+      "look": {
+        "head": "cabasset",
+        "body": "gambeson",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "buckler",
+        "weapon": "schiavona"
+      }
+    },
+    {
+      "id": "arsenal_spears",
+      "name": "Arsenal Spears",
+      "class": "Skirmisher",
+      "culture": "league",
+      "tier": 2,
+      "upgradesTo": [
+        "league_pikes"
+      ],
+      "cost": 24,
+      "upgradeXp": 150,
+      "look": {
+        "head": "cabasset",
+        "body": "gambeson",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "spear"
+      }
+    },
+    {
+      "id": "guild_ensigns",
+      "name": "Guild Ensigns",
+      "class": "Infantry",
+      "culture": "league",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "patrician_guard",
+        "sworn_brothers",
+        "hollow_squires"
+      ],
+      "cost": 54,
+      "upgradeXp": 260,
+      "look": {
+        "head": "cabasset",
+        "body": "brigandine",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "buckler",
+        "weapon": "schiavona"
+      }
+    },
+    {
+      "id": "condottieri_squires",
+      "name": "Condottieri Squires",
+      "class": "Cavalry",
+      "culture": "league",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "signoria_lancers"
+      ],
+      "cost": 66,
+      "upgradeXp": 280,
+      "mount": "courser",
+      "look": {
+        "head": "kettle",
+        "body": "gambeson",
+        "legs": "cloth",
+        "feet": "ridingboots",
+        "hands": "skin",
+        "shield": "heater",
+        "weapon": "spear"
+      }
+    },
+    {
+      "id": "lab_apprentices",
+      "name": "Lab Apprentices",
+      "class": "Caster",
+      "culture": "league",
+      "tier": 2,
+      "upgradesTo": [
+        "apothecaries"
+      ],
+      "cost": 40,
+      "upgradeXp": 160,
+      "spells": [
+        "mend"
+      ],
+      "look": {
+        "head": "cap",
+        "body": "robe",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "staff"
+      }
+    },
+    {
+      "id": "lagoon_hands",
+      "name": "Lagoon Hands",
+      "class": "Infantry",
+      "culture": "league_lagoon",
+      "tier": 1,
+      "upgradesTo": [
+        "galley_pikemen",
+        "lagoon_slingers",
+        "canal_foot",
+        "militia_crossbows",
+        "light_horse"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "brigand_hat",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "buckler",
+        "weapon": "schiavona"
+      }
+    },
+    {
+      "id": "arsenal_marines",
+      "name": "Arsenal Marines",
+      "class": "Infantry",
+      "culture": "league_lagoon",
+      "tier": 3,
+      "upgradesTo": [
+        "guild_marines"
+      ],
+      "cost": 48,
+      "upgradeXp": 240,
+      "look": {
+        "head": "cabasset",
+        "body": "brigandine",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "rotella",
+        "weapon": "schiavona"
+      }
+    },
+    {
+      "id": "lagoon_slingers",
+      "name": "Lagoon Arbalests",
+      "class": "Archer",
+      "culture": "league_lagoon",
+      "tier": 2,
+      "upgradesTo": [
+        "lagoon_crossbows"
+      ],
+      "cost": 26,
+      "upgradeXp": 140,
+      "look": {
+        "head": "cabasset",
+        "body": "gambeson",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "crossbow"
+      }
+    },
+    {
+      "id": "fen_skirmishers",
+      "name": "Fen Skirmishers",
+      "class": "Skirmisher",
+      "culture": "league_fen",
+      "tier": 1,
+      "upgradesTo": [
+        "fen_slingers",
+        "fen_spears",
+        "canal_foot",
+        "militia_crossbows",
+        "light_horse"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "hood",
+        "body": "reed_cloak",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "marsh_fork"
+      }
+    },
+    {
+      "id": "fen_crossbows",
+      "name": "Fen Bowmen",
+      "class": "Archer",
+      "culture": "league_fen",
+      "tier": 3,
+      "upgradesTo": [
+        "fen_pavisiers"
+      ],
+      "cost": 46,
+      "upgradeXp": 240,
+      "look": {
+        "head": "hood",
+        "body": "reed_cloak",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "crossbow"
+      }
+    },
+    {
+      "id": "fen_spears",
+      "name": "Fen Forkmen",
+      "class": "Skirmisher",
+      "culture": "league_fen",
+      "tier": 2,
+      "upgradesTo": [
+        "marsh_spears"
+      ],
+      "cost": 24,
+      "upgradeXp": 140,
+      "look": {
+        "head": "hood",
+        "body": "reed_cloak",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "marsh_fork"
+      }
+    },
+    {
+      "id": "fen_wardens",
+      "name": "Fen Wardens",
+      "class": "Skirmisher",
+      "culture": "league_fen",
+      "tier": 4,
+      "upgradesTo": [
+        "marsh_wardens"
+      ],
+      "cost": 74,
+      "upgradeXp": 360,
+      "look": {
+        "head": "brigand_hat",
+        "body": "brigandine",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "none",
+        "weapon": "marsh_fork"
+      }
+    },
+    {
+      "id": "lay_brothers",
+      "name": "Lay Brothers",
+      "class": "Infantry",
+      "culture": "order",
+      "tier": 1,
+      "upgradesTo": [
+        "chapter_foot",
+        "pass_spears",
+        "pilgrim_bows",
+        "pilgrim_riders"
+      ],
+      "cost": 10,
+      "upgradeXp": 60,
+      "look": {
+        "head": "hood",
+        "body": "tunic",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "tarn_kite",
+        "weapon": "mace"
+      }
+    },
+    {
+      "id": "chapter_foot",
+      "name": "Chapter Foot",
+      "class": "Infantry",
+      "culture": "order",
+      "tier": 2,
+      "upgradesTo": [
+        "order_sergeants"
+      ],
+      "cost": 24,
+      "upgradeXp": 150,
+      "look": {
+        "head": "hood",
+        "body": "tarn_habit",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "tarn_kite",
+        "weapon": "mace"
+      }
+    },
+    {
+      "id": "pass_spears",
+      "name": "Pass Spears",
+      "class": "Skirmisher",
+      "culture": "order",
+      "tier": 2,
+      "upgradesTo": [
+        "order_spears"
+      ],
+      "cost": 24,
+      "upgradeXp": 150,
+      "look": {
+        "head": "kettle",
+        "body": "tarn_habit",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "spear"
+      }
+    },
+    {
+      "id": "vow_postulants",
+      "name": "Vow-Postulants",
+      "class": "Infantry",
+      "culture": "order",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "hammer_brothers",
+        "sun_brothers",
+        "sworn_brothers",
+        "hollow_squires"
+      ],
+      "cost": 54,
+      "upgradeXp": 260,
+      "look": {
+        "head": "tarn_cowl",
+        "body": "tarn_habit",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "tarn_kite",
+        "weapon": "mace"
+      }
+    },
+    {
+      "id": "squire_brothers",
+      "name": "Squire-Brothers",
+      "class": "Cavalry",
+      "culture": "order",
+      "stock": "noble",
+      "tier": 3,
+      "upgradesTo": [
+        "knight_brothers"
+      ],
+      "cost": 66,
+      "upgradeXp": 280,
+      "mount": "warhorse",
+      "look": {
+        "head": "kettle_bevor",
+        "body": "tarn_habit",
+        "legs": "mail",
+        "feet": "ridingboots",
+        "hands": "gauntlets",
+        "shield": "tarn_kite",
+        "weapon": "lance"
+      }
+    },
+    {
+      "id": "choir_novices",
+      "name": "Choir Novices",
+      "class": "Caster",
+      "culture": "order",
+      "tier": 2,
+      "upgradesTo": [
+        "chaplains"
+      ],
+      "cost": 40,
+      "upgradeXp": 160,
+      "spells": [
+        "mend"
+      ],
+      "look": {
+        "head": "hood",
+        "body": "robe",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "staff"
+      }
+    },
+    {
+      "id": "chapter_acolytes",
+      "name": "Chapter Wardens",
+      "class": "Infantry",
+      "culture": "order_chapter",
+      "tier": 2,
+      "upgradesTo": [
+        "vow_sergeants"
+      ],
+      "cost": 26,
+      "upgradeXp": 150,
+      "look": {
+        "head": "hood",
+        "body": "tarn_habit",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "tarn_kite",
+        "weapon": "mace"
+      }
+    },
+    {
+      "id": "iron_penitents",
+      "name": "Iron Penitents",
+      "class": "Infantry",
+      "culture": "order_chapter",
+      "tier": 2,
+      "upgradesTo": [
+        "crusader_hammers"
+      ],
+      "cost": 26,
+      "upgradeXp": 150,
+      "look": {
+        "head": "hood",
+        "body": "tarn_habit",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "warhammer"
+      }
+    },
+    {
+      "id": "crusader_hammers",
+      "name": "Crusader Hammers",
+      "class": "Infantry",
+      "culture": "order_chapter",
+      "tier": 3,
+      "upgradesTo": [
+        "hammer_brothers"
+      ],
+      "cost": 50,
+      "upgradeXp": 250,
+      "look": {
+        "head": "kettle",
+        "body": "gambeson",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "warhammer"
+      }
+    },
+    {
+      "id": "pass_spearmen",
+      "name": "Pass Spearmen",
+      "class": "Skirmisher",
+      "culture": "order_warden",
+      "tier": 2,
+      "upgradesTo": [
+        "pass_halberds"
+      ],
+      "cost": 24,
+      "upgradeXp": 140,
+      "look": {
+        "head": "kettle",
+        "body": "gambeson",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "spear"
+      }
+    },
+    {
+      "id": "warden_polehammers",
+      "name": "Warden Polehammers",
+      "class": "Skirmisher",
+      "culture": "order_warden",
+      "tier": 4,
+      "upgradesTo": [
+        "gate_champions"
+      ],
+      "cost": 76,
+      "upgradeXp": 360,
+      "look": {
+        "head": "kettle_bevor",
+        "body": "coatofplates",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "none",
+        "weapon": "lucerne_hammer"
+      }
+    },
+    {
+      "id": "gate_crossbows",
+      "name": "Gate Crossbows",
+      "class": "Archer",
+      "culture": "order_warden",
+      "tier": 2,
+      "upgradesTo": [
+        "warden_crossbows"
+      ],
+      "cost": 26,
+      "upgradeXp": 140,
+      "look": {
+        "head": "kettle",
+        "body": "gambeson",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "crossbow"
+      }
+    },
+    {
+      "id": "warden_crossbows",
+      "name": "Warden Crossbows",
+      "class": "Archer",
+      "culture": "order_warden",
+      "tier": 3,
+      "upgradesTo": [
+        "canyon_crossbows"
+      ],
+      "cost": 48,
+      "upgradeXp": 240,
+      "look": {
+        "head": "kettle_brimmed",
+        "body": "tarn_habit",
+        "legs": "cloth",
+        "feet": "boots",
+        "hands": "skin",
+        "shield": "none",
+        "weapon": "crossbow"
+      }
+    },
+    {
+      "id": "pass_arbalests",
+      "name": "Pass Arbalests",
+      "class": "Archer",
+      "culture": "order_warden",
+      "tier": 5,
+      "upgradesTo": [
+        "sun_arbalests"
+      ],
+      "cost": 110,
+      "upgradeXp": 520,
+      "look": {
+        "head": "kettle_bevor",
+        "body": "coatofplates",
+        "legs": "mail",
+        "feet": "boots",
+        "hands": "gauntlets",
+        "shield": "none",
+        "weapon": "arbalest"
       }
     }
   ]

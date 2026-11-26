@@ -61,6 +61,8 @@ sealed partial class Puppet3D
                 if (p == MeshKit3D.PatMail && m == 5) pat = MeshKit3D.PatMail;
                 else if (p == MeshKit3D.PatScale && (m == 4 || m == 5 || m == 6 || m == 7)) pat = MeshKit3D.PatScale;
                 else if (p == MeshKit3D.PatQuilt && (m == 1 || m == 2)) pat = MeshKit3D.PatQuilt;
+                else if (p == MeshKit3D.PatClothCheck && (m == 1 || m == 2)) pat = MeshKit3D.PatClothCheck;
+                else if (p == MeshKit3D.PatFur && (m == 10 || m == 11 || m == 12 || m == 13)) pat = MeshKit3D.PatFur;
                 else if (m == 4 || m == 8) pat = MeshKit3D.PatBrushed;
                 table[p * UnitMatTable.Slots + m] = (byte)((pat << 4) | metalQ[m]);
             }
@@ -805,7 +807,7 @@ sealed partial class Puppet3D
         wDir.Normalize();
 
         // Tighter two-handed grip alignment: pull overly wide windup hands slightly toward torso center so both arms stay solidly on the hilt/shaft.
-        bool poleForwardGrip = p.TwoHand && p.Armed && lm.OffHandForward && p.WeapB < 75f;
+        bool poleForwardGrip = p.TwoHand && p.Armed && lm.OffHandForward && p.WeapB <= 85f;
         Vector3 offHandTarget = p.TwoHand && p.Armed
             ? (poleForwardGrip ? wHand + wDir * lm.OffHandOffset : wHand - wDir * lm.OffHandOffset)
             : Vector3.Zero;
@@ -873,8 +875,8 @@ sealed partial class Puppet3D
             return true;
         }
 
-        // Spare javelins strapped diagonally across skirmisher's back
-        if (grip == Grip.Thrown && u.Ammo > 1 && Detail == 0 && kit.Javelin.Length > 0)
+        // Spare javelins strapped diagonally across skirmisher's back (not for throwing axes)
+        if (grip == Grip.Thrown && u.Type.Look.Weapon != "throwing_axe" && u.Ammo > 1 && Detail == 0 && kit.Javelin.Length > 0)
         {
             for (int i = 0; i < 2; i++)
                 EmitDir(kit.Javelin, RotY(new Vector3(-0.06f + i * 0.08f, 1.02f, -0.21f), twist),
@@ -1060,7 +1062,7 @@ sealed partial class Puppet3D
         };
         EmitLocal(lm.Shield, pos, sR, sU, sF, 1f, 1f, 1f, shieldPat);
 
-        if (Detail <= 1)
+        if (Detail <= 1 && lm.ShieldKind is not ("shield_rotella" or "shield_kalkan" or "shield_lantern_pavise" or "shield_tarn_kite"))
         {
             var emb = EmblemOf(palIdx);
             if (emb.Length > 0)

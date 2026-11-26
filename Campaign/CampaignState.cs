@@ -64,7 +64,7 @@ public sealed class CompanyRecord
     [JsonIgnore] public int Wounded => Stacks.Sum(s => s.Wounded);
     /// The largest stack (ties go to the higher tier): the company's portrait and battle name.
     [JsonIgnore] public TroopStack? Main => Stacks.Count == 0 ? null : Stacks.OrderByDescending(s => s.Men + s.Wounded).ThenByDescending(s => s.Type.Tier).First();
-    [JsonIgnore] public string Troop => Main?.Troop ?? "levies";
+    [JsonIgnore] public string Troop => Main?.Troop ?? "brevon_fyrd";
     [JsonIgnore] public UnitType Type => Troops.Get(Troop);
     /// Men ready for promotion in all stacks together.
     [JsonIgnore] public int Ready => Stacks.Sum(s => s.Ready);
@@ -774,7 +774,48 @@ public sealed class CampaignState
             if (v < CurrentVersion) throw new InvalidDataException(TooOld);
             if (v > CurrentVersion) throw new InvalidDataException($"save version {v} is newer than this build reads ({CurrentVersion})");
         }
-        return JsonSerializer.Deserialize<CampaignState>(json, Json) ?? throw new InvalidDataException("empty save");
+        var state = JsonSerializer.Deserialize<CampaignState>(json, Json) ?? throw new InvalidDataException("empty save");
+        MigrateLegacyTroops(state);
+        return state;
+    }
+
+    static string MapLegacyTroop(string id, string culture)
+    {
+        if (id == "" || Troops.Has(id)) return id;
+        string cul = culture != "" && culture != Ironfield.Factions.Common ? culture : "azure";
+        return id switch
+        {
+            "levies" => Ironfield.Factions.Root(cul),
+            "shieldmen" => "manor_foot",
+            "spearrunners" => "shire_billmen",
+            "bowmen" => "commons_bowmen",
+            "outriders" => "march_scouts",
+            "lancers" => "brevon_lancers",
+            "billmen" => "vespra_billmen",
+            "acolytes" => Ironfield.Factions.MageRoot(cul),
+            "esquires" => Ironfield.Factions.NobleFoot(cul),
+            "mounted_esquires" => Ironfield.Factions.NobleHorse(cul),
+            _ => id,
+        };
+    }
+
+    static void MigrateLegacyTroops(CampaignState s)
+    {
+        static void FixCompany(CompanyRecord co)
+        {
+            foreach (var st in co.Stacks) st.Troop = MapLegacyTroop(st.Troop, co.Culture);
+            foreach (var r in co.Roll) r.Troop = MapLegacyTroop(r.Troop, co.Culture);
+        }
+        foreach (var p in s.Parties)
+        {
+            foreach (var co in p.Companies) FixCompany(co);
+            foreach (var pg in p.Prisoners) pg.Troop = MapLegacyTroop(pg.Troop, "");
+        }
+        foreach (var st in s.Settlements)
+        {
+            foreach (var co in st.Garrison) FixCompany(co);
+            foreach (var co in st.Mercenaries) FixCompany(co);
+        }
     }
 
     public static string SaveDir => Environment.GetEnvironmentVariable("IRONFIELD_SAVES") is { Length: > 0 } d ? d

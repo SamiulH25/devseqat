@@ -48,7 +48,7 @@ public static partial class SelfTest
     static (Battle B, Division D, Squad S) OneDivision(int seed, Vector2 at, Temper temper = Temper.Steady, int skill = 5)
     {
         var b = Battle.Empty(seed);
-        var s = b.AddSquad(0, Troops.Get("levies"), 20, at, 10, Vector2.UnitY);
+        var s = b.AddSquad(0, Troops.Get("brevon_fyrd"), 20, at, 10, Vector2.UnitY);
         var d = b.AddDivision(0, "Hal", new[] { s }, temper, skill);
         return (b, d, s);
     }
@@ -58,7 +58,7 @@ public static partial class SelfTest
     static void HornPlans()
     {
         var (b, d, s) = OneDivision(3, new Vector2(60, 0));
-        b.AddSquad(1, Troops.Get("levies"), 10, new Vector2(60, 120), 5, -Vector2.UnitY);
+        b.AddSquad(1, Troops.Get("brevon_fyrd"), 10, new Vector2(60, 120), 5, -Vector2.UnitY);
         b.SetHornPlan(d, new Goal(Post.Front, Stance.Advance));
         Check(d.Horn?.Stance == Stance.Advance, "a plan set in deployment is his at once");
         Run(b, 3);

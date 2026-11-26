@@ -10,8 +10,8 @@ public static partial class SelfTest
     {
         var b = Battle.Empty(seed);
         var line = new List<Squad>();
-        for (int i = 0; i < n; i++) line.Add(b.AddSquad(0, Troops.Get("shieldmen"), 16, new((i - (n - 1) / 2f) * 22, 0), 8, Vector2.UnitY));
-        var far = b.AddSquad(1, Troops.Get("shieldmen"), 20, new(0, 110), 10, -Vector2.UnitY);
+        for (int i = 0; i < n; i++) line.Add(b.AddSquad(0, Troops.Get("manor_foot"), 16, new((i - (n - 1) / 2f) * 22, 0), 8, Vector2.UnitY));
+        var far = b.AddSquad(1, Troops.Get("manor_foot"), 20, new(0, 110), 10, -Vector2.UnitY);
         far.Order = Order.Hold; far.Anchor = new(0, 110);
         var d = b.AddDivision(0, "Sgt", line, Temper.Steady, skill, goal);
         if (traits != null) d.Traits = traits;
@@ -77,11 +77,11 @@ public static partial class SelfTest
         bool Meets(int skill)
         {
             var b = Battle.Empty(35);
-            b.AddSquad(0, Troops.Get("shieldmen"), 30, new(0, 0), 15, Vector2.UnitY);
+            b.AddSquad(0, Troops.Get("manor_foot"), 30, new(0, 0), 15, Vector2.UnitY);
             var wing = b.AddSquad(0, Troops.Get("men_at_arms"), 12, new(45, 0), 6, Vector2.UnitY);
             var d = b.AddDivision(0, "Sgt", new[] { wing }, Temper.Steady, skill, new Goal(Post.RightWing, Stance.Guard));
             Run(b, 15);
-            var foe = b.AddSquad(1, Troops.Get("levies"), 10, b.SpotOf(d, d.Goal)!.Value + new Vector2(18, 16), 5, -Vector2.UnitY);
+            var foe = b.AddSquad(1, Troops.Get("brevon_fyrd"), 10, b.SpotOf(d, d.Goal)!.Value + new Vector2(18, 16), 5, -Vector2.UnitY);
             foe.Order = Order.Hold; foe.Anchor = foe.Center;
             Run(b, 3);
             Console.WriteLine($"officers: guard skill {skill}: foe gap {Vector2.Distance(wing.Center, foe.Center) - foe.Radius:0} m, notice {Battle.Notice(d) * 0.7f:0} m, order {wing.Order}");
@@ -91,7 +91,7 @@ public static partial class SelfTest
 
         // Rest: a good officer pulls a spent company back and puts the fresh one behind it into its place.
         var (br, dr, lr) = OfficerLine(36, 8, new Goal(Post.Front, Stance.Hold), n: 1);
-        var second = br.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, -14), 8, Vector2.UnitY);
+        var second = br.AddSquad(0, Troops.Get("manor_foot"), 16, new(0, -14), 8, Vector2.UnitY);
         dr.Squads.Add(second); second.Division = dr;
         var press = br.AddSquad(1, Troops.Get("men_at_arms"), 16, new(0, 8), 8, -Vector2.UnitY);
         press.Order = Order.Charge; press.Target = lr[0];
@@ -143,18 +143,18 @@ public static partial class SelfTest
     static void SkirmishersRead()
     {
         var b = Battle.Empty(61);
-        var bows = b.AddSquad(1, Troops.Get("bowmen"), 12, new(0, 20), 6, -Vector2.UnitY);
+        var bows = b.AddSquad(1, Troops.Get("commons_bowmen"), 12, new(0, 20), 6, -Vector2.UnitY);
         var d = b.AddDivision(1, "Bows", new[] { bows }, Temper.Steady, 5, new Goal(Post.Skirmish, Stance.Loose));
-        var horse = b.AddSquad(0, Troops.Get("lancers"), 10, new(0, -30), 5, Vector2.UnitY);
+        var horse = b.AddSquad(0, Troops.Get("brevon_lancers"), 10, new(0, -30), 5, Vector2.UnitY);
         Run(b, 5);
         Check(d.Stance == Stance.Screen, $"horse riding at the line: the skirmishers screen it ({d.Stance})");
 
         var f = Battle.Empty(62);
-        var fbows = f.AddSquad(1, Troops.Get("bowmen"), 12, new(-30, 25), 6, -Vector2.UnitY);
+        var fbows = f.AddSquad(1, Troops.Get("commons_bowmen"), 12, new(-30, 25), 6, -Vector2.UnitY);
         var fd = f.AddDivision(1, "Bows", new[] { fbows }, Temper.Steady, 5, new Goal(Post.Skirmish, Stance.Loose));
-        var line = f.AddSquad(1, Troops.Get("shieldmen"), 16, new(0, 1.5f), 8, -Vector2.UnitY);
+        var line = f.AddSquad(1, Troops.Get("manor_foot"), 16, new(0, 1.5f), 8, -Vector2.UnitY);
         f.AddDivision(1, "Front", new[] { line }, Temper.Steady, 5, new Goal(Post.Front, Stance.Charge));
-        f.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, -1.5f), 8, Vector2.UnitY);
+        f.AddSquad(0, Troops.Get("manor_foot"), 16, new(0, -1.5f), 8, Vector2.UnitY);
         Run(f, 5);
         Check(fd.Stance == Stance.Harass, $"the lines at blows: the skirmishers go out to harass ({fd.Stance})");
     }
@@ -165,7 +165,7 @@ public static partial class SelfTest
     {
         var b = Battle.Empty(51);
         Squad Co(string troop, float x, int id) { var s = b.AddSquad(0, Troops.Get(troop), 12, new(x, -20), 6, Vector2.UnitY); s.Company = new Company(troop, 12, "", id); return s; }
-        var mine = new[] { Co("lancers", -40, 1), Co("lancers", -30, 2), Co("bowmen", -20, 3), Co("shieldmen", -10, 4), Co("shieldmen", 0, 5), Co("shieldmen", 10, 6), Co("shieldmen", 20, 7) };
+        var mine = new[] { Co("brevon_lancers", -40, 1), Co("brevon_lancers", -30, 2), Co("commons_bowmen", -20, 3), Co("manor_foot", -10, 4), Co("manor_foot", 0, 5), Co("manor_foot", 10, 6), Co("manor_foot", 20, 7) };
         var wing = b.AddDivision(0, "Wing", Array.Empty<Squad>(), Temper.Steady, 5, new Goal(Post.RightWing, Stance.Guard));
         var skirm = b.AddDivision(0, "Bows", Array.Empty<Squad>(), Temper.Steady, 5, new Goal(Post.Skirmish, Stance.Loose));
         var front = b.AddDivision(0, "Front", Array.Empty<Squad>(), Temper.Steady, 5, new Goal(Post.Front, Stance.Hold));
@@ -173,7 +173,7 @@ public static partial class SelfTest
         Console.WriteLine($"officers: auto-fill moved {moved}: wing {wing.Squads.Count}, bows {skirm.Squads.Count}, front {front.Squads.Count}");
         Check(wing.Squads.Count == 2 && wing.Squads.All(s => s.Cavalry) && skirm.Squads.Count == 1, "AUTO-FILL sends horse to the wing and bows to the skirmishers");
         Check(front.Squads.All(s => !s.Cavalry) && mine.Count(s => s.Division == null) >= 3, "and foot to the front, leaving you at least three");
-        var foe = b.AddSquad(1, Troops.Get("lancers"), 10, new(60, 40), 5, -Vector2.UnitY);
+        var foe = b.AddSquad(1, Troops.Get("brevon_lancers"), 10, new(60, 40), 5, -Vector2.UnitY);
         Check(b.Situation(wing).StartsWith("HORSE ") && b.Situation(wing).EndsWith(" M"), $"the card names the nearest enemy and how far ({b.Situation(wing)})");
     }
 

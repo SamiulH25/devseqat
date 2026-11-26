@@ -171,6 +171,186 @@ export function buildWeapons(root) {
     mesh(head, M.steel);
   });
 
+  // 5t. weapon_lucerne_hammer (edgeAlongZ = true: austere Tarn polehammer with chunky 3D hammer block, thick beak & spike)
+  addPart(root, 'weapon_lucerne_hammer', (mesh) => {
+    mesh(column([[-0.56, 0.025, 0.027], [1.26, 0.027, 0.029]], { segs: 6 }), M.wood);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.048, 0.34, 0.052), () => 0.88), M.mail, [0, 1.18, 0]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.085, 0.115, 0.145), () => 0.90), M.mail, [0, 1.38, 0.085]); // 3D hammer block (+Z)
+    const beak = bladeExtrude([[-0.22, 1.38], [-0.028, 1.32], [-0.036, 1.48], [0.0, 1.78], [0.036, 1.48], [0.030, 1.32]], 0.032, 0.008);
+    beak.rotateY(-Math.PI / 2);
+    mesh(beak, M.steel);
+  });
+
+  // 5u. weapon_great_maul (proportional two-handed iron crushing maul)
+  addPart(root, 'weapon_great_maul', (mesh) => {
+    mesh(column([[-0.32, 0.024, 0.026], [1.14, 0.026, 0.028]], { segs: 6 }), M.wood);
+    mesh(column([[-0.08, 0.028, 0.030], [0.30, 0.028, 0.030]], { segs: 6 }), M.leather);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.11, 0.13, 0.24), () => 0.88), M.mail, [0, 1.06, 0]);
+  });
+
+  // 5q. weapon_schiavona (Venetian basket-hilt broadsword)
+  addPart(root, 'weapon_schiavona', (mesh) => {
+    mesh(column([[-0.16, 0.015, 0.018], [0.06, 0.017, 0.020]], { segs: 6 }), M.leather);
+    const basket = shadeVerts(new THREE.SphereGeometry(0.068, 6, 4), () => 0.96);
+    basket.scale(1.0, 0.85, 1.15);
+    mesh(basket, M.brass, [0, 0.03, 0.015]);
+    const blade = loft(V(0, 0.08, 0), V(0, 0.96, 0), [[0.0, 0.032, 0.010], [0.75, 0.024, 0.008], [1.0, 0.004, 0.003]], { segs: 4 });
+    mesh(heightShade(blade, 0.08, 0.96, 0.86, 1.0), M.steel);
+  });
+
+  // 5r. weapon_marsh_fork (Fenmen three-pronged iron marsh trident with sturdy readable tines)
+  addPart(root, 'weapon_marsh_fork', (mesh) => {
+    mesh(column([[-0.56, 0.025, 0.027], [1.24, 0.027, 0.029]], { segs: 6 }), M.wood);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.26, 0.038, 0.038), () => 0.90), M.mail, [0, 1.26, 0]);
+    for (const [sx, top] of [[-0.105, 1.72], [0, 1.84], [0.105, 1.72]]) {
+      mesh(lathe([[0.026, 1.26], [0.020, top - 0.12], [0.008, top]], 5), M.steel, [sx, 0, 0]);
+    }
+  });
+
+  // 5s. weapon_stradiot_lance (double-ended Stradiot light cavalry lance with thick shaft & visible butt spike)
+  addPart(root, 'weapon_stradiot_lance', (mesh) => {
+    mesh(column([[-0.50, 0.032, 0.032], [2.04, 0.030, 0.030]], { segs: 6 }), M.wood);
+    mesh(column([[-0.12, 0.036, 0.036], [0.12, 0.036, 0.036]], { segs: 6 }), M.leather);
+    mesh(lathe([[0.040, 2.04], [0.028, 2.26], [0.008, 2.50]], 6), M.steel);
+    mesh(lathe([[0.008, -0.74], [0.028, -0.58], [0.036, -0.50]], 6), M.mail);
+  });
+
+  // 5n. weapon_steppe_sabre (edgeAlongZ = true: swept steppe horseman sabre, convex +Z edge)
+  addPart(root, 'weapon_steppe_sabre', (mesh) => {
+    mesh(column([[-0.16, 0.015, 0.020], [0.06, 0.017, 0.022]], { segs: 6 }), M.leather);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.028, 0.024, 0.16), () => 0.96), M.brass, [0, 0.07, 0]);
+    const blade = bladeExtrude([
+      [-0.020, 0.08], [-0.018, 0.50], [-0.036, 0.80], [-0.070, 0.98],
+      [0.030, 0.78], [0.042, 0.48], [0.032, 0.08],
+    ], 0.014, 0.004);
+    blade.rotateY(-Math.PI / 2);
+    mesh(blade, M.steel);
+  });
+
+  // 5o. weapon_hooked_lance (edgeAlongZ = true: steppe kontos with saddle-hook & solid shaft)
+  addPart(root, 'weapon_hooked_lance', (mesh) => {
+    mesh(column([[-0.65, 0.032, 0.032], [2.06, 0.030, 0.030]], { segs: 6 }), M.wood);
+    const head = bladeExtrude([
+      [-0.036, 2.02], [0.0, 2.52], [0.036, 2.02], [0.18, 1.94], [0.16, 1.82], [0.032, 1.92],
+    ], 0.022, 0.005);
+    head.rotateY(-Math.PI / 2);
+    mesh(head, M.steel);
+  });
+
+  // 5p. weapon_shestoper (six-flanged brass-and-steel steppe mace)
+  addPart(root, 'weapon_shestoper', (mesh) => {
+    mesh(column([[-0.18, 0.017, 0.017], [0.62, 0.019, 0.019]], { segs: 6 }), M.wood);
+    mesh(column([[-0.12, 0.021, 0.021], [0.08, 0.021, 0.021]], { segs: 6 }), M.leather);
+    mesh(lathe([[0.022, 0.52], [0.036, 0.64], [0.0, 0.78]], 6), M.steel);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      mesh(shadeVerts(new THREE.BoxGeometry(0.016, 0.16, 0.085), () => 0.96), M.brass, [Math.sin(a) * 0.044, 0.62, Math.cos(a) * 0.044], [0, a, 0]);
+    }
+  });
+
+  // 5k. weapon_tabarzin (edgeAlongZ = true: Qadiri crescent saddle axe with brass collar & spike)
+  addPart(root, 'weapon_tabarzin', (mesh) => {
+    mesh(column([[-0.18, 0.018, 0.020], [0.64, 0.020, 0.022]], { segs: 6 }), M.wood);
+    mesh(column([[-0.12, 0.022, 0.024], [0.08, 0.022, 0.024]], { segs: 6 }), M.leather);
+    mesh(column([[0.48, 0.026, 0.028], [0.62, 0.026, 0.028]], { segs: 6 }), M.brass);
+    mesh(lathe([[0.026, 0.64], [0.0, 0.80]], 6), M.brass);
+    const blade = bladeExtrude([
+      [0.022, 0.60], [0.14, 0.66], [0.22, 0.70], [0.25, 0.56], [0.21, 0.42], [0.13, 0.46], [0.022, 0.50],
+    ], 0.018, 0.004);
+    blade.rotateY(-Math.PI / 2);
+    mesh(blade, M.steel);
+  });
+
+  // 5l. weapon_cane_lance (long light Qadiri desert lance with thick readable shaft, leather grip, brass collar & full tassel)
+  addPart(root, 'weapon_cane_lance', (mesh) => {
+    mesh(column([[-0.65, 0.032, 0.032], [2.04, 0.029, 0.029]], { segs: 6 }), M.wood);
+    mesh(column([[-0.14, 0.036, 0.036], [0.12, 0.036, 0.036]], { segs: 6 }), M.leather);
+    mesh(column([[1.80, 0.062, 0.062], [2.02, 0.036, 0.036]], { segs: 6 }), M.cloth); // bold horsehair tassel
+    mesh(column([[2.00, 0.040, 0.040], [2.08, 0.040, 0.040]], { segs: 6 }), M.brass);
+    mesh(lathe([[0.038, 2.08], [0.026, 2.28], [0.0, 2.52]], 6), M.steel);
+  });
+
+  // 5m. weapon_jarid (compact Qadiri throwing dart with leaf head & leather grip, clears eye level)
+  addPart(root, 'weapon_jarid', (mesh) => {
+    mesh(column([[-0.48, 0.019, 0.019], [0.58, 0.020, 0.020]], { segs: 6 }), M.wood);
+    mesh(column([[-0.08, 0.023, 0.023], [0.08, 0.023, 0.023]], { segs: 6 }), M.leather);
+    mesh(column([[0.54, 0.026, 0.026], [0.60, 0.026, 0.026]], { segs: 6 }), M.brass);
+    const tip = bladeExtrude([[0.0, 0.84], [0.038, 0.66], [0.022, 0.58], [-0.022, 0.58], [-0.038, 0.66]], 0.014, 0.004);
+    mesh(tip, M.steel);
+  });
+
+  // 5h. weapon_throwing_axe (edgeAlongZ = true: Nordic francisca throwing axe)
+  addPart(root, 'weapon_throwing_axe', (mesh) => {
+    mesh(column([[-0.16, 0.015, 0.017], [0.46, 0.017, 0.019]], { segs: 6 }), M.wood);
+    const head = bladeExtrude([
+      [-0.04, 0.44], [-0.04, 0.38], [0.18, 0.35], [0.22, 0.48], [0.14, 0.54], [-0.02, 0.47],
+    ], 0.016, 0.004);
+    head.rotateY(-Math.PI / 2);
+    mesh(head, M.steel);
+  });
+
+  // 5i. weapon_atgeir (edgeAlongZ = true: Nordic hewing spear with bold cleaver belly)
+  addPart(root, 'weapon_atgeir', (mesh) => {
+    mesh(column([[-0.56, 0.024, 0.026], [1.18, 0.026, 0.028]], { segs: 6 }), M.wood);
+    mesh(column([[1.10, 0.036, 0.036], [1.20, 0.038, 0.038]], { segs: 6 }), M.brass);
+    const blade = bladeExtrude([
+      [-0.028, 1.18], [-0.024, 1.60], [0.0, 1.84], [0.16, 1.66], [0.19, 1.34], [0.036, 1.18],
+    ], 0.018, 0.005);
+    blade.rotateY(-Math.PI / 2);
+    mesh(blade, M.steel);
+  });
+
+  // 5j. weapon_boar_spear (winged Holtmen hunting spear with cross-lugs)
+  addPart(root, 'weapon_boar_spear', (mesh) => {
+    mesh(column([[-0.56, 0.019, 0.021], [1.30, 0.021, 0.023]], { segs: 6 }), M.wood);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.24, 0.030, 0.036), () => 0.90), M.mail, [0, 1.30, 0]);
+    const blade = bladeExtrude([
+      [0.0, 1.82], [0.068, 1.48], [0.030, 1.30], [-0.030, 1.30], [-0.068, 1.48],
+    ], 0.016, 0.004);
+    mesh(blade, M.steel);
+  });
+
+  // 5f. weapon_partisan (broad winged Vespran civic spear)
+  addPart(root, 'weapon_partisan', (mesh) => {
+    const shaft = column([[-0.56, 0.024, 0.026], [1.20, 0.026, 0.028]], { segs: 6 });
+    mesh(shaft, M.wood);
+    mesh(lathe([[0.0, -0.62], [0.026, -0.56]], 6), M.mail);
+    mesh(column([[1.12, 0.038, 0.038], [1.22, 0.042, 0.042]], { segs: 6 }), M.brass);
+    const blade = bladeExtrude([
+      [0.0, 1.84], [0.062, 1.48], [0.21, 1.40], [0.16, 1.24], [0.038, 1.22],
+      [-0.038, 1.22], [-0.16, 1.24], [-0.21, 1.40], [-0.062, 1.48],
+    ], 0.020, 0.005);
+    mesh(blade, M.steel);
+  });
+
+  // 5g. weapon_kriegsmesser (edgeAlongZ = true: heavy two-handed curved Vespran war-knife, convex +Z edge, Z-aligned guard + nagel)
+  addPart(root, 'weapon_kriegsmesser', (mesh) => {
+    mesh(column([[-0.28, 0.017, 0.023], [0.06, 0.019, 0.025]], { segs: 6 }), M.leather);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.032, 0.028, 0.22), () => 0.96), M.brass, [0, 0.07, 0]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.044, 0.028, 0.028), () => 0.98), M.brass, [0.032, 0.07, 0.01]); // brass nagel
+    mesh(shadeVerts(new THREE.BoxGeometry(0.036, 0.044, 0.036), () => 0.94), M.brass, [0, -0.30, 0]);
+    const blade = bladeExtrude([
+      [-0.024, 0.08], [-0.022, 0.65], [-0.038, 1.08], [-0.068, 1.34], // swept-back spine (-Z)
+      [0.040, 1.10], [0.052, 0.66], [0.040, 0.08],                     // convex cutting edge (+Z)
+    ], 0.018, 0.004);
+    blade.rotateY(-Math.PI / 2);
+    mesh(blade, M.steel);
+  });
+
+  // shield_rotella (domed circular Vespran duellist steel shield with gilt boss/rim and closed back)
+  addPart(root, 'shield_rotella', (mesh) => {
+    const dome = lathe([
+      [0.0, 0.004], [0.29, 0.008], [0.29, 0.026], [0.21, 0.062], [0.10, 0.095], [0.0, 0.115],
+    ], 10);
+    dome.rotateX(Math.PI / 2);
+    mesh(dome, M.steel);
+    const rim = shadeVerts(new THREE.TorusGeometry(0.285, 0.015, 4, 10), () => 0.96);
+    mesh(rim, M.brass, [0, 0, 0.022]);
+    const boss = shadeVerts(new THREE.SphereGeometry(0.062, 6, 4), () => 1.0);
+    boss.scale(1, 1, 0.6);
+    mesh(boss, M.brass, [0, 0, 0.105]);
+  });
+
   // 5b. weapon_billhook (edgeAlongZ = true)
   addPart(root, 'weapon_billhook', (mesh) => {
     const shaft = column([[-0.60, 0.020, 0.022], [1.28, 0.022, 0.024]], { segs: 8 });
@@ -191,6 +371,45 @@ export function buildWeapons(root) {
       [0.15, 1.22],  // lower chopping edge
       [0.026, 1.20],
     ], 0.018, 0.005);
+    head.rotateY(-Math.PI / 2);
+    mesh(head, M.steel);
+  });
+
+  // 5c. weapon_poleaxe (edgeAlongZ = true: knightly anti-armor axe + hammer + top spike)
+  addPart(root, 'weapon_poleaxe', (mesh) => {
+    const shaft = column([[-0.56, 0.020, 0.022], [1.34, 0.022, 0.024]], { segs: 6 });
+    mesh(shaft, M.wood);
+    mesh(lathe([[0.0, -0.62], [0.022, -0.56]], 6), M.mail);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.044, 0.36, 0.048), () => 0.88), M.mail, [0, 1.22, 0]);
+    const head = bladeExtrude([
+      [-0.20, 1.44], [-0.20, 1.30], [-0.030, 1.30], // bold square hammer face (-Z)
+      [-0.024, 1.50], [0.0, 1.86], [0.028, 1.50],   // long diamond thrusting spike
+      [0.27, 1.54], [0.29, 1.36], [0.22, 1.22], [0.028, 1.28], // wide curved axe blade (+Z)
+    ], 0.022, 0.005);
+    head.rotateY(-Math.PI / 2);
+    mesh(head, M.steel);
+  });
+
+  // 5d. weapon_goedendag (iron-banded militia club-spear)
+  addPart(root, 'weapon_goedendag', (mesh) => {
+    const shaft = column([[-0.45, 0.020, 0.020], [0.75, 0.026, 0.026], [1.26, 0.056, 0.056]], { segs: 6 });
+    mesh(shaft, M.wood);
+    const band = column([[1.14, 0.062, 0.062], [1.28, 0.064, 0.064]], { segs: 6 });
+    mesh(band, M.mail);
+    const spike = lathe([[0.034, 1.26], [0.020, 1.48], [0.0, 1.68]], 6);
+    mesh(spike, M.steel);
+  });
+
+  // 5e. weapon_boarding_axe (edgeAlongZ = true: naval axe with rear grappling hook)
+  addPart(root, 'weapon_boarding_axe', (mesh) => {
+    const haft = column([[-0.20, 0.017, 0.019], [0.64, 0.019, 0.021]], { segs: 6 });
+    mesh(haft, M.wood);
+    mesh(column([[-0.12, 0.021, 0.023], [0.10, 0.021, 0.023]], { segs: 6 }), M.leather);
+    const head = bladeExtrude([
+      [-0.19, 0.56], [-0.15, 0.49], [-0.026, 0.54], // curved rear boarding hook (-Z)
+      [-0.024, 0.65], [0.024, 0.65],
+      [0.21, 0.67], [0.23, 0.54], [0.16, 0.43], [0.024, 0.50], // bearded axe edge (+Z)
+    ], 0.018, 0.004);
     head.rotateY(-Math.PI / 2);
     mesh(head, M.steel);
   });

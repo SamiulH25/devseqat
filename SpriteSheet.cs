@@ -23,10 +23,10 @@ public sealed partial class SpriteSheet
 
     public static readonly Dictionary<string, float> Grip = new()
     {
-        ["sword"] = 0.20f, ["sword_viking"] = 0.20f, ["sword_knightly"] = 0.20f, ["longsword"] = 0.19f, ["longsword_estoc"] = 0.19f, ["longsword_gilded"] = 0.19f, ["axe"] = 0.2f, ["axe_bearded"] = 0.2f, ["spear"] = 0.3f, ["spear_winged"] = 0.3f, ["pike"] = 0.3f, ["lance"] = 0.3f, ["pennonlance"] = 0.3f,
-        ["bow"] = 0.5f, ["bow_horn"] = 0.5f, ["longbow"] = 0.5f, ["recurve"] = 0.5f, ["crossbow"] = 0.55f, ["crossbow_heavy"] = 0.55f, ["arbalest"] = 0.55f, ["greatsword"] = 0.22f, ["greatsword_claymore"] = 0.22f, ["flamberge"] = 0.22f,
+        ["sword"] = 0.20f, ["sword_viking"] = 0.20f, ["sword_knightly"] = 0.20f, ["schiavona"] = 0.20f, ["longsword"] = 0.19f, ["longsword_estoc"] = 0.19f, ["longsword_gilded"] = 0.19f, ["axe"] = 0.2f, ["axe_bearded"] = 0.2f, ["spear"] = 0.3f, ["spear_winged"] = 0.3f, ["marsh_fork"] = 0.32f, ["pike"] = 0.3f, ["lance"] = 0.3f, ["pennonlance"] = 0.3f, ["stradiot_lance"] = 0.3f,
+        ["bow"] = 0.5f, ["bow_horn"] = 0.5f, ["longbow"] = 0.5f, ["recurve"] = 0.5f, ["crossbow"] = 0.55f, ["crossbow_heavy"] = 0.55f, ["arbalest"] = 0.55f, ["greatsword"] = 0.22f, ["greatsword_claymore"] = 0.22f, ["flamberge"] = 0.22f, ["kriegsmesser"] = 0.22f,
         ["daneaxe"] = 0.3f, ["daneaxe_bearded"] = 0.3f, ["bardiche"] = 0.3f, ["club"] = 0.22f, ["staff"] = 0.55f, ["mace"] = 0.2f, ["morningstar"] = 0.2f,
-        ["halberd"] = 0.35f, ["billhook"] = 0.35f, ["glaive"] = 0.35f, ["javelin"] = 0.45f, ["sling"] = 0.1f, ["scimitar"] = 0.19f, ["falchion"] = 0.19f, ["warhammer"] = 0.3f,
+        ["halberd"] = 0.35f, ["billhook"] = 0.35f, ["glaive"] = 0.35f, ["atgeir"] = 0.35f, ["boar_spear"] = 0.32f, ["poleaxe"] = 0.35f, ["lucerne_hammer"] = 0.35f, ["goedendag"] = 0.32f, ["partisan"] = 0.35f, ["boarding_axe"] = 0.2f, ["throwing_axe"] = 0.25f, ["tabarzin"] = 0.2f, ["cane_lance"] = 0.3f, ["hooked_lance"] = 0.3f, ["shestoper"] = 0.2f, ["javelin"] = 0.45f, ["jarid"] = 0.45f, ["sling"] = 0.1f, ["scimitar"] = 0.19f, ["steppe_sabre"] = 0.19f, ["falchion"] = 0.19f, ["warhammer"] = 0.3f, ["great_maul"] = 0.32f,
     };
 
     static readonly string[] Views = { "f", "s", "b" };
@@ -344,13 +344,61 @@ public sealed partial class SpriteSheet
                 if (v == "s") for (int y = 4; y < 14; y++) for (int x = 9; x < 18; x++) { if (InEl(x + 0.5f, y + 0.5f, 15.5f, 10f, 4.6f, 5.6f)) c.Clear(x, y); }
                 return c;
             }
-            case "kettle": case "kettle_brimmed":
+            case "kettle": case "kettle_brimmed": case "kettle_bevor":
             {
-                var c = new Canvas(18, 12);
+                var c = new Canvas(18, kind == "kettle_bevor" ? 16 : 12);
                 c.Fill((x, y) => InEl(x, y, 9, 7.5f, 6.2f, 7f) && y < 7.6f, (x, y) => new Vector3((x - 9) / 7, (y - 7.5f) / 8, 0.6f), plate);
                 c.Rect(0.5f, 7.6f, 17.5f, 9.6f, plate, -0.05f);
                 for (int x = 2; x < 16; x++) c.Set(x, 10, iron, 0.0f);
                 for (int x = 4; x < 14; x += 3) c.Set(x, 6, brass, 0.6f);
+                if (kind == "kettle_bevor")
+                {
+                    if (v == "f") { c.Rect(4, 11.5f, 14, 15.5f, plate, -0.05f); c.Rect(5, 11, 13, 12, iron); }
+                    else if (v == "s") { c.Rect(10, 11.5f, 17, 15.5f, plate, -0.05f); c.Rect(11, 11, 16.5f, 12, iron); }
+                    else { c.Rect(3, 11, 15, 15, mail); }
+                }
+                return c;
+            }
+            case "austere_greathelm":
+            {
+                // Unpainted dark-iron flat-top Tarn greathelm with recessed visor slit.
+                var c = new Canvas(18, 17);
+                c.Rect(2, 1, 16, 16, iron);
+                c.Rect(2, 1, 16, 3, steel, -0.1f);
+                if (v == "f") { c.Rect(4, 7, 14, 9, Mat.Flat(Color.Black)); c.Rect(8, 3, 10, 15, steel, -0.05f); }
+                else if (v == "s") { c.Rect(10, 7, 16, 9, Mat.Flat(Color.Black)); }
+                return c;
+            }
+            case "cabasset":
+            {
+                // Pear-stalk Renaissance steel helm with upturned brim.
+                var c = new Canvas(18, 13);
+                c.Fill((x, y) => InEl(x, y, 9, 8.5f, 6.4f, 6.8f) && y < 9f, (x, y) => new Vector3((x - 9) / 7, (y - 8) / 8, 0.6f), plate);
+                c.Rect(8, 0, 10, 3, plate, 0.2f); // pear stalk
+                c.Rect(1, 8.5f, 17, 10.5f, plate, -0.05f);
+                c.Rect(2, 10, 16, 11, brass);
+                return c;
+            }
+            case "steppe_plumed_helm":
+            {
+                // Conical steppe steel helm with fur brim and tall horsetail crest.
+                var c = new Canvas(18, 17);
+                c.Body(4, 13, y => (9 - (y - 3) * 0.78f, 9 + (y - 3) * 0.78f), iron);
+                c.Rect(8, 0, 10, 5, cloth); // horsetail plume
+                c.Rect(1.5f, 12.5f, 16.5f, 15, fur);
+                if (v != "f") c.Rect(2.5f, 14.5f, 15.5f, 17, mail);
+                return c;
+            }
+            case "vendel_helm":
+            {
+                // Crested Nordic Vendel spectacle helm with brass brow-band and nasal-mask.
+                var c = new Canvas(18, 15);
+                c.Fill((x, y) => InEl(x, y, 9, 9.5f, 7.6f, 7.5f) && y < 10.5f, (x, y) => new Vector3((x - 9) / 8, (y - 9) / 8, 0.6f), iron);
+                c.Rect(8, 1, 10, 9, brass, 0.3f); // sagittal crest
+                c.Rect(1.5f, 8.5f, 16.5f, 10.5f, brass, 0.2f); // brow band
+                if (v == "f") { c.Rect(4, 10.5f, 14, 13.5f, iron); c.Clear(6, 11); c.Clear(7, 11); c.Clear(10, 11); c.Clear(11, 11); }
+                else if (v == "s") { c.Rect(11, 10.5f, 16.5f, 13.5f, iron); c.Rect(2, 10.5f, 10, 14.5f, mail); }
+                else { c.Rect(2, 10.5f, 16, 14.5f, mail); }
                 return c;
             }
             case "nasal":
@@ -701,7 +749,7 @@ public sealed partial class SpriteSheet
         var c = new Canvas(side ? 13 : 20, 23);
         Func<float, (float, float)> span = side ? SideSpan : TorsoSpan;
         var m = body switch { "gambeson" or "gambeson_fur" => quilt, "mail" or "mail_hauberk" or "mail_fur" => mail, "plate" or "plate_fluted" or "plate_surcoat" or "plate_gilded" or "plate_fur" or "breastplate" => plate, "fur" => clothDk, "rags" => rag, "shroud" => shroud, "robe" => robe,
-            "lamellar" or "lamellar_gilded" or "scale" or "scale_iron" => plate, "deel" or "deel_fur" => cloth, "brigandine" or "brigandine_gilded" or "coatofplates" => felt, "leather" => leather, _ => cloth };
+            "lamellar" or "lamellar_gilded" or "scale" or "scale_iron" => plate, "deel" or "deel_fur" => cloth, "brigandine" or "brigandine_gilded" or "coatofplates" => felt, "leather" or "oilskin_coat" => leather, _ => cloth };
         if (body == "bones") return Ribs(c, span, side);
         if (LoreTorso(body, v) is { } loreT) return loreT;
         if (PeopleTorso(body, v) is { } own) return own;
@@ -745,6 +793,15 @@ public sealed partial class SpriteSheet
         {
             c.Body(0, 23, span, m);
             if (body == "tunic") c.Body(20.5f, 23, span, clothDk);
+            if (body == "oilskin_coat") { c.Body(0, 4.5f, span, clothDk); if (v == "f") for (int y = 4; y < 22; y += 3) c.Set(10, y, brass, 0.55f); }
+            if (body == "slashed_doublet") { c.Body(0, 14, span, cloth); if (v == "f") for (int x = 5; x < 16; x += 3) for (int y = 3; y < 13; y += 2) c.Set(x, y, trim, 0.5f); c.Body(15.5f, 23, span, clothDk); }
+            if (body == "crag_plaid") { c.Body(0, 5, span, fur); for (int y = 5; y < 22; y += 3) for (int x = 2; x < c.W - 2; x += 3) if (c.Has(x, y)) c.Set(x, y, clothDk, 0.2f); }
+            if (body == "bear_pelt") { c.Body(0, 12, span, fur); c.Body(12, 23, span, leather); if (v == "f") { c.Rect(4, 3, 6, 13, leather); c.Rect(14, 3, 16, 13, leather); } }
+            if (body == "kazaghand") { c.Body(0, 23, span, cloth); c.Body(13.5f, 16, span, trim); c.Body(20, 23, span, brass, 0.2f); if (v == "f") for (int y = 2; y < 13; y += 3) c.Set(10, y, brass, 0.55f); }
+            if (body == "corsair_vest") { c.Body(0, 23, span, clothDk); if (v == "f") c.Rect(7.5f, 1, 12.5f, 14, trim); c.Body(13.5f, 16.5f, span, cloth); }
+            if (body == "lacquered_lamellar") { c.Body(0, 23, span, clothDk); for (int y = 3; y < 14; y += 3) c.Body(y, y + 1.5f, span, brass, 0.25f); c.Body(13.5f, 16, span, leather); }
+            if (body == "reed_cloak") { c.Body(0, 23, span, leather); for (int y = 2; y < 22; y += 3) for (int x = 2; x < c.W - 2; x += 2) if (c.Has(x, y)) c.Set(x, y, clothDk, 0.25f); }
+            if (body == "grey_plate_surcoat") { c.Body(0, 23, span, iron); if (v != "s") c.Rect(6, 1, 14, 23, clothDk); c.Body(13.5f, 15.8f, span, leather); }
             if (body == "leather") { for (int x = 3; x < c.W - 3; x += 3) for (int y = 4; y < 13; y += 3) if (c.Has(x, y)) c.Set(x, y, brass, 0.35f); }
         }
         // Belt with a buckle.
@@ -1018,7 +1075,7 @@ public sealed partial class SpriteSheet
                 c.Rect(1, 0, 7, 20, quilt); c.Rect(1, 0, 7, 2.5f, body == "gambeson_fur" ? fur : leather);
                 for (int y = 5; y < 20; y += 3) for (int x = 0; x < 8; x++) c.Shade(x, y, -0.3f); // quilted round the arm
                 break;
-            case "fur": c.Rect(1.5f, 0, 6.5f, 20, leather); c.Rect(1, 0, 7, 4, fur); break;
+            case "fur": case "bear_pelt": c.Rect(1.5f, 0, 6.5f, 20, leather); c.Rect(1, 0, 7, 5, fur); break;
             case "rags": c.Rect(2, 0, 6, 20, gskin); c.Rect(1.5f, 0, 6.5f, 3, rag); break; // a thin bare arm
             case "bones": c.Rect(3, 0, 5, 20, bone); c.Ellipse(4, 10, 1.6f, 1.4f, bone, 0.1f); break; // a bare arm bone and its elbow
             case "shroud": c.Rect(2.2f, 0, 5.8f, 20, pale); c.Rect(1.5f, 0, 6.5f, 5, shroud); break;
@@ -1028,11 +1085,14 @@ public sealed partial class SpriteSheet
                 c.Rect(1.5f, 0, 6.5f, 1.6f, leather); // a leather cuff at the wrist
                 if (body == "mail_fur") c.Rect(1, 0, 7, 4, fur);
                 break;
-            case "lamellar": case "lamellar_gilded": case "scale": case "scale_iron": c.Rect(1.5f, 0, 6.5f, 20, mail); c.Rect(1, 0, 7, 6, body == "scale" ? brass : plate); for (int x = 0; x < 8; x++) c.Shade(x, 3, -0.3f); break;
-            case "leather": case "coatofplates": c.Rect(1.5f, 0, 6.5f, 20, leather); c.Rect(1, 0, 7, 4, body == "coatofplates" ? plate : leather); break;
+            case "lamellar": case "lamellar_gilded": case "lacquered_lamellar": case "scale": case "scale_iron": c.Rect(1.5f, 0, 6.5f, 20, mail); c.Rect(1, 0, 7, 6, body is "scale" or "lacquered_lamellar" ? brass : plate); for (int x = 0; x < 8; x++) c.Shade(x, 3, -0.3f); break;
+            case "leather": case "coatofplates": case "oilskin_coat": case "crag_plaid": case "reed_cloak": c.Rect(1.5f, 0, 6.5f, 20, leather); c.Rect(1, 0, 7, 4, body == "coatofplates" ? plate : body is "oilskin_coat" or "reed_cloak" ? clothDk : body == "crag_plaid" ? fur : leather); break;
+            case "kazaghand": c.Rect(1.5f, 0, 6.5f, 20, cloth); c.Rect(1, 16, 7, 20, brass); break;
+            case "corsair_vest": c.Rect(1.5f, 0, 6.5f, 20, trim); c.Rect(1, 0, 7, 3, clothDk); break;
+            case "slashed_doublet": c.Rect(1, 0, 7, 20, cloth); for (int y = 3; y < 17; y += 4) c.Rect(2, y, 6, y + 1.5f, trim); break;
             case "deel": case "deel_fur": c.Rect(1, 0, 7, 20, cloth); c.Rect(1, 16.5f, 7, 20, trim); if (body == "deel_fur") c.Rect(1, 0, 7, 3, fur); break;
             case "brigandine": case "brigandine_gilded": c.Rect(1.5f, 0, 6.5f, 20, mail); c.Rect(1, 0, 7, 7, clothDk); c.Set(3, 3, brass, 0.65f); c.Set(5, 5, brass, 0.65f); break;
-            case "plate": case "plate_fluted": case "plate_surcoat": case "plate_gilded": case "plate_fur": case "breastplate":
+            case "plate": case "plate_fluted": case "plate_surcoat": case "plate_gilded": case "plate_fur": case "breastplate": case "grey_plate_surcoat":
                 // Vambrace (forearm), the elbow cop with its wing, lames and the upper cannon to the shoulder.
                 c.Rect(1.5f, 0, 6.5f, 20, body == "breastplate" ? cloth : plate);
                 if (body == "breastplate") c.Rect(1, 0, 7, 6, plate);
@@ -1154,6 +1214,15 @@ public sealed partial class SpriteSheet
                 b.Border(iron);
                 b.Ellipse(5.5f, 5.5f, 1.8f, 1.8f, steel, 0.25f);
                 return b;
+            }
+            case "rotella":
+            {
+                // Domed circular Vespran steel shield with gilt boss and rim.
+                var r = new Canvas(17, 17);
+                r.Fill((x, y) => InEl(x, y, 8.5f, 8.5f, 8.2f, 8.2f), (x, y) => new Vector3((x - 8.5f) / 10, (y - 8.5f) / 10, 1), plate);
+                r.Border(brass);
+                r.Ellipse(8.5f, 8.5f, 2.5f, 2.5f, brass, 0.35f);
+                return r;
             }
             case "targe":
             {
@@ -1321,6 +1390,202 @@ public sealed partial class SpriteSheet
                 c.Rect(7, 3, 11, 6, steel); // curved hook
                 c.Rect(1, 9, 5, 11, iron);  // back spike
                 c.Rect(4.6f, 48, 7.4f, 54, leather);
+                return c;
+            }
+            case "lucerne_hammer":
+            {
+                // Austere Tarn polehammer: pronged hammer face, long rear beak, and diamond top spike.
+                var c = new Canvas(14, 72);
+                c.Rect(6, 5, 8, 72, wood);
+                c.Body(0, 8, y => (7 - 0.3f - y * 0.16f, 7 + 0.3f + y * 0.16f), steel);
+                c.Rect(8, 9, 13, 13.5f, iron); // pronged hammer
+                c.Area((x, y) => y >= 9 && y < 13 && x >= 1 + (y - 9) * 0.6f && x < 6, steel); // rear beak
+                c.Rect(5.5f, 13.5f, 8.5f, 20, iron);
+                c.Rect(5.6f, 50, 8.4f, 56, leather);
+                return c;
+            }
+            case "great_maul":
+            {
+                // Heavy two-handed iron crushing maul.
+                var c = new Canvas(16, 56);
+                c.Rect(7, 4, 9, 56, wood);
+                c.Rect(2, 6, 14, 15, iron);
+                c.Rect(3, 7, 13, 9, steel, -0.1f);
+                c.Rect(6.5f, 36, 9.5f, 48, leather);
+                return c;
+            }
+            case "schiavona":
+            {
+                // Venetian basket-hilt broadsword with ornate brass basket guard.
+                var c = new Canvas(10, 40);
+                c.Body(0, 28, y => (3.8f, 6.2f), steel);
+                c.Ellipse(5, 30, 3.6f, 2.8f, brass, 0.2f); // basket hilt
+                c.Rect(4, 32, 6, 38, leather);
+                c.Rect(3.5f, 37.5f, 6.5f, 40, brass);
+                return c;
+            }
+            case "marsh_fork":
+            {
+                // Three-pronged iron Fenmen marsh trident/fauchard.
+                var c = new Canvas(12, 68);
+                c.Rect(5, 13, 7, 68, wood);
+                c.Rect(2, 11, 10, 13.5f, iron);
+                c.Rect(2, 2, 3.6f, 12, steel);
+                c.Rect(5.2f, 0, 6.8f, 12, steel);
+                c.Rect(8.4f, 2, 10, 12, steel);
+                c.Rect(4.6f, 46, 7.4f, 52, leather);
+                return c;
+            }
+            case "stradiot_lance":
+            {
+                // Double-ended Stradiot light cavalry lance.
+                var c = new Canvas(10, 76);
+                c.Rect(4, 9, 6, 68, wood);
+                c.Body(0, 9, y => (5 - MathF.Min(1.8f, 0.3f + y * 0.2f), 5 + MathF.Min(1.8f, 0.3f + y * 0.2f)), steel);
+                c.Body(68, 76, y => (5 - MathF.Min(1.6f, 0.3f + (76 - y) * 0.2f), 5 + MathF.Min(1.6f, 0.3f + (76 - y) * 0.2f)), iron);
+                c.Rect(3.6f, 42, 6.4f, 48, leather);
+                return c;
+            }
+            case "steppe_sabre":
+            {
+                // Swept steppe horseman sabre with brass guard and canted grip.
+                var c = new Canvas(10, 40);
+                c.Body(0, 29, y => (4.5f + (y < 10 ? (10 - y) * 0.25f : 0), 6.8f + (y < 10 ? (10 - y) * 0.16f : 0)), steel);
+                c.Rect(2.5f, 28.5f, 8.5f, 30.5f, brass);
+                c.Rect(4.5f, 30.5f, 6.5f, 39, leather);
+                return c;
+            }
+            case "hooked_lance":
+            {
+                // Steppe kontos with curved saddle-hook beneath the spearhead.
+                var c = new Canvas(12, 76);
+                c.Rect(5, 11, 7, 76, wood);
+                c.Body(0, 11, y => (6 - MathF.Min(1.6f, 0.25f + y * 0.2f), 6 + MathF.Min(1.6f, 0.25f + y * 0.2f)), steel);
+                c.Rect(7, 11, 11, 13.5f, iron); // saddle-hook
+                c.Rect(4.6f, 52, 7.4f, 58, leather);
+                return c;
+            }
+            case "shestoper":
+            {
+                // Six-flanged brass-and-steel steppe horseman mace.
+                var c = new Canvas(12, 34);
+                c.Rect(5, 10, 7, 34, wood);
+                c.Ellipse(6, 7.5f, 4.2f, 4.8f, brass);
+                c.Rect(5, 2, 7, 11, steel);
+                c.Rect(4.6f, 23, 7.4f, 31, leather);
+                return c;
+            }
+            case "tabarzin":
+            {
+                // Qadiri crescent-blade saddle axe with brass haft-collar and top spike.
+                var c = new Canvas(14, 34);
+                c.Rect(6, 5, 8, 34, wood);
+                c.Body(1, 6, y => (7 - (y - 1) * 0.25f, 7 + (y - 1) * 0.25f), brass);
+                c.Area((x, y) => y >= 5 && y < 16 && x >= 8 && x < 13.8f - MathF.Abs(y - 10.5f) * 0.28f, steel);
+                c.Rect(5.5f, 15, 8.5f, 17, brass);
+                c.Rect(5.6f, 23, 8.4f, 31, leather);
+                return c;
+            }
+            case "cane_lance":
+            {
+                // Light desert bamboo/cane lance with brass ferrule and crimson tassel.
+                var c = new Canvas(10, 76);
+                c.Rect(4.2f, 10, 5.8f, 76, wood);
+                c.Body(0, 10, y => (5 - MathF.Min(1.6f, 0.25f + y * 0.2f), 5 + MathF.Min(1.6f, 0.25f + y * 0.2f)), steel);
+                c.Rect(3.2f, 10, 6.8f, 13, cloth); // horsehair tassel
+                c.Rect(3.8f, 52, 6.2f, 58, leather);
+                return c;
+            }
+            case "jarid":
+            {
+                // Slender Qadiri throwing dart with brass collar.
+                var c = new Canvas(6, 38);
+                c.Rect(2.5f, 8, 3.5f, 38, wood);
+                c.Body(0, 8, y => (3 - MathF.Min(1.1f, 0.25f + y * 0.3f), 3 + MathF.Min(1.1f, 0.25f + y * 0.3f)), steel);
+                c.Rect(2, 8, 4, 10, brass);
+                return c;
+            }
+            case "throwing_axe":
+            {
+                // Nordic francisca throwing axe: short curved haft and swept wedge head.
+                var c = new Canvas(12, 26);
+                c.Rect(5, 5, 7, 26, wood);
+                c.Area((x, y) => y >= 2 && y < 10 && x >= 7 && x < 12 - MathF.Abs(y - 5.5f) * 0.35f, steel);
+                c.Rect(4.5f, 18, 7.5f, 24, leather);
+                return c;
+            }
+            case "atgeir":
+            {
+                // Long Nordic hewing spear: tall heavy curved blade on an ash shaft.
+                var c = new Canvas(12, 70);
+                c.Rect(5, 20, 7, 70, wood);
+                c.Body(0, 20, y => (4.5f, 7.5f + MathF.Min(3.2f, y * 0.25f) - (y > 16 ? (y - 16) * 0.7f : 0)), steel);
+                c.Rect(4.5f, 20, 7.5f, 23, brass);
+                c.Rect(4.6f, 48, 7.4f, 54, leather);
+                return c;
+            }
+            case "boar_spear":
+            {
+                // Winged Holtmen hunting spear with broad leaf blade and cross-lugs.
+                var c = new Canvas(12, 68);
+                c.Rect(5, 14, 7, 68, wood);
+                c.Body(0, 14, y => (6 - MathF.Min(2.4f, 0.3f + y * 0.25f), 6 + MathF.Min(2.4f, 0.3f + y * 0.25f)), steel);
+                c.Rect(2, 13, 10, 15.5f, iron); // stop-lugs
+                c.Rect(4.6f, 46, 7.4f, 52, leather);
+                return c;
+            }
+            case "partisan":
+            {
+                // Broad symmetric winged Vespran civic polearm.
+                var c = new Canvas(14, 72);
+                c.Rect(6, 16, 8, 72, wood);
+                c.Body(0, 16, y => (7 - MathF.Min(2.4f, 0.3f + y * 0.25f), 7 + MathF.Min(2.4f, 0.3f + y * 0.25f)), steel);
+                c.Area((x, y) => y >= 11 && y < 16 && (x < 5 || x >= 9) && y - 11 >= MathF.Abs(x - 7) - 3, steel); // twin wings
+                c.Rect(5.5f, 16, 8.5f, 19, brass);
+                c.Rect(5.6f, 50, 8.4f, 55, leather);
+                return c;
+            }
+            case "kriegsmesser":
+            {
+                // Heavy two-handed curved Vespran war-knife with brass nagel.
+                var c = new Canvas(12, 54);
+                c.Body(0, 38, y => (5.2f + (y < 10 ? (10 - y) * 0.22f : 0), 8.2f + (y < 10 ? (10 - y) * 0.14f : 0)), steel);
+                for (int y = 2; y < 37; y++) c.Shade(5, y, 0.45f);
+                c.Rect(2, 37, 10, 39.5f, brass);
+                c.Rect(5.2f, 39.5f, 7.6f, 52, leather);
+                c.Rect(4.8f, 51, 8, 54, brass);
+                return c;
+            }
+            case "poleaxe":
+            {
+                // Knightly foot poleaxe: steel hammer face, curved axe bit, and long diamond top spike.
+                var c = new Canvas(14, 70);
+                c.Rect(6, 4, 8, 70, wood);
+                c.Body(0, 7, y => (7 - 0.3f - y * 0.16f, 7 + 0.3f + y * 0.16f), steel);
+                c.Area((x, y) => y >= 8 && y < 16 && x >= 8 && x < 13.5f - MathF.Abs(y - 12f) * 0.25f, steel);
+                c.Rect(2.5f, 10, 6, 14, iron); // hammer head
+                c.Rect(5.5f, 16, 8.5f, 21, iron); // langets
+                c.Rect(5.6f, 48, 8.4f, 54, leather);
+                return c;
+            }
+            case "goedendag":
+            {
+                // Heavy iron-banded militia club-spear with a stout iron top spike.
+                var c = new Canvas(10, 62);
+                c.Body(8, 62, y => (5 - (y < 24 ? 2.6f - (y - 8) * 0.05f : 1.4f), 5 + (y < 24 ? 2.6f - (y - 8) * 0.05f : 1.4f)), wood);
+                c.Rect(2.2f, 8, 7.8f, 11.5f, iron);
+                c.Body(0, 8, y => (5 - 0.25f - y * 0.16f, 5 + 0.25f + y * 0.16f), steel);
+                c.Rect(3.2f, 44, 6.8f, 50, leather);
+                return c;
+            }
+            case "boarding_axe":
+            {
+                // Naval boarding axe: curved bearded blade and rear grappling hook.
+                var c = new Canvas(14, 34);
+                c.Rect(6, 4, 8, 34, wood);
+                c.Area((x, y) => y >= 3 && y < 13 && x >= 8 && x < 13.5f - MathF.Abs(y - 7.5f) * 0.22f, steel);
+                c.Area((x, y) => y >= 6 && y < 9 && x >= 2 && x < 6, iron); // grappling hook
+                c.Rect(5.6f, 22, 8.4f, 30, leather);
                 return c;
             }
             case "halberd":

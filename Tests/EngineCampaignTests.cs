@@ -38,7 +38,7 @@ public static partial class SelfTest
     static void HorseRidesForEngines()
     {
         var b = Battle.Empty(15);
-        var crew = b.AddSquad(0, Troops.Get("levies"), 3, new Vector2(0, -42), 3, Vector2.UnitY);
+        var crew = b.AddSquad(0, Troops.Get("brevon_fyrd"), 3, new Vector2(0, -42), 3, Vector2.UnitY);
         b.AddEngine(0, "scorpion", new Vector2(0, -40), Vector2.UnitY, crew);
         var horse = b.AddSquad(1, UnitType.Lancer, 6, new Vector2(20, 0), 6, -Vector2.UnitY);
         b.Update(1 / 60f);

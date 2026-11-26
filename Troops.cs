@@ -241,10 +241,10 @@ public static class Armies
 
     static readonly (string Role, string[] ByTier, int Base)[] Lines =
     {
-        ("infantry", new[] { "levies", "shieldmen", "men_at_arms", "ironguard", "paladins", "iron_legionaries" }, 24),
-        ("archers", new[] { "bowmen", "bowmen", "longbowmen", "yeoman_archers", "master_longbowmen", "royal_yeomen" }, 16),
-        ("spears", new[] { "levies", "spearrunners", "pikemen", "phalanx_pikemen", "silver_pikes", "grand_phalanx" }, 12),
-        ("horse", new[] { "outriders", "lancers", "lancers", "knights", "banner_knights", "paladin_knights" }, 10),
+        ("infantry", new[] { "brevon_fyrd", "manor_foot", "men_at_arms", "ironguard", "paladins", "iron_legionaries" }, 24),
+        ("archers", new[] { "commons_bowmen", "commons_bowmen", "longbowmen", "yeoman_archers", "master_longbowmen", "royal_yeomen" }, 16),
+        ("spears", new[] { "brevon_fyrd", "shire_billmen", "pikemen", "phalanx_pikemen", "silver_pikes", "grand_phalanx" }, 12),
+        ("horse", new[] { "march_scouts", "brevon_lancers", "brevon_lancers", "knights", "banner_knights", "paladin_knights" }, 10),
     };
 
     static int Count(int baseCount, string troop, bool enemy)
@@ -362,9 +362,14 @@ public static class Armies
     static ArmySpec Make(string name, int level, int[] tiers, bool enemy) =>
         new(name, level, Lines.Select((l, i) => new Company(l.ByTier[tiers[i] - 1], Count(l.Base, l.ByTier[tiers[i] - 1], enemy), l.Role)).ToList());
 
-    /// A culture's mage at a tier (IV-VI, clamped; docs/archive/COMPANIONS_MAGIC.md E1); Acolytes where it has no line.
-    public static string MageTroop(string culture, int tier) =>
-        Troops.All.Where(t => t.Class == UnitClass.Caster && t.Culture == culture && t.Tier == Math.Clamp(tier, 4, 6)).Select(t => t.Id).FirstOrDefault() ?? "acolytes";
+    /// A culture's mage at a tier (IV-VI, clamped; docs/archive/COMPANIONS_MAGIC.md E1); falls back to parent people then culture mage root.
+    public static string MageTroop(string culture, int tier)
+    {
+        int t = Math.Clamp(tier, 4, 6);
+        string people = Factions.PeopleOf(culture);
+        return Troops.All.Where(u => u.Class == UnitClass.Caster && (u.Culture == culture || u.Culture == people) && u.Tier == t).Select(u => u.Id).FirstOrDefault()
+            ?? Factions.MageRoot(culture);
+    }
 
     /// The troop a line fields at a tier (1-7).
     public static string LineTroop(string role, int tier) => Lines.First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, Troops.MaxTier) - 1];

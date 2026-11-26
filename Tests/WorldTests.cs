@@ -218,7 +218,7 @@ public static partial class SelfTest
         Check(!Holds("escort") && c.S.Gold == gold, "an escort fails if the caravan is lost");
         // A rescue: beat the band.
         var band = new Party { Id = c.S.NextId++, Kind = PartyKind.Bandit, Name = "Test Band", Pos = c.Player.Pos + new Vector2(150, 150), Tier = 2 };
-        band.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(10), 0));
+        band.Companies.Add(c.NewCompany("brevon_fyrd", "infantry", c.Scaled(10), 0));
         c.S.Parties.Add(band);
         c.S.Contracts.Add(Job("rescue", band.Id, v));
         c.S.LastBattleFoe = band.Id;

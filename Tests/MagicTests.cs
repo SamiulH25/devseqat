@@ -27,8 +27,8 @@ public static partial class SelfTest
         Check(mages.Where(t => t.Tier == 6).All(t => t.Spells.Any(id => Abilities.Get(id).Great)), "every tier VI mage knows a great working");
         Check(mages.Where(t => t.Tier < 6).All(t => !t.Spells.Any(id => Abilities.Get(id).Great)), "and none below");
         foreach (var c in Factions.All.Select(f => f.Culture).Distinct())
-            Check(Troops.Get("acolytes").UpgradesTo.Any(id => Troops.Get(id).Culture == c), $"Acolytes can rise into the {c} mage line");
-        Check(!Troops.Get("levies").UpgradesTo.Contains("acolytes"), "levies cannot become Acolytes: mages are hired, rare");
+            Check(Troops.Get(Factions.MageRoot(c)).UpgradesTo.Any(id => Troops.Get(id).Culture == c), $"{Factions.MageRoot(c)} can rise into the {c} mage line");
+        Check(!Troops.Get("brevon_fyrd").UpgradesTo.Contains("vigil_novices"), "levies cannot become Acolytes: mages are hired, rare");
         Console.WriteLine($"magic: {mages.Count} mage troops, {Abilities.All.Count} spells and abilities");
     }
 
@@ -37,7 +37,7 @@ public static partial class SelfTest
     {
         var b = options == null ? Battle.Empty(seed) : Battle.Empty(seed, options);
         var m = b.AddSquad(0, Troops.Get(troop), 3, new(0, 0), 3, Vector2.UnitY); // a circle: mages are few
-        var f = b.AddSquad(1, Troops.Get("levies"), foes, new(0, 25), 6, -Vector2.UnitY);
+        var f = b.AddSquad(1, Troops.Get("brevon_fyrd"), foes, new(0, 25), 6, -Vector2.UnitY);
         m.Order = f.Order = Order.Hold;
         return (b, m, f);
     }
@@ -91,9 +91,9 @@ public static partial class SelfTest
     {
         var b = Battle.Empty(72);
         var m = b.AddSquad(0, Troops.Get("chaplains"), 8, new(0, -6), 4, Vector2.UnitY);
-        var inf = b.AddSquad(0, Troops.Get("shieldmen"), 12, new(0, 4), 6, Vector2.UnitY);
-        var far = b.AddSquad(0, Troops.Get("shieldmen"), 12, new(90, 4), 6, Vector2.UnitY);
-        var foe = b.AddSquad(1, Troops.Get("shieldmen"), 12, new(0, 26), 6, -Vector2.UnitY);
+        var inf = b.AddSquad(0, Troops.Get("manor_foot"), 12, new(0, 4), 6, Vector2.UnitY);
+        var far = b.AddSquad(0, Troops.Get("manor_foot"), 12, new(90, 4), 6, Vector2.UnitY);
+        var foe = b.AddSquad(1, Troops.Get("manor_foot"), 12, new(0, 26), 6, -Vector2.UnitY);
         foreach (var s in b.Squads) s.Order = Order.Hold;
         for (int i = 0; i < 20 * 60 && !inf.Timed.Any(t => t.Effect.Id == "blessed"); i++) b.Update(1 / 60f);
         Check(inf.Timed.Any(t => t.Effect.Id == "blessed") && inf.Units.All(u => u.Mods.Shock < 0), "a Blessing falls on the company near the chaplains as the foe comes close");
@@ -110,8 +110,8 @@ public static partial class SelfTest
     {
         int Landed(bool mist)
         {
-            var (b, a, _) = StyleScene("bowmen");
-            var t = b.AddSquad(1, Troops.Get("shieldmen"), 1, new(0, 20), 1, Vector2.UnitY).Units[0];
+            var (b, a, _) = StyleScene("commons_bowmen");
+            var t = b.AddSquad(1, Troops.Get("manor_foot"), 1, new(0, 20), 1, Vector2.UnitY).Units[0];
             b.Update(0);
             if (mist) b.AddField(Abilities.Get("mist"), "mist", 1, t, t.Pos, 15, 60, 1, 0);
             b.Update(0.5f / 60); // its totals
@@ -125,7 +125,7 @@ public static partial class SelfTest
 
         var w = Battle.Empty(73);
         var priests = w.AddSquad(0, Troops.Get("battle_priests"), 4, new(0, -20), 4, Vector2.UnitY);
-        var men = w.AddSquad(0, Troops.Get("shieldmen"), 6, new(-3, 0), 3, Vector2.UnitY);
+        var men = w.AddSquad(0, Troops.Get("manor_foot"), 6, new(-3, 0), 3, Vector2.UnitY);
         var dead = w.AddSquad(1, Troops.Get("skeleton"), 6, new(3, 0), 3, Vector2.UnitY);
         foreach (var s in w.Squads) s.Order = Order.Hold;
         w.AddField(Abilities.Get("ward"), "warded", 0, priests.Units[0], Vector2.Zero, 12, 30, 1, 6);
@@ -162,10 +162,10 @@ public static partial class SelfTest
     static void HorseHuntsMages()
     {
         var b = Battle.Empty(74);
-        var horse = b.AddSquad(0, Troops.Get("lancers"), 8, new(0, 0), 4, Vector2.UnitY);
-        var foot = b.AddSquad(1, Troops.Get("shieldmen"), 12, new(-20, 40), 6, -Vector2.UnitY);
+        var horse = b.AddSquad(0, Troops.Get("brevon_lancers"), 8, new(0, 0), 4, Vector2.UnitY);
+        var foot = b.AddSquad(1, Troops.Get("manor_foot"), 12, new(-20, 40), 6, -Vector2.UnitY);
         var mages = b.AddSquad(1, Troops.Get("magisters"), 8, new(30, 70), 4, -Vector2.UnitY);
-        b.AddSquad(0, Troops.Get("shieldmen"), 12, new(-20, 38), 6, Vector2.UnitY);
+        b.AddSquad(0, Troops.Get("manor_foot"), 12, new(-20, 38), 6, Vector2.UnitY);
         Run(b, 0.5f);
         Check(b.HorsePrey(horse) == mages, "horse go for the enemy's mages first");
 
@@ -175,8 +175,8 @@ public static partial class SelfTest
         foreach (var u in f.Units) u.Morale = 30; // a losing day: the great working
         var g = Battle.Empty(75);
         var gm = g.AddSquad(0, Troops.Get("saints_militant"), 8, new(0, 0), 4, Vector2.UnitY);
-        var gs = g.AddSquad(0, Troops.Get("shieldmen"), 6, new(0, 10), 3, Vector2.UnitY);
-        g.AddSquad(1, Troops.Get("shieldmen"), 30, new(0, 30), 10, -Vector2.UnitY);
+        var gs = g.AddSquad(0, Troops.Get("manor_foot"), 6, new(0, 10), 3, Vector2.UnitY);
+        g.AddSquad(1, Troops.Get("manor_foot"), 30, new(0, 30), 10, -Vector2.UnitY);
         foreach (var u in gs.Units) u.Morale = 25;
         Run(g, 10);
         Check(gm.GreatDone && gs.Timed.Any(t => t.Effect.Id == "miracle"), "Saints Militant call a Miracle when the day goes against them");
@@ -194,7 +194,7 @@ public static partial class SelfTest
                 {
                     var b = Battle.Empty(980 + seed);
                     var sa = b.AddSquad(0, Troops.Get("men_at_arms"), 20, new(0, -10), 10, Vector2.UnitY);
-                    var back = b.AddSquad(0, Troops.Get(behind), behind == "levies" ? 8 : 3, new(0, -22), 4, Vector2.UnitY);
+                    var back = b.AddSquad(0, Troops.Get(behind), behind == "brevon_fyrd" ? 8 : 3, new(0, -22), 4, Vector2.UnitY);
                     var sb = b.AddSquad(1, Troops.Get("men_at_arms"), 24, new(0, 14), 12, -Vector2.UnitY);
                     sa.Order = sb.Order = Order.Charge;
                     back.Order = Order.Hold;
@@ -204,7 +204,7 @@ public static partial class SelfTest
                 }
                 return score;
             }
-            float with = Score(mage), without = Score("levies");
+            float with = Score(mage), without = Score("brevon_fyrd");
             Console.WriteLine($"magic: 20 men-at-arms against 24 with three {Troops.Get(mage).Name} behind: {with:0}; with eight levies there: {without:0}");
             Check(with > without, $"a circle of three {Troops.Get(mage).Name} behind the line helps more than eight levies");
         }
@@ -241,7 +241,7 @@ public static partial class SelfTest
         c.S.Gold = c.FeastPrice + 10;
         Check(c.Feast(town) == null && c.HasBuff("feasted") && c.S.Gold == 10, "a feast in town costs its price and feeds the men");
         Check(c.Feast(town) != null, "but one feast at a time");
-        Check(Troops.Get("acolytes").Class == UnitClass.Caster && Rules.TroopRole("acolytes") == "casters", "Acolytes are a mage company");
+        Check(Troops.Get("vigil_novices").Class == UnitClass.Caster && Rules.TroopRole("vigil_novices") == "casters", "Acolytes are a mage company");
     }
 
     /// Camp rites need someone who can work them, cost what they cost, one a day; craft draws the Omen and dark omens follow;
@@ -456,7 +456,7 @@ public static partial class SelfTest
         bool Fevered(bool ward)
         {
             var b = Battle.Empty(17);
-            var men = b.AddSquad(0, Troops.Get("levies"), 8, new(0, 0), 4, Vector2.UnitY);
+            var men = b.AddSquad(0, Troops.Get("brevon_fyrd"), 8, new(0, 0), 4, Vector2.UnitY);
             var witches = b.AddSquad(1, Troops.Get("war_witches"), 3, new(0, 80), 3, -Vector2.UnitY);
             witches.HoldSpells = true;
             if (ward) b.AddField(Abilities.Get("ward"), "warded", 0, men.Units[0], men.Center, 12, 60, 1, 0);

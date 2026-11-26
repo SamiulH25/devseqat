@@ -123,7 +123,7 @@ public static partial class SelfTest
     {
         var links = BalanceReport.TierLinks();
         Check(links.Count > 100 && links.All(l => l.to.Tier > l.from.Tier && l.to.Class == l.from.Class), $"{links.Count} upgrade links, each up a tier in its class");
-        var (from, to) = links.First(l => l.from.Id == "levies" && l.to.Class == UnitClass.Infantry);
+        var (from, to) = links.First(l => l.from.Id == "brevon_fyrd" && l.to.Class == UnitClass.Infantry);
         Check(BalanceReport.ParentMen(from, to, "men") == 30, "equal men: thirty a side");
         Check(BalanceReport.ParentMen(from, to, "upkeep") == (int)MathF.Round(30 * Rules.WageCost(to) / Rules.WageCost(from)), "equal upkeep: the parent's men by the wage ratio");
         Check(BalanceReport.ParentMen(from, to, "places") == (int)MathF.Round(30 * Rules.TierWeight(to.Tier) / Rules.TierWeight(from.Tier)), "equal places: by the tier weight");
@@ -138,7 +138,7 @@ public static partial class SelfTest
     {
         var b = Battle.Empty(5);
         Squad Of(string id, int x) => b.AddSquad(0, Troops.Get(id), 12, new(x, -10), 6, Vector2.UnitY);
-        var levies = Of("levies", -30); var shields = Of("shieldmen", -10); var maa = Of("men_at_arms", 10);
+        var levies = Of("brevon_fyrd", -30); var shields = Of("manor_foot", -10); var maa = Of("men_at_arms", 10);
         var four = Of(Troops.All.First(t => t.Tier == 4 && t.Class == UnitClass.Infantry && t.HasShield && !t.Wild).Id, 30);
         Check(!levies.Choices(true).Contains(Formation.ShieldWall) && levies.CannotForm(Formation.ShieldWall) == "NEEDS TIER II", "levies cannot lock shields");
         Check(levies.Choices(true).Contains(Formation.Line) && levies.Choices(true).Contains(Formation.Loose), "levies keep a line and open ranks");
@@ -147,7 +147,7 @@ public static partial class SelfTest
         Check(shields.Choices(true).Contains(Formation.ShieldWall) && !shields.Choices(true).Contains(Formation.Square), "tier II locks shields, no square yet");
         Check(four.Choices(true).Contains(Formation.Square) && four.Choices(true).Contains(Formation.Wedge), "tier IV forms square and wedge");
         Check(b.CannotRelieve(shields, levies) != null && b.CannotSplit(maa) != "SPLITTING NEEDS TIER III", "relief and splitting from tier III");
-        Check(Battle.RalliesOf(Troops.Get("levies")) == 0 && Battle.RalliesOf(Troops.Get("shieldmen")) == 1 && Battle.RalliesOf(Troops.All.First(t => t.Tier == 5 && !t.Wild)) == 2, "rallies by tier: none, once, twice");
+        Check(Battle.RalliesOf(Troops.Get("brevon_fyrd")) == 0 && Battle.RalliesOf(Troops.Get("manor_foot")) == 1 && Battle.RalliesOf(Troops.All.First(t => t.Tier == 5 && !t.Wild)) == 2, "rallies by tier: none, once, twice");
         var grades = Enumerable.Range(1, 6).Select(t => Battle.GradeOf(Battle.DrillOf(Troops.All.First(x => x.Tier == t && !x.Wild && x.Drill < 0)))).ToArray();
         Check(grades.SequenceEqual(new[] { Grade.Rabble, Grade.Trained, Grade.Trained, Grade.Veteran, Grade.Veteran, Grade.Elite }), "grades follow the ladder: " + string.Join(", ", grades));
     }

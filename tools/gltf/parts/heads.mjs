@@ -845,4 +845,69 @@ export function buildHeads(root) {
     const comb = bladeExtrude([[-0.18, 0.18], [-0.04, 0.35], [0.10, 0.33], [0.18, 0.18]], 0.022, 0.004);
     mesh(comb, M.brass, [0, 0, 0], [0, -Math.PI / 2, 0]);
   });
+
+  // helm_cabasset: Pear-stalk Renaissance steel helm with swept stalk & proud brass brim band
+  addPart(root, 'helm_cabasset', (mesh) => {
+    const dome = column([
+      [0.055, 0.162, 0.174], [0.155, 0.146, 0.158], [0.245, 0.088, 0.096, 0, -0.016], [0.310, 0.026, 0.028, 0, -0.028], [0.355, 0.014, 0.014, 0, -0.036],
+    ], { segs: 8 });
+    mesh(heightShade(dome, 0.055, 0.355, 0.84, 1.0), M.steel);
+    mesh(column([[0.045, 0.200, 0.212], [0.068, 0.178, 0.190]], { segs: 8 }), M.steel);
+    mesh(column([[0.064, 0.194, 0.206], [0.092, 0.184, 0.196]], { segs: 8 }), M.brass);
+  });
+
+  // helm_austere_greathelm: Plain dark-iron flat-top Tarn greathelm (compact height, flush eye slit & nasal bar)
+  addPart(root, 'helm_austere_greathelm', (mesh) => {
+    const can = column([
+      [-0.13, 0.170, 0.180], [0.04, 0.172, 0.182], [0.20, 0.164, 0.174], [0.235, 0.138, 0.148], [0.245, 0.01, 0.01],
+    ], { segs: 8 });
+    mesh(heightShade(can, -0.13, 0.245, 0.78, 0.96), M.mail);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.175, 0.030, 0.016), () => 0.06), M.dark, [0, 0.052, 0.174]); // flush eye slit
+    mesh(shadeVerts(new THREE.BoxGeometry(0.032, 0.23, 0.018), () => 0.94), M.steel, [0, 0.035, 0.178]); // flush iron nasal bar
+  });
+
+  // helm_steppe_plumed: Conical steppe steel helm with brown fur brim, brass socket & tilted horsetail plume
+  addPart(root, 'helm_steppe_plumed', (mesh) => {
+    mailCoifBase(mesh, 0.02, 0.166);
+    const cone = column([
+      [0.06, 0.168, 0.178], [0.16, 0.132, 0.140], [0.28, 0.064, 0.068], [0.36, 0.018, 0.018],
+    ], { segs: 8 });
+    mesh(heightShade(cone, 0.06, 0.36, 0.84, 1.0), M.mail);
+    mesh(column([[0.02, 0.184, 0.194], [0.08, 0.178, 0.188]], { segs: 8 }), M.hair); // brown fur brim
+    mesh(column([[0.33, 0.030, 0.030], [0.38, 0.026, 0.026]], { segs: 6 }), M.brass); // brass plume socket
+    mesh(lathe([[0.022, 0.36], [0.048, 0.46], [0.028, 0.58], [0.0, 0.60]], 6), M.cloth, [0, 0, -0.02], [-0.18, 0, 0]);
+  });
+
+  // helm_vendel: Crested Nordic Vendel spectacle helm with brass brow-band and nasal-mask
+  addPart(root, 'helm_vendel', (mesh) => {
+    mailCoifBase(mesh, 0.02, 0.168);
+    domeBowl(mesh, M.mail, 0.04, 0.30, 0.174, 0.186, false);
+    const comb = bladeExtrude([[-0.17, 0.16], [-0.02, 0.34], [0.14, 0.30], [0.18, 0.14]], 0.024, 0.004);
+    mesh(comb, M.brass, [0, 0, 0], [0, -Math.PI / 2, 0]);
+    mesh(column([[0.035, 0.182, 0.194], [0.070, 0.182, 0.194]], { segs: 8 }), M.brass);
+    // Spectacle guard + nasal (+Z)
+    mesh(shadeVerts(new THREE.BoxGeometry(0.16, 0.028, 0.024), () => 0.94), M.steel, [0, 0.015, 0.185]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.030, 0.11, 0.026), () => 0.96), M.steel, [0, -0.01, 0.192]);
+  });
+
+  // helm_kettle_bevor: Brevon chapel-de-fer kettle hat with fitted chin/throat steel bevor & mail neck
+  addPart(root, 'helm_kettle_bevor', (mesh) => {
+    mailCoifBase(mesh, 0.02, 0.165);
+    const dome = column([
+      [0.065, 0.158, 0.170, 0, -0.006],
+      [0.135, 0.152, 0.164, 0, -0.008],
+      [0.205, 0.118, 0.128, 0, -0.008],
+      [0.268, 0.020, 0.022, 0, -0.006],
+    ], { segs: 8 });
+    mesh(heightShade(dome, 0.065, 0.268, 0.84, 1.0), M.steel);
+    const brim = column([
+      [0.016, 0.236, 0.248, 0, -0.004],
+      [0.048, 0.210, 0.222, 0, -0.004],
+      [0.080, 0.160, 0.172, 0, -0.006],
+    ], { segs: 8 });
+    mesh(heightShade(brim, 0.016, 0.080, 0.82, 0.96), M.steel);
+    // Fitted steel chin/throat bevor (+Z) wrapping to cheeks with no floating gap
+    const bevor = column([[-0.15, 0.145, 0.155], [-0.01, 0.162, 0.172]], { segs: 8, arc: [0, Math.PI] });
+    mesh(bevor, M.steel, [0, 0, 0.012]);
+  });
 }

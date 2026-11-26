@@ -56,7 +56,7 @@ public static class PortraitPainter
     /// his troop's tier (cloth, a padded jack, mail under a cloak, plate; a knight of your order wears its mark), his company's charge on
     /// your colours, and his mood from its cohesion.
     public static Face Of(Soldier m, CompanyRecord? co) =>
-        OfMan(m.Id, Troops.Get(Troops.Has(m.Troop) ? m.Troop : "levies"), m.Wounds, Soldier.AgeOf(m), m.Knight, co?.Banner ?? 0, co == null ? 1 : CohesionMood(co.Cohesion));
+        OfMan(m.Id, Troops.Get(Troops.Has(m.Troop) ? m.Troop : "brevon_fyrd"), m.Wounds, Soldier.AgeOf(m), m.Knight, co?.Banner ?? 0, co == null ? 1 : CohesionMood(co.Cohesion));
 
     /// The same for a man on the field, who has only his troop and id (no wounds or age kept in a battle).
     public static Face OfMan(int soldierId, UnitType t, int wounds, int age, bool knight, int banner, int mood)

@@ -37,7 +37,7 @@
   "budgets": {
     "total": {
       "targetTris": 32000,
-      "maxTris": 50876
+      "maxTris": 64000
     },
     "note": "maxTris is the committed baseline/ratchet. targetTris is where new or remade work should move. Never spend target budget on invisible detail: IMSH parts are CPU-re-emitted for every soldier, camera pass and shadow pass."
   },
@@ -1288,6 +1288,176 @@
       "module": "heads",
       "pivot": "headJoint",
       "maxTris": 108
+    },
+    "weapon_poleaxe": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 180
+    },
+    "weapon_goedendag": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 140
+    },
+    "weapon_boarding_axe": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 160
+    },
+    "helm_kettle_bevor": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 220
+    },
+    "chest_oilskin": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 180
+    },
+    "weapon_partisan": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 180
+    },
+    "weapon_kriegsmesser": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 180
+    },
+    "shield_rotella": {
+      "module": "weapons",
+      "pivot": "shieldFace",
+      "maxTris": 280
+    },
+    "chest_slashed": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 200
+    },
+    "chest_crag_plaid": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 200
+    },
+    "weapon_throwing_axe": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 140
+    },
+    "weapon_atgeir": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 160
+    },
+    "weapon_boar_spear": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 160
+    },
+    "helm_vendel": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 280
+    },
+    "chest_bear_pelt": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 200
+    },
+    "weapon_tabarzin": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 180
+    },
+    "weapon_cane_lance": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 160
+    },
+    "weapon_jarid": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 120
+    },
+    "chest_kazaghand": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 200
+    },
+    "chest_corsair_vest": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 180
+    },
+    "weapon_steppe_sabre": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 140
+    },
+    "weapon_hooked_lance": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 140
+    },
+    "weapon_shestoper": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 200
+    },
+    "helm_steppe_plumed": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 260
+    },
+    "chest_lacquered_lamellar": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 220
+    },
+    "weapon_schiavona": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 180
+    },
+    "weapon_marsh_fork": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 200
+    },
+    "weapon_stradiot_lance": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 160
+    },
+    "helm_cabasset": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 180
+    },
+    "chest_reed_cloak": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 180
+    },
+    "weapon_lucerne_hammer": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 180
+    },
+    "weapon_great_maul": {
+      "module": "weapons",
+      "pivot": "grip",
+      "maxTris": 180
+    },
+    "helm_austere_greathelm": {
+      "module": "heads",
+      "pivot": "headJoint",
+      "maxTris": 180
+    },
+    "chest_grey_plate": {
+      "module": "bodies",
+      "pivot": "bodySpace",
+      "maxTris": 200
     }
   },
   "kits": {

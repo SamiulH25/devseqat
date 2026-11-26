@@ -150,9 +150,9 @@ public sealed class QuickBattleConfig
                 c.Player.Companies = BuildFactionCompanies(0, 140, 3, new Random(seed));
                 c.Enemy.Companies = BuildFactionCompanies(1, 140, 3, new Random(seed + 1));
                 if (Troops.Has("galdr_masters")) c.Player.Companies.Add(("galdr_masters", 14));
-                else if (Troops.Has("acolytes")) c.Player.Companies.Add(("acolytes", 16));
+                else if (Troops.Has("vigil_novices")) c.Player.Companies.Add(("vigil_novices", 16));
                 if (Troops.Has("crimson_crones")) c.Enemy.Companies.Add(("crimson_crones", 14));
-                else if (Troops.Has("acolytes")) c.Enemy.Companies.Add(("acolytes", 16));
+                else if (Troops.Has("vigil_novices")) c.Enemy.Companies.Add(("vigil_novices", 16));
                 break;
             case "MONSTERS":
                 c.Ground = "Forest"; c.Layout = FieldLayout.ForestClearing; c.Hour = 19f;
@@ -212,7 +212,7 @@ public sealed class QuickBattleConfig
         {
             var band = Troops.All.Where(t => t.Culture == "bandit" && t.Class != UnitClass.Archer)
                 .OrderBy(t => Math.Abs(t.Tier - tier)).ToList();
-            return band.Count > 0 ? band[0].Id : "levies";
+            return band.Count > 0 ? band[0].Id : "brevon_fyrd";
         }
         int f = Math.Clamp(faction, 0, Factions.All.Count - 1);
         return Factions.Line(f, "infantry", tier);
@@ -248,7 +248,7 @@ public sealed class QuickBattleConfig
         if (faction == -2)
         {
             var pool = Troops.All.Where(t => t.Wild || t.Culture == "wild").ToList();
-            if (pool.Count == 0) { list.Add(("levies", men)); return list; }
+            if (pool.Count == 0) { list.Add(("brevon_fyrd", men)); return list; }
             string[] preferred = { "troll", "wyvern", "cave_bear", "giant_spider", "dire_wolf", "goblin_raiders", "goblin_shooters", "skeleton_warriors" };
             var chosen = preferred.Where(Troops.Has).ToList();
             if (chosen.Count == 0) chosen = pool.Take(5).Select(t => t.Id).ToList();
@@ -269,7 +269,7 @@ public sealed class QuickBattleConfig
         if (faction == -1)
         {
             var band = Troops.All.Where(t => t.Culture == "bandit").OrderBy(t => Math.Abs(t.Tier - tier)).ToList();
-            if (band.Count == 0) { list.Add(("levies", men)); return list; }
+            if (band.Count == 0) { list.Add(("brevon_fyrd", men)); return list; }
             int left = men, idx = 0;
             while (left > 0 && idx < 12)
             {
@@ -305,7 +305,7 @@ public sealed class QuickBattleConfig
         var raw = side.Custom && side.Companies.Count > 0
             ? side.Companies.Where(c => c.Count > 0 && Troops.Has(c.Troop)).ToList()
             : BuildFactionCompanies(side.Faction, side.Men, side.Tier, rng);
-        if (raw.Count == 0) raw.Add(("levies", 20));
+        if (raw.Count == 0) raw.Add(("brevon_fyrd", 20));
 
         var comps = new List<Company>();
         int id = 1;

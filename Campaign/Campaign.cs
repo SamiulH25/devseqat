@@ -122,7 +122,7 @@ public sealed partial class Campaign
         if (making == null)
         {
             player.Companies.Add(c.NewCompany(Factions.Root(Factions.CultureOf(realm)), "infantry", c.Scaled(24), 0, capital));
-            player.Companies.Add(c.NewCompany("levies", "spears", c.Scaled(15), 0, capital));
+            player.Companies.Add(c.NewCompany(Factions.Root(Factions.CultureOf(realm)), "spears", c.Scaled(15), 0, capital));
         }
         c.MakeCaptainCharacter(capital.Culture);
         c.SeedBuildings();
@@ -154,7 +154,7 @@ public sealed partial class Campaign
         // The guided first fight: a weak band close by, scaled to your starting band when created without default levies.
         var first = new Party { Id = s.NextId++, Kind = PartyKind.Bandit, Name = "Ditch Wolves", Pos = player.Pos + new Vector2(0, 16), Tier = 1, ChaseId = player.Id, Moving = true, TaskUntil = 72 };
         int wolfMen = making == null ? c.Scaled(9) : Math.Clamp(Math.Max(6, player.Men), 6, c.Scaled(9));
-        first.Companies.Add(c.NewCompany("levies", "infantry", wolfMen, 0));
+        first.Companies.Add(c.NewCompany("brevon_fyrd", "infantry", wolfMen, 0));
         s.Parties.Add(first);
         if (s.Captain.Contract >= 0) c.Log($"You sign on with the {c.FactionNames[realm]} as a free captain. Prove yourself in their service to earn Sworn Sword pay.");
         else if (making != null && making.Past is not ("deserter" or "outlaw")) c.Log($"You were born in the {c.FactionNames[realm]}. Its lords and villages favour you, though you march under your own banner.");

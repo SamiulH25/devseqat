@@ -195,8 +195,8 @@ public static partial class SelfTest
         var b = Battle.Empty(42);
         var xbows = b.AddSquad(0, Troops.Get("crossbowmen"), 8, new(-12, -18), 8, Microsoft.Xna.Framework.Vector2.UnitY);
         var greats = b.AddSquad(0, Troops.Get("greatswords"), 10, new(0, -4), 5, Microsoft.Xna.Framework.Vector2.UnitY);
-        var lancers = b.AddSquad(0, Troops.Get("lancers"), 6, new(14, -22), 3, Microsoft.Xna.Framework.Vector2.UnitY);
-        var foes = b.AddSquad(1, Troops.Get("shieldmen"), 18, new(0, 4), 6, -Microsoft.Xna.Framework.Vector2.UnitY);
+        var lancers = b.AddSquad(0, Troops.Get("brevon_lancers"), 6, new(14, -22), 3, Microsoft.Xna.Framework.Vector2.UnitY);
+        var foes = b.AddSquad(1, Troops.Get("manor_foot"), 18, new(0, 4), 6, -Microsoft.Xna.Framework.Vector2.UnitY);
         xbows.Order = Order.Hold;
         greats.Order = lancers.Order = foes.Order = Order.Charge;
         for (int i = 0; i < 60 * 8; i++)

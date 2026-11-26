@@ -316,7 +316,7 @@ sealed class CreatorScreen
 
     float Gold => MathF.Max(0, Balance.Get().StartGold + Origins.Sum(M, "gold"));
     float Renown => MathF.Max(0, Balance.Get().StartRenown + Origins.Sum(M, "renown"));
-    int Men => (int)MathF.Round(Origins.Men(M).Where(x => x.Troop != "levies").Sum(x => x.Men) * Balance.Get().ArmyScale);
+    int Men => (int)MathF.Round(Origins.Men(M).Where(x => x.Troop != "brevon_fyrd").Sum(x => x.Men) * Balance.Get().ArmyScale);
 
     // ---------- the ledger ----------
 
@@ -462,7 +462,7 @@ sealed class CreatorScreen
     List<(string Troop, int Men)> Muster()
     {
         float scale = Balance.Get().ArmyScale;
-        return Origins.Men(M).Where(x => x.Troop != "levies")
+        return Origins.Men(M).Where(x => x.Troop != "brevon_fyrd")
             .GroupBy(x => x.Troop)
             .Select(g => (g.Key, (int)MathF.Round(g.Sum(x => x.Men) * scale)))
             .Where(x => x.Item2 > 0)

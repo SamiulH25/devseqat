@@ -32,8 +32,8 @@ public static partial class SelfTest
         Check(look.Features == Variety.PackFeatures(m.Look), "the captain's 3D head carries every portrait feature");
         var unpacked = Variety.UnpackFeatures(look.Features);
         Check(unpacked.Cut == m.Cut && unpacked.Beard == m.Beard && unpacked.Eye == m.Eye && unpacked.Brow == m.Brow && unpacked.Nose == m.Nose && unpacked.Jaw == m.Jaw && unpacked.Scar == m.Scar, "packed face features round-trip cleanly");
-        var manFace = PortraitPainter.OfMan(42, Troops.Get("levies"), 0, 26, false, 0, 1);
-        var manStyle = Variety.Parts(Variety.Visage(Troops.Get("levies").Culture, PortraitPainter.SoldierSeed(42))).Style;
+        var manFace = PortraitPainter.OfMan(42, Troops.Get("brevon_fyrd"), 0, 26, false, 0, 1);
+        var manStyle = Variety.Parts(Variety.Visage(Troops.Get("brevon_fyrd").Culture, PortraitPainter.SoldierSeed(42))).Style;
         var manFeat = Variety.DeriveFeatures(PortraitPainter.SoldierSeed(42), manStyle, false, 26);
         Check(manFeat.Cut == manFace.Cut && manFeat.Beard == manFace.Beard && manFeat.Eye == manFace.Eye && manFeat.Brow == manFace.Brow && manFeat.Nose == manFace.Nose && manFeat.Jaw == manFace.Jaw, "3D soldier head features match PortraitPainter.OfMan");
         Check(c.S.Event == null && c.OriginNote == "Born in the Market, once a Hedge Knight", "no road event after the creator, and the K sheet names the origin");
@@ -62,9 +62,9 @@ public static partial class SelfTest
         var d = new CaptainMaking { Name = "RUNAWAY", Realm = 1, Birth = "camp", Past = "deserter", Road = "sword" };
         var dc = Campaign.New(78, d.Realm, d);
         Check(dc.Captain.Contract == -1 && dc.Me.Faction == -1, "a deserter starts as a free company");
-        Check(dc.Player.Companies.Count == 1 && dc.Player.Companies[0].Stacks.Any(s => s.Troop == "spearrunners" && s.Men == dc.Scaled(6)), "deserter spawns with only its special spearrunners and no levies");
+        Check(dc.Player.Companies.Count == 1 && dc.Player.Companies[0].Stacks.Any(s => s.Troop == "shire_billmen" && s.Men == dc.Scaled(6)), "deserter spawns with only its special spearrunners and no levies");
         var noLevy = Campaign.New(78, 0, new CaptainMaking { Birth = "yeoman", Past = "drillmaster", Road = "sword" });
-        Check(noLevy.Player.Men == 0 && !noLevy.Player.Companies.Any(co => co.Stacks.Any(s => s.Troop == "levies")), "creator start never spawns levies even from levy origins");
+        Check(noLevy.Player.Men == 0 && !noLevy.Player.Companies.Any(co => co.Stacks.Any(s => s.Troop == "brevon_fyrd")), "creator start never spawns levies even from levy origins");
         noLevy.Tick(26);
         Check(noLevy.Player.Men == 0, "lone-captain start does not auto-spawn 30 levies on day 1 midnight");
         Check(dc.S.Characters.Where(l => l.Kind == "lord" && !l.Dead && l.Faction == 1).All(l => l.Opinion.GetValueOrDefault(dc.S.CaptainChar) <= -10), "your homeland's lords remember");

@@ -50,7 +50,7 @@ public static partial class SelfTest
     {
         float Lost(UnitType target, bool ranged)
         {
-            var (b, a, _) = StyleScene("levies");
+            var (b, a, _) = StyleScene("brevon_fyrd");
             var t = b.AddSquad(1, target, 1, new(0, 1.3f), 1, Vector2.UnitY).Units[0];
             b.Update(0);
             t.Pos = new(0, 1.3f); t.Face(Vector2.UnitY); // his back to the blow: no block
@@ -78,7 +78,7 @@ public static partial class SelfTest
         // Testudo: a halted shield man stops most arrows even from behind.
         int Landed(UnitType target)
         {
-            var (b, a, _) = StyleScene("bowmen");
+            var (b, a, _) = StyleScene("commons_bowmen");
             var t = b.AddSquad(1, target, 1, new(0, 20), 1, Vector2.UnitY).Units[0]; // his back to the archer
             b.Update(0);
             int got = 0;
@@ -127,7 +127,7 @@ public static partial class SelfTest
         Check(Troops.Get("kheshig").Mods.Gallop > 0, "ghost riders shoot steadily from the gallop");
         var pb = Battle.Empty(81);
         var paid = pb.AddSquad(0, Troops.Get("doge_arbalesters"), 6, new(0, 0), 3, Vector2.UnitY);
-        pb.AddSquad(1, Troops.Get("levies"), 6, new(0, 60), 3, -Vector2.UnitY);
+        pb.AddSquad(1, Troops.Get("brevon_fyrd"), 6, new(0, 60), 3, -Vector2.UnitY);
         foreach (var u in paid.Units) u.Morale = 2;
         Run(pb, 0.2f);
         Check(paid.Units.All(u => !u.Routing && u.Morale >= 16), "paid in full: they do not run while their side holds");
@@ -138,9 +138,9 @@ public static partial class SelfTest
     {
         var b = Battle.Empty(71);
         var saints = b.AddSquad(0, Troops.Get("sun_templars"), 6, new(0, 0), 3, Vector2.UnitY);
-        var near = b.AddSquad(0, Troops.Get("levies"), 6, new(12, 0), 3, Vector2.UnitY);
-        var far = b.AddSquad(0, Troops.Get("levies"), 6, new(70, 0), 3, Vector2.UnitY);
-        var foe = b.AddSquad(1, Troops.Get("levies"), 6, new(0, 14), 3, -Vector2.UnitY);
+        var near = b.AddSquad(0, Troops.Get("brevon_fyrd"), 6, new(12, 0), 3, Vector2.UnitY);
+        var far = b.AddSquad(0, Troops.Get("brevon_fyrd"), 6, new(70, 0), 3, Vector2.UnitY);
+        var foe = b.AddSquad(1, Troops.Get("brevon_fyrd"), 6, new(0, 14), 3, -Vector2.UnitY);
         foreach (var s in b.Squads) s.Order = Order.Hold;
         Run(b, 1);
         Check(near.Units.All(u => u.Mods.MoralePerSec > 0), "Zeal reaches a company of its side 12 m away");

@@ -168,7 +168,7 @@ public static class Origins
         if (o.Perk != "" && Skills.Perk(o.Perk) is PerkDef p) lines.Add($"PERK: {p.Name.ToUpperInvariant()}, {p.Text}");
         foreach (var (verb, a) in o.Effects.Select(Parse))
         {
-            if (verb == "men" && a[0] == "levies") continue; // creator starts never spawn levies (Making.cs)
+            if (verb == "men" && a[0] == "brevon_fyrd") continue; // creator starts never spawn levies (Making.cs)
             lines.Add(verb switch
             {
                 "skill" => $"{(Skills.All.FirstOrDefault(s => s.Id == a[0])?.Name ?? a[0]).ToUpperInvariant()} {Signed(Num(a[1]))}",
@@ -223,7 +223,7 @@ public static class Origins
                     "skill" => a.Length == 2 && Skills.All.Any(s => s.Id == a[0]) && Num(a[1]) > 0,
                     "gear" or "wear" => a.Length == 1 && Gear.Find(a[0]) != null,
                     "buff" => a.Length == 2 && Effects.Has(a[0]) && Num(a[1]) >= 0 && Num(a[1]) <= 365 && !Effects.Get(a[0]).Harmful,
-                    "men" => a.Length == 2 && Troops.Has(a[0]) && Troops.Get(a[0]).Culture == "common" && Num(a[1]) is > 0 and <= 10,
+                    "men" => a.Length == 2 && Troops.Has(a[0]) && !Troops.Get(a[0]).Wild && Num(a[1]) is > 0 and <= 10,
                     "gold" or "renown" or "food" or "horses" or "opinion_realm" => a.Length == 1 && float.TryParse(a[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _),
                     _ => false,
                 };

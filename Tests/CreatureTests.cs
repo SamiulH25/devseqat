@@ -137,7 +137,7 @@ public static partial class SelfTest
     /// Debug: a pack against shieldmen, second by second (`--selftest WolfTrace`).
     static void WolfTrace()
     {
-        foreach (var foe in new[] { "shieldmen", "levies", "bowmen" })
+        foreach (var foe in new[] { "manor_foot", "brevon_fyrd", "commons_bowmen" })
         {
             var f = Battle.Empty(83);
             var wolves = f.AddSquad(1, Troops.Get("wolf"), 16, new(0, 25), 8, -Vector2.UnitY);
@@ -198,17 +198,17 @@ public static partial class SelfTest
             Check(wolves.Swarm && wolves.Formation == Formation.Loose, "a pack runs loose");
             return men.Units.Count;
         }
-        Fight("bowmen", out var fa, out var pa, out _);
+        Fight("commons_bowmen", out var fa, out var pa, out _);
         for (int i = 0; i < 60 * 30; i++) fa.Update(1 / 60f);
         int archersLeft = fa.SquadsOf(0).Sum(q => q.Units.Count(u => u.Active && !u.Routing && !u.IsLeader));
-        Fight("shieldmen", out var fs, out var ps, out var alpha);
+        Fight("manor_foot", out var fs, out var ps, out var alpha);
         for (int i = 0; i < 60 * 30; i++) fs.Update(1 / 60f);
         int shieldsLeft = fs.SquadsOf(0).Sum(q => q.Units.Count(u => u.Active && !u.Routing && !u.IsLeader));
         Console.WriteLine($"wolves: 16 wolves and an alpha leave {archersLeft} of 20 bowmen and {shieldsLeft} of 20 shieldmen standing after 30 s");
         Check(archersLeft < 10, "a pack tears through archers");
         Check(shieldsLeft > 15 && ps.Units.Count(u => u.Active) < 4, "a pack breaks on a shield line");
 
-        Fight("levies", out var fl, out var pl, out var alpha2);
+        Fight("brevon_fyrd", out var fl, out var pl, out var alpha2);
         for (int i = 0; i < 60 * 3; i++) fl.Update(1 / 60f);
         float before = pl.Units.Where(u => u.Active).Average(u => u.Morale);
         alpha2.Action = UnitAction.Stagger;
@@ -231,7 +231,7 @@ public static partial class SelfTest
         Check(u.Dead && b.LooseHorses.Count == 0 && foe.Squad!.HorseKills == 0, "his warg runs off: nothing to catch or count");
         var f = Battle.Empty(92);
         var riders = f.AddSquad(1, rider, 12, new(0, 30), 6, -Vector2.UnitY);
-        f.AddSquad(0, Troops.Get("bowmen"), 20, new(0, -5), 10, Vector2.UnitY);
+        f.AddSquad(0, Troops.Get("commons_bowmen"), 20, new(0, -5), 10, Vector2.UnitY);
         riders.Order = Order.Charge;
         for (int i = 0; i < 60 * 40 && f.Winner < 0; i++) f.Update(1 / 60f);
         Console.WriteLine($"wolf riders: 12 riders vs 20 bowmen after {f.Time:0} s: {f.SquadsOf(0).Sum(q => q.Units.Count(x => x.Dead))} archers dead, {riders.Units.Count(x => x.Dead)} riders dead");
@@ -272,7 +272,7 @@ public static partial class SelfTest
             float hour = beast == "troll" ? (night ? bal.TrollNight : bal.TrollDay) : 1;
             Check(a > b * hour == win, $"{men} men against {n} {beast}{(beast == "troll" ? night ? " by night" : " by day" : "")}: the field says {(win ? "a win" : "a loss")}, auto-resolve {a / (b * hour):0.00}");
         }
-        var levies = Side("levies", 60, 1);
+        var levies = Side("brevon_fyrd", 60, 1);
         var foot = Side(Armies.LineTroop("infantry", 3), 40, 3);
         Check(Math.Abs(Rules.MightAgainst(new[] { levies }, new[] { foot }) - Rules.Might(levies)) < 1e-3f, "men against men are weighed as before");
     }
@@ -385,7 +385,7 @@ public static partial class SelfTest
             var band = c.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
             foreach (var co in band.Companies) foreach (var st in co.Stacks) st.Men = 0;
             band.Companies.Clear();
-            band.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(90), 0));
+            band.Companies.Add(c.NewCompany("brevon_fyrd", "infantry", c.Scaled(90), 0));
             band.Pos = c.Player.Pos;
             foreach (var p in c.S.Parties) // no passer-by joins: the test wants a fight of this size
                 if (p != c.Player && p != band && Vector2.Distance(p.Pos, c.Player.Pos) < Balance.Get().JoinRadius * 2)
@@ -469,7 +469,7 @@ public static partial class SelfTest
         Check(hound.Wild && hound.Has("pack") && hound.Look.Beast && hound.UpgradesTo.Length == 0, "a war hound hunts like a wolf and never becomes a man");
 
         // Beast hunters, a branch of the spear line, kill a troll that breaks shieldmen, and do not fear it.
-        Check(Troops.Get("spearrunners").UpgradesTo.Contains("beast_hunters") && Troops.Get("beast_hunters").VsMonster > 1, "spearrunners can train as beast hunters");
+        Check(Troops.Get("shire_billmen").UpgradesTo.Contains("beast_hunters") && Troops.Get("beast_hunters").VsMonster > 1, "spearrunners can train as beast hunters");
         bool Kills(string foe, out Squad men)
         {
             var f = Battle.Empty(98);
@@ -480,7 +480,7 @@ public static partial class SelfTest
             for (int i = 0; i < 60 * 120 && !tr.Dead && (i == 0 || men.Alive > 0); i++) f.Update(1 / 60f);
             return tr.Dead;
         }
-        bool hunters = Kills("beast_hunters", out var hs), shields = Kills("shieldmen", out var ss);
+        bool hunters = Kills("beast_hunters", out var hs), shields = Kills("manor_foot", out var ss);
         Console.WriteLine($"creatures: 20 beast hunters kill a troll by night {hunters} ({hs.Units.Count(u => u.Routing)} routed); 20 shieldmen {shields} ({ss.Units.Count(u => u.Routing)} routed)");
         Check(hunters && !shields && hs.Units.Count(u => u.Routing) == 0, "beast hunters kill a troll that breaks shieldmen, and stand");
 
@@ -503,7 +503,7 @@ public static partial class SelfTest
     /// Debug: one troll against companies of shieldmen by night and by day (`--selftest TrollTrace`).
     static void TrollTrace()
     {
-        foreach (var foe in new[] { "shieldmen", "spearrunners", "beast_hunters" })
+        foreach (var foe in new[] { "manor_foot", "shire_billmen", "beast_hunters" })
         foreach (float hour in new[] { 23f, 13f })
             foreach (int n in new[] { 10, 20, 30, 45 })
             {
@@ -544,7 +544,7 @@ public static partial class SelfTest
             Run(b, 20);
             return mark.Units.Sum(u => 1000 - u.Hp);
         }
-        var man = Troops.Get("shieldmen");
+        var man = Troops.Get("manor_foot");
         float bone = Shot(sk), flesh = Shot(man);
         Console.WriteLine($"undead: 20 bows for 20 s do {bone:0} to skeletons, {flesh:0} to shieldmen");
         Check(bone < flesh * 0.5f, "arrows do little to skeletons");
@@ -553,7 +553,7 @@ public static partial class SelfTest
         var f = Battle.Empty(96);
         var necro = f.AddSquad(1, Troops.Get("necromancer"), 1, new(0, 30), 1, -Vector2.UnitY).Units[0];
         necro.Squad!.Order = Order.Hold;
-        var dead = f.AddSquad(0, Troops.Get("levies"), 6, new(0, 24), 6, Vector2.UnitY);
+        var dead = f.AddSquad(0, Troops.Get("brevon_fyrd"), 6, new(0, 24), 6, Vector2.UnitY);
         foreach (var u in dead.Units) { u.Dead = true; u.DiedAt = -5; u.Hp = 0; }
         Run(f, 6);
         var risen = f.Squads.FirstOrDefault(q => q.Name == "The Risen");
@@ -576,7 +576,7 @@ public static partial class SelfTest
         var g = Battle.Empty(97);
         var ghoul = g.AddSquad(1, Troops.Get("ghoul"), 1, new(0, 1.2f), 1, -Vector2.UnitY).Units[0];
         ghoul.Hp = ghoul.Type.MaxHp / 2;
-        var prey = g.AddSquad(0, Troops.Get("levies"), 1, new(0, 0), 1, Vector2.UnitY).Units[0];
+        var prey = g.AddSquad(0, Troops.Get("brevon_fyrd"), 1, new(0, 0), 1, Vector2.UnitY).Units[0];
         prey.Hp = 1;
         prey.Squad!.Order = Order.Hold;
         ghoul.Squad!.Order = Order.Charge;
@@ -592,7 +592,7 @@ public static partial class SelfTest
             {
                 float hour = 23;
                 var host = new ArmySpec("The Dead", 3, new List<Company> { new("skeleton", 30, Id: 1), new("ghoul", 8, Id: 2), new("necromancer", 1, Id: 3) });
-                var army = new ArmySpec("Men", 3, new List<Company> { new("shieldmen", men, Id: 1), new("bowmen", bows ? men / 2 : 0, Id: 2) });
+                var army = new ArmySpec("Men", 3, new List<Company> { new("manor_foot", men, Id: 1), new("commons_bowmen", bows ? men / 2 : 0, Id: 2) });
                 var b = new Battle(31, army, host, new BattleOptions { AutoPlayer = true, PlayerWounded = true, Weather = new Weather(hour) });
                 var necro = b.Units.First(u => u.Type.Has("raise"));
                 float behind = 0; int n = 0;

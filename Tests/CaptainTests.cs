@@ -14,7 +14,7 @@ public static partial class SelfTest
             var b = Battle.Empty(21);
             var p = b.Player;
             p.Pos = Vector2.Zero;
-            var foe = b.AddSquad(1, Troops.Get("levies"), 2, new Vector2(0, 1.6f), 2, -Vector2.UnitY);
+            var foe = b.AddSquad(1, Troops.Get("brevon_fyrd"), 2, new Vector2(0, 1.6f), 2, -Vector2.UnitY);
             foe.Order = Order.Charge;
             b.Commanding = commanding;
             float hp = p.Hp;
@@ -40,8 +40,8 @@ public static partial class SelfTest
         {
             var b = Battle.Empty(5, new BattleOptions { Renown = renown });
             b.Player.Pos = new Vector2(-4, 0);
-            b.AddSquad(0, Troops.Get("levies"), 1, new Vector2(3.5f, 0), 1, -Vector2.UnitX);
-            var foe = b.AddSquad(1, Troops.Get("levies"), 1, Vector2.Zero, 1, Vector2.UnitX);
+            b.AddSquad(0, Troops.Get("brevon_fyrd"), 1, new Vector2(3.5f, 0), 1, -Vector2.UnitX);
+            var foe = b.AddSquad(1, Troops.Get("brevon_fyrd"), 1, Vector2.Zero, 1, Vector2.UnitX);
             foe.Drill = 0.4f; // trained: no rush, no champion
             b.Update(1 / 60f);
             return foe.Units[0].OnCaptain;
@@ -52,8 +52,8 @@ public static partial class SelfTest
         // The cap: eight foes round a famed captain with men of his near; never more than MarkCap mark him.
         var c = Battle.Empty(6, new BattleOptions { Renown = 500, AuraTier = 3 });
         c.Player.Pos = Vector2.Zero;
-        c.AddSquad(0, Troops.Get("levies"), 6, new Vector2(0, -5), 6, Vector2.UnitY);
-        var ring = c.AddSquad(1, Troops.Get("levies"), 8, new Vector2(0, 3.5f), 8, -Vector2.UnitY);
+        c.AddSquad(0, Troops.Get("brevon_fyrd"), 6, new Vector2(0, -5), 6, Vector2.UnitY);
+        var ring = c.AddSquad(1, Troops.Get("brevon_fyrd"), 8, new Vector2(0, 3.5f), 8, -Vector2.UnitY);
         ring.Drill = 0.4f;
         int most = 0;
         for (int i = 0; i < 120; i++) { c.Update(1 / 60f); most = Math.Max(most, c.Units.Count(u => u.OnCaptain && u.Active)); }
@@ -63,8 +63,8 @@ public static partial class SelfTest
         // A man at blows keeps his man, however famed the captain beside him.
         var k = Battle.Empty(7, new BattleOptions { Renown = 500 });
         k.Player.Pos = new Vector2(-1.6f, 0);
-        k.AddSquad(0, Troops.Get("levies"), 1, new Vector2(1.0f, 0), 1, -Vector2.UnitX);
-        var duel = k.AddSquad(1, Troops.Get("levies"), 1, Vector2.Zero, 1, Vector2.UnitX);
+        k.AddSquad(0, Troops.Get("brevon_fyrd"), 1, new Vector2(1.0f, 0), 1, -Vector2.UnitX);
+        var duel = k.AddSquad(1, Troops.Get("brevon_fyrd"), 1, Vector2.Zero, 1, Vector2.UnitX);
         duel.Drill = 0.4f;
         k.Update(1 / 60f);
         Check(!duel.Units[0].OnCaptain, "a man at blows with someone keeps his foe");
@@ -74,8 +74,8 @@ public static partial class SelfTest
         {
             var r = Battle.Empty(8);
             r.Player.Pos = Vector2.Zero;
-            var friend = r.AddSquad(0, Troops.Get("levies"), 1, new Vector2(0, -3), 1, Vector2.UnitY);
-            mob = r.AddSquad(1, Troops.Get("levies"), 4, new Vector2(0, 2.5f), 4, -Vector2.UnitY);
+            var friend = r.AddSquad(0, Troops.Get("brevon_fyrd"), 1, new Vector2(0, -3), 1, Vector2.UnitY);
+            mob = r.AddSquad(1, Troops.Get("brevon_fyrd"), 4, new Vector2(0, 2.5f), 4, -Vector2.UnitY);
             mob.Drill = 0.1f;
             r.Kill(mob.Units[0], byCaptain ? r.Player : friend.Units[0]);
             battle = r;
@@ -88,7 +88,7 @@ public static partial class SelfTest
 
         // The company that brings him down takes heart.
         var h = Battle.Empty(9);
-        var hunters = h.AddSquad(1, Troops.Get("levies"), 3, new Vector2(0, -78), 3, -Vector2.UnitY);
+        var hunters = h.AddSquad(1, Troops.Get("brevon_fyrd"), 3, new Vector2(0, -78), 3, -Vector2.UnitY);
         h.Kill(h.Player, hunters.Units[0]);
         Check(hunters.Heartened, "a company that brings the captain down takes heart");
 
@@ -143,7 +143,7 @@ public static partial class SelfTest
         var melee = Battle.Empty(42);
         melee.Player.Pos = Vector2.Zero;
         var mb = Bows(melee);
-        melee.AddSquad(1, Troops.Get("levies"), 2, new Vector2(0, 2.5f), 2, -Vector2.UnitY);
+        melee.AddSquad(1, Troops.Get("brevon_fyrd"), 2, new Vector2(0, 2.5f), 2, -Vector2.UnitY);
         for (int i = 0; i < 40; i++) melee.Update(1 / 60f);
         melee.HuntGeneral();
         Check(mb.VolleyAt <= 0, "bows never mark the captain while their own men are on him");
@@ -159,7 +159,7 @@ public static partial class SelfTest
         {
             var g = Battle.Empty(43, new BattleOptions { Grudge = grudge });
             g.Player.Pos = new Vector2(0, 50);
-            g.AddSquad(0, Troops.Get("levies"), 1, g.EnemyCaptain.Pos + new Vector2(9, 0), 1, Vector2.UnitY);
+            g.AddSquad(0, Troops.Get("brevon_fyrd"), 1, g.EnemyCaptain.Pos + new Vector2(9, 0), 1, Vector2.UnitY);
             var start = Vector2.Distance(g.EnemyCaptain.Pos, g.Player.Pos);
             for (int i = 0; i < 180; i++) { if (i % 30 == 0) g.HuntGeneral(); g.Update(1 / 60f); }
             return start - Vector2.Distance(g.EnemyCaptain.Pos, g.Player.Pos);
@@ -169,7 +169,7 @@ public static partial class SelfTest
 
         // The guard closes round the enemy captain when you come near.
         var gd = Battle.Empty(44);
-        var guard = gd.AddSquad(1, Troops.Get("levies"), 6, gd.EnemyCaptain.Pos + new Vector2(7, 2), 3, -Vector2.UnitY);
+        var guard = gd.AddSquad(1, Troops.Get("brevon_fyrd"), 6, gd.EnemyCaptain.Pos + new Vector2(7, 2), 3, -Vector2.UnitY);
         gd.Player.Pos = gd.EnemyCaptain.Pos + new Vector2(0, -14);
         float before = guard.Units.Average(u => Vector2.Distance(u.Pos, gd.EnemyCaptain.Pos));
         for (int i = 0; i < 240; i++) { if (i % 30 == 0) gd.HuntGeneral(); gd.Player.Pos = gd.EnemyCaptain.Pos + new Vector2(0, -14); gd.Update(1 / 60f); }

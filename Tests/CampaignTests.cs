@@ -135,9 +135,9 @@ public static partial class SelfTest
         var open = Enumerable.Range(1, 40).Select(i => town.Pos + new Vector2(i * 3f, 0)).First(q => c.SettlementAt(q, 12) == null);
         c.Player.Pos = open;
         Check(!c.InTown(c.Player) && !c.Has("Drillmaster"), "the party stands in the open, no Drillmaster");
-        var lv = c.NewCompany("levies", "infantry", 10, 1000, town);
+        var lv = c.NewCompany("brevon_fyrd", "infantry", 10, 1000, town);
         c.Player.Companies.Add(lv);
-        Check(c.Promotable(c.Player, lv, lv.Stack("levies"), "shieldmen", 1, 1000, out _, out string why) == 1, "levies rise to tier II in camp: " + why);
+        Check(c.Promotable(c.Player, lv, lv.Stack("brevon_fyrd"), "manor_foot", 1, 1000, out _, out string why) == 1, "levies rise to tier II in camp: " + why);
         var ma = c.NewCompany("men_at_arms", "infantry", 10, 5000, town);
         c.Player.Companies.Add(ma);
         var st = ma.Stack("men_at_arms");
@@ -209,7 +209,7 @@ public static partial class SelfTest
         castle.Garrison.Clear();
         castle.Garrison.Add(c.NewCompany("men_at_arms", "infantry", c.Scaled(60), 0));
         var band = new Party { Id = c.S.NextId++, Kind = PartyKind.Bandit, Name = "Test Band", Pos = held[0].Pos + new Vector2(2, 0), Tier = 1 };
-        band.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(8), 0));
+        band.Companies.Add(c.NewCompany("brevon_fyrd", "infantry", c.Scaled(8), 0));
         foreach (var other in c.S.Parties.Where(p => p.Kind is PartyKind.Bandit or PartyKind.Monster)) other.Down = true; // one sally a day: only ours near
         c.S.Parties.Add(band);
         c.CastellansDaily();
@@ -397,8 +397,8 @@ public static partial class SelfTest
     /// Auto-resolve weighs the ground: the side that chose it has an edge, and horse loses worth on wet ground.
     static void AutoResolveGroundEdge()
     {
-        var foot = new Party(); foot.Companies.Add(new CompanyRecord { Role = "infantry" }); foot.Companies[0].Stack("shieldmen").Men = 30;
-        var horse = new Party(); horse.Companies.Add(new CompanyRecord { Role = "horse" }); horse.Companies[0].Stack("lancers").Men = 30;
+        var foot = new Party(); foot.Companies.Add(new CompanyRecord { Role = "infantry" }); foot.Companies[0].Stack("manor_foot").Men = 30;
+        var horse = new Party(); horse.Companies.Add(new CompanyRecord { Role = "horse" }); horse.Companies[0].Stack("brevon_lancers").Men = 30;
         var g = TerrainParams.Meadow with { Layouts = new[] { FieldLayout.Open } };
         float none = Campaign.GroundEdge(g, new[] { foot }, new[] { foot }, 1), mine = Campaign.GroundEdge(g with { Favour = 0 }, new[] { foot }, new[] { foot }, 1), theirs = Campaign.GroundEdge(g with { Favour = 1 }, new[] { foot }, new[] { foot }, 1);
         Check(none == 1 && mine > 1 && theirs < 1, "choosing the ground is an edge");
@@ -669,12 +669,12 @@ public static partial class SelfTest
         var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && !c.Refuses(t));
         c.Player.Pos = town.Pos;
         c.S.Gold = 5000;
-        var co = c.Player.Companies.First(k => k.Stacks.Any(s => s.Troop == "levies" && s.Men > 1));
-        var lev = co.Stack("levies");
-        co.Roll.RemoveAll(m => m.Troop == "levies");
-        var vet = c.NameMan(co, "test", "levies")!;
+        var co = c.Player.Companies.First(k => k.Stacks.Any(s => s.Troop == "brevon_fyrd" && s.Men > 1));
+        var lev = co.Stack("brevon_fyrd");
+        co.Roll.RemoveAll(m => m.Troop == "brevon_fyrd");
+        var vet = c.NameMan(co, "test", "brevon_fyrd")!;
         lev.AddXp(1e6f);
-        Check(c.Promote(co, lev, "shieldmen", 1) == null && vet.Troop == "shieldmen", "the named man is the one promoted");
+        Check(c.Promote(co, lev, "manor_foot", 1) == null && vet.Troop == "manor_foot", "the named man is the one promoted");
         // An old save (no roll) loads with empty rolls, and names its first men on the next day.
         var node = System.Text.Json.Nodes.JsonNode.Parse(c.S.Serialize())!;
         foreach (var p in node["Parties"]!.AsArray())
@@ -862,7 +862,7 @@ public static partial class SelfTest
         float renown = c.Captain.Renown;
         Check(c.HandOver() == null && c.Me.Name == heir!.Name && !c.Companions.Contains(heir) && !c.S.GameOver && c.S.Generation == 1, "handing over: you play on as him");
         Check(MathF.Abs(c.Captain.Renown - renown * 0.5f) < 1e-3f && c.Player.Companies.Contains(co), "with half the renown and the same company");
-        c.S.Fallen.Add(new Soldier { Name = "Wat the Grey", Troop = "levies", Battles = 30, Fate = "fell", Company = co.Id, CompanyName = co.Name });
+        c.S.Fallen.Add(new Soldier { Name = "Wat the Grey", Troop = "brevon_fyrd", Battles = 30, Fate = "fell", Company = co.Id, CompanyName = co.Name });
         Check(c.Retire() == null && c.S.GameOver && c.S.Won && c.S.Retired, "retiring ends the campaign as a win");
         var sum = c.Summary();
         Check(sum[0].StartsWith(co.Name.ToUpperInvariant()) && sum.Any(l => l.Contains("WAT THE GREY")) && sum.Any(l => l.Contains("ROSE FROM THE RANKS")), "the summary tells the company's story first");
@@ -906,19 +906,19 @@ public static partial class SelfTest
         Check(c.InTown(c.Player), "the test party stands in a town");
         c.S.Gold = 2000;
         var co = c.Player.Companies.First(k => Rules.RoleOf(k) == "infantry");
-        var lev = co.Stack("levies");
+        var lev = co.Stack("brevon_fyrd");
         int men = lev.Men, companies = c.Player.Companies.Count;
         lev.AddXp(1e6f);
         Check(MathF.Abs(lev.Xp - lev.PoolCap) < 1e-3f && lev.Ready == men, "a pool fills to its cap and no further");
         float pool = lev.Xp, gold = c.S.Gold;
-        Check(c.Promote(co, lev, "shieldmen", 1) == null, "one levy can be promoted in a town");
-        Check(lev.Men == men - 1 && co.Stack("shieldmen").Men == 1, "a promotion moves exactly one man");
+        Check(c.Promote(co, lev, "manor_foot", 1) == null, "one levy can be promoted in a town");
+        Check(lev.Men == men - 1 && co.Stack("manor_foot").Men == 1, "a promotion moves exactly one man");
         Check(MathF.Abs(pool - lev.Xp - lev.Type.UpgradeXp) < 1e-3f || lev.Xp <= lev.PoolCap, "and spends his upgradeXp from the pool");
-        Check(MathF.Abs(gold - c.S.Gold - Rules.PromoteCost("levies", "shieldmen", false)) < 1e-3f, "and costs the difference in troop price");
-        Check(c.Promote(co, lev, "shieldmen", 4) == null && co.Stack("shieldmen").Men == 5, "five levies are shieldmen now");
-        Check(c.Promote(co, lev, "bowmen", 2) == null, "two levies can become bowmen");
+        Check(MathF.Abs(gold - c.S.Gold - Rules.PromoteCost("brevon_fyrd", "manor_foot", false)) < 1e-3f, "and costs the difference in troop price");
+        Check(c.Promote(co, lev, "manor_foot", 4) == null && co.Stack("manor_foot").Men == 5, "five levies are shieldmen now");
+        Check(c.Promote(co, lev, "town_crossbows", 2) == null, "two levies can become bowmen");
         var bows = c.Player.Companies.FirstOrDefault(k => Rules.RoleOf(k) == "archers");
-        Check(bows != null && bows.Stack("bowmen").Men == 2 && !co.Stacks.Any(st => st.Troop == "bowmen"), "bowmen go to a bow company (raised for them)");
+        Check(bows != null && bows.Stack("town_crossbows").Men == 2 && !co.Stacks.Any(st => st.Troop == "town_crossbows"), "bowmen go to a bow company (raised for them)");
         Check(c.Player.Companies.Count == companies + 1, "only one company is raised for them");
         Check(co.Men == men - 2 && co.Stacks.Count == 2, "the foot company holds levies and shieldmen");
         Check(co.Stacks.All(st => st.Xp <= st.PoolCap + 1e-3f), "pools stay under their caps after promotion");
@@ -926,9 +926,9 @@ public static partial class SelfTest
         c.Player.Pos = town.Pos + new Vector2(40, 40);
         Check(c.SettlementAt(c.Player.Pos) != null || !c.CanTrainHere(c.Player, Troops.All.First(t => t.Tier == 3).Id), "promotion past tier II out in the field is refused");
         // Moving and splitting stacks.
-        Check(c.SplitStack(co, co.Stack("shieldmen"), 2) == null && co.Stack("shieldmen").Men == 3, "a stack can be split into a new company");
+        Check(c.SplitStack(co, co.Stack("manor_foot"), 2) == null && co.Stack("manor_foot").Men == 3, "a stack can be split into a new company");
         var split = c.Player.Companies.First(k => k.Name.EndsWith(" II"));
-        Check(c.MoveStack(split, split.Stacks[0], co) == null && co.Stack("shieldmen").Men == 5 && !c.Player.Companies.Contains(split), "and moved back");
+        Check(c.MoveStack(split, split.Stacks[0], co) == null && co.Stack("manor_foot").Men == 5 && !c.Player.Companies.Contains(split), "and moved back");
         // Drill a fortnight: pools fill but never pass their caps.
         c.Player.Cooldown = 1e6f;
         for (int h = 0; h < 14 * 24; h++) { c.Tick(1); c.Encounter = null; c.Arrived = null; c.Player.Food = 20; }
@@ -991,25 +991,26 @@ public static partial class SelfTest
             Check(OwnPeople(v.Faction, v.Culture) || c.Map.Designed && v.Culture == WorldDesign.Get().Settlements[v.Id].Subculture, $"a village starts with its realm's culture or its drawn people ({v.Name}: {v.Culture})");
             Check(Campaign.RecruitTroop(v) == Factions.Root(v.Culture), "a village raises its culture's root");
         }
-        // A northern village held by the Azure Crown still raises clansmen, and they form a northern company.
-        var north = c.S.Settlements.First(v => v.Kind == SettlementKind.Village && v.Faction == 2 && Factions.Root(v.Culture) == "clansmen");
+        // A northern village held by the Azure Crown still raises its northern root, and they form a northern company.
+        var north = c.S.Settlements.First(v => v.Kind == SettlementKind.Village && v.Faction == 2 && Factions.PeopleOf(v.Culture) == "northern");
         north.Faction = 0;
         north.Owner = c.Player.Id; // conquered by you: its lord's opinion no longer holds men back (a drawn province's seat may be another lord's)
         north.Recruits = 10;
         c.Player.Pos = north.Pos;
         c.S.Gold = 1000;
         Check(c.RecruitLevies(north, 6) == null, "you can recruit in a conquered northern village");
-        var clans = c.Player.Companies.FirstOrDefault(k => k.Stacks.Any(st => st.Troop == "clansmen"));
-        Check(clans != null && clans.Culture == north.Culture && clans.Stack("clansmen").Men == 6, $"its men are clansmen, in a company of its people ({north.Culture})");
-        Check(c.Player.Companies.Where(k => k != clans).All(k => k.Stacks.All(st => st.Troop != "clansmen")), "and they did not dilute the azure companies");
+        string northRoot = Factions.Root(north.Culture);
+        var clans = c.Player.Companies.FirstOrDefault(k => k.Stacks.Any(st => st.Troop == northRoot));
+        Check(clans != null && clans.Culture == north.Culture && clans.Stack(northRoot).Men == 6, $"its men are {northRoot}, in a company of its people ({north.Culture})");
+        Check(c.Player.Companies.Where(k => k != clans).All(k => k.Stacks.All(st => st.Troop != northRoot)), "and they did not dilute the azure companies");
         // Culture lines: azure shieldmen may become men-at-arms but not crimson greatswords.
         var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && t.Faction == 0);
         c.Player.Pos = town.Pos;
-        var az = c.NewCompany("shieldmen", "infantry", 10, 1000, town);
+        var az = c.NewCompany("manor_foot", "infantry", 10, 1000, town);
         c.Player.Companies.Add(az);
-        var sh = az.Stack("shieldmen");
+        var sh = az.Stack("manor_foot");
         Check(OwnPeople(0, az.Culture) && sh.Ready > 0, $"an azure company of ready shieldmen ({az.Culture})");
-        Check(c.Promotable(c.Player, az, sh, "greatswords", 1, 1000, out _, out string why) == 0 && why.Contains("CANNOT TRAIN"), "azure men cannot train as crimson greatswords: " + why);
+        Check(c.Promotable(c.Player, az, sh, "greatswords", 1, 1000, out _, out string why) == 0 && (why.Contains("NOT ON THIS LINE") || why.Contains("CANNOT TRAIN")), "azure men cannot train as crimson greatswords: " + why);
         Check(c.Promotable(c.Player, az, sh, "men_at_arms", 1, 1000, out _, out _) == 1, "but can as azure men-at-arms");
         // Elite lines: azure ironguard -> paladins (tier V) needs an azure barracks in your realm.
         var ig = c.NewCompany("ironguard", "infantry", 6, 1000, town);
@@ -1147,7 +1148,7 @@ public static partial class SelfTest
     {
         var c = Campaign.New(33);
         var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit);
-        while (c.Player.Companies.Count < 3) c.Player.Companies.Add(new CompanyRecord { Id = c.Player.Companies.Max(x => x.Id) + 1, Stacks = { new TroopStack { Troop = "levies", Men = 20 } } });
+        while (c.Player.Companies.Count < 3) c.Player.Companies.Add(new CompanyRecord { Id = c.Player.Companies.Max(x => x.Id) + 1, Stacks = { new TroopStack { Troop = "brevon_fyrd", Men = 20 } } });
         var lead = c.Player.Companies[0];
         lead.Officer = "Hal Brook";
         lead.OfficerBattles = 6;
@@ -1801,7 +1802,7 @@ public static partial class SelfTest
 
         // A brigand band beside a lord on duty, not after him: no fight.
         var band = new Party { Id = c.S.NextId++, Kind = PartyKind.Bandit, Name = "Test Band", Tier = 1, Pos = member.Pos };
-        band.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(10), 0));
+        band.Companies.Add(c.NewCompany("brevon_fyrd", "infantry", c.Scaled(10), 0));
         c.S.Parties.Add(band);
         int men = band.Men;
         c.Clash(member, band);
@@ -1813,11 +1814,11 @@ public static partial class SelfTest
 
         // Rabble is slow, trained brigands quick.
         var foot = new Party { Kind = PartyKind.Lord };
-        foot.Companies.Add(c.NewCompany("levies", "infantry", 30, 0));
+        foot.Companies.Add(c.NewCompany("brevon_fyrd", "infantry", 30, 0));
         var rabble = new Party { Kind = PartyKind.Bandit, Tier = 1 };
-        rabble.Companies.Add(c.NewCompany("levies", "infantry", 30, 0));
+        rabble.Companies.Add(c.NewCompany("brevon_fyrd", "infantry", 30, 0));
         var trained = new Party { Kind = PartyKind.Bandit, Tier = 5 };
-        trained.Companies.Add(c.NewCompany("levies", "infantry", 30, 0));
+        trained.Companies.Add(c.NewCompany("brevon_fyrd", "infantry", 30, 0));
         Check(c.Speed(rabble) < c.Speed(foot) && c.Speed(trained) > c.Speed(foot), "rabble is slower than a lord's men, trained brigands quicker");
 
         // The leader falls: the army breaks up.
@@ -1981,13 +1982,13 @@ public static partial class SelfTest
         Check(Troops.All.Count(t => t.Noble) >= 60, "the noble troops are marked");
         var c = Campaign.New(95);
         var co = c.Player.Companies.First();
-        Check(c.CanEnterLine(c.Player, co, "levies", "crown_squires", out _), "levies still become (common) crown squires");
-        Check(!c.CanEnterLine(c.Player, co, "lancers", "knights", out string why) && why.Contains("NOBLE"), "lancers cannot drill into knights");
+        Check(c.CanEnterLine(c.Player, co, "brevon_fyrd", "crown_squires", out _), "levies still become (common) crown squires");
+        Check(!c.CanEnterLine(c.Player, co, "brevon_lancers", "knights", out string why) && why.Contains("NOBLE"), "lancers cannot drill into knights");
         Check(!c.CanEnterLine(c.Player, co, "ironguard", "paladins", out _), "ironguard cannot drill into paladins");
-        Check(c.CanEnterLine(c.Player, co, "levies", "shieldmen", out _), "levies still become shieldmen");
+        Check(c.CanEnterLine(c.Player, co, "brevon_fyrd", "manor_foot", out _), "levies still become shieldmen");
         Check(c.CanEnterLine(c.Player, co, "paladins", "royal_crusaders", out _) || !Troops.Get("royal_crusaders").Noble, "a noble troop trains up the noble line");
         // Everything XP can reach from the commoner roots without crossing the gate is common.
-        var seen = new HashSet<string>(); var todo = new Stack<string>(new[] { "levies", "clansmen" });
+        var seen = new HashSet<string>(); var todo = new Stack<string>(new[] { "brevon_fyrd", "clansmen" });
         while (todo.Count > 0)
         {
             string id = todo.Pop();
@@ -2017,12 +2018,13 @@ public static partial class SelfTest
         c.Captain.Renown = 160;
         int gold = (int)c.S.Gold, pool = castle.Nobles;
         Check(c.RecruitNobles(castle, false, 2) == null && castle.Nobles == pool - 2 && c.S.Gold < gold, "esquires join for a price");
-        Check(c.Player.Companies.Any(k => k.Stacks.Any(x => x.Troop == "esquires")), "they form a company of their own");
+        string nob = Campaign.NobleTroop(castle.Culture, false);
+        Check(c.Player.Companies.Any(k => k.Stacks.Any(x => x.Troop == nob)), "they form a company of their own");
         c.Captain.Contract = -1;
         Check(c.CannotRecruitNobles(castle) is string foreign && foreign.Contains("OWN CAPTAINS"), "a free captain is not sent esquires");
-        var co = c.Player.Companies.First(k => k.Stacks.Any(x => x.Troop == "esquires"));
-        Check(!c.CanEnterLine(c.Player, co, "levies", "esquires", out _) || !Troops.Get("levies").UpgradesTo.Contains("esquires"), "no drill leads into esquires");
-        Check(Troops.Get("esquires").Noble && Troops.Get("esquires").UpgradesTo.Any(u => Troops.Get(u).Noble), "esquires train up the noble line");
+        var co = c.Player.Companies.First(k => k.Stacks.Any(x => x.Troop == nob));
+        Check(!c.CanEnterLine(c.Player, co, Factions.Root(castle.Culture), nob, out _) || !Troops.Get(Factions.Root(castle.Culture)).UpgradesTo.Contains(nob), "no drill leads into esquires");
+        Check(Troops.Get(nob).Noble && Troops.Get(nob).UpgradesTo.Any(u => Troops.Get(u).Noble), "esquires train up the noble line");
         // Nobles never come cheap otherwise: not as hired sellswords, not as prisoners.
         for (int k = 0; k < 40; k++)
         {
@@ -2034,7 +2036,8 @@ public static partial class SelfTest
         Check(c.RecruitPrisoners(pg) is string held && held.Contains("NOBLES"), "noble prisoners are ransomed, not recruited");
         // Every noble troop (outside an order's own gate) has a way in: a castle root, or a commoner parent (knighting, N3).
         var knighted = Troops.All.Where(t => t.Noble && Troops.All.Any(p => !p.Noble && p.UpgradesTo.Contains(t.Id))).Select(t => t.Id).ToHashSet();
-        var rooted = new HashSet<string>(); var todo = new Stack<string>(new[] { "esquires", "mounted_esquires" });
+        var nobleRoots = Factions.Cultures.SelectMany(cul => new[] { Factions.NobleFoot(cul.Id), Factions.NobleHorse(cul.Id) }).Where(id => id != "").Distinct();
+        var rooted = new HashSet<string>(); var todo = new Stack<string>(nobleRoots);
         while (todo.Count > 0) { string id = todo.Pop(); if (rooted.Add(id)) foreach (var u in Troops.Get(id).UpgradesTo) if (Troops.Get(u).Noble) todo.Push(u); }
         var reach = new HashSet<string>(rooted); todo = new Stack<string>(knighted); // a knighted man then drills up the noble line
         while (todo.Count > 0) { string id = todo.Pop(); if (reach.Add(id) || knighted.Contains(id)) foreach (var u in Troops.Get(id).UpgradesTo) if (Troops.Get(u).Noble && !reach.Contains(u)) todo.Push(u); }

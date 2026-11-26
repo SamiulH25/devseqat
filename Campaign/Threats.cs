@@ -78,7 +78,7 @@ public sealed partial class Campaign
         ch.PartyId = band.Id;
         band.CharId = ch.Id;
         band.Name = $"{ch.Name.Split(' ')[0]}'s Host";
-        string troop = band.Companies.FirstOrDefault()?.Troop ?? "levies";
+        string troop = band.Companies.FirstOrDefault()?.Troop ?? "brevon_fyrd";
         band.Companies.Add(NewCompany(troop, "infantry", Scaled(16), 0));
         Log($"{ch.Name} gathers the brigands of the land and calls himself their king.");
         Force("brigand_king", new PendingEvent { Party = band.Id, Lord = ch.Id });

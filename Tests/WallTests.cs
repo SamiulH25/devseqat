@@ -19,7 +19,7 @@ public static partial class SelfTest
     static Engine Crewed(Battle b, string id, Vector2 at)
     {
         var def = Engines.Get(id);
-        var crew = b.AddSquad(0, Troops.Get("levies"), def.Crew, at - new Vector2(0, 2.5f), Math.Min(def.Crew, 6), Vector2.UnitY);
+        var crew = b.AddSquad(0, Troops.Get("brevon_fyrd"), def.Crew, at - new Vector2(0, 2.5f), Math.Min(def.Crew, 6), Vector2.UnitY);
         return b.AddEngine(0, id, at, Vector2.UnitY, crew);
     }
 
@@ -144,7 +144,7 @@ public static partial class SelfTest
     static void SiegeCaptureAndTimeout()
     {
         var att = new ArmySpec("att", 0, new List<Company> { new("men_at_arms", 12, "infantry", 1) });
-        var def = new ArmySpec("def", 1, new List<Company> { new("levies", 12, "infantry", 2) });
+        var def = new ArmySpec("def", 1, new List<Company> { new("brevon_fyrd", 12, "infantry", 2) });
         var b = new Battle(91, att, def, new BattleOptions { PlayerWounded = true, Siege = true, Ladders = 0, GateHp = 5000, FortressKind = FortressKind.Town });
         var w = b.Wall!;
         // Place attackers inside the main gatehouse (defenders far across the town): gatehouse capture opens the gate.

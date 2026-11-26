@@ -151,7 +151,7 @@ public static partial class SelfTest
     /// KT6 (See it): every soldier's kit lists piece by piece with effects, skills format cleanly, and promotions report kit changes.
     static void TroopKitDisplay()
     {
-        var sh = Troops.Get("shieldmen");
+        var sh = Troops.Get("manor_foot");
         var maa = Troops.Get("men_at_arms");
         var kit = Fighter.KitList(sh);
         Check(kit.Count >= 4 && kit.Any(x => x.Slot == "WEAPON" && x.Effect.Contains("DMG"))
