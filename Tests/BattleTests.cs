@@ -2411,5 +2411,99 @@ public static partial class SelfTest
         float spread = MathF.Tau - maxGap; // smallest arc containing all 3 foes
         Check(spread > 1.2f, $"1v3 duel enemies spread around flanks instead of stacking (arc={spread:0.00} rad)");
     }
+
+    /// Foot acceleration & directional speed, mounted directional swings & lance couch gating, and manual 3D ranged aiming.
+    static void MovementMountedAndRanged()
+    {
+        // 1. Foot movement accelerates smoothly rather than snapping in 1 tick, and backpedaling is slower & cannot sprint.
+        var b = Battle.Empty(901);
+        b.Player.Horse = null;
+        b.Player.Facing = 0f;
+        b.Input = new PlayerInput { Facing = 0f, Move = new Vector2(1, 0), Sprint = true };
+        b.Update(1 / 60f);
+        float v1 = b.Player.Vel.Length();
+        for (int i = 0; i < 30; i++) b.Update(1 / 60f);
+        float vFwdSprint = b.Player.Vel.Length();
+        Check(v1 > 0.1f && v1 < vFwdSprint * 0.45f, $"foot movement accelerates smoothly instead of snapping (v1={v1:0.00}, top={vFwdSprint:0.00})");
+
+        b.Input = new PlayerInput { Facing = 0f, Move = new Vector2(-1, 0), Sprint = true };
+        for (int i = 0; i < 45; i++) b.Update(1 / 60f);
+        float vBack = b.Player.Vel.Length();
+        Check(vBack < vFwdSprint * 0.55f, $"backpedaling is slower and cannot sprint (back={vBack:0.00}, fwdSprint={vFwdSprint:0.00})");
+
+        // 2. Mounted CanCouch rejects swords and accepts lances; mounted Left swing hits left, not behind.
+        var m = Battle.Empty(902);
+        m.Player.Horse = Troops.Mount("warhorse");
+        m.Player.HorseHp = m.Player.Horse.Hp;
+        m.Player.Speed = 8f;
+        m.Player.Facing = m.Player.Heading = 0f;
+        Check(!Battle.CanCouch(m.Player), "cannot couch a sword");
+        m.Input = new PlayerInput { Facing = 0f, Throttle = 1, Sprint = true, Couch = true };
+        m.Update(1 / 60f);
+        Check(!m.Player.Couched, "sword does not enter couched state");
+
+        var lanceType = m.Player.Type.Clone();
+        lanceType.Look = lanceType.Look with { Weapon = "lance" };
+        m.Player.Type = lanceType;
+        Check(Battle.CanCouch(m.Player), "can couch a lance");
+        m.Player.Speed = 8f;
+        m.Input = new PlayerInput { Facing = 0f, Throttle = 1, Sprint = true, Couch = true };
+        m.Update(1 / 60f);
+        Check(m.Player.Couched, "lance enters couched state at gallop");
+
+        // Mounted Left swing hits a foe on the left, not one standing behind the horse.
+        var mc = Battle.Empty(903);
+        mc.Player.Horse = Troops.Mount("warhorse");
+        mc.Player.HorseHp = mc.Player.Horse.Hp;
+        mc.Player.Pos = Vector2.Zero;
+        mc.Player.Facing = mc.Player.Heading = 0f;
+        var rearSq = mc.AddSquad(1, Troops.Get("levies"), 1, new(-1.8f, 0f), 1, Vector2.UnitX);
+        var rearFoe = rearSq.Units[0];
+        rearFoe.Pos = new(-1.8f, 0f);
+        float rearHp0 = rearFoe.Hp;
+        mc.Input = new PlayerInput { Facing = 0f, Dir = AttackDir.Left, Attack = true };
+        for (int i = 0; i < 12; i++) mc.Update(1 / 60f);
+        mc.Input = new PlayerInput { Facing = 0f, Dir = AttackDir.Left, Attack = false };
+        for (int i = 0; i < 25; i++) mc.Update(1 / 60f);
+        Check(rearFoe.Hp == rearHp0, "mounted swing does not hit a foe standing behind the horse");
+
+        // 3. Manual 3D ranged aiming respects camera Pitch (higher pitch launches steeper) and crossbows fire on quick click.
+        var r = Battle.Empty(904);
+        r.Player.Horse = null;
+        var bowType = Troops.Get("bowmen").Clone();
+        bowType.Class = UnitClass.Captain;
+        r.Player.Type = bowType;
+        r.Player.Ammo = 10;
+        r.Player.Facing = 0f;
+        // Aim level (Pitch = 0)
+        r.Input = new PlayerInput { Facing = 0f, Pitch = 0f, Attack = true };
+        for (int i = 0; i < 35; i++) r.Update(1 / 60f);
+        r.Input = new PlayerInput { Facing = 0f, Pitch = 0f, Attack = false };
+        r.Update(1 / 60f);
+        Check(r.Arrows.Count == 1, "manual bow release spawns an arrow");
+        float vyLevel = r.Arrows[0].Vel.Y;
+        r.Arrows.Clear();
+        for (int i = 0; i < 30; i++) r.Update(1 / 60f); // clear recover/cooldown
+        // Aim upward (Pitch = -0.35 rad)
+        r.Input = new PlayerInput { Facing = 0f, Pitch = -0.35f, Attack = true };
+        for (int i = 0; i < 35; i++) r.Update(1 / 60f);
+        r.Input = new PlayerInput { Facing = 0f, Pitch = -0.35f, Attack = false };
+        r.Update(1 / 60f);
+        Check(r.Arrows.Count == 1 && r.Arrows[0].Vel.Y > vyLevel + 5f, $"aiming up with Pitch launches steeper (level={vyLevel:0.0}, up={r.Arrows[0].Vel.Y:0.0})");
+
+        // Crossbow fires on quick click without requiring 0.25+ draw hold.
+        var xbowType = Troops.Get("crossbowmen").Clone();
+        xbowType.Class = UnitClass.Captain;
+        r.Player.Type = xbowType;
+        r.Player.Ammo = 10;
+        r.Player.Cooldown = 0;
+        r.Player.Action = UnitAction.None;
+        r.Arrows.Clear();
+        r.Input = new PlayerInput { Facing = 0f, Pitch = 0f, Attack = true };
+        r.Update(1 / 60f);
+        r.Input = new PlayerInput { Facing = 0f, Pitch = 0f, Attack = false };
+        r.Update(1 / 60f);
+        Check(r.Arrows.Count == 1 && r.Arrows[0].Vel.Length() > 45f, $"pre-spanned crossbow fires fast bolt on quick click (spd={r.Arrows[0].Vel.Length():0.0})");
+    }
 }
 

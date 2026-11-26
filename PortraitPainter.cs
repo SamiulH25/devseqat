@@ -38,7 +38,7 @@ public static class PortraitPainter
         int dress = ch.Kind == "knight" || ch.Order != "" ? 3 : ch.Kind is "captain" ? 2 : ch.Kind == "lord" && !female && (ch.Traits.Contains("Reckless") || ch.Traits.Contains("Ambitious") || H(5) < 0.3f) ? 2 : ch.Kind == "kin" ? 0 : 1;
         var house = c.HouseOf(ch);
         int palette = ch.Kind == "captain" ? c.PlayerPalette : Style.PaletteOf(ch.Faction);
-        var charge = house != null ? (Emblem)(house.Charge % 9) : Style.Sides[palette].Charge;
+        var charge = house != null ? (Emblem)(house.Charge % Style.EmblemCount) : Style.Sides[palette].Charge;
         if (charge == Emblem.None) charge = Emblem.Fess;
         int mood = ch.Kind == "captain" ? 0 : MoodOf(c.OpinionOfYou(ch));
         if (ch.Kind == "captain" && c.Captain.Likeness is { } l) // the face chosen in the creator, and your arms behind it
@@ -65,7 +65,7 @@ public static class PortraitPainter
         var (skin, hair, style) = Variety.Parts(Variety.Visage(t.Culture, seed));
         var feat = Variety.DeriveFeatures(seed, style, false, age);
         int dress = knight || t.Tier >= 6 ? 3 : t.Tier >= 4 ? 2 : t.Tier >= 3 ? 4 : 0;
-        var charge = (Emblem)(banner % 9);
+        var charge = (Emblem)(banner % Style.EmblemCount);
         if (charge == Emblem.None) charge = Style.Sides[2].Charge == Emblem.None ? Emblem.Fess : Style.Sides[2].Charge;
         return new Face(seed, skin, hair, feat.Cut, feat.Beard, feat.Eye, feat.Brow, feat.Nose, feat.Jaw,
             false, age, Math.Min(2, wounds / 2), dress, false, mood, 2, charge, 0);

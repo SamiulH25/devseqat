@@ -58,11 +58,16 @@ sealed partial class Puppet
         if (mounted && grip is Grip.One or Grip.Two)
         {
             var rest = new Key(30, 70, 0, 0.8f);
-            return swing == AttackDir.Overhead
-                ? (rest, new(160, 140, 10, 0.6f), new(60, -50, 0, 1)) // a straight chop down at a man on foot
-                : backhand
-                    ? (rest, new(120, 120, -70, 0.55f), new(75, -35, 45, 1)) // the backhand across the horse's neck
-                    : (rest, new(120, 125, 70, 0.6f), new(75, -40, -35, 1)); // the cut down and across
+            return swing switch
+            {
+                AttackDir.Overhead => (rest, new(160, 140, 10, 0.6f), new(55, -55, 0, 1)), // a straight chop down at a man on foot
+                AttackDir.Thrust => (rest, new(42, 0, 22, 0.42f), new(88, -18, 0, 1)), // leaning forward to drive the point from the saddle
+                AttackDir.Left => (rest, new(118, 122, -74, 0.56f), new(72, -38, 48, 1)), // backhand across the horse's neck
+                AttackDir.Right => (rest, new(118, 125, 74, 0.58f), new(72, -42, -38, 1)), // forehand cut down the right stirrup
+                _ => backhand
+                    ? (rest, new(118, 122, -74, 0.56f), new(72, -38, 48, 1))
+                    : (rest, new(118, 125, 74, 0.58f), new(72, -42, -38, 1)),
+            };
         }
         if (grip is Grip.Pole)
         {
@@ -95,7 +100,7 @@ sealed partial class Puppet
                 _ => (guard, new(165, 160, -10, 0.55f), new(65, -50, -10, 1)), // raised over the head, brought straight down
             };
         }
-        var idle = new Key(24, 40, 28, 0.82f); // the sword low at his right side, point up and out
+        var idle = new Key(36, 36, 52, 0.80f); // athletic ready carry: elbow slightly bent, blade angled outward & up for crisp silhouette
         return swing switch
         {
             AttackDir.Right => (idle, new(115, 125, 80, 0.55f), new(80, -5, -50, 1)), // the blade cocked by the right ear, then swept across
@@ -117,7 +122,15 @@ sealed partial class Puppet
         float leg = moving && !u.Mounted ? stride * (26 + 15 * run) : 0;
         float swing = moving && !u.Mounted ? -stride * (11 + 16 * run) : 0; // arms swing against the legs
         float bob = moving && !u.Mounted ? MathF.Abs(stride) * (0.03f + 0.04f * run) : 0;
-        float leanZ = moving ? 4 + 12 * run : 0, leanX = moving && !u.Mounted ? stride * (1.8f + 1.2f * run) : 0; // the hips sway over the planted foot
+        float vFwdNorm = 1f, vSideNorm = 0f;
+        if (moving && !u.Mounted)
+        {
+            Vector2 vf = new(MathF.Cos(u.ViewFacing), MathF.Sin(u.ViewFacing)), vr = new(-vf.Y, vf.X);
+            vFwdNorm = Vector2.Dot(u.Vel, vf) / speed;
+            vSideNorm = Vector2.Dot(u.Vel, vr) / speed;
+        }
+        float leanZ = moving ? (vFwdNorm >= -0.15f ? (4 + 12 * run) * Math.Clamp(vFwdNorm + 0.2f, 0f, 1f) : -4.5f * Math.Clamp(-vFwdNorm, 0f, 1f)) : 0;
+        float leanX = moving && !u.Mounted ? stride * (1.8f + 1.2f * run) + vSideNorm * (3.5f + 2.5f * run) : 0; // hips sway over planted foot + bank into strafe
         float knees = 0.7f + 1.1f * run;
         var t = u.Type;
         if (!moving && !u.Mounted)
@@ -154,23 +167,27 @@ sealed partial class Puppet
             return new Pose(0, 140 + c * 30, 60 + c * 40, 0, t.HasShield ? 40 + c * 50 : 20, false, false, 0, -4 * c, c * 0.06f);
         }
         var grip = Look.GripOf(t.Look.Weapon);
-        if (grip is Grip.Crossbow && !u.Mounted && t.Class == UnitClass.Archer) return CrossbowPose(u, now, phase, moving, leg, swing, leanX, leanZ, bob);
+        bool isShooter = t.Class == UnitClass.Archer || (u.IsPlayer && t.Ammo > 0);
+        if (grip is Grip.Crossbow && isShooter && (!u.Mounted || u.IsPlayer)) return CrossbowPose(u, now, phase, moving, leg, swing, leanX, leanZ, bob);
         if (grip is Grip.Thrown or Grip.Sling && !u.Mounted && ThrowPose(u, now, phase, grip, moving, leg, leanX, leanZ, bob) is { } thrown) return thrown;
         if (t.Class == UnitClass.Caster && CastPose(u, now, leg, leanX, leanZ, bob) is { } cast) return cast;
-        if (t.Class == UnitClass.Archer)
+        if (isShooter)
         {
-            bool aim = u.Action == UnitAction.Recover || (u.Ammo > 0 && u.EnemyDist < t.Range && !moving);
+            bool aim = u.IsPlayer
+                ? (u.Charging || u.Action == UnitAction.Recover)
+                : (u.Action == UnitAction.Recover || (u.Ammo > 0 && u.EnemyDist < t.Range && !moving));
             if (!aim) return Life(u, new Pose(leg, 15 + swing - leg * 0.3f, 0, 0, 10 - swing + leg * 0.3f, false, false, leanX, leanZ, bob), now, phase, moving);
             if (u.Mounted) leanZ -= 9 * MathF.Max(0, -MathF.Cos(MathHelper.WrapAngle(u.ViewFacing - u.ViewHeading))); // shooting back over the horse's tail, he sits back
             bool kneel = FrontOfShooters(u, moving);
             if (u.Action == UnitAction.Recover) return new Pose(leg, 100, 0, 0, 92, false, true, leanX, leanZ - 2, bob, 0) { Kneel = kneel }; // the release: the hand flies back
-            float draw = Ease.InOut(1 - u.Cooldown / 1.1f); // nock low, then draw as the next shot comes up
+            float draw = u.IsPlayer ? Ease.Out(u.Charge) : Ease.InOut(1 - u.Cooldown / 1.1f);
             return new Pose(leg, 62 + 28 * draw, 0, 0, 88, false, true, leanX, leanZ - 3 * draw, bob, draw) { Kneel = kneel };
         }
         bool two = TwoHanded(grip, t.HasShield, u.Mounted);
+        bool backhand = u.Swing == AttackDir.Left || (u.Swing != AttackDir.Right && phase > 0.5f);
         var (idle, raise, strike) = grip is Grip.Thrown
-            ? Keys(Grip.Pole, u.Swing, u.Mounted, true, phase > 0.5f) // out of javelins, he fights with the last one like a spear
-            : Keys(grip, u.Swing, u.Mounted, t.HasShield, phase > 0.5f);
+            ? Keys(Grip.Pole, u.Swing, u.Mounted, true, backhand) // out of javelins, he fights with the last one like a spear
+            : Keys(grip, u.Swing, u.Mounted, t.HasShield, backhand);
         idle = idle with { Alpha = idle.Alpha + (phase - 0.5f) * 14 + MathF.Sin(now * 0.4f + phase * 11) * 3 }; // each man rests his weapon his own way
         var arm = idle;
         bool shield = false;
@@ -250,7 +267,7 @@ sealed partial class Puppet
             }
             default:
                 if (u.Charging) { arm = Lerp(idle, raise, Ease.Out(u.Charge)); leanZ -= 4 * u.Charge; }
-                else if (moving) arm = arm with { Alpha = arm.Alpha + swing * (two ? 0.25f : 0.6f) };
+                else if (moving) arm = arm with { Alpha = arm.Alpha + swing * (two ? 0.30f : 0.95f), Pitch = arm.Pitch - (two ? 4f : 10f) * run, Yaw = arm.Yaw - stride * (two ? 4f : 8f) * run };
                 else if (u.Target is { Active: true } foe && Vector2.DistanceSquared(u.Pos, foe.Pos) < 9)
                 {
                     // Squared up to a foe between blows: weapon half raised, weight forward, each man a little his own way.
@@ -346,17 +363,19 @@ sealed partial class Puppet
     static Pose CrossbowPose(Unit u, float now, float phase, bool moving, float leg, float swing, float leanX, float leanZ, float bob)
     {
         var t = u.Type;
-        bool shooting = u.Action == UnitAction.Recover || (u.Ammo > 0 && u.EnemyDist < t.Range && !moving);
+        bool shooting = u.IsPlayer
+            ? (u.Action == UnitAction.Recover || u.Charging || u.Cooldown > 0.05f || u.Ammo > 0)
+            : (u.Action == UnitAction.Recover || (u.Ammo > 0 && u.EnemyDist < t.Range && !moving));
         if (!shooting) return new Pose(leg, 15 + swing - leg * 0.3f, 0, 0, 10 - swing + leg * 0.3f, false, false, leanX, leanZ, bob);
         if (u.Action == UnitAction.Recover)
             return new Pose(leg, 0, 0, 0, 0, false, true, leanX, leanZ - 6 * Ease.Kick(1 - u.ActionTimer / 0.25f), bob, 1) { Kneel = FrontOfShooters(u, moving) }; // the kick
-        if (u.Cooldown > 1)
+        if (u.Cooldown > (u.IsPlayer ? 0.35f : 1f))
         {
             // Spanning: two hands drag the string up from the stirrup, again and again, each man at his own pace.
             float haul = 0.5f - 0.5f * MathF.Cos(now * 3.2f + phase * 9);
-            return new Pose(0, 0, 0, 0, 0, false, false, leanX * 0.3f, leanZ + 16 - 6 * haul, bob) { Haul = haul, Crouch = 0.3f + 0.15f * (1 - haul) };
+            return new Pose(0, 0, 0, 0, 0, false, false, leanX * 0.3f, leanZ + 16 - 6 * haul, bob) { Haul = haul, Crouch = u.Mounted ? 0f : 0.3f + 0.15f * (1 - haul) };
         }
-        float up = Ease.InOut(1 - MathF.Max(0, u.Cooldown)); // bolt laid; up to the shoulder
+        float up = u.IsPlayer ? MathHelper.Lerp(0.45f, 1f, u.Charging ? u.Charge : (1f - Math.Clamp(u.Cooldown / 0.35f, 0f, 1f))) : Ease.InOut(1 - MathF.Max(0, u.Cooldown));
         return new Pose(leg, 0, 0, 0, 0, false, true, leanX, leanZ - 2 * up, bob, up) { Kneel = FrontOfShooters(u, moving) && up > 0.5f };
     }
 

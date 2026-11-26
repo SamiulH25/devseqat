@@ -573,7 +573,8 @@ public sealed class CaptainState
     public int Visage = -1;
     /// The painted face chosen in the creator (null: derived from the captain's id) and the arms on your first banners (-1: none chosen).
     public CaptainLook? Likeness;
-    public int Arms = -1;
+    public int Arms = -1, BannerField = -1, BannerTrim = -1;
+    public int BannerDivision, BannerField2 = -1, BannerBorder, BannerCut;
 }
 
 /// The captain's painted face as chosen in the creator (PortraitPainter numbers: cut 0 short .. 4 bald, beard 0 none, 1 full,

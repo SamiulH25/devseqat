@@ -602,7 +602,7 @@ in the F1 help (`Hud.Help`). Some map keys (P, K, L, R) are hard-coded in `MapSc
 
 ## 7. Rendering and sound
 
-There are no model or pre-rendered WAV/OGG files. The only images are the unit sprite PNGs, baked from code (below); meshes are built at startup, SFX and ambient beds are synthesised in code, and music renders live from compact JSON scores through a 28-voice micro-sample bank (`Data/audio/instruments.bank`).
+There are no bought art, texture or pre-rendered WAV/OGG files. The images are the baked unit sprite PNGs, and battle units also use the generated modular mesh pack `Data/meshes/units3d.bin` (below); terrain meshes are built at startup, SFX and ambient beds are synthesised in code, and music renders live from compact JSON scores through a 28-voice micro-sample bank (`Data/audio/instruments.bank`).
 
 - **Sprites:** `SpriteSheet.cs` paints every body part, for every look, view (front/side/back) and side colour, using
   `Painter.cs` materials (`SpriteSheet.Paint`), and the sheet packs them into a 1024x1024 atlas. Keys look like `helm.kettle.f/0`.
@@ -619,6 +619,15 @@ There are no model or pre-rendered WAV/OGG files. The only images are the unit s
   baked set loads to exactly the painted atlas. Gotchas: keep a PNG's size (the rig reads metres from pixels; `SpritesBaked`
   fails otherwise); semi-transparent pixels load premultiplied; save 8-bit, not interlaced (`Png.Decode` refuses otherwise).
   `Puppet.cs` draws each unit as part sprites on a 3D skeleton, posed from its action state.
+- **3D unit meshes:** `Data/meshes/units3d.bin` is the generated rigid modular part kit normally drawn in battle. `Mesh3D.cs` loads the
+  custom IMSH triangle-soup format (position, normal, material-slot id, grayscale AO), `Puppet3D.cs`/`Unit3D.cs` place parts procedurally
+  for every soldier and LOD tier, and `Shaders/unit3d.glsl` resolves material slots, procedural surface detail, outlines and palette swaps.
+  The sprite puppet remains for fallback paths and some effects, but it is not the 3D authoring target. Authoring, pivot spaces, material slots,
+  budgets and validation live in `tools/gltf/MODELING.md`; visual construction, silhouette, reference sheets and the game-render acceptance gate live in
+  `tools/gltf/STYLE.md` and `tools/gltf/reference/`. Never treat it as ordinary character modelling: rigid parts, no skins, no animation,
+  no textures, exact pivots, and triangle budgets that multiply through camera and shadow passes. `IRONFIELD_MESH_PACK=/path/pack.bin` previews an
+  experimental pack in the real renderer without overwriting `Data/meshes`; it replaces the whole pack, so partial experiments should first be merged with
+  `tools/gltf/merge_pack.mjs`.
 - **World:** `World.cs` builds the terrain mesh, foliage, towns, water and the minimap from `Terrain`. The build has two
   halves: `new World(terrain)` makes every mesh and image with no GraphicsDevice (safe off the main thread; the campaign
   map's runs behind the loading screen), and `Upload(gd)` sends them to the GPU. The CPU half runs its rows and tiles in

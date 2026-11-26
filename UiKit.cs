@@ -221,7 +221,7 @@ static partial class Kit
 
     // ---------- heraldry ----------
 
-    /// A heater shield painted cell by cell in a side's colours with its charge, a dark rim and a light from the upper left.
+    /// A heater shield painted cell by cell in a side's colours with its division, border, charge, dark rim and upper-left light.
     public static void Shield(this Ui ui, Rectangle r, Heraldry h)
     {
         const int gw = 16, gh = 19;
@@ -233,52 +233,118 @@ static partial class Kit
             float hw = j < 9 ? 8 : 8 * MathF.Sqrt(MathF.Max(0, 1 - MathF.Pow((j - 8.5f) / 10.5f, 2)));
             return MathF.Abs(i + 0.5f - gw / 2f) < hw;
         }
-        bool Charge(float u, float v) => h.Charge switch
-        {
-            Emblem.Chevron => MathF.Abs(v - (0.78f - MathF.Abs(u - 0.5f) * 0.95f)) < 0.09f,
-            Emblem.Saltire => MathF.Abs(u - 0.5f - (v - 0.5f) * 0.84f) < 0.075f || MathF.Abs(u - 0.5f + (v - 0.5f) * 0.84f) < 0.075f,
-            Emblem.Lozenge => MathF.Abs(u - 0.5f) + MathF.Abs(v - 0.45f) * 0.8f < 0.2f,
-            Emblem.Bend => MathF.Abs(u - v * 0.84f - 0.08f) < 0.085f,
-            Emblem.Cross => MathF.Abs(u - 0.5f) < 0.07f || MathF.Abs(v - 0.4f) < 0.07f,
-            Emblem.Pale => MathF.Abs(u - 0.5f) < 0.12f,
-            Emblem.Fess => MathF.Abs(v - 0.45f) < 0.11f,
-            Emblem.Sun => (u - 0.5f) * (u - 0.5f) + (v - 0.45f) * (v - 0.45f) < 0.02f
-                || MathF.Abs(MathF.Sqrt((u - 0.5f) * (u - 0.5f) + (v - 0.45f) * (v - 0.45f)) - 0.22f) < 0.04f && ((int)((MathF.Atan2(v - 0.45f, u - 0.5f) + MathF.PI) / (MathF.PI / 4)) % 2 == 0),
-            _ => false,
-        };
+        Color field2 = h.Field2 ?? h.ClothDark;
         for (int j = 0; j < gh; j++)
             for (int i = 0; i < gw; i++)
             {
                 if (!In(i, j)) continue;
                 float u = (i + 0.5f) / gw, v = (j + 0.5f) / gh;
                 bool rim = !In(i - 1, j) || !In(i + 1, j) || !In(i, j - 1) || !In(i, j + 1);
-                Color c = rim ? Mul(h.ClothDark, 0.6f)
-                    : Charge(u, v) ? h.Trim
-                    : h.Charge == Emblem.None && u > 0.5f ? h.ClothDark : h.Cloth;
-                if (!rim) c = Color.Lerp(c, Color.White, MathF.Max(0, 0.22f - (u + v) * 0.22f));
+                bool innerRim = !rim && (!In(i - 2, j) || !In(i + 2, j) || !In(i, j - 2) || !In(i, j + 2));
+                bool secondRim = !rim && !innerRim && (!In(i - 3, j) || !In(i + 3, j) || !In(i, j - 3) || !In(i, j + 3));
+
+                Color c;
+                if (rim) c = Mul(h.ClothDark, 0.55f);
+                else if (h.Border == BannerBorder.Bordure && innerRim) c = h.Trim;
+                else if (h.Border == BannerBorder.Checkered && innerRim) c = ((i + j) & 1) == 0 ? h.Trim : Mul(h.ClothDark, 0.7f);
+                else if (h.Border == BannerBorder.Double && secondRim) c = h.Trim;
+                else if (h.Charge != Emblem.None && Style.OnCharge(h.Charge, u, v, h.Border != BannerBorder.None ? 0.88f : 1f)) c = h.Trim;
+                else if (h.Division != BannerDivision.Plain) c = Style.OnDivision(h.Division, u, v) ? field2 : h.Cloth;
+                else c = h.Charge == Emblem.None && u > 0.5f ? field2 : h.Cloth;
+
+                if (!rim) c = Color.Lerp(c, Color.White, MathF.Max(0, 0.20f - (u + v) * 0.20f));
                 if (!rim && i + j > 24) c = Mul(c, 0.82f);
                 ui.Rect(new Rectangle(ox + i * px, oy + j * px, px, px), c);
             }
     }
 
-    /// A hanging banner on a crossbar: the side's cloth with a swallowtail and its charge's colour as a stripe.
+    /// A hanging banner on a crossbar: renders the banner's cut (swallowtail, pennant, square, forked), field division, border, and charge.
     public static void Banner(this Ui ui, int cx, int y, int w, int h, Heraldry hd, float sway = 0)
     {
         ui.Rect(new Rectangle(cx - w / 2 - ui.U(4), y, w + ui.U(8), ui.U(3)), Mul(Kit.Rivet, 0.8f));
         ui.Rect(new Rectangle(cx - w / 2 - ui.U(6), y - ui.U(1), ui.U(3), ui.U(5)), Gilt);
         ui.Rect(new Rectangle(cx + w / 2 + ui.U(3), y - ui.U(1), ui.U(3), ui.U(5)), Gilt);
-        int s = Math.Max(1, ui.U(1));
-        for (int row = 0; row < h; row += s)
+
+        int s = Math.Max(1, Math.Min(ui.U(2), Math.Max(1, w / 14)));
+        int cols = Math.Max(6, w / s);
+        int rows = Math.Max(8, h / s);
+        Color field2 = hd.Field2 ?? hd.ClothDark;
+        int topY = y + ui.U(3);
+
+        for (int r = 0; r < rows; r++)
         {
-            float t = row / (float)h;
-            int dx = (int)(MathF.Sin(t * 3 + sway) * ui.U(2) * t);
-            int cut = row > h - w / 2 ? (int)((row - (h - w / 2)) * 1f) : 0;
-            var cloth = Color.Lerp(hd.Cloth, hd.ClothDark, t * 0.6f);
-            int x0 = cx - w / 2 + dx, half = w / 2;
-            if (cut < half) { ui.Rect(new Rectangle(x0, y + ui.U(3) + row, half - cut, s), cloth); ui.Rect(new Rectangle(x0 + half + cut, y + ui.U(3) + row, half - cut, s), Mul(cloth, 0.86f)); }
-            if (row > ui.U(4) && row < ui.U(7)) ui.Rect(new Rectangle(x0, y + ui.U(3) + row, w, s), hd.Trim);
+            float v = (r + 0.5f) / rows;
+            int dx = (int)(MathF.Sin(v * 3.1f + sway) * ui.U(2) * v);
+            int x0 = cx - (cols * s) / 2 + dx;
+            int py = topY + r * s;
+            for (int c = 0; c < cols; c++)
+            {
+                float u = (c + 0.5f) / cols;
+                // Banner silhouette cut
+                bool inside = hd.Cut switch
+                {
+                    BannerCut.Pennant => MathF.Abs(u - 0.5f) <= (1f - MathF.Max(0f, (v - 0.35f) / 0.65f)) * 0.5f,
+                    BannerCut.Square => true,
+                    BannerCut.Forked => v < 0.72f || MathF.Abs(((u * 3f) % 1f) - 0.5f) < (1f - (v - 0.72f) / 0.28f) * 0.45f,
+                    _ => v < 0.74f || MathF.Abs(u - 0.5f) >= ((v - 0.74f) / 0.26f) * 0.48f, // Swallowtail
+                };
+                if (!inside) continue;
+
+                bool edge = c == 0 || c == cols - 1 || r == 0 || (hd.Cut == BannerCut.Square && r == rows - 1);
+                bool inner = !edge && (c == 1 || c == cols - 2 || r == 1 || (hd.Cut == BannerCut.Square && r == rows - 2));
+                bool topStripe = r == 1 && hd.Border == BannerBorder.None;
+
+                Color col;
+                if (hd.Cut == BannerCut.Square && r == rows - 1 && (c & 1) == 0) col = hd.Trim; // fringed bottom hem
+                else if (hd.Border == BannerBorder.Bordure && edge) col = hd.Trim;
+                else if (hd.Border == BannerBorder.Checkered && edge) col = ((r + c) & 1) == 0 ? hd.Trim : Mul(hd.ClothDark, 0.65f);
+                else if (hd.Border == BannerBorder.Double && inner) col = hd.Trim;
+                else if (topStripe) col = hd.Trim;
+                else if (hd.Charge != Emblem.None && v < 0.78f && Style.OnCharge(hd.Charge, u, v / 0.78f, 0.92f)) col = hd.Trim;
+                else if (hd.Division != BannerDivision.Plain) col = Style.OnDivision(hd.Division, u, v) ? field2 : hd.Cloth;
+                else col = hd.Cloth;
+
+                // Subtle cloth fold shading + gentle bottom shadow
+                float fold = 1f - v * 0.22f - (u > 0.5f ? 0.08f : 0f);
+                ui.Rect(new Rectangle(x0 + c * s, py, s, s), Mul(col, fold));
+            }
         }
-        ui.Shield(new Rectangle(cx - w * 2 / 5, y + ui.U(12), w * 4 / 5, (int)(w * 4 / 5 * 1.2f)), hd);
+    }
+
+    /// Compact company mini-banner badge (pole + pennant/banner cloth in its generated heraldry) for party tiles, battle cards, and flags.
+    public static void MiniBanner(this Ui ui, Rectangle r, Heraldry hd)
+    {
+        if (r.Width < 4 || r.Height < 6) return;
+        int poleW = Math.Max(1, ui.U(1));
+        ui.Rect(new Rectangle(r.X, r.Y, poleW, r.Height), Mul(Kit.Gilt, 0.85f));
+        int bx = r.X + poleW, bw = Math.Max(4, r.Width - poleW), bh = Math.Max(5, r.Height - Math.Max(1, r.Height / 5));
+        int s = Math.Max(1, Math.Min(bw / 8, bh / 8));
+        int cols = Math.Max(4, bw / s), rows = Math.Max(5, bh / s);
+        Color field2 = hd.Field2 ?? hd.ClothDark;
+        for (int row = 0; row < rows; row++)
+        {
+            float v = (row + 0.5f) / rows;
+            for (int col = 0; col < cols; col++)
+            {
+                float u = (col + 0.5f) / cols;
+                bool inside = hd.Cut switch
+                {
+                    BannerCut.Pennant => MathF.Abs(v - 0.5f) <= (1f - u * 0.88f) * 0.52f,
+                    BannerCut.Forked => u < 0.68f || MathF.Abs(v - 0.5f) >= ((u - 0.68f) / 0.32f) * 0.44f,
+                    BannerCut.Square => true,
+                    _ => v < 0.74f || MathF.Abs(u - 0.5f) >= ((v - 0.74f) / 0.26f) * 0.45f,
+                };
+                if (!inside) continue;
+                bool edge = row == 0 || row == rows - 1 || col == 0 || col == cols - 1;
+                Color c;
+                if (hd.Border == BannerBorder.Bordure && edge) c = hd.Trim;
+                else if (hd.Border == BannerBorder.Checkered && edge) c = ((row + col) & 1) == 0 ? hd.Trim : Mul(hd.ClothDark, 0.65f);
+                else if (hd.Charge != Emblem.None && Style.OnCharge(hd.Charge, u, v, 0.95f)) c = hd.Trim;
+                else if (hd.Division != BannerDivision.Plain) c = Style.OnDivision(hd.Division, u, v) ? field2 : hd.Cloth;
+                else c = hd.Cloth;
+                ui.Rect(new Rectangle(bx + col * s, r.Y + row * s, s, s), c);
+            }
+        }
     }
 
     // ---------- icons ----------

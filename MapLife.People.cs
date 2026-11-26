@@ -411,7 +411,12 @@ sealed partial class MapLife
         mesh.Box(At(ox, 0, 0, 0.4f), 1.0f * k, 0.5f * k, 0.48f * k, heading, Ox);
         mesh.Box(At(ox, 0.6f, 0, 0.62f), 0.32f * k, 0.3f * k, 0.28f * k, heading, new Color(118, 92, 66));
         mesh.Box(At(pos, 0.75f, 0, 0.42f), 0.8f * k, 0.06f * k, 0.06f * k, heading, Plank); // the shaft
-        // The cart: a bed on two wheels, a load or a canvas tilt.
+        // The cart: Blender spoked-wheel covered wagon when available, else a box cart.
+        if (covered && MapProps3D.Has("map_cart"))
+        {
+            MapProps3D.EmitCart(mesh, new Vector3(pos.X, ground, pos.Y), heading, k);
+            return;
+        }
         foreach (float side in new[] { -0.5f, 0.5f })
             mesh.Box(At(pos, 0, side, 0), 0.62f * k, 0.08f * k, 0.62f * k, heading, new Color(70, 56, 42));
         mesh.Box(At(pos, 0, 0, 0.36f), 1.3f * k, 0.9f * k, 0.22f * k, heading, Plank);

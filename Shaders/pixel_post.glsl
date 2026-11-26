@@ -82,7 +82,7 @@ void main()
         // Case 2: Internal depth separation (shield over chest, rider over horse, near soldier over far soldier).
         // Smooth joints (knees, elbows, horse neck) have continuous depth -> ZERO ugly boxes across joints!
         float closerDiff = maxNA - ndC.a;
-        float depthThresh = 0.011 + 0.022 * ndC.a; // perspective-scaled depth step
+        float depthThresh = 0.015 + 0.028 * ndC.a; // perspective-scaled depth step
         float nearWeight = smoothstep(0.08, 0.24, ndC.a); // soften internal edges at far Command Overview zoom
         if (closerDiff > depthThresh && OutlineCfg.y > 0.01)
         {

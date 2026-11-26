@@ -14,7 +14,7 @@ sealed class CreatorScreen
     public bool Open;
     public CaptainMaking M = new();
     public int Step;
-    public static readonly string[] Steps = { "HOMELAND", "BIRTH", "PAST", "ARMS", "LIKENESS", "THE OATH" };
+    public static readonly string[] Steps = { "HOMELAND", "BIRTH", "PAST", "ARMS", "LIKENESS", "BANNER", "THE OATH" };
     /// Which text field takes the keyboard: 0 none, 1 the captain's name, 2 the company's.
     int typing;
     bool helm = true;
@@ -107,6 +107,12 @@ sealed class CreatorScreen
         M.Road = Origins.Roads[dice.Next(Origins.Roads.Count)].Id;
         RandomFace();
         M.Arms = (int)Charges[dice.Next(Charges.Length)];
+        M.BannerField = dice.Next(Style.BannerFields.Length);
+        M.BannerTrim = dice.Next(Style.BannerTrims.Length);
+        M.BannerDivision = dice.Next(Style.BannerDivisions.Length);
+        M.BannerField2 = M.BannerDivision > 0 ? (M.BannerField + 1 + dice.Next(Style.BannerFields.Length - 1)) % Style.BannerFields.Length : -1;
+        M.BannerBorder = dice.Next(Style.BannerBorders.Length);
+        M.BannerCut = dice.Next(Style.BannerCuts.Length);
         M.Name = RandomName();
         M.Company = RandomCompany();
     }
@@ -135,7 +141,7 @@ sealed class CreatorScreen
 
     void Refresh()
     {
-        string choices = $"{M.Realm}|{M.FreeStart}|{M.Birth}|{M.Past}|{M.Road}|{M.Visage}|{M.Cut}|{M.Beard}|{M.Eye}|{M.Brow}|{M.Nose}|{M.Jaw}|{M.Scar}|{M.Arms}";
+        string choices = $"{M.Realm}|{M.FreeStart}|{M.Birth}|{M.Past}|{M.Road}|{M.Visage}|{M.Cut}|{M.Beard}|{M.Eye}|{M.Brow}|{M.Nose}|{M.Jaw}|{M.Scar}|{M.Arms}|{M.BannerField}|{M.BannerTrim}|{M.BannerDivision}|{M.BannerField2}|{M.BannerBorder}|{M.BannerCut}";
         if (choices != choiceKey)
         {
             if (choiceKey != "")
@@ -229,6 +235,7 @@ sealed class CreatorScreen
             case 2: Choices(inner, Origins.Pasts, M.Past, id => M.Past = id, "WHAT WERE YOU BEFORE THE COMPANY?"); break;
             case 3: Choices(inner, Origins.Roads, M.Road, id => M.Road = id, "HOW DO YOU FIGHT?"); break;
             case 4: Face(inner); break;
+            case 5: BannerStep(inner); break;
             default: Oath(inner); break;
         }
         Footer(new Rectangle(margin, ui.H - footH - U(12), ui.W - 2 * margin, footH));
@@ -244,12 +251,11 @@ sealed class CreatorScreen
     {
         var inner = ui.Plate(r, null, Kit.Gilt);
         var def = Factions.All[M.Realm];
-        var colours = Origins.Free(M) ? Style.Sides[2] : Style.Sides[def.Palette];
+        var arms = Style.BannerOf(Palette, M.Arms, M.BannerField, M.BannerTrim, M.BannerDivision, M.BannerField2, M.BannerBorder, M.BannerCut);
         int wellH = Math.Max(U(150), Math.Min(Math.Min((int)(inner.Height * 0.7f), U(440)), inner.Height - U(150))); // what lies beneath (face, chips, company) needs about 150
         var well = new Rectangle(inner.X, inner.Y, inner.Width, wellH);
-        ui.VGrad(well, Kit.Mul(colours.Cloth, 0.45f), new Color(16, 12, 14), 2);
+        ui.VGrad(well, Kit.Mul(arms.Cloth, 0.45f), new Color(16, 12, 14), 2);
         ui.Stars(new Rectangle(well.X, well.Y, well.Width, well.Height / 2), time, 24);
-        var arms = colours with { Charge = (Emblem)M.Arms };
         ui.Banner(well.Right - U(34), well.Y + U(10), U(34), U(96), arms, time * 1.4f);
         ui.Hills(well, well.Bottom - U(30), U(10), 2.3f + M.Realm, new Color(40, 30, 34));
         ui.Hills(well, well.Bottom - U(14), U(6), 5.1f, new Color(22, 18, 20));
@@ -297,7 +303,7 @@ sealed class CreatorScreen
         y = Math.Max(y, medal.Bottom + U(6));
         int cx = inner.X;
         cx += ui.Chip(cx, y, $"AGE {Origins.Age(M)}", Style.Dim, "clock") + U(4);
-        ui.Chip(cx, y, Origins.Free(M) ? "FREE COMPANY" : $"BORN OF {def.Name.ToUpperInvariant()}", Origins.Free(M) ? Style.Warn : colours.Ui, "flag");
+        ui.Chip(cx, y, Origins.Free(M) ? "FREE COMPANY" : $"BORN OF {def.Name.ToUpperInvariant()}", Origins.Free(M) ? Style.Warn : arms.Ui, "flag");
         y += U(18);
         cx = inner.X;
         cx += ui.Chip(cx, y, $"{Kit.N((int)Gold)} CROWNS", Kit.Gilt, "coin") + U(4);
@@ -779,24 +785,20 @@ sealed class CreatorScreen
         ui.Frame(frame, Kit.Gilt * 0.8f, U(1));
         ui.Frame(Kit.Inset(frame, U(3)), Color.Black * 0.4f, U(1));
 
-        // The arms you bear: one shield for each charge, on your homeland's colours (or the free companies').
-        int ay = frame.Bottom + U(10);
-        var colours = Origins.Free(M) ? Style.Sides[2] : Style.Sides[Factions.All[M.Realm].Palette];
-        ui.Text("YOUR ARMS", px, ay, Kit.Gilt, 1); ui.TextR(((Emblem)M.Arms).ToString().ToUpperInvariant(), px + pw, ay, Style.Dim, 1); ay += U(12);
-        int per = (Charges.Length + 1) / 2, sw = Math.Min(U(44), (pw - U(6) * (per - 1)) / per), sh = Math.Min(sw * 6 / 5, (r.Bottom - ay - U(6)) / 2);
-        for (int i = 0; i < Charges.Length; i++)
-        {
-            var box = new Rectangle(px + i % per * (sw + U(6)), ay + i / per * (sh + U(6)), sw, sh);
-            bool on = M.Arms == (int)Charges[i];
-            if (on || ui.Hover(box))
-            {
-                var hi = Kit.Inset(box, -U(2));
-                ui.Rect(hi, Color.Black * 0.45f);
-                ui.Frame(hi, on ? Kit.Gilt : Kit.Gilt * 0.55f, U(on ? 2 : 1));
-            }
-            ui.Shield(box, colours with { Charge = Charges[i] });
-            if (ui.Clicked(box)) { M.Arms = (int)Charges[i]; Ui.OnClick?.Invoke(); }
-        }
+        // Preview badge beneath the face linking straight to the dedicated BANNER step.
+        int ay = frame.Bottom + U(12);
+        var arms = Style.BannerOf(Palette, M.Arms, M.BannerField, M.BannerTrim, M.BannerDivision, M.BannerField2, M.BannerBorder, M.BannerCut);
+        var shieldBox = new Rectangle(frame.Center.X - U(22), ay, U(44), U(52));
+        ui.Shield(shieldBox, arms);
+        if (ui.Button(new Rectangle(px, shieldBox.Bottom + U(8), pw, U(22)), "CUSTOMISE BANNER")) Go(5);
+    }
+
+    /// Dedicated BANNER step: choose from 28 heraldic designs and custom field/charge colours.
+    void BannerStep(Rectangle r)
+    {
+        ui.Text("CHOOSE YOUR COMPANY BANNER AND COLOURS", r.X, r.Y, Style.Dim, 1);
+        var body = new Rectangle(r.X, r.Y + U(16), r.Width, r.Height - U(16));
+        BannerPicker.Draw(ui, body, Palette, ref M.Arms, ref M.BannerField, ref M.BannerTrim, ref M.BannerDivision, ref M.BannerField2, ref M.BannerBorder, ref M.BannerCut, time, dice);
     }
 
     /// A feature to step through: its name, then the choice between two arrows (click the name to go round).
@@ -880,7 +882,7 @@ sealed class CreatorScreen
         ui.Disc(seal + new Vector2(U(2), U(3)), U(20), Color.Black * 0.25f);
         ui.Disc(seal, U(20), Kit.Mul(colours.Cloth, 0.8f));
         ui.Disc(seal, U(15), Kit.Mul(colours.Cloth, 0.6f));
-        ui.Shield(new Rectangle((int)seal.X - U(9), (int)seal.Y - U(11), U(18), U(22)), colours with { Charge = (Emblem)M.Arms });
+        ui.Shield(new Rectangle((int)seal.X - U(9), (int)seal.Y - U(11), U(18), U(22)), Style.BannerOf(Palette, M.Arms, M.BannerField, M.BannerTrim, M.BannerDivision, M.BannerField2, M.BannerBorder, M.BannerCut));
         Button:
         if (ui.Gilded(new Rectangle(r.Center.X - U(162), parch.Bottom + U(14), U(324), U(34)), "BEGIN THE CAMPAIGN", "ENTER", M.Name.Trim() != "", tone: Style.Ok)) Begin();
     }

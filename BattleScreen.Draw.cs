@@ -156,7 +156,7 @@ partial class BattleScreen
     readonly List<Squad> goneSelected = new();
     Verts<VertexPNCT>[] workerVerts = Array.Empty<Verts<VertexPNCT>>();
     Puppet3D[] workerPuppets = Array.Empty<Puppet3D>();
-    readonly List<(Unit U, float H, int Detail, float Rear, Look Look)> drawQueue3D = new(1024);
+    readonly List<(Unit U, float H, float Lod, float Rear, Look Look)> drawQueue3D = new(1024);
     int Total3DVerts() { int n = units3D.N; for (int i = 0; i < workerVerts.Length; i++) n += workerVerts[i].N; return n; }
 
     void DrawBlobs(float alpha)
@@ -484,9 +484,7 @@ partial class BattleScreen
         corpseTouched.Clear();
         drawQueue3D.Clear(); skinnedQueue.Clear();
         float bNow = battle.Time;
-        var (near3D, mid3D, fullCap) = LodDistances(); // set by the frame rate (BattleScreen.Lod.cs)
-        float near3DSq = near3D * near3D, mid3DSq = mid3D * mid3D, alwaysFullSq = AlwaysFull * AlwaysFull;
-        int d0Count = 0;
+        // Continuous per-unit 0..1 LOD slider (distance + camera zoom + dynamic FPS governor + player ModelDetail slider).
         // units3D already initialized above for 3D banners
         var allUnits = battle.Units;
         for (int ui = 0; ui < allUnits.Count; ui++)
@@ -510,19 +508,8 @@ partial class BattleScreen
                 }
                 if (!wisp)
                 {
-                    int det;
-                    if (forSun) det = 2;
-                    else if (u.IsPlayer) det = 0;
-                    else
-                    {
-                        float d3Sq = Vector3.DistanceSquared(new Vector3(u.Pos.X, h + 1f, u.Pos.Y), eye);
-                        if (d3Sq < near3DSq)
-                        {
-                            if (d0Count < fullCap || d3Sq < alwaysFullSq) { det = 0; d0Count++; }
-                            else det = 1;
-                        }
-                        else det = d3Sq < mid3DSq ? 1 : 2;
-                    }
+                    float d3 = forSun || u.IsPlayer ? 0f : Vector3.Distance(new Vector3(u.Pos.X, h + 1f, u.Pos.Y), eye);
+                    float unitLod = UnitLod(d3, u.IsPlayer, forSun);
                     EnsureSkinned();
                     if (!u.Dead && !u.Fled && u.Type.Look.Face == "bear" && skinnedBear != null)
                     {
@@ -534,10 +521,10 @@ partial class BattleScreen
                         skinnedQueue.Add((u, h, false));
                         continue;
                     }
-                    // Far LOD (Detail 2, alive) never reads Variety look fields, so skip Variety.Of and RearOf for a big win.
-                    var look = (det >= 2 && !u.Dead) || puppet3D!.ExactLook ? u.Type.Look : Variety.Of(u);
-                    float rear = det >= 2 && !u.Dead ? 0f : RearOf(u, !forSun);
-                    drawQueue3D.Add((u, h, det, rear, look));
+                    bool farProxy = unitLod < 0.14f && !u.Dead;
+                    var look = farProxy || puppet3D!.ExactLook ? u.Type.Look : Variety.Of(u);
+                    float rear = farProxy ? 0f : RearOf(u, !forSun);
+                    drawQueue3D.Add((u, h, unitLod, rear, look));
                     continue;
                 }
             }
@@ -574,7 +561,7 @@ partial class BattleScreen
                     for (int i = w; i < qCount; i += nW)
                     {
                         var item = drawQueue3D[i];
-                        wp.Detail = item.Detail;
+                        wp.Lod = item.Lod;
                         wp.Rear = item.Rear;
                         wp.TryDraw(item.U, item.H, item.Look);
                     }
@@ -600,7 +587,7 @@ partial class BattleScreen
                 for (int i = 0; i < qCount; i++)
                 {
                     var item = drawQueue3D[i];
-                    puppet3D!.Detail = item.Detail;
+                    puppet3D!.Lod = item.Lod;
                     puppet3D.Rear = item.Rear;
                     puppet3D.TryDraw(item.U, item.H, item.Look);
                 }

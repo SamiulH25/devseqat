@@ -100,6 +100,7 @@ public sealed class AudioBank
             "recorder", "ney", "shawm", "low_whistle", "pipes_drone",
             "war_horn", "french_horn", "low_brass", "choir_aah", "throat_drone",
             "war_drum", "frame_drum", "darbuka", "snare_march", "tambourine_riq", "tubular_bell",
+            "bassoon", "english_horn", "cello_solo", "trombone_muted", "clarinet", "voice_ooh", "steppe_reed",
         };
         const int sr = 22050;
         var s = new float[sr];

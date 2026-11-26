@@ -1,27 +1,27 @@
 import { THREE, V, M, shadeVerts, heightShade, loft, column, lathe, bladeExtrude, addPart } from '../geom.mjs';
 
 export function buildProps(root) {
-  // plume: bold sweeping helm crest feather plume (Y 0..0.28, Z -0.34..0.05)
+  // plume: sculpted sweeping helm crest feather plume
   addPart(root, 'plume', (mesh) => {
-    const socket = column([[0.0, 0.028, 0.028], [0.050, 0.036, 0.036]], { segs: 6 });
+    const socket = column([[0.0, 0.024, 0.024], [0.042, 0.030, 0.030]], { segs: 6 });
     mesh(socket, M.brass);
-    const body = loft(V(0, 0.045, 0.02), V(0, 0.13, -0.33), [
-      [0.0, 0.042, 0.042],
-      [0.25, 0.082, 0.112, 0, 0.11],
-      [0.58, 0.098, 0.122, 0, 0.12],
-      [0.84, 0.072, 0.080, 0, 0.05],
-      [1.0, 0.022, 0.026, 0, -0.04],
+    const body = loft(V(0, 0.038, 0.015), V(0, 0.10, -0.28), [
+      [0.0, 0.034, 0.036],
+      [0.25, 0.062, 0.088, 0, 0.085],
+      [0.58, 0.072, 0.094, 0, 0.092],
+      [0.84, 0.054, 0.062, 0, 0.038],
+      [1.0, 0.016, 0.020, 0, -0.032],
     ], { segs: 6, fwd: V(0, 1, 0) });
-    mesh(heightShade(body, 0.04, 0.28, 0.80, 1.0), M.cloth);
+    mesh(heightShade(body, 0.038, 0.23, 0.80, 1.0), M.cloth);
   });
 
-  // cape: bold wide draped faceted shoulder cloak (visible on both sides of legs like reference)
+  // cape: tailored draped medieval shoulder cloak with subtle vertical pleats (never a flat plywood board)
   addPart(root, 'cape', (mesh) => {
     const rows = [
-      [1.28, 0.24, -0.11, 0.028],
-      [1.00, 0.31, -0.19, 0.048],
-      [0.64, 0.36, -0.27, 0.060],
-      [0.20, 0.41, -0.36, 0.068],
+      [1.29, 0.205, -0.105, 0.034],
+      [1.02, 0.245, -0.165, 0.048],
+      [0.66, 0.275, -0.215, 0.056],
+      [0.24, 0.305, -0.260, 0.062],
     ];
     const cols = 6;
     const pos = [], idx = [];
@@ -29,8 +29,10 @@ export function buildProps(root) {
       const [y, hw, z0, bow] = rows[r];
       for (let c = 0; c <= cols; c++) {
         const u = (c / cols) * 2 - 1;
-        const ripple = r > 0 ? Math.sin(u * Math.PI * 2) * 0.018 * (r / 3) : 0;
-        pos.push(u * hw, y, z0 - bow * (1 - u * u) + ripple);
+        const pleat = r > 0 ? Math.cos(u * Math.PI * 2.5) * 0.016 * (r / 3) : 0;
+        // Slight wrap forward at the shoulders (row 0) so the cloak hugs the back instead of floating.
+        const shoulderWrap = r === 0 ? 0.032 * u * u : 0;
+        pos.push(u * hw, y, z0 - bow * (1 - u * u) + pleat + shoulderWrap);
       }
     }
     const stride = cols + 1;
@@ -44,7 +46,7 @@ export function buildProps(root) {
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     g.setIndex(idx);
     g.computeVertexNormals();
-    mesh(heightShade(g, 0.24, 1.28, 0.78, 1.0), M.cloth);
+    mesh(heightShade(g, 0.24, 1.29, 0.76, 1.0), M.cloth);
   });
 
   // quiver: angled leather quiver with brass mouth & fletched arrows (X -0.14..0.07, Y -0.21..0.35)
@@ -164,19 +166,19 @@ export function buildProps(root) {
   });
 
   // ---------- DISTANCE LOD SILHOUETTES (keep ultra-low poly: ~44-56 tris!) ----------
-  // lod_foot: X -0.31..0.24, Y 0.00..1.73, Z -0.15..0.32
+  // lod_foot: heroic 1.82m silhouette matching updated humanoid proportions (~68 tris)
   addPart(root, 'lod_foot', (mesh) => {
-    // Legs block (dark cloth/boots)
-    const legs = column([[0.0, 0.14, 0.10], [0.76, 0.16, 0.11]], { segs: 4 });
+    // Slim athletic legs block (dark cloth/boots)
+    const legs = column([[0.0, 0.115, 0.09], [0.82, 0.135, 0.10]], { segs: 4 });
     mesh(legs, M.clothDark);
-    // Torso block (side cloth)
-    const torso = column([[0.74, 0.18, 0.12], [1.34, 0.22, 0.13]], { segs: 4 });
+    // Tapered heroic torso block (side cloth)
+    const torso = column([[0.80, 0.145, 0.105], [1.44, 0.190, 0.115]], { segs: 4 });
     mesh(torso, M.cloth);
-    // Head / helm block (steel)
-    const head = column([[1.36, 0.11, 0.12], [1.62, 0.12, 0.13], [1.73, 0.04, 0.04]], { segs: 4 });
+    // Proportional head / helm block (steel)
+    const head = column([[1.46, 0.095, 0.105], [1.70, 0.105, 0.115], [1.82, 0.036, 0.036]], { segs: 4 });
     mesh(head, M.steel);
     // Shield silhouette on left (-X, +Z)
-    mesh(shadeVerts(new THREE.BoxGeometry(0.04, 0.56, 0.36), () => 0.92), M.cloth, [-0.26, 1.02, 0.10]);
+    mesh(shadeVerts(new THREE.BoxGeometry(0.04, 0.48, 0.30), () => 0.92), M.cloth, [-0.21, 1.10, 0.09]);
   });
 
   // lod_horse: sculpted low-poly horse + rider silhouette (~90 tris)

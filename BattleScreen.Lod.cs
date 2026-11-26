@@ -32,6 +32,18 @@ sealed partial class BattleScreen
 
     const float AlwaysFull = LodGovernor.AlwaysFull;
     (float Near, float Mid, int FullCap) LodDistances() => lod.Distances();
+
+    /// Continuous 0..1 detail slider for one unit at 3D distance dist3D (distance + Command View zoom + dynamic FPS governor + player ModelDetail slider).
+    float UnitLod(float dist3D, bool isPlayer, bool forSun)
+    {
+        if (forSun) return 0.08f;
+        float userDetail = Math.Clamp(Settings.Current.ModelDetail, 0.20f, 1f);
+        if (isPlayer) return MathF.Max(0.85f, userDetail);
+        if (PinnedLod is { } pin) return pin;
+        float zoomScale = MathHelper.Lerp(1f, 0.62f, blend);
+        float govLevel = Settings.Current.DynamicLod ? lod.Level : 1f;
+        return LodGovernor.LodFor(dist3D, govLevel, zoomScale, userDetail);
+    }
 }
 
 /// The frame-rate governor behind the battle's detail distances (headless, so `SelfTest.LodFollowsFrameRate` drives it with
@@ -90,4 +102,20 @@ public sealed class LodGovernor
     /// full look past AlwaysFull m.
     public (float Near, float Mid, int FullCap) Distances() =>
         (MathHelper.Lerp(NearMin, NearMax, Level), MathHelper.Lerp(MidMin, MidMax, Level), (int)MathHelper.Lerp(FullCapMin, FullCapMax, Level));
+
+    /// Continuous 0..1 detail value at 3D distance dist, smoothly scaled by governor level, camera zoom, and user detail slider.
+    public float LodFor(float dist, float zoomScale = 1f, float userDetail = 1f) =>
+        LodFor(dist, Level, zoomScale, userDetail);
+
+    public static float LodFor(float dist, float level, float zoomScale = 1f, float userDetail = 1f)
+    {
+        float scale = Math.Clamp(zoomScale, 0.35f, 1.25f) * Math.Clamp(userDetail, 0.20f, 1f);
+        float near = MathHelper.Lerp(NearMin * 0.55f, NearMax * 0.60f, level) * scale;
+        float far = MathHelper.Lerp(MidMin * 1.25f, MidMax * 0.80f, level) * scale;
+        if (dist <= near) return Math.Clamp(userDetail, 0.20f, 1f);
+        if (dist >= far) return 0.08f;
+        float t = (dist - near) / MathF.Max(1f, far - near);
+        float s = 1f - t * t * (3f - 2f * t);
+        return Math.Clamp(0.08f + s * (userDetail - 0.08f), 0.08f, 1f);
+    }
 }

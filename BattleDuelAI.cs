@@ -10,7 +10,13 @@ public partial class Battle
     {
         if (enemy == null || !enemy.Active || u.Mounted || u.Type.Look.Beast || u.Type.Huge || u.Ammo > 0) return false;
         if (Options.Duel) return true;
-        if (!enemy.IsPlayer || d > 14f) return false;
+        if (d > 14f) return false;
+        if (!enemy.IsPlayer)
+        {
+            // Nearby AI-vs-AI skirmishes (broken ranks, heroes, or unranked fighters within 16m of player) also use tactical spacing, feints & kicks.
+            if (!Player.Active || Vector2.DistanceSquared(u.Pos, Player.Pos) > 16f * 16f) return false;
+            return u.Squad == null || u.Squad.Broken || u.IsLeader || u.Hero;
+        }
         return u.Squad == null || !Ranked(u.Squad) || u.Squad.Broken || u.IsLeader || u.Hero || Overwhelms(u.Squad);
     }
 

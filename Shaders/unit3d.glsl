@@ -70,7 +70,8 @@ void main()
 #ifdef SHADOW
     gl_FragColor = vec4(vLight.z / vLight.w, 0.0, 0.0, 1.0);
 #else
-    vec3 n = normalize(vNormal);
+    vec3 geomN = normalize(vNormal);
+    vec3 n = geomN;
     vec3 l = normalize(-SunDir);
     vec3 v = normalize(CameraPos - vWorld);
     float sh = ShadowAt(vWorld + n * 0.06) * CloudAt(vWorld);
@@ -95,13 +96,15 @@ void main()
         albedo *= texCol;
 #else
         vec2 bumpUV = vUV;
+        bool isClothPat = (patId >= 2.5 && patId < 3.5) || patId >= 10.5;
         if (detailFade > 0.01)
         {
-            // Sample crisp 32x32 PointClamp pixel-art tile for the surface pattern (0..4)
+            // Sample crisp 32x32 PointClamp pixel-art tile; keep cloth subtle so cel-shaded planes read cleanly.
             vec2 tile = vec2(mod(floor(patId + 0.5), 4.0), floor((patId + 0.5) / 4.0));
             bumpUV = (tile + fract(vUV * 2.4)) * vec2(0.25, 0.25);
             vec3 tex = texture2D(UnitTex, bumpUV).rgb;
-            albedo *= mix(vec3(1.0), tex, detailFade * 0.85);
+            float texStr = isClothPat ? 0.26 : 0.68;
+            albedo *= mix(vec3(1.0), tex, detailFade * texStr);
         }
 #endif
         // Tangent-free normal mapping from UnitTex luminance gradient (chainmail, scales, fur, plate seams)
@@ -120,7 +123,11 @@ void main()
             float det = dot(dpdx, r1);
             if (abs(det) > 1e-6)
             {
-                vec2 dh = vec2(hX - hC, hY - hC) * (1.8 * detailFade);
+                float bumpStr = 0.24;
+#ifndef SKINNED
+                if (isClothPat) bumpStr = 0.07;
+#endif
+                vec2 dh = vec2(hX - hC, hY - hC) * (bumpStr * detailFade);
                 vec3 surfGrad = sign(det) * (dh.x * (r1 * duvdx.x + r2 * duvdy.x) + dh.y * (r1 * duvdx.y + r2 * duvdy.y));
                 n = normalize(abs(det) * n - surfGrad);
             }
@@ -222,8 +229,8 @@ void main()
     // RT0: lit cel-shaded color.
     gl_FragData[0] = vec4(clamp(col, 0.0, 1.0), 1.0);
 
-    // RT1: view-space normal (RGB in 0..1) + encoded linear depth (A in 0.02..1.0; larger = closer, 0 = background!).
-    vec3 vn = normalize((vec4(n, 0.0) * View).xyz);
+    // RT1: unperturbed geometry view-space normal (RGB in 0..1) + linear depth, so outline detection stays crisp without texture bump noise.
+    vec3 vn = normalize((vec4(geomN, 0.0) * View).xyz);
     float viewZ = max(0.1, -(vec4(vWorld, 1.0) * View).z);
     float encDepth = clamp(1.0 / (1.0 + viewZ * 0.065), 0.02, 1.0);
     gl_FragData[1] = vec4(vn * 0.5 + 0.5, encDepth);

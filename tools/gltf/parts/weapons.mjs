@@ -2,25 +2,27 @@ import { THREE, V, M, shadeVerts, heightShade, loft, column, lathe, bladeExtrude
 
 export function buildWeapons(root) {
   addPart(root, 'shield_round', (mesh) => {
+    // Flat-faced plank disc, bold iron rim, high domed boss (reference: flat round shield, strong rim + boss)
     const face = lathe([
-      [0.0, 0.032],
+      [0.0, 0.030],
+      [0.24, 0.026],
       [0.29, 0.022],
-      [0.315, 0.018],
+      [0.315, 0.016],
       [0.315, 0.0],
-      [0.0, 0.008],
-    ], 16, 0.86, 1.0);
+      [0.0, 0.006],
+    ], 14, 0.86, 1.0);
     face.rotateX(Math.PI / 2);
     mesh(face, M.cloth);
 
-    const rim = new THREE.TorusGeometry(0.308, 0.016, 4, 10);
-    mesh(shadeVerts(rim, () => 0.88), M.mail, [0, 0, 0.014]);
+    const rim = new THREE.TorusGeometry(0.305, 0.020, 4, 12);
+    mesh(shadeVerts(rim, () => 0.88), M.mail, [0, 0, 0.012]);
 
     const boss = lathe([
-      [0.0, 0.102],
-      [0.055, 0.088],
-      [0.082, 0.034],
-      [0.102, 0.028],
-    ], 12, 0.88, 1.0);
+      [0.0, 0.118],
+      [0.052, 0.104],
+      [0.085, 0.052],
+      [0.108, 0.024],
+    ], 10, 0.88, 1.0);
     boss.rotateX(Math.PI / 2);
     mesh(boss, M.steel);
   });
@@ -38,14 +40,16 @@ export function buildWeapons(root) {
     mesh(grip, M.leather);
     const socket = shadeVerts(new THREE.BoxGeometry(0.046, 0.11, 0.068), () => 0.88);
     mesh(socket, M.mail, [0, 0.71, 0.008]);
-    // Bearded axe blade extending toward +Z (extrude along X, rotated so shape X -> +Z)
+    // Broad bearded axe blade sweeping toward +Z (extrude along X, rotated so shape X -> +Z):
+    // horned top, round belly edge, deep drooping beard below the eye
     const blade = bladeExtrude([
-      [0.03, 0.67],
-      [0.15, 0.62],
-      [0.185, 0.67],
-      [0.175, 0.77],
-      [0.145, 0.80],
-      [0.03, 0.75],
+      [0.028, 0.60],
+      [0.155, 0.50],  // beard tip drops well below the eye
+      [0.225, 0.60],  // lower edge belly
+      [0.235, 0.70],  // edge mid
+      [0.195, 0.80],  // upper horn
+      [0.11, 0.83],
+      [0.028, 0.78],
     ], 0.018, 0.005);
     blade.rotateY(-Math.PI / 2);
     mesh(blade, M.steel);
@@ -61,20 +65,22 @@ export function buildWeapons(root) {
     mesh(haft, M.wood);
     const langets = shadeVerts(new THREE.BoxGeometry(0.056, 0.36, 0.068), () => 0.88);
     mesh(langets, M.mail, [0, 1.24, 0]);
+    // Great sweeping crescent bit: deep beard below the eye, wide round belly, horned top (shape X -> +Z)
     const blade = bladeExtrude([
-      [0.028, 1.16],
-      [0.25, 1.02],
-      [0.31, 1.14],
-      [0.30, 1.40],
-      [0.22, 1.47],
-      [0.028, 1.34],
-    ], 0.022, 0.006);
+      [0.028, 1.14],
+      [0.26, 0.98],   // beard tip
+      [0.37, 1.12],   // lower belly
+      [0.40, 1.28],   // edge mid
+      [0.33, 1.44],   // upper horn
+      [0.20, 1.50],
+      [0.028, 1.36],
+    ], 0.020, 0.006);
     blade.rotateY(-Math.PI / 2);
     mesh(blade, M.steel);
   });
 
-  // 3. weapon_spear & weapon_pike (edgeAlongZ = true)
-  for (const [name, yMin, yMax] of [['weapon_spear', -0.68, 1.46], ['weapon_pike', -0.94, 1.98]]) {
+  // 3. weapon_spear & weapon_pike: long leaf-shaped heads that read at distance (edges +-X)
+  for (const [name, yMin, yMax, hw, len] of [['weapon_spear', -0.68, 1.46, 0.052, 0.40], ['weapon_pike', -0.94, 1.98, 0.040, 0.34]]) {
     addPart(root, name, (mesh) => {
       const shaft = column([[yMin, 0.018, 0.018], [0, 0.020, 0.020], [yMax, 0.019, 0.019]], { segs: 8 });
       mesh(shaft, M.wood);
@@ -82,22 +88,26 @@ export function buildWeapons(root) {
       mesh(butt, M.mail);
       const socket = lathe([[0.024, yMax - 0.04], [0.020, yMax + 0.08], [0.026, yMax + 0.09]], 8);
       mesh(socket, M.mail);
+      // Broad leaf blade: full-width shoulder, swelling belly, long taper to the point
       const head = bladeExtrude([
-        [-0.036, yMax + 0.09],
-        [-0.044, yMax + 0.16],
-        [0.0, yMax + 0.33],
-        [0.044, yMax + 0.16],
-        [0.036, yMax + 0.09],
+        [-hw * 0.62, yMax + 0.08],
+        [-hw, yMax + 0.08 + len * 0.30],
+        [-hw * 0.55, yMax + 0.08 + len * 0.66],
+        [0.0, yMax + 0.08 + len],
+        [hw * 0.55, yMax + 0.08 + len * 0.66],
+        [hw, yMax + 0.08 + len * 0.30],
+        [hw * 0.62, yMax + 0.08],
       ], 0.016, 0.005);
       mesh(head, M.steel);
     });
   }
 
   // 4. Straight swords: weapon_sword, weapon_longsword, weapon_greatsword (edgeAlongZ = false, edges +-X)
+  // Long slender knightly blades: diamond cross-section lofts (strong facets, readable edge-on), tapered quillon guards.
   const swords = [
-    { name: 'weapon_sword', gripLo: -0.16, bladeHi: 0.88, guardW: 0.25, bladeW: 0.058, zweihander: false },
-    { name: 'weapon_longsword', gripLo: -0.26, bladeHi: 1.16, guardW: 0.31, bladeW: 0.062, zweihander: false },
-    { name: 'weapon_greatsword', gripLo: -0.35, bladeHi: 1.42, guardW: 0.40, bladeW: 0.074, zweihander: true },
+    { name: 'weapon_sword', gripLo: -0.16, bladeHi: 0.88, guardW: 0.26, bladeW: 0.056, zweihander: false },
+    { name: 'weapon_longsword', gripLo: -0.26, bladeHi: 1.16, guardW: 0.32, bladeW: 0.058, zweihander: false },
+    { name: 'weapon_greatsword', gripLo: -0.35, bladeHi: 1.44, guardW: 0.42, bladeW: 0.074, zweihander: true },
   ];
   for (const sw of swords) {
     addPart(root, sw.name, (mesh) => {
@@ -110,23 +120,31 @@ export function buildWeapons(root) {
       mesh(pommel, sw.zweihander ? M.steel : M.brass);
       const grip = column([[sw.gripLo, 0.022, 0.018], [0.06, 0.024, 0.020]], { segs: 6 });
       mesh(grip, M.leather);
-      const guard = shadeVerts(new THREE.BoxGeometry(sw.guardW, 0.032, 0.038), () => 0.96);
-      mesh(guard, sw.zweihander ? M.steel : M.brass, [0, 0.074, 0]);
+      // Tapered quillons: slim diamond-bar swelling at the center block, pinching toward the tips
+      const g2 = sw.guardW / 2;
+      const guard = loft(V(-g2, 0.075, 0), V(g2, 0.075, 0), [
+        [0.0, 0.009, 0.011],
+        [0.30, 0.013, 0.016],
+        [0.50, 0.020, 0.024],
+        [0.70, 0.013, 0.016],
+        [1.0, 0.009, 0.011],
+      ], { segs: 4, fwd: V(0, 1, 0) });
+      mesh(shadeVerts(guard, () => 0.96), sw.zweihander ? M.steel : M.brass);
       if (sw.zweihander) {
         for (const s of [-1, 1]) {
           const lug = shadeVerts(new THREE.BoxGeometry(0.050, 0.024, 0.028), () => 0.94);
           mesh(lug, M.steel, [s * 0.062, 0.22, 0], [0, 0, s * -0.45]);
         }
       }
-      const w0 = sw.bladeW * 0.5, w1 = sw.bladeW * 0.36;
-      const blade = bladeExtrude([
-        [-w0, 0.08],
-        [-w1, sw.bladeHi - 0.15],
-        [0, sw.bladeHi],
-        [w1, sw.bladeHi - 0.15],
-        [w0, 0.08],
-      ], 0.020, 0.006);
-      mesh(blade, M.steel);
+      // Diamond cross-section blade: wide flat at the shoulder, long slender taper to a needle point
+      const w0 = sw.bladeW * 0.5;
+      const blade = loft(V(0, 0.08, 0), V(0, sw.bladeHi, 0), [
+        [0.0, w0, w0 * 0.30],
+        [0.45, w0 * 0.86, w0 * 0.26],
+        [0.78, w0 * 0.52, w0 * 0.17],
+        [1.0, 0.0035, 0.0022],
+      ], { segs: 4 });
+      mesh(heightShade(blade, 0.08, sw.bladeHi, 0.84, 1.0), M.steel);
     });
   }
 
@@ -139,14 +157,14 @@ export function buildWeapons(root) {
     const langets = shadeVerts(new THREE.BoxGeometry(0.046, 0.36, 0.052), () => 0.88);
     mesh(langets, M.mail, [0, 1.32, 0]);
     const head = bladeExtrude([
-      [-0.17, 1.42], // rear armor-piercing fluke (-Z)
-      [-0.032, 1.36],
+      [-0.24, 1.44], // long rear armor-piercing fluke (-Z)
+      [-0.032, 1.34],
       [-0.030, 1.54],
-      [0.0, 1.84],   // tall diamond thrusting spike
-      [0.034, 1.54],
-      [0.23, 1.52],  // sweeping crescent axe blade (+Z)
-      [0.25, 1.35],
-      [0.19, 1.24],
+      [0.0, 1.90],   // tall diamond thrusting spike
+      [0.036, 1.54],
+      [0.30, 1.56],  // wide sweeping crescent axe blade (+Z)
+      [0.33, 1.42],
+      [0.24, 1.24],  // deep drooping beard
       [0.028, 1.32],
     ], 0.018, 0.005);
     head.rotateY(-Math.PI / 2);
@@ -162,15 +180,15 @@ export function buildWeapons(root) {
     const langets = shadeVerts(new THREE.BoxGeometry(0.046, 0.34, 0.052), () => 0.88);
     mesh(langets, M.mail, [0, 1.20, 0]);
     const head = bladeExtrude([
-      [-0.15, 1.34], // rear hook/fluke (-Z)
-      [-0.030, 1.29],
+      [-0.20, 1.36], // rear hook/fluke (-Z)
+      [-0.030, 1.28],
       [-0.026, 1.48],
-      [0.0, 1.72],   // top thrusting spike
-      [0.032, 1.52],
-      [0.19, 1.54],  // forward-curling billhook beak (+Z)
-      [0.21, 1.43],
-      [0.14, 1.38],
-      [0.12, 1.24],  // lower chopping edge
+      [0.0, 1.76],   // top thrusting spike
+      [0.034, 1.52],
+      [0.25, 1.58],  // bold forward-curling billhook beak (+Z)
+      [0.27, 1.44],
+      [0.17, 1.37],
+      [0.15, 1.22],  // lower chopping edge
       [0.026, 1.20],
     ], 0.018, 0.005);
     head.rotateY(-Math.PI / 2);
@@ -213,21 +231,21 @@ export function buildWeapons(root) {
     mesh(head, M.steel);
   });
 
-  // 8. weapon_bow (curve toward -Z, string at -Z)
+  // 8. weapon_bow (tall man-height longbow: deep D-curve toward +Z, string at -Z)
   addPart(root, 'weapon_bow', (mesh) => {
-    const limb = loft(V(0, -0.58, -0.19), V(0, 0.58, -0.19), [
-      [0.00, 0.014, 0.014, 0, -0.02],
-      [0.12, 0.018, 0.018, 0, 0.10],
-      [0.32, 0.022, 0.020, 0, 0.18],
-      [0.50, 0.024, 0.026, 0, 0.20],
-      [0.68, 0.022, 0.020, 0, 0.18],
-      [0.88, 0.018, 0.018, 0, 0.10],
-      [1.00, 0.014, 0.014, 0, -0.02],
+    const limb = loft(V(0, -0.70, -0.17), V(0, 0.70, -0.17), [
+      [0.00, 0.012, 0.012, 0, -0.03],
+      [0.12, 0.017, 0.017, 0, 0.09],
+      [0.32, 0.021, 0.019, 0, 0.175],
+      [0.50, 0.023, 0.025, 0, 0.20],
+      [0.68, 0.021, 0.019, 0, 0.175],
+      [0.88, 0.017, 0.017, 0, 0.09],
+      [1.00, 0.012, 0.012, 0, -0.03],
     ], { segs: 6 });
     mesh(shadeVerts(limb, () => 0.90), M.wood);
     const grip = column([[-0.08, 0.028, 0.030, 0, 0.0], [0.08, 0.028, 0.030, 0, 0.0]], { segs: 6 });
     mesh(grip, M.leather);
-    const str = shadeVerts(new THREE.BoxGeometry(0.008, 1.16, 0.008), () => 0.95);
+    const str = shadeVerts(new THREE.BoxGeometry(0.008, 1.40, 0.008), () => 0.95);
     mesh(str, M.trim, [0, 0, -0.20]);
   });
 
@@ -260,9 +278,12 @@ export function buildWeapons(root) {
     // Forged iron foot-stirrup at front
     const stirrup = shadeVerts(new THREE.TorusGeometry(0.055, 0.010, 4, 8), () => 0.88);
     mesh(stirrup, M.mail, [0, 0.495, 0], [Math.PI / 2, 0, 0]);
-    // Bowstring + loaded steel-tipped quarrel resting on top
-    const str = shadeVerts(new THREE.BoxGeometry(0.64, 0.008, 0.008), () => 0.95);
-    mesh(str, M.trim, [0, 0.34, 0.016]);
+    // Bowstring drawn back from both prod tips to the lock-nut + loaded steel-tipped quarrel resting on top
+    for (const s of [-1, 1]) {
+      const len = Math.hypot(0.33, 0.26);
+      const str = shadeVerts(new THREE.BoxGeometry(len, 0.007, 0.007), () => 0.95);
+      mesh(str, M.trim, [s * 0.165, 0.27, 0.016], [0, 0, s * Math.atan2(0.26, 0.33)]);
+    }
     const boltShaft = shadeVerts(new THREE.CylinderGeometry(0.007, 0.007, 0.34, 6), () => 0.92);
     mesh(boltShaft, M.wood, [0, 0.32, 0.030]);
     const boltHead = lathe([[0.0, 0.54], [0.018, 0.48], [0.0, 0.47]], 6);
@@ -286,12 +307,12 @@ export function buildWeapons(root) {
     mesh(lugs, M.steel, [0, 0.24, 0]);
     // Wavy flame-bladed profile (edge along X, thin along Z)
     const pts = [];
-    const steps = 12;
+    const steps = 10;
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
       const y = 0.02 + t * 1.32;
       const baseW = 0.036 * (1 - 0.55 * t);
-      const wave = i > 1 && i < steps ? 0.011 * Math.sin(i * Math.PI * 0.95) : 0;
+      const wave = i > 1 && i < steps ? 0.016 * Math.sin(i * Math.PI * 0.95) : 0;
       pts.push([baseW + wave, y]);
     }
     pts.push([0.0, 1.42]);
@@ -299,7 +320,7 @@ export function buildWeapons(root) {
       const t = i / steps;
       const y = 0.02 + t * 1.32;
       const baseW = 0.036 * (1 - 0.55 * t);
-      const wave = i > 1 && i < steps ? -0.011 * Math.sin(i * Math.PI * 0.95) : 0;
+      const wave = i > 1 && i < steps ? -0.016 * Math.sin(i * Math.PI * 0.95) : 0;
       pts.push([-(baseW + wave), y]);
     }
     const shape = new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y)));
@@ -318,9 +339,10 @@ export function buildWeapons(root) {
     const guard = shadeVerts(new THREE.BoxGeometry(0.030, 0.022, 0.16), () => 0.95);
     mesh(guard, M.brass, [0, 0.0, 0.01]);
     // Curved blade in YZ plane (bladeExtrude extrudes along X, so X->Z, Y->Y)
+    // Deep shamshir curve flaring wider toward the tip (kilij yelman) so the sweep reads at distance
     const blade = bladeExtrude([
-      [0.015, 0.01], [0.026, 0.25], [0.060, 0.52], [0.135, 0.76], [0.235, 0.91],
-      [0.190, 0.90], [0.095, 0.76], [0.022, 0.52], [-0.012, 0.25], [-0.016, 0.01],
+      [0.015, 0.01], [0.028, 0.25], [0.064, 0.52], [0.140, 0.76], [0.235, 0.91],
+      [0.172, 0.90], [0.080, 0.77], [0.020, 0.52], [-0.012, 0.25], [-0.016, 0.01],
     ], 0.012, 0.004);
     mesh(heightShade(blade, 0.0, 0.92, 0.86, 1.0), M.steel);
   });
@@ -332,11 +354,12 @@ export function buildWeapons(root) {
     mesh(lathe([[0.0, -0.17], [0.028, -0.15], [0.016, -0.13]], 8), M.brass);
     const guard = shadeVerts(new THREE.BoxGeometry(0.028, 0.024, 0.15), () => 0.94);
     mesh(guard, M.brass, [0, 0.0, 0.015]);
+    // Broad heavy cleaver: narrow at the hilt, swelling to maximum width near the clipped point
     const blade = bladeExtrude([
-      [0.024, 0.01], [0.042, 0.26], [0.072, 0.54], [0.105, 0.72], [0.042, 0.79],
-      [-0.016, 0.73], [-0.020, 0.45], [-0.018, 0.01],
+      [0.022, 0.02], [0.042, 0.28], [0.070, 0.52], [0.098, 0.68], [0.052, 0.80],
+      [0.004, 0.78], [-0.018, 0.58], [-0.020, 0.30], [-0.016, 0.02],
     ], 0.014, 0.004);
-    mesh(heightShade(blade, 0.0, 0.79, 0.86, 1.0), M.steel);
+    mesh(heightShade(blade, 0.0, 0.80, 0.86, 1.0), M.steel);
   });
 
   // 17. weapon_morningstar (iron-banded haft + spiked steel sphere head)
@@ -360,52 +383,66 @@ export function buildWeapons(root) {
     }
   });
 
-  // 18. weapon_club (heavy tapering iron-studded cudgel)
+  // 18. weapon_club (heavy crude ogre cudgel: long tapering knotty shaft swelling to a huge knot, iron studs)
   addPart(root, 'weapon_club', (mesh) => {
     const body = column([
-      [-0.18, 0.020, 0.020],
-      [0.05, 0.022, 0.022],
-      [0.36, 0.036, 0.036],
-      [0.68, 0.068, 0.068],
-      [0.86, 0.076, 0.076],
-      [0.95, 0.044, 0.044],
-    ], { segs: 8 });
+      [-0.18, 0.019, 0.019],
+      [0.05, 0.022, 0.021],
+      [0.34, 0.038, 0.034],
+      [0.62, 0.072, 0.064],
+      [0.82, 0.092, 0.080],
+      [0.94, 0.096, 0.086],
+      [1.02, 0.048, 0.046],
+    ], { segs: 7 });
     mesh(body, M.wood);
-    mesh(column([[-0.12, 0.024, 0.024], [0.08, 0.024, 0.024]], { segs: 8 }), M.leather);
-    // Two iron bands + studs
-    for (const y of [0.64, 0.80]) {
-      const r = y < 0.7 ? 0.069 : 0.078;
-      mesh(column([[y - 0.018, r, r], [y + 0.018, r, r]], { segs: 8 }), M.mail);
-      for (let i = 0; i < 4; i++) {
-        const a = (i / 4) * Math.PI * 2 + (y > 0.7 ? Math.PI / 4 : 0);
-        const stud = shadeVerts(new THREE.ConeGeometry(0.013, 0.028, 4), () => 0.94);
-        mesh(stud, M.steel, [Math.cos(a) * (r + 0.008), y, Math.sin(a) * (r + 0.008)], [Math.sin(a) * Math.PI * 0.5, 0, -Math.cos(a) * Math.PI * 0.5]);
-      }
+    mesh(column([[-0.12, 0.024, 0.024], [0.08, 0.024, 0.024]], { segs: 7 }), M.leather);
+    // One crude hammered iron band + big hand-forged studs around the knot
+    const r = 0.094;
+    mesh(column([[0.76, r, r * 0.92], [0.82, r, r * 0.92]], { segs: 7 }), M.mail);
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      const stud = shadeVerts(new THREE.ConeGeometry(0.020, 0.045, 4), () => 0.94);
+      mesh(stud, M.steel, [Math.cos(a) * (r + 0.006), 0.88, Math.sin(a) * (r * 0.92 + 0.006)], [Math.sin(a) * Math.PI * 0.5, 0, -Math.cos(a) * Math.PI * 0.5]);
+    }
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2 + 0.5;
+      const stud = shadeVerts(new THREE.ConeGeometry(0.016, 0.036, 4), () => 0.94);
+      mesh(stud, M.steel, [Math.cos(a) * 0.078, 0.68, Math.sin(a) * 0.070], [Math.sin(a) * Math.PI * 0.5, 0, -Math.cos(a) * Math.PI * 0.5]);
     }
   });
 
-  // 19. weapon_staff (mage/officer gnarled staff with brass ferrule & crowned finial)
+  // 19. weapon_staff (mage gnarled dark-wood staff, big faceted crystal shard cradled in a forked wooden claw)
   addPart(root, 'weapon_staff', (mesh) => {
+    // Gnarled shaft: uneven rings & slight wobble in the upper third
     const shaft = column([
-      [-0.70, 0.018, 0.018],
-      [0.0, 0.020, 0.020],
-      [0.60, 0.022, 0.022],
-      [1.18, 0.025, 0.025],
-      [1.30, 0.034, 0.034],
-    ], { segs: 8 });
+      [-0.70, 0.016, 0.017],
+      [0.0, 0.019, 0.020],
+      [0.55, 0.021, 0.022],
+      [0.95, 0.024, 0.023],
+      [1.16, 0.028, 0.027],
+      [1.28, 0.036, 0.034],
+    ], { segs: 7 });
     mesh(shaft, M.wood);
-    mesh(column([[-0.08, 0.023, 0.023], [0.12, 0.023, 0.023]], { segs: 8 }), M.leather);
-    mesh(column([[1.22, 0.036, 0.036], [1.32, 0.044, 0.044]], { segs: 8 }), M.brass);
-    // Brass crown prongs + inner crystal/orb
-    const orb = shadeVerts(new THREE.SphereGeometry(0.046, 8, 6), () => 1.0);
-    mesh(orb, M.trim, [0, 1.39, 0]);
+    mesh(column([[-0.08, 0.023, 0.023], [0.12, 0.023, 0.023]], { segs: 7 }), M.leather);
+    // Knotty collar where the claw splits
+    mesh(column([[1.22, 0.038, 0.036], [1.32, 0.046, 0.042]], { segs: 7 }), M.wood);
+    // Large elongated hexagonal crystal shard with a pointed crown (bright trim material)
+    const crystalBody = shadeVerts(new THREE.CylinderGeometry(0.040, 0.056, 0.19, 6), () => 1.0);
+    mesh(crystalBody, M.trim, [0, 1.475, 0]);
+    const crystalTip = shadeVerts(new THREE.ConeGeometry(0.040, 0.11, 6), () => 1.0);
+    mesh(crystalTip, M.trim, [0, 1.625, 0]);
+    const crystalBase = shadeVerts(new THREE.ConeGeometry(0.056, 0.08, 6), () => 0.92);
+    mesh(crystalBase, M.trim, [0, 1.345, 0], [Math.PI, 0, 0]);
+    // Four gnarled wooden talons curving in to clutch the shard
     for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * Math.PI * 2;
-      const prong = loft(V(Math.cos(a) * 0.034, 1.30, Math.sin(a) * 0.034), V(Math.cos(a) * 0.052, 1.45, Math.sin(a) * 0.052), [
-        [0, 0.010, 0.010], [0.6, 0.008, 0.008], [1.0, 0.004, 0.004],
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const prong = loft(V(Math.cos(a) * 0.030, 1.26, Math.sin(a) * 0.030), V(Math.cos(a) * 0.043, 1.47, Math.sin(a) * 0.043), [
+        [0, 0.013, 0.013], [0.45, 0.011, 0.011, Math.cos(a) * 0.012, Math.sin(a) * 0.012], [0.8, 0.008, 0.008, Math.cos(a) * 0.006, Math.sin(a) * 0.006], [1.0, 0.004, 0.004],
       ], { segs: 4 });
-      mesh(prong, M.brass);
+      mesh(prong, M.wood);
     }
+    // Small brass binding ring at the collar throat
+    mesh(column([[1.18, 0.033, 0.032], [1.24, 0.035, 0.034]], { segs: 7 }), M.brass);
   });
 
   // 20. weapon_lance (long tapered cavalry lance with conical vamplate & cloth swallowtail pennant)
@@ -441,10 +478,10 @@ export function buildWeapons(root) {
     mesh(shaft, M.wood);
     mesh(column([[1.36, 0.024, 0.024], [1.50, 0.026, 0.026]], { segs: 8 }), M.mail);
     const blade = bladeExtrude([
-      [0.022, 1.48], [0.068, 1.68], [0.105, 1.92], [0.072, 2.08], [0.012, 2.15],
-      [-0.024, 1.95], [-0.022, 1.66], [-0.018, 1.48],
+      [0.024, 1.48], [0.082, 1.66], [0.125, 1.90], [0.088, 2.10], [0.014, 2.20],
+      [-0.030, 1.98], [-0.026, 1.66], [-0.018, 1.48],
     ], 0.012, 0.003);
-    mesh(heightShade(blade, 1.48, 2.15, 0.86, 1.0), M.steel);
+    mesh(heightShade(blade, 1.48, 2.20, 0.86, 1.0), M.steel);
     // Back-spike / lug on spine
     const lug = bladeExtrude([[-0.018, 1.66], [-0.066, 1.72], [-0.022, 1.76]], 0.010, 0.002);
     mesh(lug, M.mail);

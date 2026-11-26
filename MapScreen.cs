@@ -269,6 +269,7 @@ sealed partial class MapScreen
         else if (panel == PanelKind.Help && (ctl.Pressed(Act.Help) || ctl.Pressed(Act.Menu))) panel = PanelKind.None;
         else if (panel == PanelKind.Saves) { if (Pressed(Keys.Escape) || !saves.Open) { saves.Close(); panel = PanelKind.Menu; } }
         else if (renaming == null && panel == PanelKind.Settlement && tab != "" && ctl.Pressed(Act.Menu)) { tab = ""; note = ""; } // out of the building, onto the street
+        else if (panel == PanelKind.Camp && campBannerOpen && ctl.Pressed(Act.Menu)) campBannerOpen = false;
         else if (panel == PanelKind.Camp && campMan != null && ctl.Pressed(Act.Menu)) campMan = null; // from a man's page back to the fires
         else if (panel == PanelKind.Fallen && ctl.Pressed(Act.Menu)) panel = bookFrom; // the book closes where it was opened
         else if (panel == PanelKind.Legend && ctl.Pressed(Act.Menu)) { sealConfirm = false; panel = CameFrom(PanelKind.Legend); }

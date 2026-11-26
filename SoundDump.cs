@@ -49,6 +49,23 @@ static class SoundDump
             wrote++;
         }
 
+        foreach (var (culture, sample) in new[] {
+            ("northern", "No ransom today—only blood and iron!"),
+            ("azure",    "Shields tight! Hold the ridge, boys!"),
+            ("crimson",  "Shall we discuss coin, or must we draw steel?"),
+            ("southern", "Well met, friend! Sit by the fire."),
+            ("steppe",   "Step forward! Let both hosts watch!"),
+            ("league",   "Fair coin for fair steel, captain."),
+            ("order",    "Three days without bread... still, we hold."),
+        })
+        {
+            string tag = $"speech-{culture}";
+            if (!Match(tag)) continue;
+            var pcm = VoiceSpeech.Render(VoiceProfile.ForRegion(culture), sample, VoiceMood.Even, 12, Synth.Rate);
+            WriteMono(Path.Combine(dir, $"{tag}.wav"), pcm);
+            wrote++;
+        }
+
         Console.WriteLine($"wrote {wrote} sound files to {dir}");
     }
 

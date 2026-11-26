@@ -1,0 +1,132 @@
+{
+  "scenes": [
+    {
+      "id": "parley_grudge",
+      "context": "parley",
+      "requiresHostile": true,
+      "requiresGrudge": true,
+      "entry": "open",
+      "nodes": {
+        "open": {
+          "mood": "grudge",
+          "text": "{you}. You left our banner in the mud. There will be no ransom today—only iron!",
+          "interject": { "who": "Sergeant", "text": "His front rank is steady, captain, but his levies look cold and hungry." },
+          "choices": [
+            { "stance": "Bold", "label": "Settle it steel to steel—you and me, before both lines.", "next": "duel_accept", "requiresDuel": true },
+            { "stance": "Blunt", "label": "Your men are spent. Yield the field and spare them.", "next": "yield_reply", "opinionDelta": -4 },
+            { "stance": "Honourable", "label": "Your dead fought well. Let old blood rest and grant us the road.", "next": "honour_reply", "opinionDelta": 6 },
+            { "stance": "Sly", "label": "Take 150 crowns for your trouble and march back home.", "next": "bribe_reply", "goldCost": 150 }
+          ]
+        },
+        "duel_accept": {
+          "mood": "command",
+          "text": "Ha! At least you have a spine. Step forward, {you}. Let both hosts watch!",
+          "interject": { "who": "Sergeant", "text": "Watch his high guard, captain—he'll bait your swing." },
+          "choices": [
+            { "stance": "Bold", "label": "Draw steel and meet him in single combat.", "action": "start_duel" },
+            { "stance": "Blunt", "label": "No—back to the lines. Our companies settle this.", "action": "back_to_encounter" }
+          ]
+        },
+        "yield_reply": {
+          "mood": "hostile",
+          "text": "You think a handful of mail coats scares {realm}? Sound the horns—we fight!",
+          "choices": [
+            { "stance": "Bold", "label": "Then let iron decide it.", "action": "back_to_encounter" }
+          ]
+        },
+        "honour_reply": {
+          "mood": "even",
+          "text": "...They did die with their boots planted. Take the road, {you}. Next time we owe each other nothing.",
+          "choices": [
+            { "stance": "Honourable", "label": "Fair road to you, {name}. (End encounter peacefully)", "action": "resolve_peace", "opinionDelta": 8 }
+          ]
+        },
+        "bribe_reply": {
+          "mood": "even",
+          "text": "Hmph. Silver spends cleaner than blood. Take your banners and be gone before I change my mind.",
+          "choices": [
+            { "stance": "Sly", "label": "Pleasure doing business. (Pay 150g, leave peacefully)", "action": "resolve_peace", "goldCost": 150 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "parley_hostile",
+      "context": "parley",
+      "requiresHostile": true,
+      "entry": "open",
+      "nodes": {
+        "open": {
+          "mood": "hostile",
+          "text": "Well met on hard ground, {you}. Will you bend the knee to {realm}, or feed the crows?",
+          "interject": { "who": "Sergeant", "text": "Hold your nerve, captain. His horse is restless on the flank." },
+          "choices": [
+            { "stance": "Bold", "label": "Save the men—meet me in single combat right here.", "next": "duel_open", "requiresDuel": true },
+            { "stance": "Honourable", "label": "Neither of us needs a butcher's bill today. Let us pass.", "next": "pass_reply", "opinionDelta": 4 },
+            { "stance": "Sly", "label": "150 crowns to look the other way while we march past.", "next": "coin_reply", "goldCost": 150 },
+            { "stance": "Blunt", "label": "Enough talk. Let's get to the steel.", "action": "back_to_encounter" }
+          ]
+        },
+        "duel_open": {
+          "mood": "command",
+          "text": "Bold words, {you}! Step into the mud, then—we settle this blade to blade!",
+          "choices": [
+            { "stance": "Bold", "label": "Enter single combat.", "action": "start_duel" },
+            { "stance": "Blunt", "label": "Return to battle lines.", "action": "back_to_encounter" }
+          ]
+        },
+        "pass_reply": {
+          "mood": "hostile",
+          "text": "My orders are clear, {you}. No free passage through {realm} lands.",
+          "choices": [
+            { "stance": "Blunt", "label": "Then we take the road by force.", "action": "back_to_encounter" }
+          ]
+        },
+        "coin_reply": {
+          "mood": "even",
+          "text": "A practical captain. Keep your men in column and out of sight—we saw nothing.",
+          "choices": [
+            { "stance": "Sly", "label": "Pay 150 crowns and march past.", "action": "resolve_peace", "goldCost": 150 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "lord_court",
+      "context": "lord",
+      "entry": "open",
+      "nodes": {
+        "open": {
+          "mood": "even",
+          "text": "Speak freely, {you}. What brings a captain of your name before {house}?",
+          "choices": [
+            { "stance": "Honourable", "label": "I came to pay respect to {house} and hear news of the war.", "next": "warm_end", "opinionDelta": 4 },
+            { "stance": "Blunt", "label": "Tell me straight—where is the real fighting in {realm}?", "next": "blunt_end", "opinionDelta": 2 },
+            { "stance": "Sly", "label": "Every lord needs a quiet blade. Remember my name when coin moves.", "next": "sly_end", "opinionDelta": 1 }
+          ]
+        },
+        "warm_end": {
+          "mood": "warm",
+          "text": "Well spoken, {you}. Courtesy is rare when iron is cheap. Sit—let us talk business.",
+          "choices": [
+            { "stance": "Honourable", "label": "Continue to council topics.", "action": "to_topics" }
+          ]
+        },
+        "blunt_end": {
+          "mood": "even",
+          "text": "Direct as a pike. I like that. The marches bleed, and we need companies that don't break.",
+          "choices": [
+            { "stance": "Blunt", "label": "Continue to council topics.", "action": "to_topics" }
+          ]
+        },
+        "sly_end": {
+          "mood": "even",
+          "text": "Careful how loudly you offer that in court, {you}... though I will remember it.",
+          "choices": [
+            { "stance": "Sly", "label": "Continue to council topics.", "action": "to_topics" }
+          ]
+        }
+      }
+    }
+  ]
+}

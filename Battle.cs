@@ -8,6 +8,7 @@ public struct PlayerInput
     public float Throttle;    // mounted: +1 forward, -1 rein back
     public float Steer;       // mounted: +1 turn right, -1 turn left
     public float Facing;      // where the player looks (and strikes)
+    public float Pitch;       // vertical camera pitch (radians, + down / - up) for manual 3D ranged aiming
     public AttackDir Dir;     // attack / block direction, picked by mouse movement
     public bool Sprint, Attack, Block, Rally, Couch, Mount, Bash, Swap, Dodge, Feint;
     public Vector2? EngineAim; // where the crosshair meets the ground: the mark of an engine you work (docs/archive/SIEGECRAFT.md A5)
@@ -29,6 +30,16 @@ public sealed class Projectile
 public sealed partial class Battle
 {
     public const float Gravity = 9.8f, ArrowSpeed = 28, RallyRadius = 15;
+
+    /// Muzzle speed (m/s) by ranged weapon class: crossbows fly flat and fast, longbows reach far, thrown weapons arc heavily.
+    public static float ProjectileSpeed(Grip kind, string weapon) => kind switch
+    {
+        Grip.Crossbow => 52f,
+        Grip.Bow => weapon is "longbow" or "greatbow" ? 44f : 38f,
+        Grip.Sling => 32f,
+        Grip.Thrown => 24f,
+        _ => ArrowSpeed,
+    };
     /// How far men can run before they have left the field: 95 m for a few hundred men, wider for a big battle.
     public float MapRadius { get; private set; } = 95;
     /// Morale at which a company breaks (Stubborn officers and men behind an unbroken wall hold to a little less).
@@ -536,7 +547,7 @@ public sealed partial class Battle
         u.ActionTimer = u.Type.Windup * (Raging(u) ? RageWindup : 1); // a wounded bear lashes out quicker
         u.WindupDuration = u.ActionTimer;
         u.Target = target;
-        u.Swing = forcedDir ?? StyleSwing(u) ?? RandomSwing(u);
+        u.Swing = forcedDir ?? (u.Type.Tier >= 3 && !u.Type.Look.Beast && !u.Type.Huge ? SmartSwingDir(u, target) : StyleSwing(u) ?? RandomSwing(u));
         u.ClearHits();
         u.Morphed = false;
         u.Face(target.Pos - u.Pos);

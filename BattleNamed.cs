@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// A named man's words in a battle (docs/archive/COMPANY.md C6): who said it, the line, when, his company.
-public sealed record Said(int Soldier, string Name, string Text, float Time, Squad? Squad);
+public sealed record Said(int Soldier, string Name, string Text, float Time, Squad? Squad, bool Key = false, int Team = 0, VoiceMood Mood = VoiceMood.Even, string Culture = "", string Nature = "", bool Sergeant = false);
 
 /// Named men in the fight (C6): an alert when one of yours is hard pressed near you, and a line from him (by his nature, from
 /// Data/talk.json) when he fells a captain or a horseman, when his brother falls, and when you pull him out. Read only: no dice,
@@ -22,6 +22,7 @@ public sealed partial class Battle
     /// One of yours under half his strength with a foe on him, within reach of you: once every `PressedGap` seconds at most.
     void PressedAlerts()
     {
+        CheckBattleBarks();
         if (!anyNamed || Time - pressedAt < PressedGap || !Player.Active) return;
         foreach (var u in Units)
         {
@@ -43,7 +44,10 @@ public sealed partial class Battle
         if (fits.Any(l => l.Nature != "")) fits = fits.Where(l => l.Nature != "").ToList();
         if (fits.Count == 0) return;
         string text = fits[(m.Id * 31 + Spoken.Count * 7) % fits.Count].Text.Replace("{man}", m.Name).Replace("{other}", other == "" ? "him" : other);
-        Spoken.Add(new Said(m.Id, m.Name, text, Time, u.Squad));
+        bool key = topic is "man_felled_captain" or "man_brother_down" or "man_saved";
+        var mood = topic is "man_brother_down" ? VoiceMood.Grudge : topic is "man_saved" ? VoiceMood.Warm : VoiceMood.Command;
+        Spoken.Add(new Said(m.Id, m.Name, text, Time, u.Squad, Key: key, Team: 0, Mood: mood, Culture: u.Type.Culture, Nature: m.Nature));
+        if (topic is "man_felled_horse" or "man_felled_captain") QueueBrotherReply(u, m);
         Log($"{m.Name}: \"{text}\"");
     }
 

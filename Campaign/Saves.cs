@@ -10,7 +10,7 @@ public enum SaveKind { Auto, Quick, Named }
 public sealed class SaveMeta
 {
     public string Captain = "", Company = "", Service = "", Label = "";
-    public int Day, Gold, Men, Palette = 2, Version;
+    public int Day, Gold, Men, Palette = 2, Arms = -1, BannerField = -1, BannerTrim = -1, Version;
     public bool Ironman, GameOver;
     /// Dynamic title-screen context saved with the card (defaults cleanly for older saves).
     public float Hour = 19.2f, Rain;
@@ -85,6 +85,9 @@ public sealed class SaveMeta
             Gold = (int)s.Gold,
             Men = player?.Men ?? 0,
             Palette = !serving ? 2 : s.Factions[f].Founded ? s.Factions[f].Palette : Factions.All[Math.Min(f, Factions.All.Count - 1)].Palette,
+            Arms = s.Captain.Arms,
+            BannerField = s.Captain.BannerField,
+            BannerTrim = s.Captain.BannerTrim,
             Version = s.Version,
             Ironman = s.Ironman,
             GameOver = s.GameOver,

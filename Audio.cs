@@ -37,7 +37,7 @@ public enum Bed
 /// Sound and music engine (AU0–AU6): 44.1 kHz procedural cues and looping beds (`AudioSynth.cs`), plus 44.1 kHz stereo
 /// score streaming (`AudioStreamer.cs`, `MusicScore.cs`, `AudioBank.cs`). If there is no audio device, everything
 /// quietly does nothing.
-sealed class AudioEngine
+sealed partial class AudioEngine
 {
     public bool Enabled { get; private set; }
     public static AudioEngine? Current;

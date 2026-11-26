@@ -1,174 +1,187 @@
 import { THREE, V, M, shadeVerts, heightShade, loft, pathLoft, drapeSheet, column, addPart } from '../geom.mjs';
 
 export function buildMounts(root) {
+  // Small indexed sheet helpers for the broad planar cloth, armour and fur shapes that carry the battle-distance read.
+  const sheet = (rows, flip = false) => {
+    const cols = rows[0].length, pos = [], idx = [];
+    for (const row of rows) for (const p of row) pos.push(p.x, p.y, p.z);
+    for (let r = 0; r + 1 < rows.length; r++) for (let c = 0; c + 1 < cols; c++) {
+      const A = r * cols + c, B = A + 1, C = (r + 1) * cols + c, D = C + 1;
+      if (flip) idx.push(A, B, D, A, D, C);
+      else idx.push(A, D, B, A, C, D);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  };
+  const bandY = (pts, width, flip = false) => sheet([
+    pts.map(p => V(p.x, p.y + width * 0.5, p.z)),
+    pts.map(p => V(p.x, p.y - width * 0.5, p.z)),
+  ], flip);
+  const apronPanel = (out, yTop, yBot, zTop, zBot, wTop, wBot) => {
+    const rows = [];
+    for (let r = 0; r < 3; r++) {
+      const k = r / 2, y = yTop + (yBot - yTop) * k, z = zTop + (zBot - zTop) * k, w = wTop + (wBot - wTop) * k;
+      const row = [];
+      for (let c = 0; c <= 6; c++) {
+        const u = -1 + 2 * c / 6;
+        // Slightly bellied centre and tucked corners keep the front/croup cloth from reading as a cardboard rectangle.
+        row.push(V(u * w, y, z + out * 0.022 * (1 - u * u) * (1 - k * 0.35)));
+      }
+      rows.push(row);
+    }
+    return sheet(rows, out < 0);
+  };
+  const tri = (a, b, c) => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute([a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z], 3));
+    g.computeVertexNormals();
+    return g;
+  };
+
   // ---------- HORSES (15 parts) ----------
 
-  // Anatomical equine barrel along Z (-0.94..+0.92):
-  // Broad muscular chest (+Z), raised withers, gentle saddle dip, deep ribcage with tucked flank/belly, rounded croup (-Z).
+  // Faceted equine barrel along Z: broad deep chest and withers at +Z, a saddle hollow, tucked loin and powerful croup at -Z.
   const barrelProfile = (th, t) => {
-    const sy = Math.sin(th); // +1 = top (spine), -1 = bottom (belly)
+    const sy = Math.sin(th); // +1 spine, -1 belly
     let mx = 1.0, mz = 1.0;
-    // Slight ridge at the withers & spine (t ~ 0.65..0.85), narrower across the crest
-    if (sy > 0.35) {
-      mx *= 0.90;
-      if (t > 0.58 && t < 0.88) mz *= 1.07; // withers rise
+    if (sy > 0.30) {
+      mx *= 0.82; // flatter spine planes
+      if (t > 0.60 && t < 0.88) mz *= 1.10; // withers rise
     }
-    // Tucked-up flank/belly ahead of the hindquarters (t ~ 0.22..0.48)
-    if (sy < -0.25) {
+    if (sy < -0.20) {
       mx *= 0.88;
-      if (t > 0.18 && t < 0.52) mz *= 0.82;
-      else if (t >= 0.65) mz *= 1.08; // deep muscular chest/brisket
+      if (t > 0.20 && t < 0.54) mz *= 0.78; // tucked flank
+      else if (t >= 0.66) mz *= 1.14; // deep cavalry chest/brisket
     }
     return [mx, mz];
   };
 
   const horseBarrel = (mesh, bodyMat = M.coat) => {
-    const body = loft(V(0, 0.04, -0.94), V(0, 0.08, 0.92), [
-      [0.00, 0.13, 0.13, 0, -0.02], // tail dock
-      [0.10, 0.29, 0.29, 0, 0.05],  // rounded croup / haunches
-      [0.24, 0.34, 0.31, 0, 0.04],  // wide hindquarters
-      [0.42, 0.29, 0.26, 0, -0.01], // tucked loin / flank
-      [0.58, 0.31, 0.28, 0, -0.02], // deep barrel / saddle hollow
-      [0.76, 0.33, 0.32, 0, 0.05],  // muscular shoulders & withers
-      [0.91, 0.28, 0.27, 0, 0.04],  // proud breast / chest
-      [1.00, 0.13, 0.14, 0, 0.01],  // brisket front
-    ], { segs: 12, fwd: V(0, 1, 0), profile: barrelProfile });
-    mesh(heightShade(body, -0.28, 0.42, 0.72, 1.0), bodyMat);
+    const body = loft(V(0, 0.03, -0.95), V(0, 0.08, 0.93), [
+      [0.00, 0.12, 0.14, 0, -0.01], // tail dock
+      [0.09, 0.28, 0.29, 0,  0.04], // rounded croup
+      [0.23, 0.34, 0.32, 0,  0.04], // broad haunches
+      [0.41, 0.295, 0.265, 0, -0.02], // tucked loin/flank
+      [0.58, 0.305, 0.275, 0, -0.03], // saddle hollow and ribcage
+      [0.76, 0.34, 0.325, 0,  0.05], // muscular shoulder/withers
+      [0.91, 0.295, 0.295, 0,  0.05], // proud breast
+      [1.00, 0.135, 0.155, 0,  0.00], // brisket front
+    ], { segs: 8, fwd: V(0, 1, 0), profile: barrelProfile });
+    mesh(heightShade(body, -0.30, 0.43, 0.72, 1.0), bodyMat);
   };
 
   const horseSaddle = (mesh, padMat = M.cloth, saddleMat = M.leather, withTack = true) => {
-    // Contoured draped saddle cloth hugging the curved barrel (no flat floating box!)
+    // Cloth pad draped over the barrel, with a bright woven border on both hanging sides.
     const cloth = drapeSheet([
-      { z: -0.44, w: 0.345, topY: 0.355, sideY: 0.16, hemY: -0.05, flare: 0.015 },
-      { z: -0.22, w: 0.335, topY: 0.335, sideY: 0.14, hemY: -0.07, flare: 0.015 },
-      { z:  0.02, w: 0.335, topY: 0.325, sideY: 0.13, hemY: -0.07, flare: 0.015 },
-      { z:  0.24, w: 0.345, topY: 0.355, sideY: 0.15, hemY: -0.05, flare: 0.015 },
-      { z:  0.38, w: 0.340, topY: 0.375, sideY: 0.18, hemY:  0.01, flare: 0.010 },
-    ], { segs: 10 });
-    mesh(heightShade(cloth, -0.08, 0.38, 0.80, 1.0), padMat);
-
-    // Subtle trim edging along the saddle cloth bottom
-    const padTrim = drapeSheet([
-      { z: -0.45, w: 0.352, topY: 0.358, sideY: 0.16, hemY: -0.065, flare: 0.016 },
-      { z: -0.41, w: 0.352, topY: 0.355, sideY: 0.16, hemY: -0.065, flare: 0.016 },
-    ], { segs: 10 });
-    mesh(shadeVerts(padTrim, () => 0.94), M.trim);
-
-    // Sculpted medieval war saddle seat
-    const seat = drapeSheet([
-      { z: -0.28, w: 0.25, topY: 0.385, sideY: 0.28, hemY: 0.17, flare: 0.02 },
-      { z: -0.04, w: 0.24, topY: 0.365, sideY: 0.26, hemY: 0.14, flare: 0.02 },
-      { z:  0.20, w: 0.24, topY: 0.385, sideY: 0.28, hemY: 0.17, flare: 0.02 },
+      { z: -0.45, w: 0.345, topY: 0.355, sideY: 0.16, hemY: -0.035, flare: 0.014 },
+      { z: -0.22, w: 0.335, topY: 0.335, sideY: 0.14, hemY: -0.060, flare: 0.014 },
+      { z:  0.03, w: 0.335, topY: 0.325, sideY: 0.13, hemY: -0.060, flare: 0.014 },
+      { z:  0.26, w: 0.345, topY: 0.355, sideY: 0.15, hemY: -0.035, flare: 0.012 },
+      { z:  0.40, w: 0.330, topY: 0.375, sideY: 0.18, hemY:  0.020, flare: 0.010 },
     ], { segs: 8 });
+    mesh(heightShade(cloth, -0.07, 0.39, 0.80, 1.0), padMat);
+    for (const sx of [-1, 1]) {
+      const pts = [
+        V(sx * 0.355, -0.015, -0.44), V(sx * 0.345, -0.040, -0.20), V(sx * 0.345, -0.040, 0.05),
+        V(sx * 0.355, -0.015, 0.28), V(sx * 0.340, 0.040, 0.40),
+      ];
+      mesh(shadeVerts(bandY(pts, 0.034, sx > 0), () => 0.96), M.trim);
+    }
+
+    // Low but unmistakable medieval war saddle: padded seat, raised pommel and cantle rather than tall floating horns.
+    const seat = drapeSheet([
+      { z: -0.27, w: 0.245, topY: 0.382, sideY: 0.28, hemY: 0.18, flare: 0.014 },
+      { z: -0.03, w: 0.235, topY: 0.360, sideY: 0.26, hemY: 0.15, flare: 0.014 },
+      { z:  0.20, w: 0.238, topY: 0.382, sideY: 0.28, hemY: 0.18, flare: 0.014 },
+    ], { segs: 7 });
     mesh(heightShade(seat, 0.14, 0.40, 0.78, 0.96), saddleMat);
 
-    // High arched medieval pommel (+Z) & wrap-around cantle (-Z)
-    const pommel = loft(V(-0.21, 0.38, 0.21), V(0.21, 0.38, 0.21), [
-      [0.00, 0.032, 0.055, 0, -0.06],
-      [0.25, 0.040, 0.095, 0,  0.04],
-      [0.50, 0.042, 0.110, 0,  0.07],
-      [0.75, 0.040, 0.095, 0,  0.04],
-      [1.00, 0.032, 0.055, 0, -0.06],
-    ], { segs: 6, fwd: V(0, 1, 0) });
-    mesh(heightShade(pommel, 0.30, 0.50, 0.80, 1.0), saddleMat);
-
-    const cantle = loft(V(-0.23, 0.39, -0.27), V(0.23, 0.39, -0.27), [
-      [0.00, 0.034, 0.065, 0, -0.05],
-      [0.25, 0.044, 0.115, 0,  0.05],
-      [0.50, 0.046, 0.130, 0,  0.08],
-      [0.75, 0.044, 0.115, 0,  0.05],
-      [1.00, 0.034, 0.065, 0, -0.05],
-    ], { segs: 6, fwd: V(0, 1, 0) });
-    mesh(heightShade(cantle, 0.30, 0.52, 0.80, 1.0), saddleMat);
+    const pommel = loft(V(-0.205, 0.392, 0.205), V(0.205, 0.392, 0.205), [
+      [0.00, 0.048, 0.024, 0, -0.004],
+      [0.50, 0.074, 0.046, 0,  0.010],
+      [1.00, 0.048, 0.024, 0, -0.004],
+    ], { segs: 5, fwd: V(0, 1, 0) });
+    mesh(heightShade(pommel, 0.35, 0.46, 0.80, 1.0), saddleMat);
+    const cantle = loft(V(-0.215, 0.395, -0.265), V(0.215, 0.395, -0.265), [
+      [0.00, 0.050, 0.026, 0, -0.004],
+      [0.50, 0.078, 0.050, 0,  0.011],
+      [1.00, 0.050, 0.026, 0, -0.004],
+    ], { segs: 5, fwd: V(0, 1, 0) });
+    mesh(heightShade(cantle, 0.35, 0.47, 0.80, 1.0), saddleMat);
 
     if (withTack) {
-      // Leather girth strap wrapping underneath the belly
-      const girth = loft(V(0, 0.05, 0.10), V(0, 0.05, 0.18), [
+      // Broad girth, breastcollar and stirrups: large enough to read, no jewellery-scale tack.
+      const girth = loft(V(0, 0.05, 0.09), V(0, 0.05, 0.18), [
         [0, 0.325, 0.285], [1, 0.325, 0.285],
-      ], { segs: 12, fwd: V(0, 1, 0), caps: false });
+      ], { segs: 8, fwd: V(0, 1, 0), caps: false });
       mesh(heightShade(girth, -0.26, 0.34, 0.72, 0.90), M.leather);
 
-      // Leather breastplate (peytral strap) curving across the chest + brass medallion
       const breast = pathLoft([
-        { p: V(-0.31, 0.22, 0.28), rx: 0.022, rz: 0.032 },
-        { p: V(-0.30, 0.14, 0.62), rx: 0.024, rz: 0.036 },
-        { p: V(-0.18, 0.08, 0.86), rx: 0.024, rz: 0.038 },
-        { p: V( 0.00, 0.06, 0.93), rx: 0.026, rz: 0.042 },
-        { p: V( 0.18, 0.08, 0.86), rx: 0.024, rz: 0.038 },
-        { p: V( 0.30, 0.14, 0.62), rx: 0.024, rz: 0.036 },
-        { p: V( 0.31, 0.22, 0.28), rx: 0.022, rz: 0.032 },
-      ], { segs: 5, fwd: V(0, 1, 0), caps: false });
+        { p: V(-0.31, 0.20, 0.31), rx: 0.021, rz: 0.032 },
+        { p: V(-0.28, 0.12, 0.64), rx: 0.023, rz: 0.036 },
+        { p: V( 0.00, 0.065, 0.92), rx: 0.026, rz: 0.042 },
+        { p: V( 0.28, 0.12, 0.64), rx: 0.023, rz: 0.036 },
+        { p: V( 0.31, 0.20, 0.31), rx: 0.021, rz: 0.032 },
+      ], { segs: 4, fwd: V(0, 1, 0), caps: false });
       mesh(shadeVerts(breast, () => 0.84), M.leather);
-      mesh(shadeVerts(new THREE.SphereGeometry(0.055, 6, 5), () => 0.96), M.brass, [0, 0.06, 0.94]);
+      const boss = shadeVerts(new THREE.OctahedronGeometry(0.060, 0), () => 0.98);
+      mesh(boss, M.brass, [0, 0.065, 0.935], null, [1.0, 0.72, 0.38]);
 
-      // Stirrup leathers + iron stirrups on both sides
       for (const sx of [-1, 1]) {
-        mesh(shadeVerts(new THREE.BoxGeometry(0.022, 0.36, 0.032), () => 0.80), M.leather, [sx * 0.34, 0.02, 0.06]);
-        mesh(shadeVerts(new THREE.TorusGeometry(0.045, 0.012, 4, 8), () => 0.92), M.steel, [sx * 0.35, -0.17, 0.06], [0, Math.PI / 2, 0]);
+        mesh(shadeVerts(new THREE.BoxGeometry(0.024, 0.34, 0.034), () => 0.80), M.leather, [sx * 0.345, 0.015, 0.06]);
+        mesh(shadeVerts(new THREE.TorusGeometry(0.046, 0.011, 3, 5), () => 0.92), M.steel, [sx * 0.352, -0.165, 0.06], [0, Math.PI / 2, 0]);
       }
     }
   };
 
-  // Full contoured caparison / barding builder (zero floating boxes, zero barrel clipping!)
-  const buildFullCaparison = (mesh, clothMat, trimMat, hemY = -0.44, pleat = 0.014) => {
-    // Generous contoured drape enveloping chest, flanks, and croup
+  // Full caparison: broad team-coloured cloth planes following chest, ribcage and croup, with a shaped lifted hem and bold trim.
+  const buildFullCaparison = (mesh, clothMat, trimMat, hemY = -0.40, pleat = 0.010) => {
+    const st = (z, w, topY, sideY, dy, flare, pl = pleat) => ({ z, w, topY, sideY, hemY: hemY + dy, flare, pleat: pl });
     const stations = [
-      { z: -0.96, w: 0.18, topY: 0.24, sideY: 0.04, hemY: hemY + 0.08, flare: 0.03, pleat: pleat * 0.5 },
-      { z: -0.78, w: 0.36, topY: 0.39, sideY: 0.14, hemY: hemY + 0.02, flare: 0.05, pleat },
-      { z: -0.45, w: 0.38, topY: 0.39, sideY: 0.14, hemY: hemY,        flare: 0.05, pleat },
-      { z:  0.00, w: 0.37, topY: 0.36, sideY: 0.12, hemY: hemY,        flare: 0.05, pleat },
-      { z:  0.45, w: 0.38, topY: 0.42, sideY: 0.15, hemY: hemY,        flare: 0.05, pleat },
-      { z:  0.80, w: 0.35, topY: 0.41, sideY: 0.15, hemY: hemY + 0.02, flare: 0.05, pleat },
-      { z:  0.98, w: 0.20, topY: 0.28, sideY: 0.06, hemY: hemY + 0.08, flare: 0.03, pleat: pleat * 0.5 },
+      st(-0.94, 0.17, 0.25, 0.055, 0.150, 0.018, pleat * 0.4),
+      st(-0.76, 0.34, 0.385, 0.145, 0.065, 0.038),
+      st(-0.43, 0.375, 0.390, 0.145, 0.000, 0.046),
+      st( 0.00, 0.365, 0.360, 0.125, -0.010, 0.046),
+      st( 0.43, 0.380, 0.410, 0.155, 0.000, 0.046),
+      st( 0.76, 0.350, 0.410, 0.155, 0.060, 0.038),
+      st( 0.94, 0.190, 0.290, 0.075, 0.145, 0.020, pleat * 0.4),
     ];
-    const skirt = drapeSheet(stations, { segs: 12 });
-    mesh(heightShade(skirt, hemY - 0.04, 0.44, 0.72, 1.0), clothMat);
+    const skirt = drapeSheet(stations, { segs: 8 });
+    mesh(heightShade(skirt, hemY - 0.03, 0.43, 0.72, 1.0), clothMat);
 
-    // Front chest apron closing the front of the caparison cleanly
-    const chestApron = loft(V(0, hemY + 0.08, 0.97), V(0, 0.28, 0.94), [
-      [0.00, 0.23, 0.05],
-      [0.50, 0.29, 0.08],
-      [1.00, 0.20, 0.07],
-    ], { segs: 8, fwd: V(0, 0, 1) });
-    mesh(heightShade(chestApron, hemY, 0.30, 0.74, 0.96), clothMat);
+    // Sloped cloth closes the chest and croup, so the silhouette tapers like a housed horse instead of ending in vertical box walls.
+    mesh(heightShade(apronPanel( 1, 0.30, hemY + 0.13, 0.96, 0.75, 0.285, 0.165), hemY, 0.31, 0.74, 0.96), clothMat);
+    mesh(heightShade(apronPanel(-1, 0.27, hemY + 0.13, -0.95, -0.73, 0.270, 0.155), hemY, 0.29, 0.72, 0.94), clothMat);
 
-    // Rear croup apron closing the rear cleanly
-    const rearApron = loft(V(0, hemY + 0.08, -0.95), V(0, 0.24, -0.92), [
-      [0.00, 0.21, 0.05],
-      [0.50, 0.28, 0.08],
-      [1.00, 0.18, 0.07],
-    ], { segs: 8, fwd: V(0, 0, -1) });
-    mesh(heightShade(rearApron, hemY, 0.28, 0.72, 0.94), clothMat);
-
-    // Contoured lower hem trim band matching the exact skirt silhouette (NO rectangular box!)
-    const trimStations = stations.map(s => ({
-      z: s.z,
-      w: s.w + s.flare + 0.012,
-      topY: s.hemY + 0.065,
-      sideY: s.hemY + 0.035,
-      hemY: s.hemY - 0.005,
-      flare: 0.004,
-      pleat: s.pleat,
-    }));
-    // Left & right trim ribbons along the lower hem
+    // Wide flat woven trim follows the actual hemline on both sides and across both sloped ends.
     for (const sx of [-1, 1]) {
-      const bandPts = trimStations.map(s => ({
-        p: V(sx * (s.w - 0.004), s.hemY + 0.03, s.z),
-        rx: 0.016,
-        rz: 0.038,
-      }));
-      const band = pathLoft(bandPts, { segs: 5, fwd: V(0, 1, 0), caps: true });
-      mesh(shadeVerts(band, () => 0.96), trimMat);
+      const pts = stations.map(s => V(sx * (s.w + s.flare + 0.010), s.hemY + 0.035, s.z));
+      mesh(shadeVerts(bandY(pts, 0.060, sx > 0), () => 0.96), trimMat);
     }
-    // Front & rear trim edge
-    const frontTrim = loft(V(-0.23, hemY + 0.10, 0.98), V(0.23, hemY + 0.10, 0.98), [
-      [0, 0.025, 0.032], [0.5, 0.032, 0.038, 0, -0.02], [1, 0.025, 0.032],
-    ], { segs: 5, fwd: V(0, 1, 0) });
-    mesh(shadeVerts(frontTrim, () => 0.96), trimMat);
-    const rearTrim = loft(V(-0.21, hemY + 0.10, -0.96), V(0.21, hemY + 0.10, -0.96), [
-      [0, 0.025, 0.032], [0.5, 0.032, 0.038, 0, -0.02], [1, 0.025, 0.032],
-    ], { segs: 5, fwd: V(0, 1, 0) });
-    mesh(shadeVerts(rearTrim, () => 0.94), trimMat);
+    const frontPts = [];
+    const rearPts = [];
+    for (let i = 0; i <= 6; i++) {
+      const u = -1 + 2 * i / 6;
+      frontPts.push(V(u * 0.165, hemY + 0.155 - 0.020 * (1 - u * u), 0.75 + 0.012 * (1 - u * u)));
+      rearPts.push(V(u * 0.155, hemY + 0.155 - 0.020 * (1 - u * u), -0.73 - 0.012 * (1 - u * u)));
+    }
+    mesh(shadeVerts(bandY(frontPts, 0.055), () => 0.96), trimMat);
+    mesh(shadeVerts(bandY(rearPts, 0.055, true), () => 0.94), trimMat);
+
+    // Short vertical border welts complete the cloth outline where the side skirts meet the chest/croup aprons.
+    for (const sx of [-1, 1]) {
+      for (const front of [true, false]) {
+        const out = front ? 1 : -1;
+        const seam = pathLoft([
+          { p: V(sx * (front ? 0.250 : 0.238), front ? 0.285 : 0.260, out * (front ? 0.920 : 0.910)), rx: 0.012, rz: 0.020 },
+          { p: V(sx * (front ? 0.168 : 0.158), hemY + 0.155, out * (front ? 0.750 : 0.730)), rx: 0.012, rz: 0.020 },
+        ], { segs: 4, fwd: V(0, 0, 1), caps: false });
+        mesh(shadeVerts(seam, () => 0.96), trimMat);
+      }
+    }
   };
 
   addPart(root, 'horse_body', (mesh) => {
@@ -178,305 +191,359 @@ export function buildMounts(root) {
 
   addPart(root, 'horse_body_barded', (mesh) => {
     horseBarrel(mesh, M.coat);
-    buildFullCaparison(mesh, M.cloth, M.trim, -0.44, 0.016);
+    buildFullCaparison(mesh, M.cloth, M.trim, -0.405, 0.010);
     horseSaddle(mesh, M.clothDark, M.leather, false);
   });
 
   addPart(root, 'horse_body_half', (mesh) => {
-    // Half-barding: armored steel peytral (chest) + cloth/trimmed crupper (rump), flanks open!
+    // Half-barding: a bold angular steel peytral in front, a team cloth crupper behind, and the ribcage left visibly bare.
     horseBarrel(mesh, M.coat);
-    // Steel peytral chest armor wrapping the breast
     const peytral = drapeSheet([
-      { z: 0.42, w: 0.365, topY: 0.40, sideY: 0.16, hemY: -0.14, flare: 0.02 },
-      { z: 0.72, w: 0.355, topY: 0.39, sideY: 0.14, hemY: -0.22, flare: 0.03 },
-      { z: 0.95, w: 0.210, topY: 0.28, sideY: 0.08, hemY: -0.20, flare: 0.02 },
-    ], { segs: 10 });
-    mesh(heightShade(peytral, -0.24, 0.42, 0.78, 1.0), M.steel);
-    const chestPlate = loft(V(0, -0.20, 0.94), V(0, 0.28, 0.92), [
-      [0, 0.22, 0.06], [0.5, 0.29, 0.09], [1, 0.20, 0.07],
-    ], { segs: 8, fwd: V(0, 0, 1) });
-    mesh(heightShade(chestPlate, -0.22, 0.30, 0.80, 1.0), M.steel);
-    mesh(shadeVerts(new THREE.SphereGeometry(0.068, 7, 5), () => 0.98), M.brass, [0, 0.06, 0.98]);
+      { z: 0.40, w: 0.365, topY: 0.405, sideY: 0.16, hemY: -0.10, flare: 0.018 },
+      { z: 0.68, w: 0.350, topY: 0.390, sideY: 0.14, hemY: -0.17, flare: 0.024 },
+      { z: 0.91, w: 0.225, topY: 0.290, sideY: 0.09, hemY: -0.13, flare: 0.018 },
+    ], { segs: 8 });
+    mesh(heightShade(peytral, -0.20, 0.42, 0.78, 1.0), M.steel);
+    mesh(heightShade(apronPanel(1, 0.29, -0.14, 0.90, 0.82, 0.235, 0.185), -0.16, 0.30, 0.80, 1.0), M.steel);
+    const boss = shadeVerts(new THREE.OctahedronGeometry(0.068, 0), () => 0.98);
+    mesh(boss, M.brass, [0, 0.055, 0.955], null, [1.0, 0.75, 0.42]);
 
-    // Draped cloth crupper over the hindquarters
     const crupper = drapeSheet([
-      { z: -0.95, w: 0.19, topY: 0.24, sideY: 0.05, hemY: -0.22, flare: 0.03 },
-      { z: -0.74, w: 0.36, topY: 0.38, sideY: 0.15, hemY: -0.26, flare: 0.04, pleat: 0.01 },
-      { z: -0.44, w: 0.36, topY: 0.37, sideY: 0.15, hemY: -0.22, flare: 0.03, pleat: 0.01 },
-    ], { segs: 10 });
-    mesh(heightShade(crupper, -0.28, 0.40, 0.76, 1.0), M.cloth);
+      { z: -0.93, w: 0.19, topY: 0.25, sideY: 0.06, hemY: -0.13, flare: 0.020 },
+      { z: -0.74, w: 0.35, topY: 0.38, sideY: 0.15, hemY: -0.22, flare: 0.034, pleat: 0.006 },
+      { z: -0.43, w: 0.36, topY: 0.37, sideY: 0.15, hemY: -0.18, flare: 0.026, pleat: 0.006 },
+    ], { segs: 8 });
+    mesh(heightShade(crupper, -0.25, 0.40, 0.76, 1.0), M.cloth);
+    for (const sx of [-1, 1]) {
+      mesh(shadeVerts(bandY([
+        V(sx * 0.205, -0.105, -0.91), V(sx * 0.380, -0.195, -0.72), V(sx * 0.382, -0.155, -0.43),
+      ], 0.050, sx > 0), () => 0.96), M.trim);
+    }
     horseSaddle(mesh, M.cloth, M.leather, true);
   });
 
   addPart(root, 'horse_body_scale', (mesh) => {
     horseBarrel(mesh, M.coat);
-    // Heavy cataphract/mail/scale barding with contoured brass rim (no floating box, no coat poking through!)
-    buildFullCaparison(mesh, M.mail, M.brass, -0.40, 0.006);
-    // Reinforced steel breastplate boss & croup ridge
-    mesh(shadeVerts(new THREE.SphereGeometry(0.075, 7, 5), () => 0.98), M.brass, [0, 0.06, 0.99]);
-    horseSaddle(mesh, M.cloth, M.leather, false);
+    // Cataphract scale skirt: same strong housed silhouette, shorter hem so dark legs and hooves separate underneath.
+    buildFullCaparison(mesh, M.mail, M.brass, -0.355, 0.004);
+    const boss = shadeVerts(new THREE.OctahedronGeometry(0.074, 0), () => 0.98);
+    mesh(boss, M.brass, [0, 0.055, 0.945], null, [1.0, 0.75, 0.42]);
+    horseSaddle(mesh, M.clothDark, M.leather, false);
   });
 
   addPart(root, 'horse_body_fur', (mesh) => {
     horseBarrel(mesh, M.coat);
-    // Contoured shaggy steppe pelt draped over withers, back & haunches
+    // Steppe/northern hide caparison: a heavy hide sheet with a few large ragged locks, readable as fur without dense scalloping.
     const pelt = drapeSheet([
-      { z: -0.82, w: 0.35, topY: 0.38, sideY: 0.16, hemY: -0.14, flare: 0.035, pleat: 0.018 },
-      { z: -0.42, w: 0.37, topY: 0.38, sideY: 0.16, hemY: -0.18, flare: 0.040, pleat: 0.018 },
-      { z:  0.00, w: 0.36, topY: 0.35, sideY: 0.14, hemY: -0.16, flare: 0.035, pleat: 0.018 },
-      { z:  0.46, w: 0.37, topY: 0.41, sideY: 0.17, hemY: -0.16, flare: 0.040, pleat: 0.018 },
-      { z:  0.78, w: 0.33, topY: 0.38, sideY: 0.15, hemY: -0.10, flare: 0.025, pleat: 0.012 },
-    ], { segs: 10 });
-    mesh(heightShade(pelt, -0.20, 0.42, 0.74, 1.0), M.hair);
+      { z: -0.82, w: 0.34, topY: 0.375, sideY: 0.15, hemY: -0.09, flare: 0.030, pleat: 0.012 },
+      { z: -0.43, w: 0.365, topY: 0.375, sideY: 0.15, hemY: -0.15, flare: 0.036, pleat: 0.012 },
+      { z:  0.00, w: 0.355, topY: 0.345, sideY: 0.13, hemY: -0.13, flare: 0.034, pleat: 0.012 },
+      { z:  0.43, w: 0.365, topY: 0.405, sideY: 0.16, hemY: -0.13, flare: 0.036, pleat: 0.012 },
+      { z:  0.76, w: 0.325, topY: 0.380, sideY: 0.15, hemY: -0.07, flare: 0.026, pleat: 0.008 },
+    ], { segs: 8 });
+    mesh(heightShade(pelt, -0.18, 0.42, 0.70, 0.96), M.leather);
+    for (const sx of [-1, 1]) {
+      const x = sx * 0.385;
+      mesh(shadeVerts(bandY([
+        V(x, -0.085, -0.78), V(x + sx * 0.010, -0.140, -0.40), V(x, -0.125, 0.00),
+        V(x + sx * 0.010, -0.125, 0.40), V(x, -0.070, 0.74),
+      ], 0.038, sx > 0), () => 0.72), M.coatDark);
+      for (const [z, y, drop, len, swing] of [
+        [-0.62, -0.105, 0.135, 0.20, -0.055], [-0.24, -0.145, 0.165, 0.18, 0.050],
+        [ 0.14, -0.130, 0.120, 0.17, -0.040], [ 0.52, -0.085, 0.145, 0.19, 0.060],
+      ]) {
+        const a = V(x, y, z - len * 0.5), b = V(x, y, z + len * 0.5), c = V(x + sx * 0.038, y - drop, z + swing);
+        mesh(sx > 0 ? tri(a, b, c) : tri(b, a, c), M.coatDark);
+      }
+    }
     horseSaddle(mesh, M.cloth, M.leather, true);
   });
 
-  // Arched horse necks (normalized Y -0.12..1.06, +Z = throat, -Z = arched crest/mane)
+  // Arched horse neck (normalized Y, +Z throat / -Z crest). Puppet3D stretches this along the neck bone.
   const buildHorseNeck = (mesh, neckMat, armorMat = null) => {
-    const neckProfile = (th, t) => {
-      const sz = Math.sin(th); // +1 = throat, -1 = crest
-      // Narrower dorsal crest, broader muscular base at throat/windpipe
-      return [sz < -0.2 ? 0.78 : 1.0, sz < 0 ? 1.12 : 0.92];
+    const neckProfile = (th) => {
+      const sz = Math.sin(th);
+      return [sz < -0.15 ? 0.76 : 1.0, sz < 0 ? 1.14 : 0.92];
     };
-    const neck = loft(V(0, -0.14, 0), V(0, 1.06, 0), [
-      [0.00, 0.23, 0.31, 0, -0.02], // muscular base blending into chest/withers
-      [0.28, 0.20, 0.27, 0, -0.06], // arched mid-lower neck
-      [0.58, 0.16, 0.22, 0, -0.08], // proud equine crest arch
-      [0.84, 0.13, 0.18, 0, -0.05], // tapering toward poll
-      [1.00, 0.12, 0.15, 0,  0.00], // throatlatch / poll socket
-    ], { segs: 10, profile: neckProfile });
-    mesh(heightShade(neck, -0.14, 1.06, 0.76, 1.0), neckMat);
+    const neck = loft(V(0, -0.13, 0), V(0, 1.06, 0), [
+      [0.00, 0.235, 0.315, 0,  0.015], // deep muscular base at chest/withers
+      [0.25, 0.205, 0.275, 0, -0.035],
+      [0.55, 0.165, 0.225, 0, -0.085], // high arched crest
+      [0.82, 0.135, 0.185, 0, -0.060],
+      [1.00, 0.115, 0.150, 0, -0.005], // poll socket
+    ], { segs: 8, profile: neckProfile });
+    mesh(heightShade(neck, -0.13, 1.06, 0.76, 1.0), neckMat);
 
-    // Flowing layered mane along the arched -Z crest
+    // Flattened dark crest mane: broad in side view, narrow across the neck, with an uneven but not fussy silhouette.
     const mane = pathLoft([
-      { p: V(0, 0.02, -0.28), rx: 0.052, rz: 0.095 },
-      { p: V(0, 0.28, -0.32), rx: 0.056, rz: 0.115 },
-      { p: V(0, 0.58, -0.29), rx: 0.054, rz: 0.115 },
-      { p: V(0, 0.85, -0.22), rx: 0.044, rz: 0.095 },
-      { p: V(0, 1.04, -0.14), rx: 0.032, rz: 0.065 },
-    ], { segs: 6, fwd: V(0, 0, 1) });
+      { p: V(0, 0.00, -0.285), rx: 0.026, rz: 0.085 },
+      { p: V(0, 0.28, -0.335), rx: 0.030, rz: 0.110 },
+      { p: V(0, 0.58, -0.305), rx: 0.028, rz: 0.105 },
+      { p: V(0, 0.85, -0.230), rx: 0.024, rz: 0.085 },
+      { p: V(0, 1.04, -0.140), rx: 0.018, rz: 0.058 },
+    ], { segs: 5, fwd: V(0, 0, 1) });
     mesh(heightShade(mane, 0.0, 1.04, 0.72, 0.96), M.coatDark);
 
     if (armorMat) {
-      // Contoured overlapping crinet lames hugging the arched neck crest & sides
+      // Four broad overlapping crinet plates; their overlap reads as articulated armour, not zebra striping.
       const lames = [
-        [0.14, 0.225, 0.295, -0.04],
-        [0.36, 0.200, 0.265, -0.065],
-        [0.58, 0.175, 0.230, -0.075],
-        [0.78, 0.150, 0.195, -0.055],
+        [0.17, 0.245, 0.305, -0.010, 0.14],
+        [0.39, 0.220, 0.275, -0.045, 0.15],
+        [0.62, 0.190, 0.235, -0.070, 0.14],
+        [0.84, 0.155, 0.195, -0.050, 0.12],
       ];
-      for (const [y, rx, rz, oz] of lames) {
-        const lame = loft(V(0, y - 0.09, oz), V(0, y + 0.09, oz), [
+      for (const [y, rx, rz, oz, half] of lames) {
+        const lame = loft(V(0, y - half, oz), V(0, y + half, oz), [
           [0.0, rx * 1.02, rz * 1.02],
-          [0.5, rx * 1.04, rz * 1.04],
-          [1.0, rx * 0.94, rz * 0.94],
-        ], { segs: 9, arc: [-Math.PI * 0.85, Math.PI * 0.85], caps: false });
-        mesh(heightShade(lame, y - 0.09, y + 0.09, 0.82, 1.0), armorMat);
+          [0.5, rx * 1.05, rz * 1.05],
+          [1.0, rx * 0.96, rz * 0.96],
+        ], { segs: 7, arc: [-Math.PI * 0.84, Math.PI * 0.84], caps: false });
+        mesh(heightShade(lame, y - half, y + half, 0.82, 1.0), armorMat);
       }
     }
   };
   addPart(root, 'horse_neck', (mesh) => buildHorseNeck(mesh, M.coat));
   addPart(root, 'horse_neck_barded', (mesh) => buildHorseNeck(mesh, M.cloth, M.steel));
-  addPart(root, 'horse_neck_scale', (mesh) => buildHorseNeck(mesh, M.coat, M.mail));
+  addPart(root, 'horse_neck_scale', (mesh) => buildHorseNeck(mesh, M.mail, M.mail));
 
-  // Sculpted equine head (poll at 0,0,0, muzzle toward +Z up to 0.60, +Y = forehead/bridge, -Y = jaw/jowl)
+  // Angular equine head: broad brow/jowls, long flat nasal planes, tapered muzzle, pointed ears, dark eye/nostril accents.
   const buildHorseHead = (mesh, shaffronMat = null) => {
     const headProfile = (th, t) => {
-      const sy = Math.sin(th); // +1 = forehead/bridge, -1 = jowl/jaw
+      const sy = Math.sin(th); // +1 forehead/bridge, -1 cheek/jaw
       let mx = 1.0, mz = 1.0;
-      // Broad flat forehead & prominent rounded jowl/cheekbone near the back of the head (t ~ 0.15..0.42)
-      if (t > 0.12 && t < 0.45 && sy < -0.15) {
-        mx *= 1.08;
-        mz *= 1.32; // iconic equine jowl / ganache!
+      if (t > 0.10 && t < 0.43 && sy < -0.10) {
+        mx *= 1.10;
+        mz *= 1.34; // big equine jowl/cheek plane
       }
-      // Flatter dorsal bridge along the nose
-      if (t > 0.35 && t < 0.88 && sy > 0.35) {
-        mx *= 0.82;
-      }
-      // Subtle nostril flare at the muzzle
-      if (t >= 0.82 && Math.abs(Math.cos(th)) > 0.5) {
-        mx *= 1.12;
-      }
+      if (t > 0.36 && t < 0.88 && sy > 0.28) mx *= 0.78; // flat nasal bridge
+      if (t >= 0.82 && Math.abs(Math.cos(th)) > 0.45) mx *= 1.14; // nostril flare
       return [mx, mz];
     };
 
-    const head = loft(V(0, 0.04, -0.10), V(0, -0.02, 0.60), [
-      [0.00, 0.115, 0.125, 0,  0.00], // poll / occiput
-      [0.18, 0.145, 0.155, 0, -0.01], // brow & jowl base
-      [0.34, 0.135, 0.145, 0, -0.02], // eye / cheekbone taper
-      [0.62, 0.088, 0.102, 0,  0.00], // sleek nasal bridge
-      [0.86, 0.078, 0.088, 0,  0.00], // muzzle / nostrils
-      [1.00, 0.062, 0.068, 0, -0.01], // upper & lower lip
-    ], { segs: 10, fwd: V(0, 1, 0), profile: headProfile });
-    mesh(heightShade(head, -0.18, 0.20, 0.76, 1.0), M.coat);
+    const head = loft(V(0, 0.045, -0.10), V(0, -0.025, 0.62), [
+      [0.00, 0.112, 0.128, 0,  0.005], // poll/occiput
+      [0.17, 0.148, 0.158, 0, -0.005], // broad brow and jowl root
+      [0.35, 0.132, 0.142, 0, -0.015], // cheekbone taper
+      [0.62, 0.086, 0.102, 0, -0.005], // flat nasal bridge
+      [0.86, 0.078, 0.088, 0, -0.005], // flared nostrils/muzzle
+      [1.00, 0.064, 0.070, 0, -0.012], // lips/chin
+    ], { segs: 8, fwd: V(0, 1, 0), profile: headProfile });
+    mesh(heightShade(head, -0.18, 0.21, 0.76, 1.0), M.coat);
 
-    // Forelock tuft between the ears
-    const forelock = loft(V(0, 0.17, -0.03), V(0, 0.14, 0.16), [
-      [0, 0.045, 0.032], [0.5, 0.038, 0.026], [1, 0.012, 0.012],
+    // Dark chin/lower lip accent and a compact forelock; both read at distance without adding fragile tack.
+    mesh(shadeVerts(new THREE.BoxGeometry(0.092, 0.024, 0.105), () => 0.72), M.coatDark, [0, -0.078, 0.535]);
+    const forelock = loft(V(0, 0.172, -0.025), V(0, 0.142, 0.145), [
+      [0, 0.043, 0.030], [1, 0.012, 0.012],
     ], { segs: 5, fwd: V(0, 1, 0) });
     mesh(shadeVerts(forelock, () => 0.82), M.coatDark);
 
-    // Alert pointed equine ears + expressive eyes + nostrils
     for (const sx of [-1, 1]) {
-      const ear = loft(V(0, 0, 0), V(0, 0.18, 0), [
-        [0.0, 0.036, 0.044],
-        [0.4, 0.032, 0.040],
-        [0.8, 0.020, 0.024],
-        [1.0, 0.006, 0.008],
-      ], { segs: 6 });
-      mesh(heightShade(ear, 0, 0.18, 0.80, 0.96), M.coat, [sx * 0.082, 0.14, -0.01], [0.22, sx * 0.15, -sx * 0.18]);
+      // Taller alert ears: triangular low-poly wedges rather than blobs.
+      const ear = loft(V(0, 0, 0), V(0, 0.205, 0), [
+        [0.0, 0.040, 0.044],
+        [0.55, 0.027, 0.032],
+        [1.0, 0.005, 0.007],
+      ], { segs: 5 });
+      mesh(heightShade(ear, 0, 0.205, 0.80, 0.96), M.coat, [sx * 0.080, 0.140, -0.010], [0.22, sx * 0.16, -sx * 0.20]);
 
-      // Dark glossy eye (min=0.12 so it actually stays dark!)
-      mesh(shadeVerts(new THREE.SphereGeometry(0.026, 6, 5), () => 0.16, 0.12), M.dark, [sx * 0.128, 0.065, 0.16]);
-      // Subtle dark nostril indent
-      mesh(shadeVerts(new THREE.SphereGeometry(0.020, 5, 4), () => 0.20, 0.12), M.dark, [sx * 0.068, 0.005, 0.52]);
+      const eye = shadeVerts(new THREE.OctahedronGeometry(0.027, 0), () => 0.16, 0.12);
+      mesh(eye, M.dark, [sx * 0.130, 0.064, 0.165], null, [1.0, 0.70, 0.62]);
+      const nostril = shadeVerts(new THREE.OctahedronGeometry(0.020, 0), () => 0.20, 0.12);
+      mesh(nostril, M.dark, [sx * 0.064, 0.000, 0.535], null, [1.0, 0.62, 0.70]);
     }
 
-    // Crisp leather bridle: browband, noseband, cheekpieces, and brass bit rings
-    const noseband = loft(V(0, -0.015, 0.43), V(0, -0.015, 0.47), [
+    // Simple bold bridle bands and cheek straps. Bit hardware is a readable boss, not tiny rings.
+    const noseband = loft(V(0, -0.012, 0.425), V(0, -0.012, 0.465), [
       [0, 0.092, 0.104], [1, 0.092, 0.104],
-    ], { segs: 10, fwd: V(0, 1, 0), caps: false });
+    ], { segs: 8, fwd: V(0, 1, 0), caps: false });
     mesh(shadeVerts(noseband, () => 0.82), M.leather);
-
-    const browband = loft(V(0, 0.02, 0.06), V(0, 0.02, 0.10), [
-      [0, 0.152, 0.162], [1, 0.152, 0.162],
-    ], { segs: 10, fwd: V(0, 1, 0), caps: false });
+    const browband = loft(V(0, 0.022, 0.065), V(0, 0.022, 0.105), [
+      [0, 0.150, 0.162], [1, 0.150, 0.162],
+    ], { segs: 8, fwd: V(0, 1, 0), caps: false });
     mesh(shadeVerts(browband, () => 0.82), M.leather);
-
     for (const sx of [-1, 1]) {
-      // Cheekpiece strap from browband to bit ring
       const cheek = pathLoft([
-        { p: V(sx * 0.135, 0.04, 0.09), rx: 0.012, rz: 0.016 },
-        { p: V(sx * 0.105, -0.01, 0.30), rx: 0.012, rz: 0.016 },
-        { p: V(sx * 0.088, -0.04, 0.49), rx: 0.012, rz: 0.016 },
+        { p: V(sx * 0.135, 0.040, 0.085), rx: 0.011, rz: 0.015 },
+        { p: V(sx * 0.104, -0.008, 0.295), rx: 0.011, rz: 0.015 },
+        { p: V(sx * 0.088, -0.040, 0.485), rx: 0.011, rz: 0.015 },
       ], { segs: 4, fwd: V(0, 1, 0), caps: false });
       mesh(shadeVerts(cheek, () => 0.82), M.leather);
-      // Brass bit ring
-      mesh(shadeVerts(new THREE.TorusGeometry(0.032, 0.009, 4, 8), () => 0.98), M.brass, [sx * 0.090, -0.045, 0.50], [0, Math.PI / 2, 0]);
+      const bit = shadeVerts(new THREE.OctahedronGeometry(0.025, 0), () => 0.98);
+      mesh(bit, M.brass, [sx * 0.092, -0.045, 0.495], null, [0.70, 1.0, 0.70]);
     }
 
     if (shaffronMat) {
-      // Contoured medieval shaffron plate hugging the brow, cheeks, and nasal bridge
-      const shaf = loft(V(0, 0.06, 0.02), V(0, 0.01, 0.52), [
-        [0.00, 0.152, 0.135, 0, 0.02],
-        [0.32, 0.148, 0.132, 0, 0.02],
-        [0.70, 0.096, 0.095, 0, 0.01],
-        [1.00, 0.080, 0.075, 0, 0.01],
-      ], { segs: 8, fwd: V(0, 1, 0), arc: [-Math.PI * 0.15, Math.PI * 1.15], caps: false });
+      // Angular shaffron shell over brow and nasal bridge, ending before the bare soft muzzle.
+      const shaf = loft(V(0, 0.064, 0.015), V(0, 0.012, 0.475), [
+        [0.00, 0.153, 0.137, 0, 0.024],
+        [0.34, 0.146, 0.130, 0, 0.022],
+        [0.72, 0.097, 0.094, 0, 0.012],
+        [1.00, 0.080, 0.074, 0, 0.008],
+      ], { segs: 7, fwd: V(0, 1, 0), arc: [-Math.PI * 0.06, Math.PI * 1.06], caps: false });
       mesh(heightShade(shaf, -0.02, 0.22, 0.84, 1.0), shaffronMat);
-      // Central brass ridge & brow spike
-      mesh(shadeVerts(new THREE.ConeGeometry(0.024, 0.11, 6), () => 1.0), M.brass, [0, 0.19, 0.17], [0.85, 0, 0]);
+
+      // Central reinforcing ridge and dark rectangular eye slits on the outside of the plate.
+      const ridge = loft(V(0, 0.145, 0.055), V(0, 0.092, 0.455), [
+        [0, 0.012, 0.014], [0.55, 0.013, 0.016], [1, 0.009, 0.010],
+      ], { segs: 4, fwd: V(0, 1, 0) });
+      mesh(shadeVerts(ridge, () => 0.98), M.brass);
+      for (const sx of [-1, 1]) {
+        mesh(shadeVerts(new THREE.BoxGeometry(0.018, 0.020, 0.072), () => 0.16, 0.10), M.dark, [sx * 0.132, 0.062, 0.180]);
+      }
     }
   };
   addPart(root, 'horse_head', (mesh) => buildHorseHead(mesh, null));
   addPart(root, 'horse_head_barded', (mesh) => buildHorseHead(mesh, M.steel));
   addPart(root, 'horse_head_scale', (mesh) => buildHorseHead(mesh, M.mail));
 
-  // Foreleg upper (muscular shoulder/forearm -> neat knee joint, normalized Y 0..1)
+  // Foreleg upper: muscular forearm planes tapering to a crisp knee (normalized Y 0..1 down the bone).
   addPart(root, 'horse_leg_up', (mesh) => {
     const leg = loft(V(0, -0.10, 0), V(0, 1.06, 0), [
-      [0.00, 0.125, 0.165, 0,  0.01], // muscular upper forearm
-      [0.35, 0.105, 0.135, 0,  0.00], // tapered mid-forearm
-      [0.78, 0.072, 0.086, 0,  0.00], // above knee
-      [1.00, 0.066, 0.078, 0,  0.00], // knee (carpus)
-    ], { segs: 8 });
+      [0.00, 0.135, 0.175, 0,  0.008],
+      [0.34, 0.108, 0.138, 0,  0.000],
+      [0.76, 0.073, 0.086, 0,  0.000],
+      [1.00, 0.068, 0.080, 0,  0.000],
+    ], { segs: 6 });
     mesh(heightShade(leg, -0.10, 1.06, 0.76, 1.0), M.coat);
   });
 
-  // Hindleg upper (broad powerful haunch/thigh -> sinewy gaskin -> hock, normalized Y 0..1)
+  // Hindleg upper: broad powerful thigh/croup mass narrowing through the gaskin into a sharp hock.
   addPart(root, 'horse_leg_hind_up', (mesh) => {
     const leg = loft(V(0, -0.14, 0), V(0, 1.06, 0), [
-      [0.00, 0.155, 0.240, 0, -0.03], // broad muscular thigh/croup
-      [0.32, 0.132, 0.195, 0, -0.02], // stifle / upper gaskin
-      [0.68, 0.088, 0.120, 0, -0.01], // lean gaskin
-      [1.00, 0.066, 0.088, 0, -0.01], // crisp hock joint
-    ], { segs: 8 });
+      [0.00, 0.165, 0.250, 0, -0.030],
+      [0.30, 0.132, 0.198, 0, -0.020],
+      [0.68, 0.086, 0.118, 0, -0.008],
+      [1.00, 0.067, 0.088, 0, -0.006],
+    ], { segs: 6 });
     mesh(heightShade(leg, -0.14, 1.06, 0.74, 1.0), M.coat);
   });
 
-  // Lower leg: slender cannon bone -> fetlock bulge -> angled pastern -> flared dark hoof (normalized Y 0..1)
+  // Lower leg: lean cannon, fetlock swelling, angled pastern and a broad dark flared hoof with a forward toe.
   addPart(root, 'horse_leg_low', (mesh) => {
     const cannon = loft(V(0, -0.08, 0), V(0, 0.85, 0), [
-      [0.00, 0.064, 0.076, 0,  0.000], // knee / hock socket
-      [0.22, 0.048, 0.056, 0,  0.000], // slender cannon top
-      [0.62, 0.046, 0.054, 0,  0.000], // slender cannon lower
-      [0.76, 0.056, 0.068, 0, -0.012], // fetlock joint bulge
-      [0.92, 0.046, 0.054, 0,  0.016], // angled pastern
-      [1.00, 0.054, 0.064, 0,  0.030], // coronet band
-    ], { segs: 8 });
+      [0.00, 0.064, 0.076, 0,  0.000],
+      [0.24, 0.046, 0.054, 0,  0.000],
+      [0.63, 0.044, 0.052, 0,  0.000],
+      [0.78, 0.057, 0.068, 0, -0.010],
+      [0.93, 0.047, 0.056, 0,  0.018],
+      [1.00, 0.055, 0.066, 0,  0.030],
+    ], { segs: 6 });
     mesh(heightShade(cannon, -0.08, 0.85, 0.74, 1.0), M.coat);
 
-    // Sculpted flared dark hoof (+Z toe)
-    const hoof = loft(V(0, 0.83, 0.028), V(0, 1.03, 0.048), [
-      [0.00, 0.056, 0.066],
-      [0.55, 0.066, 0.080],
-      [1.00, 0.074, 0.092],
-    ], { segs: 8 });
-    mesh(shadeVerts(hoof, (_x, y) => 0.34 + 0.14 * (1.03 - y) / 0.20, 0.22), M.dark);
+    const hoof = loft(V(0, 0.82, 0.026), V(0, 1.04, 0.052), [
+      [0.00, 0.058, 0.068],
+      [0.55, 0.071, 0.086],
+      [1.00, 0.084, 0.104],
+    ], { segs: 6 });
+    mesh(shadeVerts(hoof, (_x, y) => 0.34 + 0.14 * (1.04 - y) / 0.22, 0.22), M.dark);
   });
 
-  // Flowing horse tail (normalized Y 0..1, slightly arched dock -> lush plume -> feathered tip)
+  // Flattened flowing tail: narrow across the body, deep and expressive in side view, pointed feathered tip.
   addPart(root, 'horse_tail', (mesh) => {
-    const tail = loft(V(0, -0.06, 0), V(0, 1.04, 0), [
-      [0.00, 0.048, 0.050, 0,  0.00], // dock root
-      [0.18, 0.076, 0.084, 0, -0.04], // arched upper dock
-      [0.48, 0.098, 0.106, 0, -0.05], // lush mid plume
-      [0.78, 0.082, 0.088, 0, -0.02], // lower plume
-      [1.00, 0.022, 0.024, 0,  0.02], // feathered tip
-    ], { segs: 7 });
+    const tail = pathLoft([
+      { p: V(0, -0.055,  0.000), rx: 0.026, rz: 0.044 },
+      { p: V(0,  0.180, -0.050), rx: 0.034, rz: 0.074 },
+      { p: V(0,  0.500, -0.095), rx: 0.042, rz: 0.105 },
+      { p: V(0,  0.790, -0.070), rx: 0.034, rz: 0.085 },
+      { p: V(0,  1.040,  0.010), rx: 0.012, rz: 0.026 },
+    ], { segs: 5, fwd: V(0, 0, 1) });
     mesh(heightShade(tail, -0.06, 1.04, 0.68, 1.0), M.coatDark);
   });
 
-  // ---------- CAMELS (3 parts) ----------
+  // ---------- CAMELS (3 parts; legs/tail are shared with horses in Puppet3D) ----------
   addPart(root, 'camel_body', (mesh) => {
-    const body = loft(V(0, 0.04, -0.86), V(0, 0.08, 0.84), [
-      [0.00, 0.13, 0.14],
-      [0.16, 0.28, 0.28],
-      [0.50, 0.32, 0.31],
-      [0.84, 0.28, 0.27],
-      [1.00, 0.13, 0.14],
-    ], { segs: 10, fwd: V(0, 1, 0) });
-    mesh(heightShade(body, -0.28, 0.38, 0.78, 1.0), M.coat);
+    // Narrower, longer-bodied dromedary barrel with a high shoulder and sparse belly.
+    const body = loft(V(0, 0.035, -0.88), V(0, 0.075, 0.86), [
+      [0.00, 0.12, 0.135, 0, -0.010],
+      [0.15, 0.255, 0.270, 0,  0.020],
+      [0.43, 0.285, 0.285, 0, -0.015],
+      [0.70, 0.275, 0.285, 0,  0.015],
+      [0.90, 0.245, 0.250, 0,  0.020],
+      [1.00, 0.120, 0.135, 0,  0.000],
+    ], { segs: 8, fwd: V(0, 1, 0) });
+    mesh(heightShade(body, -0.27, 0.39, 0.76, 1.0), M.coat);
+
+    // One tall teardrop dromedary hump, broad front-to-back and clearly separate from the saddle cloth.
     const hump = column([
-      [0.24, 0.26, 0.42, 0, -0.02],
-      [0.50, 0.21, 0.32, 0, -0.02],
-      [0.74, 0.09, 0.14, 0, -0.02],
-    ], { segs: 8 });
-    mesh(heightShade(hump, 0.24, 0.74, 0.84, 1.0), M.coat);
-    // Contoured woven desert blanket (no flat box!)
+      [0.20, 0.270, 0.455, 0, 0.070],
+      [0.38, 0.250, 0.395, 0, 0.082],
+      [0.56, 0.190, 0.285, 0, 0.098],
+      [0.70, 0.095, 0.145, 0, 0.112],
+      [0.755, 0.038, 0.060, 0, 0.120],
+    ], { segs: 7 });
+    mesh(heightShade(hump, 0.20, 0.755, 0.80, 1.0), M.coat);
+
+    // Bright woven desert blanket with a broad trim edge, then a low leather saddle frame nested behind/around the hump.
     const blanket = drapeSheet([
-      { z: -0.40, w: 0.33, topY: 0.42, sideY: 0.20, hemY: 0.02, flare: 0.02 },
-      { z:  0.00, w: 0.34, topY: 0.48, sideY: 0.22, hemY: 0.00, flare: 0.02 },
-      { z:  0.36, w: 0.32, topY: 0.40, sideY: 0.18, hemY: 0.02, flare: 0.02 },
-    ], { segs: 10 });
-    mesh(heightShade(blanket, 0.0, 0.48, 0.82, 1.0), M.cloth);
+      { z: -0.46, w: 0.315, topY: 0.405, sideY: 0.19, hemY: 0.015, flare: 0.018 },
+      { z: -0.12, w: 0.335, topY: 0.445, sideY: 0.21, hemY: -0.005, flare: 0.020 },
+      { z:  0.22, w: 0.325, topY: 0.430, sideY: 0.20, hemY: 0.000, flare: 0.018 },
+      { z:  0.42, w: 0.300, topY: 0.390, sideY: 0.18, hemY: 0.025, flare: 0.014 },
+    ], { segs: 8 });
+    mesh(heightShade(blanket, 0.0, 0.46, 0.82, 1.0), M.cloth);
+    for (const sx of [-1, 1]) {
+      mesh(shadeVerts(bandY([
+        V(sx * 0.330, 0.035, -0.45), V(sx * 0.350, 0.015, -0.10), V(sx * 0.340, 0.020, 0.23), V(sx * 0.312, 0.045, 0.42),
+      ], 0.045, sx > 0), () => 0.96), M.trim);
+    }
+    const seat = drapeSheet([
+      { z: -0.36, w: 0.230, topY: 0.500, sideY: 0.42, hemY: 0.34, flare: 0.010 },
+      { z: -0.13, w: 0.225, topY: 0.535, sideY: 0.45, hemY: 0.36, flare: 0.010 },
+      { z:  0.08, w: 0.220, topY: 0.500, sideY: 0.42, hemY: 0.34, flare: 0.010 },
+    ], { segs: 7 });
+    mesh(heightShade(seat, 0.34, 0.55, 0.76, 0.94), M.leather);
   });
 
   addPart(root, 'camel_neck', (mesh) => {
+    // Long narrow S-curve: throat reaches forward low down, then the poll draws back. Puppet3D supplies the extra length.
     const neck = loft(V(0, -0.08, 0), V(0, 1.06, 0), [
-      [0.00, 0.165, 0.20, 0, 0.03],
-      [0.35, 0.140, 0.17, 0, 0.09],
-      [0.70, 0.120, 0.145, 0, 0.04],
-      [1.00, 0.110, 0.130, 0, -0.02],
-    ], { segs: 8 });
+      [0.00, 0.152, 0.195, 0,  0.020],
+      [0.20, 0.132, 0.165, 0,  0.092],
+      [0.48, 0.113, 0.138, 0,  0.128],
+      [0.74, 0.100, 0.123, 0,  0.070],
+      [1.00, 0.088, 0.108, 0, -0.025],
+    ], { segs: 7 });
     mesh(heightShade(neck, -0.08, 1.06, 0.78, 1.0), M.coat);
   });
 
   addPart(root, 'camel_head', (mesh) => {
-    const head = loft(V(0, 0.04, -0.08), V(0, -0.02, 0.53), [
-      [0.00, 0.125, 0.125],
-      [0.30, 0.135, 0.135],
-      [0.65, 0.095, 0.100],
-      [1.00, 0.075, 0.082],
-    ], { segs: 8, fwd: V(0, 1, 0) });
-    mesh(heightShade(head, -0.11, 0.18, 0.80, 1.0), M.coat);
+    // Small high cranium tapering to a narrow drooping muzzle; unmistakably camel beside the longer horse head.
+    const headProfile = (th, t) => {
+      const sy = Math.sin(th);
+      let mx = 1.0, mz = 1.0;
+      if (t < 0.34 && sy > 0.2) mx *= 1.08; // high domed brow
+      if (t > 0.55 && sy < -0.1) mz *= 1.12; // mobile upper lip/muzzle pad
+      return [mx, mz];
+    };
+    const head = loft(V(0, 0.045, -0.08), V(0, -0.040, 0.48), [
+      [0.00, 0.104, 0.116, 0,  0.012],
+      [0.25, 0.130, 0.132, 0,  0.010],
+      [0.56, 0.094, 0.102, 0, -0.002],
+      [0.84, 0.086, 0.098, 0, -0.018],
+      [1.00, 0.062, 0.068, 0, -0.030],
+    ], { segs: 7, fwd: V(0, 1, 0), profile: headProfile });
+    mesh(heightShade(head, -0.12, 0.18, 0.78, 1.0), M.coat);
+
     for (const sx of [-1, 1]) {
-      mesh(shadeVerts(new THREE.SphereGeometry(0.032, 5, 4), () => 0.88), M.coat, [sx * 0.095, 0.15, 0.02]);
-      mesh(shadeVerts(new THREE.SphereGeometry(0.022, 5, 4), () => 0.16, 0.12), M.dark, [sx * 0.115, 0.055, 0.18]);
+      // Small rounded ears folded back along the poll, high dark eyes and slit nostrils.
+      const ear = loft(V(0, 0, 0), V(0, 0.075, 0), [
+        [0, 0.030, 0.033], [0.65, 0.021, 0.024], [1, 0.006, 0.008],
+      ], { segs: 5 });
+      mesh(shadeVerts(ear, () => 0.90), M.coat, [sx * 0.080, 0.122, -0.040], [-0.44, sx * 0.24, -sx * 0.24]);
+      const eye = shadeVerts(new THREE.OctahedronGeometry(0.023, 0), () => 0.16, 0.12);
+      mesh(eye, M.dark, [sx * 0.110, 0.062, 0.132], null, [1.0, 0.68, 0.62]);
+      const nostril = shadeVerts(new THREE.OctahedronGeometry(0.016, 0), () => 0.18, 0.12);
+      mesh(nostril, M.dark, [sx * 0.046, -0.020, 0.402], null, [1.0, 0.55, 0.75]);
     }
-    const nose = loft(V(0, -0.01, 0.40), V(0, -0.01, 0.44), [
-      [0, 0.095, 0.10], [1, 0.095, 0.10],
-    ], { segs: 8, fwd: V(0, 1, 0), caps: false });
-    mesh(shadeVerts(nose, () => 0.90), M.cloth);
+    // Drooping dark lower-lip line plus a simple decorated desert noseband/browband.
+    mesh(shadeVerts(new THREE.BoxGeometry(0.075, 0.018, 0.070), () => 0.68), M.coatDark, [0, -0.094, 0.410]);
+    const noseband = loft(V(0, -0.018, 0.305), V(0, -0.018, 0.342), [
+      [0, 0.086, 0.094], [1, 0.086, 0.094],
+    ], { segs: 7, fwd: V(0, 1, 0), caps: false });
+    mesh(shadeVerts(noseband, () => 0.88), M.cloth);
+    const browband = loft(V(0, 0.030, 0.070), V(0, 0.030, 0.105), [
+      [0, 0.123, 0.126], [1, 0.123, 0.126],
+    ], { segs: 7, fwd: V(0, 1, 0), caps: false });
+    mesh(shadeVerts(browband, () => 0.84), M.leather);
   });
 }

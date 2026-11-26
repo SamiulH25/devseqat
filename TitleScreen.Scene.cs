@@ -52,7 +52,14 @@ sealed partial class TitleScreen
     float lean;
     int u = 1;
 
-    Heraldry Colours => Style.Sides[Math.Clamp(Saves.Latest()?.Meta?.Palette ?? 0, 0, Style.Sides.Length - 1)];
+    Heraldry Colours
+    {
+        get
+        {
+            var m = Saves.Latest()?.Meta;
+            return m != null ? Style.BannerOf(m.Palette, m.Arms, m.BannerField, m.BannerTrim) : Style.Sides[0];
+        }
+    }
 
     static string TimeLabel(float h) => h switch
     {
@@ -500,7 +507,7 @@ sealed partial class TitleScreen
         ui.Line(new Vector2(px + 26 * u, gy), new Vector2(px + 18 * u, gy - 50 * u), frontC, 2);
         R(px + 6 * u, gy - 68 * u, 3 * u, 7 * u, frontC);
         R(px + 14 * u, gy - 55 * u, 9 * u, 6 * u, frontC); R(px + 12 * u, gy - 50 * u, 13 * u, 2 * u, frontC);
-        Flag(px + 6 * u, gy - 58 * u, 16 * u, 7 * u, time * 2.6f, -1, Color.Lerp(Colours.Cloth, frontC, 0.45f), Color.Lerp(Colours.Trim, frontC, 0.45f));
+        Flag(px + 6 * u, gy - 58 * u, 16 * u, 7 * u, time * 2.6f, -1, Color.Lerp(Colours.Cloth, frontC, 0.45f), Color.Lerp(Colours.Trim, frontC, 0.45f), Colours.Charge, Color.Lerp(Colours.ClothDark, frontC, 0.45f));
     }
 
     void Layer(Func<float, float> yAt, float depth, Color c, Color rim)
@@ -564,20 +571,27 @@ sealed partial class TitleScreen
         Window(-6, 19); Window(8, 18, 0.8f); Window(0, 29); Window(2, 22, 0.7f); Window(-30, 12, 0.8f); Window(15, 16); Window(27, 11, 0.7f); Window(-17, 9, 0.6f);
         int px = cx + k, top = g - (desert ? 46 : 52) * k;
         ui.Rect(new Rectangle(px, top, u, 8 * k), cragC);
-        Flag(px + u, top, U(18), U(10), time * 3.2f, 1, Color.Lerp(Colours.Cloth, cragC, 0.25f), Color.Lerp(Colours.Trim, cragC, 0.25f));
+        Flag(px + u, top, U(18), U(10), time * 3.2f, 1, Color.Lerp(Colours.Cloth, cragC, 0.25f), Color.Lerp(Colours.Trim, cragC, 0.25f), Colours.Charge, Color.Lerp(Colours.ClothDark, cragC, 0.25f));
     }
 
-    void Flag(float x, float y, int w, int h, float phase, int dir, Color cloth, Color trim)
+    static bool OnFlagCharge(Emblem charge, float fu, float fv) => Style.OnCharge(charge, fu * 1.08f, fv, 1.15f);
+
+    void Flag(float x, float y, int w, int h, float phase, int dir, Color cloth, Color trim, Emblem charge, Color clothDark)
     {
-        int s = 2 * u;
+        int s = Math.Max(1, u);
         for (int col = 0; col < w; col += s)
         {
             float f = col / (float)w, wave = MathF.Sin(col / (float)u * 0.32f - phase) * 1.6f * u * (0.3f + f);
+            float shade = 1 - 0.32f * f + 0.11f * MathF.Sin(col / (float)u * 0.32f - phase);
+            float fu = (col + s * 0.5f) / Math.Max(1f, w);
             for (int row = 0; row < h; row += u)
             {
-                if (f > 0.7f && MathF.Abs(row + u / 2f - h / 2f) < (f - 0.7f) * h * 0.9f) continue;
-                var c = row >= h / 4 && row < h / 4 + 2 * u ? trim : Kit.Mul(cloth, 1 - 0.35f * f + 0.12f * MathF.Sin(col / (float)u * 0.32f - phase));
-                R(dir > 0 ? x + col : x - col - s, y + row + wave, s, u, c);
+                if (f > 0.72f && MathF.Abs(row + u / 2f - h / 2f) < (f - 0.72f) * h * 0.88f) continue;
+                float fv = (row + u * 0.5f) / Math.Max(1f, h);
+                Color baseCol = OnFlagCharge(charge, fu, fv) ? trim
+                    : charge == Emblem.None && fu > 0.48f ? clothDark
+                    : cloth;
+                R(dir > 0 ? x + col : x - col - s, y + row + wave, s, u, Kit.Mul(baseCol, shade));
             }
         }
     }
@@ -726,7 +740,7 @@ sealed partial class TitleScreen
             case Who.Banner:
                 ui.Line(hand, new Vector2(hand.X, y - 56 * u), nearC, 1.5f);
                 R(hand.X - u, y - 58 * u, 3 * u, 2 * u, Color.Lerp(Kit.Gilt, nearC, 0.3f));
-                Flag(hand.X - u, y - 55 * u, U(22), U(13), time * 4 + i, -1, Color.Lerp(Colours.Cloth, nearC, 0.16f), Color.Lerp(Colours.Trim, nearC, 0.16f));
+                Flag(hand.X - u, y - 55 * u, U(22), U(13), time * 4 + i, -1, Color.Lerp(Colours.Cloth, nearC, 0.16f), Color.Lerp(Colours.Trim, nearC, 0.16f), Colours.Charge, Color.Lerp(Colours.ClothDark, nearC, 0.16f));
                 break;
         }
     }
@@ -769,13 +783,13 @@ sealed partial class TitleScreen
         {
             ui.Line(hand, new Vector2(hand.X, y - 82 * u), nearC, 1.5f);
             R(hand.X - u, y - 84 * u, 3 * u, 3 * u, Color.Lerp(Kit.Gilt, nearC, 0.2f));
-            Flag(hand.X - u, y - 80 * u, U(34), U(20), time * 3.6f, -1, Color.Lerp(Colours.Cloth, nearC, 0.1f), Color.Lerp(Colours.Trim, nearC, 0.1f));
+            Flag(hand.X - u, y - 80 * u, U(34), U(20), time * 3.6f, -1, Color.Lerp(Colours.Cloth, nearC, 0.1f), Color.Lerp(Colours.Trim, nearC, 0.1f), Colours.Charge, Color.Lerp(Colours.ClothDark, nearC, 0.1f));
         }
         else
         {
             var tip = new Vector2(hand.X + (Ease.Hash(i * 9) - 0.3f) * 5 * u, y - 70 * u);
             ui.Line(hand, tip, nearC, 1);
-            Flag(tip.X, tip.Y + 2 * u, U(11), U(5), time * 5 + i, -1, Color.Lerp(Colours.Trim, nearC, 0.25f), Color.Lerp(Colours.Cloth, nearC, 0.25f));
+            Flag(tip.X, tip.Y + 2 * u, U(12), U(6), time * 5 + i, -1, Color.Lerp(Colours.Cloth, nearC, 0.18f), Color.Lerp(Colours.Trim, nearC, 0.18f), Colours.Charge, Color.Lerp(Colours.ClothDark, nearC, 0.18f));
         }
     }
 

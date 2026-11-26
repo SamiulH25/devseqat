@@ -253,7 +253,7 @@ sealed partial class Hud
             case CapCmd.Mount:
                 return (p.Mounted ? "DISMOUNT" : "MOUNT", "horse", p.Mounted ? "SLOW FIRST" : "HORSE NEAR", p.Mounted ? MathF.Abs(p.Speed) <= 1.5f : true, Act.Interact);
             default:
-                return (p.Couched ? "LANCE UP" : "COUCH", "spear", p.Mounted ? "AT GALLOP" : "MOUNTED", p.Mounted && (p.Couched || p.Speed > 6), Act.Couch);
+                return (p.Couched ? "LANCE UP" : "COUCH", "spear", Battle.CanCouch(p) ? "AT GALLOP" : "NEED LANCE", Battle.CanCouch(p) && (p.Couched || p.Speed > 6), Act.Couch);
         }
     }
 

@@ -279,7 +279,7 @@ partial class MapScreen
             var pole = l.Night ? new Color(44, 32, 28) : new Color(92, 66, 44);
             ui.Rect(new Rectangle((int)p.X, top, Math.Max(ui.U(1), (int)(0.07f * pm) / ps * ps), (int)p.Y - top), pole);
             ui.Rect(new Rectangle((int)p.X - ui.U(1), top - ui.U(2), ui.U(3), ui.U(2)), l.Night ? Kit.Mul(Kit.Gilt, 0.5f) : Kit.Gilt); // the finial
-            var hd = b.Side < 0 ? mineHd with { Charge = (Emblem)b.K.Banner } : theirHd;
+            var hd = b.Side < 0 ? C.CompanyBannerOf(b.K) : theirHd;
             int dir = b.Side < 0 ? 1 : -1; // the cloth flies toward the foe
             ui.Banner((int)p.X + dir * (bw / 2 + ui.U(1)), top + ui.U(1), bw, (int)(1.05f * pm), hd, t * 1.3f + b.K.Id);
         }

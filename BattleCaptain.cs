@@ -112,32 +112,45 @@ public sealed partial class Battle
         var w => t.HasShield ? w + " and shield" : w,
     };
 
-    /// Your bow (P1): hold attack to draw (the aim steadies), release to loose at the foe nearest your facing.
+    /// Manual 3D ranged aiming: bows draw and loose along your camera yaw/pitch; crossbows are pre-spanned and fire on click/release.
     void PlayerBow(Unit p, PlayerInput inp, float dt)
     {
-        float draw = p.Type.Windup * 1.75f / p.Type.Reload // a crossbow is spanned already: it aims quickly, then reloads slowly
-            * (1 - 0.25f * BowEdge);
+        var kind = Look.GripOf(p.Type.Look.Weapon);
+        bool isCrossbow = kind == Grip.Crossbow;
+        float draw = isCrossbow
+            ? 0.35f * (1f - 0.2f * BowEdge)
+            : MathF.Max(0.28f, p.Type.Windup * 1.75f / MathF.Max(0.5f, p.Type.Reload)) * (1f - 0.25f * BowEdge);
         if (inp.Attack)
         {
             if (p.Ammo <= 0) { if (!p.Charging) PlayerHit = ("NO ARROWS: SWAP WEAPON OR GO TO THE WAGON", Time); p.Charging = true; return; }
             if (p.Cooldown > 0) return;
             p.Charging = true;
-            p.Charge = MathF.Min(1, p.Charge + dt / draw);
+            p.Charge = MathF.Min(1f, p.Charge + dt / draw);
             return;
         }
         if (!p.Charging) return;
         p.Charging = false;
         float charge = p.Charge;
         p.Charge = 0;
-        if (p.Ammo <= 0 || charge < 0.3f) return; // let down without loosing
-        var t = AimTarget(p);
-        var aim = t?.Pos ?? p.Pos + p.Dir * p.Type.Range * 0.8f;
+        if (p.Ammo <= 0 || (!isCrossbow && charge < 0.25f)) return; // let down without loosing
         // CR4: bow draw-tension sweet spot (0.78..0.96) grants bonus damage and tighter aim stability.
-        bool sweetBow = charge is >= 0.78f and <= 0.96f;
-        float bowDmg = p.Type.Damage * (0.5f + 0.5f * charge) * (sweetBow ? 1.18f : 1f);
-        float bowSpread = (1.6f - 1.1f * charge) * (sweetBow ? 0.7f : 1f) * (1 - 0.3f * BowEdge) * (Perk("SteadyAim") ? 0.7f : 1) * (Perk("Deadeye") && charge >= 0.95f ? 0.15f : 1);
-        Loose(p, aim, t, bowDmg, bowSpread);
-        p.Cooldown = 0.3f + (p.Type.Reload - 1) * 1.2f;
+        bool sweetBow = !isCrossbow && charge is >= 0.78f and <= 0.96f;
+        float bowDmg = p.Type.Damage * (isCrossbow ? 1f : (0.5f + 0.5f * charge)) * (sweetBow ? 1.18f : 1f);
+        float muzzle = ProjectileSpeed(kind, p.Type.Look.Weapon) * (isCrossbow ? 1f : (0.58f + 0.42f * charge));
+        float angSpread = (isCrossbow ? MathHelper.Lerp(0.022f, 0.007f, charge) : MathHelper.Lerp(0.055f, 0.011f, charge))
+            * (sweetBow ? 0.65f : 1f)
+            * (1f - 0.35f * BowEdge)
+            * (Perk("SteadyAim") ? 0.7f : 1f)
+            * (Perk("Deadeye") && charge >= 0.92f ? 0.25f : 1f)
+            * (p.Mounted && !Perk("HorseArcher") ? (1f + 0.14f * MathF.Abs(p.Speed)) : 1f)
+            * (!p.Mounted && p.Vel.LengthSquared() > 1f ? 1.35f : 1f)
+            * Weather.Spread;
+        // Camera pitch is +down / -up; add a subtle +0.032 rad (~1.8 deg) zeroing loft so crosshair hits naturally at mid-range.
+        float elev = Math.Clamp(-inp.Pitch + 0.032f, -0.75f, 0.75f);
+        LooseAimed(p, p.Facing, elev, muzzle, bowDmg, angSpread);
+        p.Cooldown = isCrossbow
+            ? MathF.Max(0.9f, 1.35f * p.Type.Reload * (1f - 0.2f * BowEdge))
+            : 0.30f + (p.Type.Reload - 1f) * 1.1f;
     }
 
     /// The enemy you are aiming at: in range and within a narrow cone of your facing, the closest to its centre line.

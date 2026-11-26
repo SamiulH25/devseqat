@@ -454,10 +454,13 @@ sealed partial class Hud
             bool hover = r.Contains(Mouse);
             Rect(new Rectangle(r.X + U(1), r.Y + U(2), r.Width, r.Height), Color.Black * 0.4f);
             kit.VGrad(r, sel ? new Color(70, 60, 36) : hover ? new Color(46, 46, 50) : new Color(30, 32, 38), Kit.IronDark, 2);
+            var coHd = CompanyArms(s);
             var port = new Rectangle(r.X + U(3), r.Y + U(3), r.Width - U(6), U(46));
-            kit.VGrad(port, Kit.Mul(cloth.Cloth, 0.5f), Kit.IronDark, 2);
+            kit.VGrad(port, Kit.Mul(coHd.Cloth, 0.52f), Kit.IronDark, 2);
             var type = s.Units.Count > 0 ? s.Units[0].Type : UnitType.Shieldman;
             Icon(type, new Rectangle(port.X + U(12), port.Y + U(1), port.Width - U(24), port.Height - U(1)));
+            // Company's own generated little banner on the card so each company is recognizable at a glance.
+            kit.MiniBanner(new Rectangle(r.X + U(4), r.Y + U(18), U(13), U(16)), coHd);
             Frame(r, sel ? Gold : state is "STEADY" ? Color.Black * 0.7f : sc, U(sel ? 3 : 1));
             if (sel) Rect(new Rectangle(r.X + U(6), r.Bottom + U(2), r.Width - U(12), U(3)), Gold); // a gold tab under the chosen
             if (active == 0) Rect(r, Color.Black * 0.45f);

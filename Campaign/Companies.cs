@@ -64,7 +64,23 @@ public static class Honours
 public sealed partial class Campaign
 {
     /// The charges a company banner may carry (the field is its side's colour).
-    static readonly Emblem[] BannerCharges = { Emblem.Chevron, Emblem.Saltire, Emblem.Lozenge, Emblem.Bend };
+    static readonly Emblem[] BannerCharges =
+    {
+        Emblem.Chevron, Emblem.Saltire, Emblem.Lozenge, Emblem.Cross, Emblem.Sun,
+        Emblem.Star, Emblem.Sword, Emblem.Axe, Emblem.Tower, Emblem.Crescent, Emblem.Crown, Emblem.Rose,
+    };
+
+    /// The player's full part-by-part main party banner.
+    public Heraldry PlayerBanner() => Style.BannerOf(
+        PlayerPalette, Captain.Arms, Captain.BannerField, Captain.BannerTrim,
+        Captain.BannerDivision, Captain.BannerField2, Captain.BannerBorder, Captain.BannerCut);
+
+    /// A company's own generated little banner, derived from your main party banner as a base.
+    public Heraldry CompanyBannerOf(CompanyRecord c)
+    {
+        bool flagship = Player.Companies.Count > 0 && Player.Companies[0].Id == c.Id;
+        return Style.CompanyBanner(PlayerBanner(), c.Id, Rules.RoleOf(c), c.Banner, flagship);
+    }
 
 
     /// A new company with one stack (of `men` men with `xp` each in its pool), an origin, a banner and perhaps a sergeant.

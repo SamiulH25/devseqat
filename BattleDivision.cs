@@ -192,6 +192,7 @@ public partial class Battle
     {
         d.Pending = g;
         d.PendingAt = Time;
+        if (d.Team == 0 && !ai) SpeakDivisionOrder(d, g);
         if (Recording != null && d.Team == 0 && !ai)
             (goalRecords ??= new()).Add(new Replay.GoalOrder { Division = d.Id, Post = g.Post, Stance = g.Stance });
     }

@@ -50,20 +50,17 @@ partial class BattleScreen
             if (text.Contains("GUARD BREAK") || text.Contains("GUARD BROKEN"))
             {
                 Kick(0.32f); KickDir(-f, 2.2f);
-                if (Settings.Current.HitPause && quality != Quality.Low) hitPause = 0.070f; // CR6: 70ms guard-break hitstop
                 AddSparkFlash(p.Pos + p.Dir * 0.9f, 1.3f, 0.9f, new Color(255, 220, 120));
             }
             else if (text.StartsWith("PARRY") || text.StartsWith("CHAMBER") || text.StartsWith("BLADE CLASH"))
             {
                 Kick(0.20f); KickDir(-f, 1.8f);
-                if (Settings.Current.HitPause && quality != Quality.Low) hitPause = 0.055f; // CR6: 55ms parry/chamber hitstop
                 AddSparkFlash(p.Pos + p.Dir * 0.85f, 1.35f, 0.95f, new Color(255, 245, 195));
             }
             else if (text.Contains("DMG"))
             {
                 bool heavy = battle.Blows.Count > 0 && battle.Blows[^1] is { OnPlayer: false } lb && (lb.Fatal || lb.Amount >= lb.Target.Type.MaxHp * 0.4f);
                 Kick(heavy ? 0.30f : 0.20f); KickDir(swingKick, heavy ? 2.0f : 1.3f);
-                if (Settings.Current.HitPause && quality != Quality.Low) hitPause = heavy ? 0.065f : 0.035f; // CR6: 35ms light / 65ms heavy/kill
                 if (battle.Blows.Count > 0 && battle.Blows[^1] is { OnPlayer: false } hitBlow)
                     Spray(hitBlow.Target.Pos, 1.15f, heavy ? 9 : 5, new Color(170, 26, 22), heavy ? 4.8f : 3.2f, 2.2f, 0.32f, true, 0.45f);
             }

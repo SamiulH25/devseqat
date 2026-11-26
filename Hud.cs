@@ -329,7 +329,6 @@ sealed partial class Hud
         ArmChips();
         if (Div != null) SergeantFieldBadge();
         OpponentMark();
-        BlowNumbers();
         MarkedMarks();
         Crosshair();
         SwingWords();
@@ -349,7 +348,18 @@ sealed partial class Hud
         return s;
     }
 
-    Heraldry SideArms(int team) => Style.Sides[Math.Clamp(B.Options.Palette[Math.Clamp(team, 0, 1)], 0, Style.Sides.Length - 1)];
+    Heraldry SideArms(int team) => team == 0 && B.Options.PlayerArms != null
+        ? B.Options.PlayerArms
+        : Style.Sides[Math.Clamp(B.Options.Palette[Math.Clamp(team, 0, 1)], 0, Style.Sides.Length - 1)];
+
+    Heraldry CompanyArms(Squad s)
+    {
+        var main = SideArms(s.Team);
+        if (s.Team != 0 || s.Company is not Company co) return main;
+        var mine = Mine;
+        bool flagship = mine.Count > 0 && mine[0] == s;
+        return Style.CompanyBanner(main, co.Id, co.Role, co.Banner, flagship);
+    }
 
     /// Your personal goals for this battle (P6), under the balance bar: open in white, met in gold, lost struck grey.
     void GoalLines()
@@ -572,11 +582,13 @@ sealed partial class Hud
         if (!B.Player.Active) return;
         int cx = W / 2, cy = H / 2;
         var p = B.Player;
-        CombatReticle(cx, cy);
-        if (p.Charging) Bar(new Rectangle(cx - U(24), cy + U(40), U(48), U(4)), p.Charge, Gold);
-        var (hit, at) = B.PlayerHit;
-        hit = System.Text.RegularExpressions.Regex.Replace(hit, @"\d+ DMG\s*", "").Trim(); // the number itself pops over the man hit (Hud.Melee.cs)
-        if (B.Time - at < 1.2f && hit != "") TextC(hit, cx, cy + U(52), hit.StartsWith("PARRY") || hit.StartsWith("CHAMBER") || hit.Contains("BREAK") ? Gold : Color.White);
+        if (p.Type.Ammo > 0) RangedReticle(cx, cy);
+        else
+        {
+            CombatReticle(cx, cy);
+            if (p.Charging) Bar(new Rectangle(cx - U(24), cy + U(40), U(48), U(4)), p.Charge, Gold);
+        }
+        // Mid-combat text pop-ups intentionally omitted to keep combat clean and uncluttered.
 
         // Context prompts.
         string? prompt = null;
@@ -587,7 +599,7 @@ sealed partial class Hud
         }
         else if (!p.Mounted && B.EngineNear(p) is { } near) prompt = $"{Ctl.Name(Act.Interact)}  WORK {near.Def.Name.ToUpperInvariant()}";
         else if (!p.Mounted && B.LooseHorses.Any(h => Vector2.DistanceSquared(h.Pos, p.Pos) < 2.8f * 2.8f)) prompt = $"{Ctl.Name(Act.Interact)}  MOUNT HORSE";
-        else if (p.Mounted && !p.Couched && p.Speed > 6) prompt = $"{Ctl.Name(Act.Couch)}  COUCH LANCE";
+        else if (Battle.CanCouch(p) && !p.Couched && p.Speed > 6) prompt = $"{Ctl.Name(Act.Couch)}  COUCH LANCE";
         else if (p.Mounted && MathF.Abs(p.Speed) < 1.5f && !WheelOpen && !CapWheelOpen) prompt = $"{Ctl.Name(Act.Interact)}  DISMOUNT";
         // Orders by looking (PT4): hold the hold key to plant the line where you look; charge sends them at the company you look at.
         if (HoldPlace >= 0.25f) prompt = "LET GO: HOLD THAT GROUND";
@@ -675,8 +687,22 @@ sealed partial class Hud
             Rect(new Rectangle(flag.X - U(3), flag.Y - U(3), flag.Width + U(6), flag.Height + U(6)), Gold * 0.45f);
             for (int i = 0; i < 4; i++) Rect(new Rectangle(flag.Center.X - U(4 - i), flag.Y - U(12) + U(i), U(8 - 2 * i), U(1)), Gold);
         }
-        Rect(flag, col * 0.9f);
-        Frame(flag, sel ? Gold : Color.Black * 0.6f, U(sel ? 2 : 1));
+        if (own && s.Company != null)
+        {
+            var chd = CompanyArms(s);
+            Color f2 = chd.Field2 ?? chd.ClothDark;
+            Rect(flag, chd.Cloth * 0.92f);
+            if (chd.Division != BannerDivision.Plain)
+                Rect(new Rectangle(flag.X + flag.Width / 2, flag.Y, flag.Width - flag.Width / 2, flag.Height), f2 * 0.92f);
+            if (chd.Border != BannerBorder.None)
+                Frame(Kit.Inset(flag, U(1)), chd.Trim * 0.85f, U(1));
+            Frame(flag, sel ? Gold : Color.Black * 0.7f, U(sel ? 2 : 1));
+        }
+        else
+        {
+            Rect(flag, col * 0.9f);
+            Frame(flag, sel ? Gold : Color.Black * 0.6f, U(sel ? 2 : 1));
+        }
         string label = !own ? s.Name[..1] : s.Division != null ? DivisionTag(s.Division) : $"{mine.IndexOf(s) + 1}";
         if (own && s.Division != null && s.Division == Div) Frame(new Rectangle(flag.X - U(1), flag.Y - U(1), flag.Width + U(2), flag.Height + U(2)), Gold, U(1));
         if (flag.X >= 0 && flag.Right <= W) TextC(label, flag.X + flag.Width / 2f, flag.Y + U(4), Color.White, 1); // cut by the edge: no letter

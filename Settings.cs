@@ -18,13 +18,18 @@ public sealed class Settings
     public bool PixelArt = true;
     /// Pixel-art pixel size (1 = native, 2 = classic 2x pixel grid, 3 = chunky 3x).
     public int PixelScale = 2;
+    /// Continuous 3D model detail slider (0.20..1.00) + automatic FPS-driven dynamic LOD scaling.
+    public float ModelDetail = 1f;
+    public bool DynamicLod = true;
 
     static readonly bool? EnvPixelArt = Environment.GetEnvironmentVariable("IRONFIELD_3D_UNITS") is { Length: > 0 } e3d ? e3d != "0" : null;
     static readonly int? EnvPixelScale = int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_PIXEL_SCALE"), out var eps) && eps is >= 1 and <= 4 ? eps : null;
 
     public bool EffectivePixelArt => EnvPixelArt ?? PixelArt;
     public int EffectivePixelScale => EnvPixelScale ?? Math.Clamp(PixelScale, 1, 3);
-    public float MasterVolume = 0.8f, SfxVolume = 1, AmbienceVolume = 0.85f, MusicVolume = 0.6f;
+    public float MasterVolume = 0.8f, SfxVolume = 1, AmbienceVolume = 0.85f, MusicVolume = 0.6f, VoiceVolume = 0.9f;
+    /// Battle flavor bubbles & voice callouts: 2 = All, 1 = Key Only (sergeants & duels), 0 = Off.
+    public int BattleBarks = 2;
     /// The field camera's kick when blows land (0 off, 0.5 soft, 1 full), and the brief hold when your own blow lands.
     public float CameraShake = 1;
     public bool HitPause = true;

@@ -1,0 +1,46 @@
+{
+  "barks": [
+    { "topic": "order_hold", "nature": "", "text": "Shields tight! Hold the line!" },
+    { "topic": "order_hold", "nature": "Steady", "text": "Plant your boots. Let them break on us." },
+    { "topic": "order_hold", "nature": "Grim", "text": "Stand fast. No step back." },
+    { "topic": "order_hold", "nature": "Bold", "text": "Hold here—let them come to our steel!" },
+    { "topic": "order_hold", "nature": "Proud", "text": "Show them how our line holds!" },
+    { "topic": "order_hold", "nature": "Pious", "text": "Stand firm. Heaven watches." },
+
+    { "topic": "order_charge", "nature": "", "text": "Forward! Break their line!" },
+    { "topic": "order_charge", "nature": "Bold", "text": "With me! Drive them into the mud!" },
+    { "topic": "order_charge", "nature": "Grim", "text": "Advance. Finish it." },
+    { "topic": "order_charge", "nature": "Merry", "text": "Come on, lads—first to their banner!" },
+    { "topic": "order_charge", "nature": "Proud", "text": "Sweep them from the field!" },
+
+    { "topic": "order_skirmish", "nature": "", "text": "Loose order! Harass their ranks!" },
+    { "topic": "order_skirmish", "nature": "Sly", "text": "Bleed them from afar. Stay out of reach." },
+    { "topic": "order_skirmish", "nature": "Steady", "text": "Pick your marks and keep moving." },
+
+    { "topic": "order_flank", "nature": "", "text": "Wheel out! Take their flank!" },
+    { "topic": "order_flank", "nature": "Sly", "text": "Hit them where their shields aren't!" },
+    { "topic": "order_flank", "nature": "Bold", "text": "Turn their wing! Strike hard!" },
+
+    { "topic": "order_reserve", "nature": "", "text": "Pull back and catch your breath!" },
+    { "topic": "order_reserve", "nature": "Steady", "text": "Dress the ranks. Wait for the call." },
+
+    { "topic": "foe_taunt", "nature": "", "text": "Show me that steel, captain!" },
+    { "topic": "foe_taunt", "nature": "Proud", "text": "Step forward! Let both hosts watch!" },
+    { "topic": "foe_taunt", "nature": "Grim", "text": "Your banner falls today." },
+    { "topic": "foe_taunt", "nature": "Bold", "text": "Come then—let's see what you're made of!" },
+
+    { "topic": "foe_grudge_taunt", "nature": "", "text": "No quarter today—only iron!" },
+    { "topic": "foe_grudge_taunt", "nature": "", "text": "I have waited for this field, captain!" },
+    { "topic": "foe_grudge_taunt", "nature": "", "text": "We settle our debt in steel!" },
+
+    { "topic": "man_rally", "nature": "", "text": "The captain is with us! Hold!" },
+    { "topic": "man_rally", "nature": "Bold", "text": "Captain's here! Push them back!" },
+    { "topic": "man_rally", "nature": "Steady", "text": "Close on the banner. We're fine." },
+    { "topic": "man_rally", "nature": "Merry", "text": "Good timing, captain!" },
+
+    { "topic": "man_brother_reply", "nature": "", "text": "Right beside you, {other}!" },
+    { "topic": "man_brother_reply", "nature": "Bold", "text": "Save one for me, {other}!" },
+    { "topic": "man_brother_reply", "nature": "Grim", "text": "Keep your guard up, {other}." },
+    { "topic": "man_brother_reply", "nature": "Merry", "text": "Always showing off, {other}!" }
+  ]
+}

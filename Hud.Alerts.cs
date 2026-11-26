@@ -36,7 +36,9 @@ partial class Hud
     /// What your named men have said in the last few seconds (C6): his face, his name, his words; newest first, two at most.
     void SpokenLines(int y, int room)
     {
-        foreach (var said in B.Spoken.AsEnumerable().Reverse().Where(z => B.Time - z.Time < 6).Take(2))
+        DrawWorldBarks();
+        if (Settings.Current.BattleBarks == 0) return;
+        foreach (var said in B.Spoken.AsEnumerable().Reverse().Where(z => B.Time - z.Time < 4.5f && (z.Key || Settings.Current.BattleBarks < 2)).Take(2))
         {
             float alpha = Math.Clamp((6 - (B.Time - said.Time)) / 1.5f, 0, 1);
             var spec = said.Squad?.Company?.Named?.FirstOrDefault(m => m.Id == said.Soldier);

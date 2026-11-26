@@ -822,6 +822,7 @@ sealed partial class World : IDisposable
         switch (kind)
         {
             case FoliageKind.Ruin: // broken walls of uneven height around a fallen tower
+                if (MapProps3D.Has("map_ruin")) { MapProps3D.EmitSite(m, "map_ruin", b, r.NextSingle() * MathF.Tau, s); break; }
                 for (int i = 0; i < 7; i++)
                 {
                     float a = i * MathF.Tau / 7, h = (0.3f + r.NextSingle() * 1.1f) * s;
@@ -905,7 +906,8 @@ sealed partial class World : IDisposable
                 House(m, b + new Vector3(-ax.Z, 0, ax.X) * 1.4f * s, 0.9f * s, 0.8f * s, 0.9f * s, yaw, Jitter(Stone, r, 0.06f), Slate);
                 break;
             }
-            default: // the mill: a house with a big wheel on its side
+            default: // the mill: a stone-and-timber windmill when available, else a house with a wheel
+                if (MapProps3D.Has("map_mill")) { MapProps3D.EmitSite(m, "map_mill", b, r.NextSingle() * MathF.Tau, s); break; }
                 House(m, b, 1.4f * s, 1.0f * s, 1.0f * s, 0, Wattle, Thatch);
                 for (int i = 0; i < 12; i++) // the wheel's rim, standing against the end wall
                 {

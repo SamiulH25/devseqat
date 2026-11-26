@@ -12,7 +12,7 @@ public sealed partial class Campaign
         me.Age = Origins.Age(m);
         if (m.Company.Trim() != "") Player.Name = m.Company.Trim();
         int homeland = Player.Faction;
-        if (m.Arms >= 0) foreach (var c in Player.Companies) c.Banner = m.Arms; // your arms over your first companies
+        if (m.Arms >= 0 && Player.Companies.Count > 0) Player.Companies[0].Banner = m.Arms; // flagship carries your main charge; others keep distinct company charges
         foreach (var o in new[] { Origins.Find(m.Birth), Origins.Find(m.Past) }.OfType<OriginDef>())
         {
             foreach (var (verb, a) in o.Effects.Select(Origins.Parse))

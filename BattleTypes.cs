@@ -71,6 +71,8 @@ public sealed class BattleOptions
     public string[] LeaderTraits = Array.Empty<string>();
     /// Heraldry palette per team (Style.Sides index): your colours and theirs (3 = bandits).
     public int[] Palette = { 0, 1 };
+    /// Optional custom part-by-part heraldry for the player's side (team 0); null falls back to Style.Sides[Palette[0]].
+    public Heraldry? PlayerArms;
     /// Difficulty: the enemy's blows are multiplied by this.
     public float EnemyDamage = 1;
     /// An assault on a walled town or castle (docs/pre-demo/SIEGES.md): team 1 holds the fortress; ladders built and the gate's strength.

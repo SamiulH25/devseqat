@@ -16,6 +16,8 @@ partial class MapScreen
     readonly List<(Unit U, Soldier M, CompanyRecord K)> campMen = new();
     readonly List<(CompanyRecord K, Vector3 Fire)> campFires = new();
     int campPage;
+    /// Whether the dedicated company banner designer modal is open in camp.
+    bool campBannerOpen;
     /// The man whose page is open (null: the camp).
     Soldier? campMan;
     CompanyRecord? campManOf;
@@ -127,12 +129,13 @@ partial class MapScreen
         try { CampGear(l, c, back: false); }
         finally { ui.S = s0; }
         if (l.Snow) { ui.S = CampPixel; try { Snowfall(new Rectangle(0, 0, ui.W, ui.H), t, l.Night); } finally { ui.S = s0; } }
-        var hover = campMan == null ? CampMarks() : null;
+        var hover = campMan == null && !campBannerOpen ? CampMarks() : null;
         CampPlate(new Rectangle(ui.U(10), ui.U(10), Math.Min(ui.U(420), ui.W / 2), ui.U(78)), mood);
-        if (campMan == null) CampRites(new Rectangle(ui.W - ui.U(310), ui.U(10), ui.U(300), 0));
+        if (campMan == null && !campBannerOpen) CampRites(new Rectangle(ui.W - ui.U(310), ui.U(10), ui.U(300), 0));
         CampBar(bar);
         if (hover is (Soldier m, CompanyRecord k) && ui.Clicked(ManBox(m))) { campMan = m; campManOf = k; note = ""; }
         if (campMan != null) ManPage();
+        else if (campBannerOpen) CampBannerModal(t);
     }
 
     // ---------- the scene ----------
@@ -166,7 +169,7 @@ partial class MapScreen
             ui.Rect(new Rectangle(x, y, ui.U(2 + (int)(d * 3)), ui.U(1)), Kit.Mul(grass, l.Snow ? 0.92f : 0.82f));
         }
         // The tents in a row behind the fires, each company's in its cloth; plain canvas between them; a wagon at each end.
-        var hd = Style.Sides[Style.PaletteOf(Math.Max(0, C.Captain.Contract))];
+        var hd = C.PlayerBanner();
         float back = -7.5f, hw = st.HalfWidth(back);
         var canvas = Color.Lerp(c.Near, new Color(214, 200, 170), CampLight(l) * 0.85f);
         for (float x = -hw + 1.6f; x < hw - 1; x += 3.4f + (float)rng.NextDouble())
@@ -191,7 +194,7 @@ partial class MapScreen
             float pm = st.PerMetre(foot.Z);
             int ps = Math.Max(1, (int)ui.S), top = (int)(p.Y - 3.2f * pm), bw = Math.Max(ui.U(8), (int)(0.75f * pm)) / ps * ps;
             ui.Rect(new Rectangle((int)p.X - ui.U(1), top, ui.U(2), (int)p.Y - top), l.Night ? new Color(44, 32, 28) : new Color(96, 68, 44));
-            ui.Banner((int)p.X + bw / 2 + ui.U(2), top + ui.U(2), bw, (int)(1.15f * pm), hd with { Charge = (Emblem)k.Banner }, t * 1.3f + k.Id);
+            ui.Banner((int)p.X + bw / 2 + ui.U(2), top + ui.U(2), bw, (int)(1.15f * pm), C.CompanyBannerOf(k), t * 1.3f + k.Id);
         }
         CampGear(l, c, back: true);
         snowCap = Color.Transparent;
@@ -521,17 +524,18 @@ partial class MapScreen
         Purse(new Rectangle(bar.X, bar.Y, bar.Width, ui.U(48)));
         var leave = new Rectangle(bar.Right - ui.U(190), bar.Y + ui.U(10), ui.U(176), ui.U(28));
         int pages = Math.Max(1, (C.CampFires().Count + CampPerPage - 1) / CampPerPage);
-        int mid = bar.X + ui.U(360), right = leave.X - ui.U(160);
+        int mid = bar.X + ui.U(360), right = leave.X - ui.U(160), bannerX = right - ui.U(120);
         if (pages > 1)
         {
             if (ui.Button(new Rectangle(mid, bar.Y + ui.U(10), ui.U(28), ui.U(28)), "<", campPage > 0)) campPage--;
-            if (ui.Button(new Rectangle(right - ui.U(36), bar.Y + ui.U(10), ui.U(28), ui.U(28)), ">", campPage < pages - 1)) campPage++;
+            if (ui.Button(new Rectangle(bannerX - ui.U(36), bar.Y + ui.U(10), ui.U(28), ui.U(28)), ">", campPage < pages - 1)) campPage++;
         }
         string fires = string.Join(" . ", campFires.Select(f => f.K.Name.ToUpperInvariant()));
-        ui.TextFitC(fires, (mid + ui.U(36) + right - ui.U(36)) / 2f, bar.Y + ui.U(14), right - mid - ui.U(80), Kit.Mul(Kit.Parchment, 0.9f), 1);
-        if (pages > 1) ui.TextC($"FIRES {campPage + 1} OF {pages}", (mid + right) / 2f, bar.Y + ui.U(28), Style.Dim, 1);
+        ui.TextFitC(fires, (mid + ui.U(36) + bannerX - ui.U(36)) / 2f, bar.Y + ui.U(14), Math.Max(ui.U(80), bannerX - mid - ui.U(80)), Kit.Mul(Kit.Parchment, 0.9f), 1);
+        if (pages > 1) ui.TextC($"FIRES {campPage + 1} OF {pages}", (mid + bannerX) / 2f, bar.Y + ui.U(28), Style.Dim, 1);
+        if (ui.Button(new Rectangle(bannerX, bar.Y + ui.U(10), ui.U(110), ui.U(28)), "BANNER")) { campBannerOpen = !campBannerOpen; campMan = null; note = ""; }
         if (ui.Button(new Rectangle(right, bar.Y + ui.U(10), ui.U(148), ui.U(28)), "REST A DAY", C.Encounter == null)) { C.Rest(24); note = ""; }
-        if (ui.Gilded(leave, "LEAVE", ctl.Name(Act.Menu))) { panel = CameFrom(PanelKind.Camp); campMan = null; }
+        if (ui.Gilded(leave, "LEAVE", ctl.Name(Act.Menu))) { panel = CameFrom(PanelKind.Camp); campMan = null; campBannerOpen = false; }
     }
 
     // ---------- a man's page ----------
@@ -593,5 +597,29 @@ partial class MapScreen
         ManActions(k, m, r.X + ui.U(24), r.Bottom - ui.U(84), r.Width - ui.U(48), () => campMan = null);
         Note(r);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(42), ui.U(180), ui.U(30)), "BACK TO THE FIRES", note: ctl.Name(Act.Menu))) campMan = null;
+    }
+
+    /// Dedicated Company Banner designer modal opened from the Camp bar: changes take effect immediately across all camp & company banners.
+    void CampBannerModal(float t)
+    {
+        var r = Modal(820, 470, "COMPANY BANNER");
+        int pad = ui.U(20);
+        var body = new Rectangle(r.X + pad, r.Y + ui.U(36), r.Width - pad * 2, r.Height - ui.U(88));
+        int basePal = Style.PaletteOf(Math.Max(0, C.Captain.Contract));
+        int arms = C.Captain.Arms, field = C.Captain.BannerField, trim = C.Captain.BannerTrim;
+        int div = C.Captain.BannerDivision, field2 = C.Captain.BannerField2, border = C.Captain.BannerBorder, cut = C.Captain.BannerCut;
+        if (BannerPicker.Draw(ui, body, basePal, ref arms, ref field, ref trim, ref div, ref field2, ref border, ref cut, t))
+        {
+            C.Captain.Arms = arms;
+            C.Captain.BannerField = field;
+            C.Captain.BannerTrim = trim;
+            C.Captain.BannerDivision = div;
+            C.Captain.BannerField2 = field2;
+            C.Captain.BannerBorder = border;
+            C.Captain.BannerCut = cut;
+            if (arms >= 0 && C.Player.Companies.Count > 0) C.Player.Companies[0].Banner = arms;
+        }
+        if (ui.Gilded(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(42), ui.U(180), ui.U(30)), "DONE", ctl.Name(Act.Menu)))
+            campBannerOpen = false;
     }
 }

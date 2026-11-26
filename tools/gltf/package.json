@@ -2,14 +2,20 @@
   "name": "ironfield-gltf",
   "private": true,
   "type": "module",
-  "description": "Trial: unit models built in three.js and written as glTF (.glb), rendered beside the Blender pack for comparison",
+  "description": "Ironfield modular unit mesh pipeline: Three.js parts -> validated GLB -> IMSH units3d.bin",
   "scripts": {
     "build": "node build_unit.mjs",
     "blender": "node blender_unit.mjs",
     "render": "node render_unit.mjs",
     "build-parts": "node build_parts.mjs out/parts.glb",
-    "build-mounts": "node build_parts.mjs out/mounts.glb --only mounts && node export_imsh.mjs --out ../../Data/meshes/units3d.bin --merge ../../Data/meshes/units3d.bin out/mounts.glb",
-    "build-all": "node build_parts.mjs out/parts.glb && node export_imsh.mjs --out ../../Data/meshes/units3d.bin out/parts.glb"
+    "build-mounts": "node build_partial.mjs mounts",
+    "build-all": "node build_release.mjs",
+    "check": "node build_release.mjs --check",
+    "audit": "node mesh_audit.mjs ../../Data/meshes/units3d.bin",
+    "preview": "node preview_parts.mjs out/parts-contact.png out/parts.glb",
+    "build-module": "node build_partial.mjs",
+    "assemble": "node assemble_humanoid.mjs",
+    "merge-pack": "node merge_pack.mjs"
   },
   "dependencies": {
     "puppeteer-core": "^25.18.1",

@@ -252,7 +252,7 @@ sealed partial class TitleScreen
     void Company(SaveMeta save, int x, int y)
     {
         var c = ui.Plate(new Rectangle(x - U(10), y, U(296), U(78)), null, Kit.Gilt);
-        ui.Shield(new Rectangle(c.X - U(2), c.Y + U(2), U(42), U(50)), Style.Sides[Math.Clamp(save.Palette, 0, Style.Sides.Length - 1)]);
+        ui.Shield(new Rectangle(c.X - U(2), c.Y + U(2), U(42), U(50)), Style.BannerOf(save.Palette, save.Arms, save.BannerField, save.BannerTrim));
         int tx = c.X + U(50);
         ui.TextFit(save.Captain, tx, c.Y - U(2), c.Right - tx, Kit.Gilt, ui.FitScale(save.Captain, c.Right - tx));
         string loc = save.Place != "" ? $"{save.Place} · {TimeLabel(save.Hour)}" : $"{save.Biome.ToUpperInvariant()} · {TimeLabel(save.Hour)}";

@@ -10,6 +10,7 @@ sealed partial class MapScreen
     string talkTopic = "", talkSaid = "";
     readonly List<string> talkArgs = new();
     PanelKind talkBack = PanelKind.None;
+    DialogueRun? talkScene;
 
     /// Open the talk screen with him; `back` is the panel LEAVE returns to.
     void OpenTalk(Character ch, PanelKind back)
@@ -17,15 +18,29 @@ sealed partial class MapScreen
         talkWith = ch;
         talkTopic = "";
         talkArgs.Clear();
-        talkSaid = C.Greeting(ch);
         talkBack = back;
+        talkScene = back == PanelKind.Encounter && C.Encounter is Party enc && !C.Meeting(enc)
+            ? C.StartDialogue(ch, "parley", enc)
+            : null;
+        talkSaid = talkScene?.Current is DialogueNode dn
+            ? C.FormatDialogueText(dn.Text, ch)
+            : C.Greeting(ch);
         panel = PanelKind.Talk;
         note = "";
+        SpeakCharacterVoice(ch, talkSaid, talkScene?.Current?.Mood);
+    }
+
+    void SpeakCharacterVoice(Character ch, string line, string? moodHint = null)
+    {
+        var profile = VoiceProfile.ForCharacter(ch, C.CultureOfCharacter(ch));
+        AudioEngine.Current?.Speak(profile, line, C.VoiceMoodOf(ch, moodHint), pan: 0, volume: 0.95f, priority: true, maxWords: 12);
     }
 
     void LeaveTalk()
     {
         talkWith = null;
+        talkScene = null;
+        AudioEngine.Current?.StopVoices();
         if (talkBack == PanelKind.Encounter && C.Encounter is Party e)
         {
             if (C.Meeting(e)) { C.Part(); panel = PanelKind.None; }
@@ -63,13 +78,53 @@ sealed partial class MapScreen
         foreach (var line in new[] { ch.WantKnown && ch.Want != "" ? "WANTS: " + C.WantText(ch) : "" }.Where(l => l != ""))
             foreach (var w in ui.Wrap(line.ToUpperInvariant(), lw).Take(2)) { if (y > r.Bottom - ui.U(70)) break; ui.Text(w, lx, y, Kit.Gilt, 1); y += ui.U(12); }
 
-        // Right: what he says, and the topics.
+        // Right: what he says, and either the multi-turn parley/dialogue scene or council topics.
         int rx = lx + lw + ui.U(24), rw = r.Right - ui.U(24) - rx, ry = ly;
         ui.Rect(new Rectangle(rx, ry, rw, ui.U(64)), Color.White * 0.04f);
         int ty = ry + ui.U(8);
         ui.Rect(new Rectangle(rx, ry, ui.U(3), ui.U(64)), Kit.Gilt);
         foreach (var w in ui.Wrap(talkSaid, rw - ui.U(24), 2).Take(3)) { ui.Text(w, rx + ui.U(14), ty, Style.Text, 2); ty += ui.U(18); }
         ry += ui.U(76);
+        if (talkScene?.Current is DialogueNode dnode)
+        {
+            if (dnode.Interject is DialogueInterject ij)
+            {
+                var ir = new Rectangle(rx, ry, rw, ui.U(30));
+                ui.Rect(ir, new Color(36, 52, 70) * 0.45f);
+                ui.Rect(new Rectangle(rx, ry, ui.U(3), ir.Height), new Color(110, 165, 220));
+                ui.Text($"{ij.Who.ToUpperInvariant()}: {ij.Text}", rx + ui.U(12), ry + ui.U(9), new Color(185, 215, 240), 1);
+                ry += ui.U(38);
+            }
+            foreach (var choice in dnode.Choices)
+            {
+                string? cant = C.CannotChooseDialogue(choice, C.Encounter);
+                var cb = new Rectangle(rx, ry, rw, ui.U(30));
+                string tag = choice.Stance != "" ? $"[{choice.Stance.ToUpperInvariant()}] " : "";
+                if (ui.Button(cb, tag + choice.Label.ToUpperInvariant(), cant == null))
+                {
+                    string act = C.ChooseDialogue(talkScene, choice);
+                    if (act == "start_duel" && C.Encounter is Party foe && C.CannotChallenge(foe) == null)
+                    {
+                        talkScene = null; talkWith = null; panel = PanelKind.None; speed = 0;
+                        OnBattle?.Invoke(C.PrepareDuel(foe));
+                        return;
+                    }
+                    if (act == "resolve_peace") { C.Part(); LeaveTalk(); return; }
+                    if (act == "back_to_encounter") { LeaveTalk(); return; }
+                    if (act == "to_topics") { talkScene = null; return; }
+                    if (talkScene.Current is DialogueNode nextNode)
+                    {
+                        talkSaid = C.FormatDialogueText(nextNode.Text, ch);
+                        SpeakCharacterVoice(ch, talkSaid, nextNode.Mood);
+                    }
+                    return;
+                }
+                if (ui.Hover(cb) && cant != null) note = cant;
+                ry += ui.U(36);
+            }
+            if (ui.Button(new Rectangle(r.Right - ui.U(110), r.Bottom - ui.U(42), ui.U(90), ui.U(26)), "LEAVE")) LeaveTalk();
+            return;
+        }
         string group = "";
         int bx = rx, bw = (rw - ui.U(16)) / 3, bh = ui.U(24);
         foreach (var t in C.TopicsFor(ch))
@@ -137,6 +192,7 @@ sealed partial class MapScreen
     {
         var (ok, line) = C.Say(ch, topic, talkArgs.ToList());
         talkSaid = line == "" ? (ok ? "Very well." : "No.") : line;
+        SpeakCharacterVoice(ch, talkSaid, ok ? "warm" : "hostile");
         talkTopic = "";
         talkArgs.Clear();
         note = ok ? "" : "HE REFUSES.";

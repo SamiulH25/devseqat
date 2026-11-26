@@ -69,7 +69,7 @@ public partial class Battle
 
     static int CleaveCap(Unit u) => u.Swing switch
     {
-        AttackDir.Thrust => 1,
+        AttackDir.Thrust => u.Type.Style == AttackStyle.Thrust ? 2 : 1,
         AttackDir.Overhead => HeavyCleaver(u) ? 2 : 1,
         _ => HeavyCleaver(u) ? 3 : (u.IsPlayer ? 2 : 1),
     };
@@ -185,10 +185,12 @@ public partial class Battle
             float len = d.Length();
             float targetReach = effReach + (t.Mounted ? 0.55f : 0f) + (a.Mounted ? 0.25f : 0f);
             if (len > targetReach) continue;
-            if (len > 0.01f && !a.Mounted)
+            if (len > 0.01f)
             {
                 float rel = MathHelper.WrapAngle(MathF.Atan2(d.Y, d.X) - a.Facing);
-                if (rel < minAng || rel > maxAng) continue;
+                // Mounted cuts still obey swing direction (left cuts hit left, right cuts hit right) with a slight stirrup-side margin.
+                float pad = a.Mounted ? 0.22f : 0f;
+                if (rel < minAng - pad || rel > maxAng + pad) continue;
             }
             (hits ??= new List<Unit>(4)).Add(t);
         }
@@ -346,7 +348,7 @@ public partial class Battle
     /// harder to guard and lands heavier, and he fights with his sidearm at its pace, not the lance's.
     internal const float SaddleGuard = 0.75f, SaddleBlow = 1.15f, SaddleRecover = 0.6f;
     /// How far off an archer's lead may be, as a share of how far his mark moves while the arrow flies.
-    internal const float LeadError = 0.2f;
+    internal const float LeadError = 0.32f;
     /// An arrow or bolt in a horse does this share of its damage: a big beast takes many before it falls (at full damage six
     /// longbow arrows killed a warhorse, and its rider was shot on foot).
     internal const float HorseArrow = 0.6f;
@@ -367,14 +369,14 @@ public partial class Battle
 
     /// One blow (melee, arrow or lance) from a at t: horse hits, blocks and parries, then damage multipliers.
     /// Returns true if the blow was blocked, parried, or stopped cleanly.
-    internal bool Hit(Unit a, Unit t, float dmg, bool ranged, bool lance = false, bool plunge = false)
+    internal bool Hit(Unit a, Unit t, float dmg, bool ranged, bool lance = false, bool plunge = false, bool directRider = false)
     {
         if (a.Team == 1) dmg *= Options.EnemyDamage;
         if (OutOfReach(a, t, ranged)) { if (a.IsPlayer) PlayerHit = ("OUT OF REACH", Time); return true; } // a wyvern aloft (BattleMonsters.cs)
         if (ranged && Wall != null && Wall.Inside(t.Pos) && !Wall.Inside(a.Pos) && Terrain.Height(t.Pos) > Terrain.Height(a.Pos) + 2) dmg *= 0.6f; // merlons
         if (ranged && Engines.Count > 0 && Sheltered(t)) dmg *= 0.25f; // under a ram's roof, behind a tower (BattleEngines.cs)
-        // Arrows and spears often take the horse instead of the rider (a footman's blade rarely does).
-        if (t.Mounted && rng.NextSingle() < (ranged ? 0.55f : a.Type.Class == UnitClass.Skirmisher ? 0.55f : 0.18f))
+        // Melee/unaimed strikes may hit the horse; aimed projectiles already resolved horse vs rider by impact height.
+        if (t.Mounted && !directRider && rng.NextSingle() < (ranged ? 0.55f : a.Type.Class == UnitClass.Skirmisher ? 0.55f : 0.18f))
         {
             HitHorse(t, dmg * a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) * (ranged ? HorseArrow : 1), a); // a horse carries many arrows before it falls
             return false;
@@ -460,7 +462,7 @@ public partial class Battle
                     bool matched = t.GuardDir == Dirs.Mirror(a.Swing);
                     float skill = GuardSkill(t);
                     bool auraCut = (a.IsPlayer && AuraBlade) || FoeBlade(a, false);
-                    float crushMult = (IsCrushWeapon(a) ? 1.6f : 1f) * (lance ? 1.6f : 1f) * (auraCut ? 1.5f : 1f);
+                    float crushMult = (IsCrushWeapon(a) ? 1.6f : 1f) * (lance ? 1.6f : 1f) * (auraCut ? 1.5f : 1f) * (a.Type.Huge ? 2.0f : 1f);
                     bool wallLock = t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield && InOrder(t);
 
                     // Timed Parry: matching GuardDir freshly raised triggers a free parry + riposte opening!
@@ -478,10 +480,16 @@ public partial class Battle
                         return true;
                     }
 
-                    // Shielded defender: covers front cone at stamina cost (vulnerable to flanks, kicks, and crush weapons).
-                    if (t.Type.HasShield && (t.Action == UnitAction.Block || (t.Stamina > 12f && t.Type.BlockChance > 0.15f)))
+                    // Active Block always engages stamina/guard-break; idle (UnitAction.None) defenders only catch blows on
+                    // a skill/shield reflex roll (so low-tier shields & unguarded flanks don't turtle-stalemate).
+                    float styleBypass = StyleGuard(a, t, false, false);
+                    bool passiveCatch = t.Action == UnitAction.None && t.Stamina > 12f && !lance && !a.Type.Huge
+                        && rng.NextSingle() < MathF.Min(0.82f, t.Type.BlockChance * styleBypass * (wallLock ? 1.45f : 1f) * (matched ? 1.15f : 0.72f) * (1f + t.Mods.Block));
+
+                    // Shielded defender: active guard covers front cone at stamina cost; idle defenders rely on reflex roll.
+                    if (t.Type.HasShield && (t.Action == UnitAction.Block || passiveCatch))
                     {
-                        float cost = dmg * 0.72f * crushMult * (matched ? 0.65f : 1f) * (wallLock ? 0.65f : 1f) / MathF.Max(0.75f, RankGuard(t));
+                        float cost = dmg * 0.78f * crushMult * (matched ? 0.65f : 1f) * (wallLock ? 0.65f : 1f) / MathF.Max(0.75f, RankGuard(t));
                         t.Stamina -= cost;
                         if (t.Stamina <= 0)
                         {
@@ -495,7 +503,7 @@ public partial class Battle
                         if (t.Guard) t.Cooldown = 0;
                         StyleBlocked(t);
                         t.Action = UnitAction.Block;
-                        t.ActionTimer = 0.28f;
+                        t.ActionTimer = 0.25f;
                         if (a.IsPlayer) PlayerHit = ("BLOCKED", Time);
                         Sound(ShieldCue(t), t.Pos, priority: a.IsPlayer);
                         return true;
@@ -504,7 +512,7 @@ public partial class Battle
                     // Unshielded / 2H defender: MUST match GuardDir to block cleanly; wrong-side guard takes heavy bleed-through.
                     if (!t.Type.HasShield)
                     {
-                        if (matched && !auraCut && (t.Action == UnitAction.Block || (t.Stamina > 15f && t.Type.BlockChance >= 0.2f)))
+                        if (matched && !auraCut && (t.Action == UnitAction.Block || (passiveCatch && t.Stamina > 15f)))
                         {
                             float cost = dmg * 0.85f * crushMult * (a.Mounted && !t.Mounted ? 1.25f : 1f);
                             t.Stamina -= cost;
@@ -520,7 +528,7 @@ public partial class Battle
                             if (t.Guard) t.Cooldown = 0;
                             StyleBlocked(t);
                             t.Action = UnitAction.Block;
-                            t.ActionTimer = 0.28f;
+                            t.ActionTimer = 0.25f;
                             if (a.IsPlayer) PlayerHit = ("BLOCKED", Time);
                             Sound(Cue.ParrySteel, t.Pos, priority: a.IsPlayer);
                             return true;
@@ -763,7 +771,30 @@ public partial class Battle
         Loose(u, t.Pos, t, u.Type.Damage, spread);
     }
 
-    /// An arrow from u at a point (leading the target t if there is one), scattered by distance times `spread`.
+    /// Manual 3D aimed shot (player): launches directly along camera yaw and elevation angle with real ballistic drop.
+    void LooseAimed(Unit u, float yaw, float elev, float speed, float damage, float angSpread)
+    {
+        u.Ammo--;
+        var kind = Look.GripOf(u.Type.Look.Weapon);
+        Sound(LooseCue(u.Type.Look.Weapon, kind), u.Pos, priority: u.IsPlayer);
+        u.Action = UnitAction.Recover;
+        u.ActionTimer = 0.25f;
+        float sy = yaw + Gauss() * angSpread;
+        float se = elev + Gauss() * angSpread * 0.85f;
+        float ce = MathF.Cos(se);
+        var vel = new Vector3(MathF.Cos(sy) * ce * speed, MathF.Sin(se) * speed, MathF.Sin(sy) * ce * speed);
+        float from = Terrain.Height(u.Pos) + (u.Mounted ? 2.25f : 1.55f);
+        Arrows.Add(new Projectile
+        {
+            Pos = new(u.Pos.X, from, u.Pos.Y),
+            Vel = vel,
+            Shooter = u,
+            Damage = damage,
+            Kind = kind is Grip.Thrown or Grip.Sling or Grip.Crossbow ? kind : Grip.Bow,
+        });
+    }
+
+    /// An arrow from u at a point (leading the target t if there is one), scattered by distance, tier skill and `spread`.
     void Loose(Unit u, Vector2 at, Unit? t, float damage, float spread)
     {
         u.Ammo--;
@@ -773,14 +804,16 @@ public partial class Battle
         Sound(LooseCue(u.Type.Look.Weapon, kind), u.Pos, priority: u.IsPlayer);
         u.Action = UnitAction.Recover; // shows the release pose
         u.ActionTimer = 0.25f;
+        float spd = ProjectileSpeed(kind, u.Type.Look.Weapon);
+        float tierSpread = u.Type.Tier switch { <= 1 => 1.65f, 2 => 1.35f, 3 => 1.10f, 4 => 0.90f, _ => 0.72f };
         float d = Vector2.Distance(u.Pos, at);
-        var aim = at + (t?.Vel ?? Vector2.Zero) * (d / ArrowSpeed); // lead the target
-        if (t != null) aim += new Vector2(Gauss(), Gauss()) * t.Vel.Length() * (d / ArrowSpeed) * LeadError; // a fast mark is hard to lead: a galloping horse more than a walking man
-        aim += new Vector2(Gauss(), Gauss()) * d * 0.035f * spread * (u.Mounted && !(u.IsPlayer && Perk("HorseArcher")) && u.Mods.Gallop <= 0 ? 1.5f : 1) * Weather.Spread; // ghost riders shoot from the gallop as if standing
-        float time = MathF.Max(0.1f, Vector2.Distance(u.Pos, aim) / ArrowSpeed);
+        var aim = at + (t?.Vel ?? Vector2.Zero) * (d / spd); // lead the target
+        if (t != null) aim += new Vector2(Gauss(), Gauss()) * t.Vel.Length() * (d / spd) * LeadError * tierSpread; // fast marks are harder to lead
+        float mountedPen = u.Mounted && !(u.IsPlayer && Perk("HorseArcher")) && u.Mods.Gallop <= 0 ? 1.55f : 1f;
+        aim += new Vector2(Gauss(), Gauss()) * d * 0.052f * tierSpread * spread * mountedPen * Weather.Spread;
+        float time = MathF.Max(0.1f, Vector2.Distance(u.Pos, aim) / spd * (1f + Gauss() * 0.035f * tierSpread));
         var h = (aim - u.Pos) / time;
-        float from = Terrain.Height(u.Pos) + 1.5f, land = Terrain.Height(aim) + (t?.Mounted == true ? 1.5f : 1.0f) + (t?.Altitude ?? 0); // up at a flyer
-        // Launch 1.5 m above the archer's ground, land at chest height on the target's ground after `time` seconds.
+        float from = Terrain.Height(u.Pos) + (u.Mounted ? 2.2f : 1.5f), land = Terrain.Height(aim) + (t?.Mounted == true ? 1.5f : 1.0f) + (t?.Altitude ?? 0); // up at a flyer
         Arrows.Add(new Projectile
         {
             Pos = new(u.Pos.X, from, u.Pos.Y),
@@ -807,21 +840,38 @@ public partial class Battle
                 continue;
             }
             p.Vel.Y -= Gravity * dt;
+            float prevY = p.Pos.Y;
             var from = new Vector2(p.Pos.X, p.Pos.Z);
             p.Pos += p.Vel * dt;
             var flat = new Vector2(p.Pos.X, p.Pos.Z);
             float ground = Terrain.Height(flat);
             if (p.Pos.Y <= ground) { p.Pos.Y = ground; p.Stuck = 0; continue; }
             if (flyers && FlyerHit(flat, p.Pos.Y - ground, p.Shooter.Team) is Unit flier) { Hit(p.Shooter, flier, p.Damage, true); Arrows.RemoveAt(i); continue; } // a wyvern taken in the air
-            if (p.Pos.Y > ground + 2.6f) continue;
+            if (MathF.Min(prevY, p.Pos.Y) > ground + 2.9f) continue;
             if (Covered(from, flat, p.Pos.Y - ground)) { p.Pos.Y = MathF.Max(ground, p.Pos.Y - 0.5f); p.Stuck = 0; continue; } // into a tree or a hedge
-            foreach (var t in Near(flat, 1.5f, nearArrow))
+            var segMid = (from + flat) * 0.5f;
+            float segSearch = Vector2.Distance(from, flat) * 0.5f + 1.2f;
+            foreach (var t in Near(segMid, segSearch, nearArrow))
             {
                 if (t.Team == p.Shooter.Team || !t.Active) continue;
-                float r = t.Mounted ? 0.8f : 0.4f;
-                if ((!t.Mounted && p.Pos.Y > ground + 2) || Vector2.DistanceSquared(t.Pos, flat) > r * r) continue;
+                float r = t.Mounted ? 0.8f : 0.42f;
+                if (DistToSegmentK(t.Pos, from, flat, out float hitK) > r) continue;
+                float hitH = MathHelper.Lerp(prevY, p.Pos.Y, hitK) - Terrain.Height(t.Pos);
+                float maxH = t.Mounted ? 2.85f : 2.08f;
+                if (hitH < 0f || hitH > maxH) continue;
                 if (CutsArrow(t, p.Vel)) { p.Pos.Y = ground; p.Stuck = 0; break; } // a Transcendent's blade cuts it from the air (MA7)
-                Hit(p.Shooter, t, p.Damage, true, plunge: Vector2.DistanceSquared(p.Shooter.Pos, flat) > Plunging * Plunging * p.Shooter.Type.Range * p.Shooter.Type.Range); // a long shot drops from above
+                // Height-based hit zones: low hits on cavalry strike the horse; high hits strike the head.
+                if (t.Mounted && hitH < 1.38f)
+                {
+                    HitHorse(t, p.Damage * p.Shooter.Type.VsMounted * (p.Shooter.Squad?.Company?.VsMounted ?? 1f) * HorseArrow, p.Shooter);
+                    Arrows.RemoveAt(i);
+                    break;
+                }
+                bool headshot = t.Mounted ? hitH >= 2.28f : hitH >= 1.50f;
+                float shotDmg = headshot ? p.Damage * 1.55f : p.Damage;
+                bool plunge = Vector2.DistanceSquared(p.Shooter.Pos, flat) > Plunging * Plunging * p.Shooter.Type.Range * p.Shooter.Type.Range;
+                if (headshot && p.Shooter.IsPlayer) PlayerHit = ("HEADSHOT!", Time);
+                Hit(p.Shooter, t, shotDmg, true, plunge: plunge, directRider: t.Mounted);
                 Arrows.RemoveAt(i);
                 break;
             }
@@ -895,7 +945,9 @@ public partial class Battle
         {
             var u = units[ui];
             if (!u.Active || !u.Couched || !u.Mounted) continue;
-            var hd = u.HeadingDir;
+            float aimOff = u.IsPlayer ? Math.Clamp(MathHelper.WrapAngle(u.Facing - u.Heading), -0.26f, 0.26f) : 0f;
+            float lanceYaw = u.Heading + aimOff;
+            var hd = new Vector2(MathF.Cos(lanceYaw), MathF.Sin(lanceYaw));
             Vector2 a = u.Pos + hd * LanceFrom, b = u.Pos + hd * LanceTip;
             var mid = (a + b) * 0.5f;
             int x0 = CellOf(mid.X - 2), x1 = CellOf(mid.X + 2), z0 = CellOf(mid.Y - 2), z1 = CellOf(mid.Y + 2);
@@ -928,10 +980,13 @@ public partial class Battle
         }
     }
 
-    static float DistToSegment(Vector2 p, Vector2 a, Vector2 b)
+    static float DistToSegment(Vector2 p, Vector2 a, Vector2 b) => DistToSegmentK(p, a, b, out _);
+
+    static float DistToSegmentK(Vector2 p, Vector2 a, Vector2 b, out float k)
     {
         var ab = b - a;
-        float k = Math.Clamp(Vector2.Dot(p - a, ab) / ab.LengthSquared(), 0, 1);
+        float len2 = ab.LengthSquared();
+        k = len2 < 1e-8f ? 0f : Math.Clamp(Vector2.Dot(p - a, ab) / len2, 0f, 1f);
         return Vector2.Distance(p, a + ab * k);
     }
 

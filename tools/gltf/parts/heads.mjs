@@ -78,28 +78,28 @@ export function buildHeads(root) {
     mesh(heightShade(capelet, -0.255, -0.120, 0.82, 0.98), M.clothDark);
   });
 
-  // 7. helm_kettle: classic chapel-de-fer kettle hat with wide sloped brim & crisp faceted dome
+  // 7. helm_kettle: classic chapel-de-fer kettle hat with tailored sloped brim & crisp faceted dome
   addPart(root, 'helm_kettle', (mesh) => {
     const dome = column([
-      [0.055, 0.166, 0.178, 0, -0.006],
-      [0.130, 0.160, 0.172, 0, -0.008],
-      [0.200, 0.126, 0.136, 0, -0.008],
-      [0.255, 0.064, 0.070, 0, -0.006],
-      [0.280, 0.016, 0.018, 0, -0.006],
+      [0.065, 0.158, 0.170, 0, -0.006],
+      [0.135, 0.152, 0.164, 0, -0.008],
+      [0.202, 0.120, 0.130, 0, -0.008],
+      [0.252, 0.062, 0.068, 0, -0.006],
+      [0.274, 0.016, 0.018, 0, -0.006],
     ], { segs: 8 });
-    mesh(heightShade(dome, 0.055, 0.280, 0.84, 1.0), M.steel);
+    mesh(heightShade(dome, 0.065, 0.274, 0.84, 1.0), M.steel);
 
-    // Very wide sloped faceted kettle brim: the silhouette reads before any surface detail.
+    // Crisp sloped chapel-de-fer brim: clear silhouette without UFO overhang, keeps eyes readable.
     const brim = column([
-      [-0.004, 0.304, 0.316, 0, -0.004],
-      [0.030, 0.270, 0.282, 0, -0.004],
-      [0.072, 0.168, 0.180, 0, -0.006],
+      [0.014, 0.236, 0.248, 0, -0.004],
+      [0.044, 0.212, 0.224, 0, -0.004],
+      [0.080, 0.160, 0.172, 0, -0.006],
     ], { segs: 8 });
-    mesh(heightShade(brim, -0.004, 0.072, 0.82, 0.96), M.steel);
+    mesh(heightShade(brim, 0.014, 0.080, 0.82, 0.96), M.steel);
 
     // Low rolled median rib only; a tall fin would read as a morion rather than a chapel-de-fer.
-    const comb = shadeVerts(new THREE.BoxGeometry(0.022, 0.024, 0.22), () => 0.98);
-    mesh(comb, M.steel, [0, 0.265, -0.008]);
+    const comb = shadeVerts(new THREE.BoxGeometry(0.020, 0.022, 0.20), () => 0.98);
+    mesh(comb, M.steel, [0, 0.262, -0.008]);
   });
 
   // helm_sallet: sleek Gothic skull, narrow visor slit and a close swept tail (not a huge rear fin).

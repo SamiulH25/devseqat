@@ -21,7 +21,8 @@ public sealed class CaptainMaking
     /// A free company: starts at a random realm's capital, in no realm's pay (Realm is rolled when the campaign begins).
     public bool FreeStart;
     /// The painted face (CaptainLook numbers) and the charge on your banner (an `Emblem`).
-    public int Cut, Beard = 1, Eye, Brow = 1, Nose = 1, Jaw = 1, Scar, Arms = (int)Emblem.Chevron;
+    public int Cut, Beard = 1, Eye, Brow = 1, Nose = 1, Jaw = 1, Scar, Arms = (int)Emblem.Chevron, BannerField = -1, BannerTrim = -1;
+    public int BannerDivision, BannerField2 = -1, BannerBorder, BannerCut;
     /// The battle head's style from the cut and beard: 0 clean, 1 full beard, 2 moustache, 3 bald and bearded.
     public int Style => Beard == 0 ? 0 : Cut == 4 ? 3 : Beard == 2 ? 2 : 1;
     /// The face as Variety numbers it (skin x hair x style), painted once in the atlas.
@@ -106,6 +107,12 @@ public static class Origins
         c.Visage = m.Visage;
         c.Likeness = m.Look;
         c.Arms = m.Arms;
+        c.BannerField = m.BannerField;
+        c.BannerTrim = m.BannerTrim;
+        c.BannerDivision = m.BannerDivision;
+        c.BannerField2 = m.BannerField2;
+        c.BannerBorder = m.BannerBorder;
+        c.BannerCut = m.BannerCut;
         if (!m.FreeStart)
         {
             var (body, helm, shield, weapon, horse) = RealmKit(Factions.CultureOf(m.Realm));

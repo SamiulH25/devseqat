@@ -327,6 +327,7 @@ public partial class Campaign
             EnemyAura = ChampionAura(enemy), EnemyForms = ChampionFormsOf(enemy), Madness = MadnessInBattle, // an order knight leads with his aura (K6)
             Weather = WeatherFor(enemy),
             Palette = new[] { PlayerPalette, Style.PaletteOf(SideOf(enemy)) },
+            PlayerArms = PlayerBanner(),
             Standing = ActiveBuffs.Concat(RelicReady ? new[] { "relic" } : Array.Empty<string>()).Concat(KnowsQuarry(enemy) ? new[] { "quarry_known" } : Array.Empty<string>()).ToArray(), // a shrine's blessing, a feast, hunger (Buffs.cs); your relic (Rites.cs); tracked quarry (WI4)
         }.WithCaptain(Captain);
         setup.Options.Engines = EnginesFor(setup, assault: false); // the trains (SiegeWorks.cs)

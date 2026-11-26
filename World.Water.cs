@@ -391,6 +391,11 @@ sealed partial class World
         var side = new Vector2(-b.Along.Y, b.Along.X);
         float deck = MathF.Max(t.Height(b.At - b.Along * reach), t.Height(b.At + b.Along * reach)) + 0.25f;
         float water = MathF.Min(t.Height(b.At + side * 4), t.Height(b.At - side * 4)) - 0.6f;
+        if (MapProps3D.Has(b.Stone ? "map_bridge_stone" : "map_bridge_wood"))
+        {
+            MapProps3D.EmitBridge(m, b.Stone, new Vector3(b.At.X, deck, b.At.Y), yaw, reach, MathF.Max(1f, (deck - water) / 1.1f));
+            return;
+        }
         Vector3 At(float s, Vector2 off, float y) { var p = b.At + b.Along * s + off; return new Vector3(p.X, y, p.Y); }
         if (b.Stone)
         {

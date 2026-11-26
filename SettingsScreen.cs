@@ -98,6 +98,15 @@ sealed class SettingsScreen
                 for (int ps = 1; ps <= 3; ps++)
                     if (Choice(ps, $"{ps}X", can3D && s.PixelArt && s.PixelScale == ps) && can3D) { s.PixelArt = true; s.PixelScale = ps; }
                 Row();
+                Label("MODEL DETAIL");
+                if (ui.Button(new Rectangle(body.X + ui.U(260), y, ui.U(34), ui.U(26)), "-")) s.ModelDetail = MathF.Max(0.2f, MathF.Round((s.ModelDetail - 0.1f) * 10f) / 10f);
+                var lodBar = new Rectangle(body.X + ui.U(300), y + ui.U(7), ui.U(170), ui.U(12));
+                ui.Bar(lodBar, (s.ModelDetail - 0.2f) / 0.8f, Style.Accent);
+                if (ui.Clicked(lodBar)) s.ModelDetail = Math.Clamp(0.2f + (ui.Mouse.X - lodBar.X) / (float)lodBar.Width * 0.8f, 0.2f, 1f);
+                if (ui.Button(new Rectangle(body.X + ui.U(476), y, ui.U(34), ui.U(26)), "+")) s.ModelDetail = Math.Min(1f, MathF.Round((s.ModelDetail + 0.1f) * 10f) / 10f);
+                ui.Text($"{s.ModelDetail * 100:0}%", body.X + ui.U(518), y + ui.U(6), Style.Text);
+                if (ui.Button(new Rectangle(body.X + ui.U(574), y, ui.U(136), ui.U(26)), s.DynamicLod ? "DYNAMIC: ON" : "DYNAMIC: OFF", true, "", s.DynamicLod)) s.DynamicLod = !s.DynamicLod;
+                Row();
                 Label("VSYNC");
                 if (Choice(0, "OFF", !s.VSync)) { s.VSync = false; host.ApplyVideo(); }
                 if (Choice(1, "ON", s.VSync)) { s.VSync = true; host.ApplyVideo(); }

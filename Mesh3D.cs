@@ -41,6 +41,18 @@ sealed class MeshKit3D
 
     public readonly Dictionary<string, Vert[]> Parts = new();
     readonly ConcurrentDictionary<Look, LookMeshes> lookCache = new();
+    /// Continuous progressive LOD ladders (8 QEM-decimated slices from 18% to 100% tris) keyed by base Vert[] reference.
+    readonly Dictionary<Vert[], Vert[][]> lodLadders = new(ReferenceEqualityComparer.Instance);
+    public const int LodLevels = 8;
+    static readonly float[] LodRatios = { 0.18f, 0.28f, 0.38f, 0.50f, 0.62f, 0.74f, 0.87f, 1.00f };
+
+    /// Return the progressively simplified mesh slice for a continuous 0..1 LOD slider value (zero allocations, thread-safe).
+    public Vert[] ForLod(Vert[] part, float lod)
+    {
+        if (lod >= 0.95f || part.Length < 72 || !lodLadders.TryGetValue(part, out var ladder)) return part;
+        int idx = Math.Clamp((int)(lod * (LodLevels - 1) + 0.5f), 0, LodLevels - 1);
+        return ladder[idx];
+    }
 
     // Pre-cached common, mount, beast, prop, emblem, and LOD parts (zero dictionary lookups in hot loop).
     public Vert[] Plume = Array.Empty<Vert>(), Cape = Array.Empty<Vert>(), Bow = Array.Empty<Vert>();
@@ -131,6 +143,8 @@ sealed class MeshKit3D
                 }
             }
             kit.Parts[name] = verts;
+            if (verts.Length >= 72 && !name.StartsWith("lod_", StringComparison.Ordinal))
+                kit.lodLadders[verts] = BuildLodLadder(verts);
         }
         kit.Plume = kit.Get("plume"); kit.Cape = kit.Get("cape"); kit.Bow = kit.Get("weapon_bow");
         kit.Quiver = kit.Get("quiver"); kit.Arrow = kit.Get("weapon_arrow"); kit.Javelin = kit.Get("weapon_javelin");
@@ -413,6 +427,219 @@ sealed class MeshKit3D
         "round" or "round_bossed" or "round_iron" or "targe" or "buckler" => "shield_round",
         _ => "shield_heater",
     };
+
+    // ---------- Progressive QEM Mesh Decimator (builds continuous 8-slice LOD ladder per part at load time) ----------
+
+    struct Quadric
+    {
+        public double a00, a01, a02, a03, a11, a12, a13, a22, a23, a33;
+        public void AddPlane(double a, double b, double c, double d, double w = 1.0)
+        {
+            a00 += a * a * w; a01 += a * b * w; a02 += a * c * w; a03 += a * d * w;
+            a11 += b * b * w; a12 += b * c * w; a13 += b * d * w;
+            a22 += c * c * w; a23 += c * d * w; a33 += d * d * w;
+        }
+        public static Quadric operator +(in Quadric x, in Quadric y) => new()
+        {
+            a00 = x.a00 + y.a00, a01 = x.a01 + y.a01, a02 = x.a02 + y.a02, a03 = x.a03 + y.a03,
+            a11 = x.a11 + y.a11, a12 = x.a12 + y.a12, a13 = x.a13 + y.a13,
+            a22 = x.a22 + y.a22, a23 = x.a23 + y.a23, a33 = x.a33 + y.a33,
+        };
+        public double Eval(Vector3 p)
+        {
+            double x = p.X, y = p.Y, z = p.Z;
+            return a00 * x * x + 2 * a01 * x * y + 2 * a02 * x * z + 2 * a03 * x
+                 + a11 * y * y + 2 * a12 * y * z + 2 * a13 * y
+                 + a22 * z * z + 2 * a23 * z + a33;
+        }
+    }
+
+    static Vert[][] BuildLodLadder(Vert[] src)
+    {
+        int triCount = src.Length / 3;
+        var ladder = new Vert[LodLevels][];
+        ladder[LodLevels - 1] = src;
+
+        // 1. Weld coincident vertices within each material slot so material boundaries never bleed.
+        var weldMap = new Dictionary<(int, int, int, byte), int>(src.Length / 2);
+        var vPos = new List<Vector3>(src.Length / 2);
+        var vCol = new List<(byte R, byte G, byte B, byte Mat)>(src.Length / 2);
+        var tris = new (int A, int B, int C, bool Dead)[triCount];
+
+        int GetVert(in Vert v)
+        {
+            var key = ((int)MathF.Round(v.Pos.X * 2000f), (int)MathF.Round(v.Pos.Y * 2000f), (int)MathF.Round(v.Pos.Z * 2000f), v.MatId);
+            if (weldMap.TryGetValue(key, out int id)) return id;
+            id = vPos.Count;
+            weldMap[key] = id;
+            vPos.Add(v.Pos);
+            vCol.Add((v.R, v.G, v.B, v.MatId));
+            return id;
+        }
+
+        int alive = 0;
+        for (int t = 0; t < triCount; t++)
+        {
+            int a = GetVert(src[t * 3]), b = GetVert(src[t * 3 + 1]), c = GetVert(src[t * 3 + 2]);
+            bool dead = a == b || b == c || c == a;
+            tris[t] = (a, b, c, dead);
+            if (!dead) alive++;
+        }
+
+        int vCount = vPos.Count;
+        var pos = vPos.ToArray();
+        var col = vCol.ToArray();
+        var Q = new Quadric[vCount];
+        var vTris = new List<int>[vCount];
+        for (int i = 0; i < vCount; i++) vTris[i] = new List<int>(6);
+
+        var edgeCounts = new Dictionary<long, int>(triCount * 2);
+        static long EdgeKey(int u, int v) => u < v ? ((long)u << 32) | (uint)v : ((long)v << 32) | (uint)u;
+
+        for (int t = 0; t < triCount; t++)
+        {
+            if (tris[t].Dead) continue;
+            var (a, b, c, _) = tris[t];
+            vTris[a].Add(t); vTris[b].Add(t); vTris[c].Add(t);
+            var n = Vector3.Cross(pos[b] - pos[a], pos[c] - pos[a]);
+            float len = n.Length();
+            if (len > 1e-7f)
+            {
+                n /= len;
+                double d = -(n.X * pos[a].X + n.Y * pos[a].Y + n.Z * pos[a].Z);
+                Q[a].AddPlane(n.X, n.Y, n.Z, d);
+                Q[b].AddPlane(n.X, n.Y, n.Z, d);
+                Q[c].AddPlane(n.X, n.Y, n.Z, d);
+            }
+            long e0 = EdgeKey(a, b), e1 = EdgeKey(b, c), e2 = EdgeKey(c, a);
+            edgeCounts[e0] = edgeCounts.GetValueOrDefault(e0) + 1;
+            edgeCounts[e1] = edgeCounts.GetValueOrDefault(e1) + 1;
+            edgeCounts[e2] = edgeCounts.GetValueOrDefault(e2) + 1;
+        }
+
+        // Preserve open/material-seam silhouette edges with a perpendicular boundary quadric penalty.
+        var border = new bool[vCount];
+        foreach (var kv in edgeCounts)
+            if (kv.Value == 1) { border[(int)(kv.Key >> 32)] = true; border[(int)(uint)kv.Key] = true; }
+
+        // 2. Priority queue of candidate edge collapses within the same material slot.
+        var pq = new PriorityQueue<(int U, int V, int GenU, int GenV, Vector3 Target), double>(edgeCounts.Count);
+        var gen = new int[vCount];
+        var removed = new bool[vCount];
+
+        void PushEdge(int u, int v)
+        {
+            if (u == v || removed[u] || removed[v] || col[u].Mat != col[v].Mat) return;
+            var q = Q[u] + Q[v];
+            Vector3 pu = pos[u], pv = pos[v], pm = (pu + pv) * 0.5f;
+            double eu = q.Eval(pu), ev = q.Eval(pv), em = q.Eval(pm);
+            Vector3 best = pm; double err = em;
+            if (eu < err) { err = eu; best = pu; }
+            if (ev < err) { err = ev; best = pv; }
+            if (border[u] && border[v]) err += 0.002;
+            else if (border[u] || border[v]) { best = border[u] ? pu : pv; err = q.Eval(best) + 0.001; }
+            // Tiny edge-length tie-breaker so shortest detail edges collapse first.
+            err += Vector3.DistanceSquared(pu, pv) * 1e-4;
+            pq.Enqueue((u, v, gen[u], gen[v], best), err);
+        }
+
+        foreach (var kv in edgeCounts)
+            PushEdge((int)(kv.Key >> 32), (int)(uint)kv.Key);
+
+        Vert[] BakeSlice()
+        {
+            int n = 0;
+            for (int t = 0; t < triCount; t++) if (!tris[t].Dead) n++;
+            if (n == 0) return src;
+            var outV = new Vert[n * 3];
+            int k = 0;
+            for (int t = 0; t < triCount; t++)
+            {
+                if (tris[t].Dead) continue;
+                var (a, b, c, _) = tris[t];
+                var pa = pos[a]; var pb = pos[b]; var pc = pos[c];
+                var fn = Vector3.Cross(pb - pa, pc - pa);
+                float fl = fn.Length();
+                var nrm = fl > 1e-7f ? fn / fl : Vector3.UnitY;
+                float ax = MathF.Abs(nrm.X), ay = MathF.Abs(nrm.Y), az = MathF.Abs(nrm.Z);
+                for (int j = 0; j < 3; j++)
+                {
+                    int vi = j == 0 ? a : j == 1 ? b : c;
+                    var p = pos[vi];
+                    var vc = col[vi];
+                    float uu, vv;
+                    if (ay >= ax && ay >= az) { uu = p.X; vv = p.Z; }
+                    else if (ax >= az) { uu = p.Z; vv = p.Y; }
+                    else { uu = p.X; vv = p.Y; }
+                    outV[k++] = new Vert(p, nrm, uu, vv, vc.R, vc.G, vc.B, vc.Mat);
+                }
+            }
+            return outV;
+        }
+
+        // 3. Progressively collapse from LodLevels-2 down to 0, baking a slice at each ratio threshold.
+        int nextSlot = LodLevels - 2;
+        int minTris = Math.Max(8, (int)(triCount * LodRatios[0]));
+        while (nextSlot >= 0 && alive > minTris && pq.Count > 0)
+        {
+            var (u, v, gu, gv, target) = pq.Dequeue();
+            if (removed[u] || removed[v] || gen[u] != gu || gen[v] != gv) continue;
+
+            // Collapse v -> u
+            pos[u] = target;
+            Q[u] = Q[u] + Q[v];
+            border[u] |= border[v];
+            removed[v] = true;
+            gen[u]++;
+
+            var vList = vTris[v];
+            for (int i = 0; i < vList.Count; i++)
+            {
+                int ti = vList[i];
+                if (tris[ti].Dead) continue;
+                var tr = tris[ti];
+                int a = tr.A == v ? u : tr.A;
+                int b = tr.B == v ? u : tr.B;
+                int c = tr.C == v ? u : tr.C;
+                if (a == b || b == c || c == a)
+                {
+                    tris[ti].Dead = true;
+                    alive--;
+                }
+                else
+                {
+                    tris[ti] = (a, b, c, false);
+                    vTris[u].Add(ti);
+                }
+            }
+            vList.Clear();
+
+            // Re-score incident edges of u
+            var uList = vTris[u];
+            for (int i = 0; i < uList.Count; i++)
+            {
+                int ti = uList[i];
+                if (tris[ti].Dead) continue;
+                var tr = tris[ti];
+                if (tr.A != u) PushEdge(u, tr.A);
+                if (tr.B != u) PushEdge(u, tr.B);
+                if (tr.C != u) PushEdge(u, tr.C);
+            }
+
+            while (nextSlot >= 0 && alive <= Math.Max(8, (int)(triCount * LodRatios[nextSlot])))
+            {
+                ladder[nextSlot] = BakeSlice();
+                nextSlot--;
+            }
+        }
+
+        // Fill any remaining lowest slots with the most-decimated slice achieved.
+        Vert[] last = nextSlot < LodLevels - 2 ? ladder[nextSlot + 1] : src;
+        while (nextSlot >= 0) ladder[nextSlot--] = last;
+        return ladder;
+    }
+
+
 }
 
 /// Fast pre-resolved 14-slot material table per unit (supports human visages, non-human races, mounts, and beasts).
@@ -480,4 +707,5 @@ struct UnitMatTable
         cols[12] = Pack(accent);
         cols[13] = Pack(dark);
     }
+
 }

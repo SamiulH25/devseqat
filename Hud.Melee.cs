@@ -130,6 +130,62 @@ sealed partial class Hud
         }
     }
 
+    /// Dynamic ranged reticle: 4-tick spread cross that tightens as you draw, glows gold in the bow sweet spot,
+    /// includes a subtle drop tick for long shots, and displays crossbow/bow reload state.
+    void RangedReticle(int cx, int cy)
+    {
+        var p = B.Player;
+        var kind = Look.GripOf(p.Type.Look.Weapon);
+        bool isCrossbow = kind == Grip.Crossbow;
+        bool sweetBow = !isCrossbow && p.Charging && p.Charge is >= 0.78f and <= 0.96f;
+        bool reloading = p.Cooldown > 0.05f;
+        bool empty = p.Ammo <= 0;
+
+        float spreadGap = empty ? U(20)
+            : reloading ? U(22)
+            : p.Charging ? MathHelper.Lerp(isCrossbow ? U(11) : U(26), isCrossbow ? U(4) : U(5), p.Charge)
+            : (isCrossbow ? U(11) : U(22));
+        float tickLen = U(8);
+        var col = empty ? Bad : reloading ? Dim : sweetBow ? Gold : p.Charging ? Color.Lerp(Color.White, Gold, p.Charge * 0.7f) : Color.White * 0.85f;
+        float w = sweetBow ? U(2.6f) : U(2f);
+
+        // Centre dot + subtle long-range drop tick below centre.
+        Rect(new Rectangle(cx - U(1), cy - U(1), U(3), U(3)), col);
+        Rect(new Rectangle(cx - U(2), cy + U(14), U(5), U(1)), Color.White * 0.45f);
+
+        Vector2[] dirs = { -Vector2.UnitY, Vector2.UnitY, -Vector2.UnitX, Vector2.UnitX };
+        foreach (var d in dirs)
+        {
+            var a = new Vector2(cx, cy) + d * spreadGap;
+            var b = new Vector2(cx, cy) + d * (spreadGap + tickLen);
+            Line(a, b, Color.Black * 0.65f, w + U(1.5f));
+            Line(a, b, col, w);
+        }
+
+        int bw = U(52), bh = U(4), bx = cx - bw / 2, by = cy + U(34);
+        if (empty)
+            Shadowed("NO AMMO", cx, by - U(2), Bad, 1, 1);
+        else if (reloading)
+        {
+            float maxCd = isCrossbow ? MathF.Max(0.9f, 1.35f * p.Type.Reload) : MathF.Max(0.3f, 0.30f + (p.Type.Reload - 1f) * 1.1f);
+            float prog = 1f - Math.Clamp(p.Cooldown / maxCd, 0f, 1f);
+            Rect(new Rectangle(bx - U(1), by - U(1), bw + U(2), bh + U(2)), Color.Black * 0.65f);
+            Bar(new Rectangle(bx, by, bw, bh), prog, Dim);
+            Shadowed(isCrossbow ? "SPANNING" : "RELOAD", cx, by + U(7), Dim, 1, 1);
+        }
+        else if (p.Charging)
+        {
+            Rect(new Rectangle(bx - U(1), by - U(1), bw + U(2), bh + U(2)), Color.Black * 0.65f);
+            Bar(new Rectangle(bx, by, bw, bh), p.Charge, sweetBow ? Gold : Color.White * 0.9f);
+            if (!isCrossbow)
+            {
+                // Sweet-spot bracket markers at 78% and 96% draw tension.
+                Rect(new Rectangle(bx + (int)(bw * 0.78f), by - U(2), U(1), bh + U(4)), Gold);
+                Rect(new Rectangle(bx + (int)(bw * 0.96f), by - U(2), U(1), bh + U(4)), Gold);
+            }
+        }
+    }
+
     /// What he is doing, in a crisp word you can act on (direction is shown on the 4-chevron reticle; CR6).
     (string Text, Color Col) Intent(Unit u)
     {

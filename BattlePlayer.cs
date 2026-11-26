@@ -183,35 +183,60 @@ public partial class Battle
             if (p.Action == UnitAction.Stagger) target = 0;
             if (Time < p.BoggedUntil) target = Math.Clamp(target, -1.8f, h.Trot * 0.4f); // caught in a company's press
             bool speedingUp = MathF.Abs(target) > MathF.Abs(p.Speed) && target * p.Speed >= 0;
-            p.Speed = Approach(p.Speed, target, (speedingUp ? h.Accel : h.Accel * 1.8f) * dt);
+            // Releasing W coasts smoothly instead of slamming the brakes; holding S actively reins back.
+            float rateAccel = speedingUp ? h.Accel : inp.Throttle < 0 ? h.Accel * 2.2f : h.Accel * 0.38f;
+            p.Speed = Approach(p.Speed, target, rateAccel * dt);
             p.Wish = p.HeadingDir * p.Speed;
-            if (inp.Couch && !p.Couched && p.Speed > 6 && p.Cooldown <= 0 && p.Action == UnitAction.None && !p.Charging)
+            if (inp.Couch && !p.Couched && CanCouch(p) && p.Speed > 6 && p.Cooldown <= 0 && p.Action == UnitAction.None && !p.Charging)
             {
                 p.Couched = true;
                 p.Action = UnitAction.None;
             }
             else if (inp.Couch && p.Couched) p.Couched = false;
-            if (p.Couched && p.Speed < 4.5f) p.Couched = false;
+            if (p.Couched && (p.Speed < 4.5f || !CanCouch(p))) p.Couched = false;
             p.Stamina = Math.Clamp(p.Stamina + (p.Action == UnitAction.Block ? 4 : 15) * AuraBreath * dt, 0, 100);
         }
         else
         {
-            bool sprint = inp.Sprint && inp.Move != Vector2.Zero && p.Stamina > 5 && !p.Charging && p.Action == UnitAction.None;
+            var fDir = p.Dir;
+            var rDir = new Vector2(-fDir.Y, fDir.X);
+            float moveFwd = Vector2.Dot(inp.Move, fDir);
+            float moveLat = Vector2.Dot(inp.Move, rDir);
+            bool hasMove = inp.Move.LengthSquared() > 1e-4f;
+            // Only sprint when moving predominantly forward (no backward sprinting).
+            bool sprint = inp.Sprint && hasMove && moveFwd > 0.35f && p.Stamina > 5 && !p.Charging && p.Action == UnitAction.None;
+            float dirScale = !hasMove ? 1f
+                : moveFwd < -0.15f ? MathHelper.Lerp(0.84f, 0.68f, Math.Clamp(-moveFwd, 0f, 1f))
+                : MathHelper.Lerp(0.86f, 1f, Math.Clamp(moveFwd, 0f, 1f));
             // CR2: responsive combat footwork (no 0.3x mud-glue crawl during swings).
-            float speed = p.Type.Speed * (sprint ? 1.6f : 1f)
+            float speed = p.Type.Speed * dirScale * (sprint ? 1.6f : 1f)
                 * (p.Action == UnitAction.Stagger ? 0f
                     : p.Action is UnitAction.Windup or UnitAction.Active ? 0.78f
                     : p.Action == UnitAction.Recover ? 0.72f
                     : p.Charging || p.Action == UnitAction.Block ? 0.68f : 1f);
-            p.Wish = inp.Move * speed;
+            var targetWish = inp.Move * speed;
+            if (p.DodgeTimer > 0 || p.Action == UnitAction.Stagger)
+                p.Wish = targetWish;
+            else
+            {
+                // Crisp foot acceleration & braking so starts, stops and direction changes carry weight without feeling sluggish.
+                var diff = targetWish - p.Wish;
+                float dist = diff.Length();
+                float accel = hasMove ? (sprint ? 16f : 19f) : 24f;
+                float step = accel * dt;
+                p.Wish = dist <= step ? targetWish : p.Wish + diff * (step / dist);
+            }
             // Breath comes back between blows, not while swinging (P2): a captain who never pauses runs dry.
             p.Stamina = Math.Clamp(p.Stamina + (sprint ? -20 : (p.Action == UnitAction.Block ? 5 : busy || p.Charging ? 0 : 16) * AuraBreath) * dt, 0, 100);
         }
         if (inp.Rally && RallyCooldown <= 0 && p.Stamina >= 30) Rally(p);
     }
 
+    /// Only lances and polearms can be couched from horseback.
+    public static bool CanCouch(Unit u) => u.Mounted && Look.GripOf(u.Type.Look.Weapon) is Grip.Lance or Grip.Pole;
+
     /// How far a rider turns in the saddle before his horse turns with him, and the furthest he can face from its head (radians).
-    public const float MountTwist = 1.3f, MountReach = 1.9f;
+    public const float MountTwist = 0.85f, MountReach = 1.65f;
 
     /// Heading the player's reins turned the horse since the screen last read it: the battle camera turns with it.
     public float Reined;

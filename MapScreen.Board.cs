@@ -259,11 +259,13 @@ partial class MapScreen
         ui.Rect(new Rectangle(r.X + ui.U(1), r.Y + ui.U(2), r.Width, r.Height), Color.Black * 0.35f);
         ui.VGrad(r, picked ? new Color(58, 56, 52) : hover ? new Color(46, 48, 56) : new Color(32, 35, 44), Kit.IronDark, 1);
         ui.Rect(new Rectangle(r.X, r.Y, ui.U(2), r.Height), RoleColor(role));
-        // The name has the whole width of the tile to itself; the man and the numbers sit under it.
-        ui.TextFit(c.Name.ToUpperInvariant(), r.X + ui.U(6), r.Y + ui.U(5), r.Width - ui.U(10), picked ? Kit.Gilt : Style.Text, 1);
-        int top = r.Y + ui.U(16), ph = r.Bottom - ui.U(4) - top;
+        var coHd = C.CompanyBannerOf(c);
+        // The company's own little banner beside its name so each company in your party is recognizable at a glance.
+        ui.MiniBanner(new Rectangle(r.X + ui.U(5), r.Y + ui.U(3), ui.U(12), ui.U(13)), coHd);
+        ui.TextFit(c.Name.ToUpperInvariant(), r.X + ui.U(20), r.Y + ui.U(5), r.Width - ui.U(24), picked ? Kit.Gilt : Style.Text, 1);
+        int top = r.Y + ui.U(18), ph = r.Bottom - ui.U(4) - top;
         var port = new Rectangle(r.X + ui.U(5), top, Math.Min(ph, ui.U(40)), ph);
-        ui.VGrad(port, Kit.Mul(Style.Sides[2].Cloth, 0.5f), Kit.IronDark, 2);
+        ui.VGrad(port, Kit.Mul(coHd.Cloth, 0.52f), Kit.IronDark, 2);
         ui.Portrait(c.Type, port, ui.S);
         ui.Frame(port, Color.Black * 0.6f, ui.U(1));
         int tx = port.Right + ui.U(6), tw = r.Right - tx - ui.U(5);
@@ -297,11 +299,22 @@ partial class MapScreen
         var list = C.Player.Companies;
         string role = Rules.RoleOf(c);
         int x = s.X + ui.U(12), w = s.Width - ui.U(24), y = s.Y + ui.U(6);
+        var coHd = C.CompanyBannerOf(c);
         var port = new Rectangle(x, y, ui.U(64), ui.U(64));
-        ui.VGrad(port, Kit.Mul(Style.Sides[2].Cloth, 0.55f), new Color(20, 18, 16), 3);
+        ui.VGrad(port, Kit.Mul(coHd.Cloth, 0.55f), new Color(20, 18, 16), 3);
         ui.Portrait(c.Type, port, ui.S);
         ui.Frame(port, Kit.GiltDark, ui.U(1));
-        int tx = port.Right + ui.U(10), tw = x + w - tx;
+        var banBox = new Rectangle(x + w - ui.U(28), y, ui.U(26), ui.U(44));
+        ui.Banner(banBox.Center.X, banBox.Y, ui.U(22), ui.U(38), coHd, time * 1.2f + c.Id);
+        if (ui.Hover(banBox)) note = "COMPANY BANNER (DERIVED FROM YOUR MAIN ARMS). CLICK TO CYCLE THIS COMPANY'S CHARGE.";
+        if (ui.Clicked(banBox))
+        {
+            var pool = Style.BannerCharges;
+            int idx = Array.IndexOf(pool, (Emblem)c.Banner);
+            c.Banner = (int)pool[(idx < 0 ? 1 : (idx + 1) % pool.Length)];
+            Ui.OnClick?.Invoke();
+        }
+        int tx = port.Right + ui.U(10), tw = banBox.X - ui.U(6) - tx;
         var nameBox = new Rectangle(tx - ui.U(3), y - ui.U(2), tw + ui.U(6), ui.U(19));
         string nm = c.Name.ToUpperInvariant();
         if (renaming == c) { ui.Rect(nameBox, Style.Accent * 0.25f); ui.Text(renameText + (time % 1 < 0.5f ? "_" : ""), tx, y + ui.U(4), Style.Accent, 1); }

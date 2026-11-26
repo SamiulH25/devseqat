@@ -89,7 +89,7 @@ partial class BattleScreen
                 {
                     float k = 0.0035f * ctl.Sensitivity;
                     yaw += d.X * k;
-                    pitch = Math.Clamp(pitch + d.Y * k * (ctl.InvertY ? -1 : 1), -0.35f, 1.1f);
+                    pitch = Math.Clamp(pitch + d.Y * k * (ctl.InvertY ? -1 : 1), -0.58f, 1.1f);
                     // Decoupled mouse-flick direction (CR1): deadzone + idle decay + lock-on-press.
                     if (!Settings.Current.MoveDirControl)
                     {
@@ -141,7 +141,13 @@ partial class BattleScreen
         }
 
         bool mounted = battle.Player.Mounted;
-        if (mounted) yaw += battle.Reined; // turning the horse on the reins turns the view with it (the horse follows the view: BattlePlayer.cs)
+        if (mounted)
+        {
+            yaw += battle.Reined; // turning the horse on the reins turns the view with it (the horse follows the view: BattlePlayer.cs)
+            float relYaw = MathHelper.WrapAngle(yaw - battle.Player.Heading);
+            float maxCam = Battle.MountReach + 0.32f;
+            if (MathF.Abs(relYaw) > maxCam) yaw = battle.Player.Heading + MathF.Sign(relYaw) * maxCam;
+        }
         battle.Reined = 0;
         var f = Forward(yaw);
         float fwdAxis = ctl.Axis(Act.Forward, Act.Back), rightAxis = ctl.Axis(Act.Right, Act.Left);
@@ -163,6 +169,7 @@ partial class BattleScreen
             Couch = couchTap || ctl.Pressed(Act.Couch) && ctl.First(Act.Couch) != ctl.First(Act.CaptainWheel) || capPending == Hud.CapCmd.Couch,
             Mount = ctl.Pressed(Act.Interact) || capPending == Hud.CapCmd.Mount,
             Facing = yaw, // the player looks (and strikes) where the camera looks
+            Pitch = pitch,
             EngineAim = battle.Manned != null ? GroundUnder(GraphicsDevice.Viewport.Width / 2, GraphicsDevice.Viewport.Height / 2) : null, // an engine you work looses where the crosshair is
             Sprint = ctl.Down(Act.Sprint),
             Attack = attackDown,
@@ -554,7 +561,8 @@ partial class BattleScreen
 
         // Dynamic FOV (CR1): +5 deg on sprint/gallop, -4 deg on charged swings.
         bool sprinting = battle.Player.Active && (mounted ? MathF.Abs(battle.Player.Speed) > 7f : battle.Input.Sprint && battle.Input.Move != Vector2.Zero);
-        float targetFov = 62f + (sprinting ? 5f : 0f) - (battle.Player.Charging ? 4f * battle.Player.Charge : 0f);
+        float drawZoom = battle.Player.Type.Ammo > 0 ? 10f : 4f;
+        float targetFov = 62f + (sprinting ? 5f : 0f) - (battle.Player.Charging ? drawZoom * battle.Player.Charge : 0f);
         camFov = MathHelper.Lerp(camFov, targetFov, 1f - MathF.Exp(-8f * dt));
         float fov = pressFov is float pf && k > 0.5f ? pf : MathHelper.Lerp(camFov, 45f, k);
 
