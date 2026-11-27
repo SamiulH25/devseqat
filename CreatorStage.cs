@@ -5,11 +5,11 @@ namespace Ironfield;
 
 /// The character creator's living captain: the battle puppet in the captain's own kit and face, drawn into a texture that the
 /// portrait well shows. Each step gives it something to do (it stands for its homeland, marches out from its birth, acts out
-/// its past, shows how it fights, turns its face to you, raises its blade for the oath) and the camera eases to frame it.
-/// A choice made gets a short cheer. Drawing only: the unit here is never in a battle.
+/// its past, shows how it fights, turns its face to you, stands ready for the oath) and the camera eases to frame it.
+/// Drawing only: the unit here is never in a battle.
 sealed class CreatorStage
 {
-    public enum Act { Stand, March, Leave, Drill, Guard, Ride, Charge, Shoot, Turn, Salute }
+    public enum Act { Stand, March, Leave, Drill, Guard, Ride, Charge, Shoot, Turn }
 
     readonly GraphicsDevice gd;
     readonly Shading? shading;
@@ -22,7 +22,7 @@ sealed class CreatorStage
     RenderTarget2D? rt, rtCol, rtNd;
     readonly Unit u = new() { IsPlayer = true, Index = 1, Coat = 2 };
     Act act = Act.Stand;
-    float clock, react, beatLeft;
+    float clock, beatLeft;
     int beat;
     // The camera eases toward the act's framing: the height it looks at, its distance and its angle round the captain.
     float camY = 1.05f, camDist = 5.2f, camYaw = 0.55f;
@@ -52,9 +52,6 @@ sealed class CreatorStage
         fx = new AlphaTestEffect(gd) { Texture = art.Atlas, VertexColorEnabled = true, AlphaFunction = CompareFunction.Greater, ReferenceAlpha = 128 };
     }
 
-    /// A short cheer: a choice was made.
-    public void React() { if (!Ui.Instant) react = 1.1f; }
-
     /// Advance the act by `dt` and draw it into a `w` x `h` texture. `bare` takes the helm off.
     public void Render(int w, int h, CaptainState c, bool bare, Act next, float dt, int palette = 2)
     {
@@ -68,7 +65,6 @@ sealed class CreatorStage
         if (built != c || builtBare != bare) Build(c, bare);
         if (next != act) { act = next; beat = 0; beatLeft = 0; u.Action = UnitAction.None; u.Charging = false; u.Charge = 0; }
         clock += dt;
-        react = MathF.Max(0, react - dt);
         Perform(dt);
         Camera(dt, w / (float)h, out var view, out var proj, out var eye);
 
@@ -92,7 +88,7 @@ sealed class CreatorStage
             Sky.Set(new Weather(13, 0, 0));
             units3D.N = 0;
             puppet3D!.Now = clock;
-            puppet3D.Winner = Cheering ? 0 : -1;
+            puppet3D.Winner = -1;
             puppet3D.Detail = 0;
             puppet3D.BeginCamera(view);
             puppet3D.TryDraw(u, 0);
@@ -123,7 +119,7 @@ sealed class CreatorStage
         {
             sprites.N = 0;
             puppet.Now = clock;
-            puppet.Winner = Cheering ? 0 : -1;
+            puppet.Winner = -1;
             puppet.Begin(view);
             puppet.Draw(u, 0);
             gd.SetRenderTarget(rt);
@@ -141,8 +137,6 @@ sealed class CreatorStage
         }
         gd.SetRenderTargets(keep);
     }
-
-    bool Cheering => !u.Mounted && u.Vel == Vector2.Zero && u.Action == UnitAction.None && !u.Charging && (react > 0 || act == Act.Salute && beat == 1);
 
     void Build(CaptainState c, bool bare)
     {
@@ -177,16 +171,14 @@ sealed class CreatorStage
         if (act == Act.Leave) yaw += MathHelper.Pi;                 // walks away from you
         u.Facing = u.ViewFacing = u.Heading = u.ViewHeading = yaw;
         float speed = act switch { Act.March or Act.Leave => 1.5f, Act.Ride => 4.5f, Act.Charge => 11f, _ => 0 };
-        if (react > 0 && !mounted) speed = 0; // stops to cheer
         u.Speed = speed;
         u.Vel = u.Dir * speed;
         u.Anim += dt * Battle.StrideRate(speed, mounted);
         switch (act)
         {
-            case Act.Drill when react <= 0: Drill(dt); break;
-            case Act.Guard when react <= 0: u.Action = UnitAction.Block; break;
-            case Act.Shoot when react <= 0: Shoot(dt); break;
-            case Act.Salute: Salute(dt); break;
+            case Act.Drill: Drill(dt); break;
+            case Act.Guard: u.Action = UnitAction.Block; break;
+            case Act.Shoot: Shoot(dt); break;
             default: if (!mounted) { u.Action = UnitAction.None; u.Charging = false; } break;
         }
     }
@@ -225,17 +217,6 @@ sealed class CreatorStage
         u.Cooldown = beat == 0 ? MathF.Max(0, beatLeft) : 0;
     }
 
-    /// The oath: raise the blade and hold it, then cheer, again.
-    void Salute(float dt)
-    {
-        if (beatLeft <= 0) { beat = (beat + 1) % 2; beatLeft = beat == 0 ? 2.6f : 1.6f; }
-        beatLeft -= dt;
-        u.Action = UnitAction.None;
-        u.Swing = AttackDir.Overhead;
-        u.Charging = beat == 0 && react <= 0;
-        u.Charge = u.Charging ? Ease.Out(MathF.Min(1, (2.6f - beatLeft) / 0.6f)) : 0;
-    }
-
     /// Ease the camera toward the act's framing: a rider seen from the side, the whole man near for the likeness, the rest three-quarter.
     void Camera(float dt, float aspect, out Matrix view, out Matrix proj, out Vector3 eye)
     {
@@ -245,7 +226,6 @@ sealed class CreatorStage
             Act.Turn => (1.15f, 4.7f, 0.25f),
             Act.Leave => (1.25f, 6.5f, 0.4f),
             Act.Drill or Act.Guard => (1.22f, 7.7f, 0.55f),
-            Act.Salute => (1.36f, 6.5f, 0.55f), // the raised blade clears the top of the well // a swung blade or a long haft needs room in the well
             _ => (1.22f, 5.8f, 0.55f),
         };
         if (aspect < 0.9f) dist *= 0.9f / aspect * 0.95f; // a narrow well needs a step back to fit the width

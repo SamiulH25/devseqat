@@ -747,11 +747,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Bind** (struct, L41): ToString:43, Parse:69
 - **Controls** (class, L102): Controls:166, SaveUser:174, ResetDefaults:183, AnyPressed:191, FindFile:199, Load:209, WriteDefaults:236, Update:245, IsDown:251, Down:261, WasDown:262, Pressed:263, Released:264, Axis:265, First:268, Name:271
 
-## CreatorScreen.cs (898 lines)
-- **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:68, Show:76, U:87, RandomName:91, RandomCompany:99, Randomise:102, RandomFace:121, Go:130, Refresh:142, Keys:164, Begin:189, Draw:198, DrawScreen:206, Likeness:250, Ledger:324, Tip:333, Card:348, LedgerBody:372, Homeland:475, Choices:580, Detail:623, RoadKit:678, InTheField:706, BoonCard:723, Face:747, BannerStep:797, Stepper:805, Unroll:820, Field:823, Swatches:837, Oath:853, Footer:890
+## CreatorScreen.cs (895 lines)
+- **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:68, Show:76, U:87, RandomName:91, RandomCompany:99, Randomise:102, RandomFace:121, Go:130, Refresh:142, Keys:161, Begin:186, Draw:195, DrawScreen:203, Likeness:247, Ledger:321, Tip:330, Card:345, LedgerBody:369, Homeland:472, Choices:577, Detail:620, RoadKit:675, InTheField:703, BoonCard:720, Face:744, BannerStep:794, Stepper:802, Unroll:817, Field:820, Swatches:834, Oath:850, Footer:887
 
-## CreatorStage.cs (261 lines)
-- **CreatorStage** (class, L10): CreatorStage:45, React:56, Render:59, Build:147, Perform:168, readonly:195, Drill:204, Shoot:217, Salute:229, Camera:240
+## CreatorStage.cs (241 lines)
+- **CreatorStage** (class, L10): CreatorStage:45, Render:56, Build:141, Perform:162, readonly:187, Drill:196, Shoot:209, Camera:221
 
 ## Cursors.cs (217 lines)
 - **CursorKind** (enum, L8)

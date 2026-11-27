@@ -47,7 +47,7 @@ sealed class CreatorScreen
     public CreatorScreen(Ui ui, Action<CaptainMaking> begin, CreatorStage? stage = null) { this.ui = ui; this.begin = begin; this.stage = stage; }
 
     /// What the captain does on this step: stands for the homeland, marches out, acts out the past, shows the road,
-    /// turns its face to you, raises its blade for the oath.
+    /// turns its face to you, stands ready for the oath.
     CreatorStage.Act Act => Step switch
     {
         0 => CreatorStage.Act.Stand,
@@ -55,12 +55,12 @@ sealed class CreatorScreen
         2 => M.Past switch
         {
             "hedge_knight" => CreatorStage.Act.Ride, "poacher" => CreatorStage.Act.Shoot, "deserter" => CreatorStage.Act.Leave,
-            "disinherited" or "pilgrim" => CreatorStage.Act.Salute, "surgeon" or "steward" => CreatorStage.Act.Stand, "drillmaster" or "sapper" => CreatorStage.Act.Guard,
+            "disinherited" or "pilgrim" or "surgeon" or "steward" => CreatorStage.Act.Stand, "drillmaster" or "sapper" => CreatorStage.Act.Guard,
             "tourney" => CreatorStage.Act.Ride, _ => CreatorStage.Act.Drill,
         },
         3 => M.Road switch { "lance" => CreatorStage.Act.Charge, "bow" => CreatorStage.Act.Shoot, "pole" => CreatorStage.Act.Guard, _ => CreatorStage.Act.Drill },
         4 => CreatorStage.Act.Turn,
-        _ => CreatorStage.Act.Salute,
+        _ => CreatorStage.Act.Stand,
     };
 
     /// Draw the living captain into its texture; called before the frame's sprites begin (a render target cannot change
@@ -145,12 +145,9 @@ sealed class CreatorScreen
         if (choices != choiceKey)
         {
             if (choiceKey != "")
-            {
-                stage?.React();
                 AudioEngine.Current?.Play(Step == 3 ? Cue.EquipBlade : Step == 0 ? Cue.RecruitCheer : Cue.Page, 0.55f);
-            }
             choiceKey = choices;
-        } // a choice made: the captain cheers
+        }
         string key = $"{choices}|{helm}";
         if (key == previewKey) return;
         previewKey = key;
