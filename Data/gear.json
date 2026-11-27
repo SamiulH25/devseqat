@@ -44,24 +44,43 @@
     },
     {
       "id": "captain",
-      "hp": 220,
-      "speed": 4.4,
-      "hpPerArms": 0.002,
-      "damage": 1,
-      "block": 1,
-      "swing": 1,
-      "shot": 1,
-      "reload": 1,
-      "range": 1,
-      "horsePerRiding": 0.0025
+      "hp": 95,
+      "speed": 3.85,
+      "hpPerArms": 0.015,
+      "damage": 0.62,
+      "damagePerArms": 0.0085,
+      "block": 0.85,
+      "blockPerArms": 0.003,
+      "swing": 1.18,
+      "swingPerArms": -0.0035,
+      "shot": 0.60,
+      "shotPerBowcraft": 0.009,
+      "reload": 1.20,
+      "reloadPerBowcraft": -0.004,
+      "range": 0.85,
+      "rangePerBowcraft": 0.003,
+      "horsePerRiding": 0.006
     }
   ],
   "gear": [
     {
+      "id": "worn_blade",
+      "slot": "weapon",
+      "name": "Wooden Cudgel",
+      "cost": 0,
+      "look": "club",
+      "damage": 18,
+      "reach": 1.85,
+      "windup": 0.48,
+      "recover": 0.58,
+      "text": "A knotted oak club. Better than bare fists."
+    },
+    {
       "id": "arming_sword",
       "slot": "weapon",
       "name": "Arming Sword",
-      "cost": 0,
+      "cost": 110,
+      "needs": 8,
       "look": "sword",
       "damage": 30,
       "reach": 2.1,
@@ -379,7 +398,7 @@
       "id": "round_shield",
       "slot": "shield",
       "name": "Round Shield",
-      "cost": 0,
+      "cost": 65,
       "look": "round",
       "block": 0.54,
       "text": "Light and cheap.",
@@ -430,7 +449,7 @@
       "id": "gambeson",
       "slot": "body",
       "name": "Gambeson",
-      "cost": 0,
+      "cost": 100,
       "look": "gambeson",
       "legs": "cloth",
       "feet": "boots",
@@ -509,7 +528,7 @@
       "id": "kettle_hat",
       "slot": "helm",
       "name": "Kettle Hat",
-      "cost": 0,
+      "cost": 85,
       "look": "kettle",
       "armor": 1,
       "text": "A brimmed iron hat. Wide view.",
@@ -596,10 +615,20 @@
       "text": "A painted knightly great helm in your colours."
     },
     {
+      "id": "on_foot",
+      "slot": "horse",
+      "name": "On Foot",
+      "cost": 0,
+      "mount": "",
+      "text": "No mount. You march on foot with the men."
+    },
+    {
       "id": "courser",
       "slot": "horse",
       "name": "Courser",
-      "cost": 0,
+      "cost": 180,
+      "needs": 8,
+      "skill": "Riding",
       "mount": "courser",
       "text": "A quick riding horse."
     },
@@ -936,12 +965,14 @@
     {
       "id": "tunic",
       "slot": "body",
-      "name": "Tunic",
-      "troop": true,
-      "cost": 10,
+      "name": "Linen Tunic",
+      "cost": 0,
       "look": "tunic",
+      "legs": "cloth",
+      "feet": "boots",
       "armor": 0.5,
-      "speed": 0.2
+      "speed": 0.2,
+      "text": "Plain homespun cloth. Turns wind, not steel."
     },
     {
       "id": "robe",
@@ -1176,10 +1207,10 @@
       "id": "bare_head",
       "slot": "helm",
       "name": "Bare Head",
-      "troop": true,
       "cost": 0,
       "look": "none",
-      "armor": 0
+      "armor": 0,
+      "text": "No helmet at all."
     },
     {
       "id": "hood",

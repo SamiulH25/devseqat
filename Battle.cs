@@ -102,9 +102,9 @@ public sealed partial class Battle
     /// A battle between two armies as the campaign map would hand them over.
     public Battle(int seed, ArmySpec player, ArmySpec enemy, BattleOptions? options = null) : this(seed, false, options, FieldScale(player, enemy, options))
     {
-        var mount = Options.PlayerMount ?? Mount.Courser; // you lead from the saddle (on foot in an assault: horses do not climb ladders)
+        var mount = Options.PlayerOnFoot ? null : (Options.PlayerMount ?? Mount.Courser); // on foot if unmounted or in a siege assault
         Player.Horse = Options.Siege ? null : mount;
-        Player.HorseHp = mount.Hp;
+        Player.HorseHp = mount?.Hp ?? 0;
         // The field holds at most Options.Cap men; each side gets its share and the rest wait as reinforcements.
         int total = player.Companies.Sum(c => c.Count) + enemy.Companies.Sum(c => c.Count);
         float share = total > Options.Cap ? Options.Cap / (float)total : 1;

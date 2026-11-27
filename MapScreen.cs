@@ -808,7 +808,7 @@ sealed partial class MapScreen
                     Coat = p.Id % Style.Coats.Length, Facing = p.Facing, ViewFacing = p.Facing, Heading = p.Facing, ViewHeading = p.Facing,
                 };
                 if (type.Flying) u.Altitude = 1.2f; // a wyvern on the wing
-                if (!Campaign.Outlaw(p) && p.Breed != "pilgrims") { u.Horse = p.Kind == PartyKind.Player ? Rules.CaptainMount(C.Captain) : type.Mount ?? Mount.Courser; u.HorseHp = u.Horse.Hp; }
+                if (!Campaign.Outlaw(p) && p.Breed != "pilgrims") { u.Horse = p.Kind == PartyKind.Player ? Rules.CaptainMount(C.Captain) : type.Mount ?? Mount.Courser; u.HorseHp = u.Horse?.Hp ?? 0; }
                 bearers[p.Id] = u;
             }
             // A party in a town stands before its gate (on the near side as the map first faces), not on the roofs.

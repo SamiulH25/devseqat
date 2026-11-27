@@ -1204,17 +1204,15 @@ public static partial class SelfTest
         Check(!Gear.Validate().Any(), "gear.json validates: " + string.Join("; ", Gear.Validate()));
         var c = Campaign.New(17);
         var k = c.Captain.Kit;
-        Check(k.Weapon == "arming_sword" && k.Side == "greatsword" && c.Owns("greatsword"), "a new captain has sword, shield and the greatsword");
+        Check(k.Weapon == "worn_blade" && k.Side == "" && k.Shield == "no_shield" && k.Body == "tunic" && k.Helm == "bare_head" && k.Horse == "on_foot", "a new captain starts minimal on foot with a wooden cudgel and linen tunic");
         var plain = Rules.CaptainType(c.Captain);
-        Check(plain.Look.Weapon == "sword" && plain.Look.Shield == "round" && plain.Look.Body == "gambeson" && plain.HasShield, "the starting kit is sword, round shield and gambeson");
-        var two = Rules.CaptainType(c.Captain, side: true);
-        Check(two.Look.Weapon == "greatsword" && !two.HasShield && two.Damage > plain.Damage && two.Reach > plain.Reach, "the second weapon is the greatsword, no shield");
+        Check(plain.Look.Weapon == "club" && plain.Look.Shield == "none" && plain.Look.Body == "tunic" && !plain.HasShield && Rules.CaptainMount(c.Captain) == null, "the starting kit is cudgel, tunic, bare head and on foot");
         // An old save's tiers become gear.
         var old = new CaptainState { ArmorTier = 1, HelmTier = 1, HorseTier = 2 };
         var st = c.S; st.Captain = old;
         var moved = new Campaign(st);
         Check(old.Kit.Body == "plate" && old.Kit.Helm == "great_helm" && old.Kit.Horse == "destrier" && moved.Owns("warhorse") && moved.Owns("plate"), "an old save's plate, helm and destrier carry over");
-        Check(old.ArmorTier == 0 && Rules.CaptainMount(old).Id == "destrier", "and the old tiers are cleared");
+        Check(old.ArmorTier == 0 && Rules.CaptainMount(old)!.Id == "destrier", "and the old tiers are cleared");
         c = Campaign.New(17);
         // Buying: skill, rank and gold gate it.
         Check(c.BuyGear(Gear.Get("plate"))!.Contains("ARMS"), "plate needs Arms");
@@ -1228,10 +1226,10 @@ public static partial class SelfTest
         Check(plated.Armor > plain.Armor && plated.Speed < plain.Speed && plated.Look.Body == "plate", "plate: more armour, a little slower");
         Check(c.BuyGear(Gear.Get("boar_spear")) == null && Rules.CaptainType(c.Captain) is var sp && sp.ThrustOnly && sp.Reach >= 3, "the spear reaches far and only thrusts");
         Check(c.Equip("longsword") == "NOT YOURS", "only owned gear can be worn");
-        Check(c.Equip("arming_sword") == null && c.Equip("boar_spear", side: true) == null && c.Captain.Kit.Side == "boar_spear", "a bought weapon can be carried second");
-        Check(c.Equip("boar_spear") == null && c.Captain.Kit.Weapon == "boar_spear" && c.Captain.Kit.Side == "arming_sword", "putting the second weapon in hand swaps the two");
+        Check(c.Equip("worn_blade") == null && c.Equip("boar_spear", side: true) == null && c.Captain.Kit.Side == "boar_spear", "a bought weapon can be carried second");
+        Check(c.Equip("boar_spear") == null && c.Captain.Kit.Weapon == "boar_spear" && c.Captain.Kit.Side == "worn_blade", "putting the second weapon in hand swaps the two");
         Check(c.SellGear(Gear.Get("boar_spear")) == "TAKE IT OFF FIRST", "worn gear is not sold");
-        c.Equip("arming_sword"); c.Equip("greatsword", side: true);
+        c.Equip("worn_blade"); c.Captain.Kit.Side = "";
         float gold = c.S.Gold;
         Check(c.SellGear(Gear.Get("boar_spear")) == null && !c.Owns("boar_spear") && c.S.Gold == gold + Campaign.SellPrice(Gear.Get("boar_spear")), "selling pays part of the price");
         c.BuyGear(Gear.Get("crossbow"));
@@ -1343,10 +1341,11 @@ public static partial class SelfTest
         archer.Perks.AddRange(new[] { "Fletcher", "Marksman" });
         Check(Rules.CaptainType(archer).Ammo > arrows && Rules.CaptainType(archer).Damage > dmg, "Fletcher and Marksman: more arrows, harder hits");
         var rider = new CaptainState();
-        float hp = Rules.CaptainMount(rider).Hp, gallop = Rules.CaptainMount(rider).Gallop;
+        rider.Kit.Horse = "courser";
+        float hp = Rules.CaptainMount(rider)!.Hp, gallop = Rules.CaptainMount(rider)!.Gallop;
         rider.Skills["Riding"] = 80;
         rider.Perks.Add("SaddleFast");
-        Check(Rules.CaptainMount(rider).Hp > hp && Rules.CaptainMount(rider).Gallop > gallop, "Riding toughens your horse; Saddle-Fast quickens it");
+        Check(Rules.CaptainMount(rider)!.Hp > hp && Rules.CaptainMount(rider)!.Gallop > gallop, "Riding toughens your horse; Saddle-Fast quickens it");
         var o = new BattleOptions().WithCaptain(rider);
         Check(o.Riding == 80 && o.Perks.Contains("SaddleFast") && o.PlayerMount!.Gallop > gallop, "the battle gets your skills, perks and horse");
     }
@@ -1367,7 +1366,7 @@ public static partial class SelfTest
         var lord = c.S.Characters.First(ch => ch.Kind == "lord");
         float before = c.OpinionOfYou(lord);
         c.Captain.Perks.Add("Kingmaker");
-        Check(c.OpinionOfYou(lord) == Math.Min(100, before + 10), "Kingmaker: every lord thinks better of you");
+        Check(c.OpinionOfYou(lord) == Math.Min(100, before + 15), "Kingmaker: every lord thinks better of you");
         float speed = c.Speed(c.Player);
         c.Captain.Perks.Add("ForcedMarch");
         Check(c.Speed(c.Player) > speed * 1.05f, "Forced March quickens the march");
@@ -1558,9 +1557,9 @@ public static partial class SelfTest
         Check(c.S.Event?.Id == "start_road", "a new campaign from the title opens with the road you came by");
         foreach (var (road, check) in new (string, Func<Campaign, bool>)[]
         {
-            ("sword", k => k.Skill("Arms") == 20 && k.Captain.Kit.Shield == "kite_shield"),
-            ("lance", k => k.Skill("Riding") == 20 && k.Captain.Kit.Horse == "warhorse" && k.Owns("warhorse") && k.Captain.Kit.Side == "boar_spear"),
-            ("bow", k => k.Skill("Bowcraft") == 20 && Rules.CaptainType(k.Captain).Ammo > 0 && k.Captain.Kit.Side == "arming_sword"),
+            ("sword", k => k.Skill("Arms") == 10 && k.Captain.Kit.Shield == "round_shield"),
+            ("lance", k => k.Skill("Riding") == 10 && k.Captain.Kit.Side == "boar_spear" && k.Owns("boar_spear")),
+            ("bow", k => k.Skill("Bowcraft") == 10 && Rules.CaptainType(k.Captain).Ammo > 0 && k.Captain.Kit.Side == "worn_blade"),
         })
         {
             var k = Campaign.New(43);
@@ -1640,7 +1639,15 @@ public static partial class SelfTest
         var plain = new CaptainState();
         Check(Rules.CaptainType(new CaptainState { Perks = { "Duellist" } }).Damage > Rules.CaptainType(plain).Damage, "Duellist sharpens your blows");
         Check(Rules.CaptainType(new CaptainState { Skills = { ["Arms"] = 80 } }).MaxHp > Rules.CaptainType(plain).MaxHp, "Arms toughens you");
-        Check(Rules.MenLimit(new CaptainState { Skills = { ["Leadership"] = 50 } }) == Rules.MenLimit(plain) + (int)(10 * Balance.Get().ArmyScale), "Leadership raises the men limit");
+        Check(Rules.MenLimit(new CaptainState { Skills = { ["Leadership"] = 60 } }) == Rules.MenLimit(plain) + (int)(20 * Balance.Get().ArmyScale), "Leadership raises the men limit");
+        // Captain Level, XP, Skill Points and Focus investment.
+        var prog = Campaign.New(92);
+        Check(prog.Captain.Level == 1 && prog.Captain.SkillPoints == 3 && prog.Captain.FocusPoints == 1, "new captain starts at level 1 with starter Skill and Focus points");
+        float arms0 = prog.Skill("Arms");
+        Check(prog.InvestSkill("Arms") == null && prog.Skill("Arms") == arms0 + 5 && prog.Captain.SkillPoints == 2, "investing a Skill Point raises the skill by +5");
+        Check(prog.InvestFocus("Arms") == null && Skills.FocusOf(prog.Captain, "Arms") == 1 && prog.Captain.FocusPoints == 0, "investing a Focus Point adds a learning-rate pip");
+        prog.GainXp(Skills.XpForLevel(1) + 5);
+        Check(prog.Captain.Level == 2 && prog.Captain.SkillPoints == 5 && prog.Captain.FocusPoints == 1, "levelling up grants +3 Skill Points and +1 Focus Point on even levels");
         var merc = town.Mercenaries.FirstOrDefault() ?? b.Player.Companies[0];
         int before = b.MercenaryPrice(merc);
         b.Captain.Perks.Add("Haggler");

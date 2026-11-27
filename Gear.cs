@@ -100,7 +100,7 @@ public static class Gear
                     if (!Ironfield.Look.Heads.Contains(g.Look)) yield return $"{g.Id}: unknown head look {g.Look}";
                     break;
                 case "horse":
-                    if (!Troops.HasMount(g.Mount)) yield return $"{g.Id}: unknown mount {g.Mount}";
+                    if (g.Mount != "" && !Troops.HasMount(g.Mount)) yield return $"{g.Id}: unknown mount {g.Mount}";
                     break;
                 case "legs": if (!Ironfield.Look.LegsKinds.Contains(g.Look)) yield return $"{g.Id}: unknown legs look {g.Look}"; break;
                 case "feet": if (!Ironfield.Look.FeetKinds.Contains(g.Look)) yield return $"{g.Id}: unknown feet look {g.Look}"; break;

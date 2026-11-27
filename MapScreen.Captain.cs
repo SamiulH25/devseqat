@@ -18,8 +18,12 @@ partial class MapScreen
         int gap = ui.U(10), lw = ui.U(220), rw = ui.U(200), top = r.Y + ui.U(30), h = r.Height - ui.U(96);
         CaptainCard(Well(new Rectangle(r.X + ui.U(20), top, lw, h), "THE CAPTAIN", Kit.Gilt));
         var mid = new Rectangle(r.X + ui.U(20) + lw + gap, top, r.Width - lw - rw - 2 * gap - ui.U(40), h);
-        int picks = Skills.PicksTotal(C.Captain);
-        var tree = Well(mid, picks > 0 ? $"SKILLS AND PERKS . {picks} PERK{(picks == 1 ? "" : "S")} TO CHOOSE" : "SKILLS AND PERKS", picks > 0 ? Kit.Gilt : Style.Friendly);
+        int picks = Skills.PicksTotal(C.Captain), sp = C.Captain.SkillPoints, fp = C.Captain.FocusPoints;
+        var headParts = new List<string> { "SKILLS AND PERKS" };
+        if (sp > 0) headParts.Add($"{sp} SKILL PT{(sp == 1 ? "" : "S")}");
+        if (fp > 0) headParts.Add($"{fp} FOCUS");
+        if (picks > 0) headParts.Add($"{picks} PERK{(picks == 1 ? "" : "S")}");
+        var tree = Well(mid, string.Join(" . ", headParts), sp > 0 || fp > 0 || picks > 0 ? Kit.Gilt : Style.Friendly);
         SkillTree(tree);
         CaptainRecord(Well(new Rectangle(r.Right - ui.U(20) - rw, top, rw, h), "RECORD", Kit.Gilt));
         Note(r);
@@ -44,9 +48,17 @@ partial class MapScreen
         if (C.Title is { Length: > 0 } title) { ui.Text(title.ToUpperInvariant(), c.X, y - ui.U(4), Kit.Gilt, 1); y += ui.U(10); } // P5
         if (C.OriginNote is { Length: > 0 } origin) { ui.TextFit(origin.ToUpperInvariant(), c.X, y - ui.U(4), c.Width, Style.Dim, 1); y += ui.U(10); } // the creator
         int cx = c.X;
-        cx += ui.Chip(cx, y, Campaign.RankName(C.Rank).ToUpperInvariant(), Kit.Gilt, "crown") + ui.U(4);
-        if (me != null) ui.Chip(cx, y, $"AGE {me.Age}", Style.Dim);
-        y += ui.U(22);
+        cx += ui.Chip(cx, y, $"LVL {cap.Level}", Kit.Gilt, "star") + ui.U(4);
+        cx += ui.Chip(cx, y, Campaign.RankName(C.Rank).ToUpperInvariant(), Style.Friendly, "crown") + ui.U(4);
+        y += ui.U(18);
+        float xpNeed = Skills.XpForLevel(cap.Level);
+        ui.Text("EXPERIENCE", c.X, y, Style.Dim, 1); ui.TextR($"{cap.Xp:0} / {xpNeed:0}", c.Right, y, Style.Ok, 1); y += ui.U(11);
+        ui.Bar(new Rectangle(c.X, y, c.Width, ui.U(6)), cap.Xp / MathF.Max(1, xpNeed), Style.Ok); y += ui.U(11);
+        if (cap.SkillPoints > 0 || cap.FocusPoints > 0)
+        {
+            ui.Text($"{cap.SkillPoints} SKILL PT{(cap.SkillPoints == 1 ? "" : "S")}  .  {cap.FocusPoints} FOCUS", c.X, y, Kit.Gilt, 1);
+            y += ui.U(13);
+        }
         var (unlock, at) = Rules.NextRenownUnlock(cap);
         float from = RenownStep(cap, at);
         ui.Text("RENOWN", c.X, y, Style.Dim, 1); ui.TextR($"{cap.Renown:0} / {at:0}", c.Right, y, Kit.Gilt, 1); y += ui.U(11);
@@ -104,7 +116,13 @@ partial class MapScreen
             var centre = new Vector2(box.Center.X, box.Y + rr + ui.U(4));
             ui.Ring(centre, rr, lv / Skills.Max, open > 0 ? Kit.Gilt : Style.Friendly, $"{lv:0}");
             ui.TextC(sk.Name.ToUpperInvariant(), box.Center.X, centre.Y + rr + ui.U(3), open > 0 || on ? Kit.Gilt : Style.Text, 1);
-            if (open > 0) ui.TextC($"{open} TO CHOOSE", box.Center.X, centre.Y + rr + ui.U(13), Kit.Gilt, 1);
+            int foc = Skills.FocusOf(cap, sk.Id);
+            if (open > 0) ui.TextC($"{open} PERK", box.Center.X, centre.Y + rr + ui.U(13), Kit.Gilt, 1);
+            else if (foc > 0)
+            {
+                int pw = ui.U(4), pg = ui.U(3), tot = foc * pw + (foc - 1) * pg, fx = box.Center.X - tot / 2, fy = (int)(centre.Y + rr + ui.U(15));
+                for (int fi = 0; fi < foc; fi++) ui.Rect(new Rectangle(fx + fi * (pw + pg), fy, pw, pw), Kit.Gilt);
+            }
             if (!on && ui.Clicked(box)) { skillPick = sk.Id; forgetAsk = null; note = ""; }
         }
         var pick = Skills.All.First(k => k.Id == skillPick);
@@ -112,11 +130,20 @@ partial class MapScreen
         ui.Divider(c.X, y, c.Width, Kit.Gilt * 0.5f);
         y += ui.U(8);
         float plv = C.Skill(pick.Id);
-        ui.Text(pick.Name.ToUpperInvariant(), c.X, y, Kit.Gilt, 2);
-        ui.TextR(Skills.Picks(cap, pick.Id) > 0 ? $"{Skills.Picks(cap, pick.Id)} TO CHOOSE" : $"NEXT PERK AT {((int)(plv / Skills.Step) + 1) * (int)Skills.Step}", c.Right, y + ui.U(4), Skills.Picks(cap, pick.Id) > 0 ? Kit.Gilt : Style.Dim, 1);
-        y += ui.U(18);
-        ui.TextFit($"RISES BY {pick.Rises}. {pick.Governs}.", c.X, y, c.Width, Style.Dim, 1);
-        y += ui.U(14);
+        int pfoc = Skills.FocusOf(cap, pick.Id);
+        ui.Text($"{pick.Name.ToUpperInvariant()} {plv:0}", c.X, y, Kit.Gilt, 2);
+        int btnW = ui.U(110), btnH = ui.U(20);
+        var trainBtn = new Rectangle(c.Right - btnW * 2 - ui.U(6), y, btnW, btnH);
+        var focusBtn = new Rectangle(c.Right - btnW, y, btnW, btnH);
+        if (ui.Button(trainBtn, "+5 TRAIN (1 SP)", cap.SkillPoints > 0 && plv < Skills.Max))
+            note = C.InvestSkill(pick.Id) ?? $"{pick.Name.ToUpperInvariant()} +5";
+        if (ui.Button(focusBtn, $"FOCUS {pfoc}/{Skills.MaxFocus}", cap.FocusPoints > 0 && pfoc < Skills.MaxFocus))
+            note = C.InvestFocus(pick.Id) ?? $"{pick.Name.ToUpperInvariant()} FOCUS x{Skills.FocusMult(cap, pick.Id):0.#}";
+        y += ui.U(22);
+        ui.TextFit(Skills.CurrentBonus(cap, pick.Id), c.X, y, c.Width, Style.Text, 1);
+        y += ui.U(12);
+        ui.TextFit($"RISES BY {pick.Rises}. LEARN RATE x{Skills.FocusMult(cap, pick.Id):0.#}.", c.X, y, c.Width, Style.Dim, 1);
+        y += ui.U(13);
         int rh = Math.Min(ui.U(44), (c.Bottom - y) / Math.Max(1, Math.Min(5, pick.Perks.Count)));
         for (int k = 0; k < pick.Perks.Count && k < 5; k++)
         {

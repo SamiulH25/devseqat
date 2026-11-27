@@ -580,7 +580,8 @@ public partial class Battle
             };
         }
         float saddle = !ranged && !lance && a.Mounted && !a.IsPlayer && !t.Mounted ? SaddleBlow : 1; // struck down from horseback
-        float mult = saddle * officer * (a.Avenging ? 1.1f : 1) * (t.Avenging ? 1.1f : 1) * (1 + a.VeteranBonus + (a.Armed ? 0.15f : 0)) * (1 + a.Mods.Damage + fury + headsman) * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
+        float tacFlank = a.Team == 0 && side != Side.Front ? 1f + Options.Tactics * 0.002f + (Perk("MasterOfWar") ? 0.12f : 0f) : 1f;
+        float mult = saddle * officer * tacFlank * (a.Avenging ? 1.1f : 1) * (t.Avenging ? 1.1f : 1) * (1 + a.VeteranBonus + (a.Armed ? 0.15f : 0)) * (1 + a.Mods.Damage + fury + headsman) * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
             * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
             * (ranged && t.Type.Has("bones") ? 0.3f : 1) // arrows pass between a skeleton's ribs
             * (a.IsPlayer && AuraBlade && !ranged || FoeBlade(a, ranged) ? BladeDamage : 1) // the aura blade (K1; a champion's, K6)

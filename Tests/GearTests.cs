@@ -20,6 +20,7 @@ public static partial class SelfTest
         // Quality: a fine sword hits harder than a plain one, a worn one softer, and costs more.
         c = Campaign.New(23);
         var cap = c.Captain;
+        cap.Kit.Weapon = "arming_sword"; cap.Kit.Body = "gambeson";
         float Hit(ItemQuality q)
         {
             cap.Baggage.RemoveAll(i => i.Def == "arming_sword");
@@ -40,7 +41,7 @@ public static partial class SelfTest
         Check(Campaign.MarksFor("weapon").Any() && Campaign.MarksFor("horse").Any() && !Campaign.MarksFor("weapon").Any(e => e.Id == "sure_seated"), "marks fit their slots");
 
         // A mark reaches the battle: in hand, the keen spear's edge is on the captain; swap to the side weapon and it is not.
-        c.Equip("arming_sword"); c.Equip("boar_spear", side: true);
+        c.Equip("worn_blade"); c.Equip("boar_spear", side: true);
         var o = new BattleOptions().WithCaptain(cap);
         var b = Battle.Empty(31, o);
         Check(b.Player.Mods.Damage == 0, "the sword in hand has no mark");
@@ -107,6 +108,7 @@ public static partial class SelfTest
 
         // Battered: a fine sword battered fights as a plain one, until mended.
         var cap = c.Captain;
+        cap.Kit.Weapon = "arming_sword";
         var sword = Campaign.Own(cap, "arming_sword", ItemQuality.Fine)!;
         float fine = Rules.CaptainType(cap).Damage;
         sword.Battered = true;

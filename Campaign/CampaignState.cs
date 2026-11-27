@@ -530,6 +530,12 @@ public sealed class CaptainState
     /// Skills 0-100 (step F4) by id, and the perks taken from their branches (Skills.cs).
     public Dictionary<string, float> Skills = new();
     public List<string> Perks = new();
+    /// Core captain progression: level, XP, allocatable Skill Points (+5 to any skill), Focus Points (+50% learning rate, 0-3 pips per skill).
+    public int Level = 1;
+    public float Xp;
+    public int SkillPoints = 3;
+    public int FocusPoints = 1;
+    public Dictionary<string, int> Focus = new();
     /// Perks forgotten for gold so far; each costs more than the last (P3).
     public int Retrained;
     /// Lasting wounds the captain carries (P4: "scar", "knee", "hand", "eye"; `Campaign.LastingWounds`).
@@ -592,7 +598,7 @@ public sealed class CaptainLook
 /// (free gear is always yours and is not listed).
 public sealed class CaptainKit
 {
-    public string Weapon = "arming_sword", Side = "greatsword", Shield = "round_shield", Body = "gambeson", Helm = "kettle_hat", Horse = "courser";
+    public string Weapon = "worn_blade", Side = "", Shield = "no_shield", Body = "tunic", Helm = "bare_head", Horse = "on_foot";
     /// Old saves only: the gear ids owned before pieces were things; `Campaign.MigrateGear` moves them into `CaptainState.Baggage`.
     public List<string> Owned = new();
     /// Specific item instance ids worn per slot (optional; falls back to first matching Def in Baggage for old saves).

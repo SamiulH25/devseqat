@@ -40,7 +40,7 @@ public partial class Campaign
             bool teamWon = r.Winner == team;
             int menBefore = c.Men;
             string foe = team == 0 ? side1.FirstOrDefault()?.Name ?? "" : side0.FirstOrDefault()?.Name ?? "";
-            float surgeon = (p == Player ? Skill("Medicine") / 1000f + (Has("Surgeon") ? 0.1f : 0) + (Captain.Origin == "surgeon" ? 0.08f : 0) : 0) + (c.Traits.Contains("Surgeon") ? 0.1f : 0);
+            float surgeon = (p == Player ? Skill("Medicine") / 500f + (Has("Surgeon") ? 0.1f : 0) + (Captain.Origin == "surgeon" ? 0.08f : 0) : 0) + (c.Traits.Contains("Surgeon") ? 0.1f : 0);
             int killedAll = 0, woundedAll = 0, capturedAll = 0, fledLostAll = 0;
             // Casualties come off each stack by its own armour (2.3); a battle without a breakdown counts as the company's face.
             var parts = cr.Stacks ?? new[] { new StackResult(c.Troop, cr.Start, cr.Standing, cr.Fled, cr.Fallen) };
@@ -309,10 +309,10 @@ public partial class Campaign
         setup.Options = new BattleOptions
         {
             Tide = tide.Strength, TideTradition = tide.Tradition,
-            AuraRadius = (Has("Bannerman") ? 16 : 12) + (Rank >= Rank.Lord ? LordBanner : 0), // a lord's banner reaches further (P5)
+            AuraRadius = (Has("Bannerman") ? 16 : 12) + Skill("Leadership") * 0.08f + (Rank >= Rank.Lord ? LordBanner : 0),
             KingsCharge = Rank == Rank.King,
             Goals = true, Banner = true, LastStand = true, // personal goals, your banner, the last stand (P6)
-            RallyBonus = Has("WarCry") ? 35 : 25,
+            RallyBonus = (Has("WarCry") ? 35 : 25) + Skill("Leadership") * 0.25f,
             RallyCooldown = Has("WarCry") ? 9 : 12,
             IronWill = Has("IronWill"),
             Cap = Settings.Current.BattleSize,

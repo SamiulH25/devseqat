@@ -42,33 +42,32 @@ public sealed partial class Campaign
         switch (road)
         {
             case "lance":
-                c.Skills["Riding"] = MathF.Max(Skills.Level(c, "Riding"), 20);
-                Own(c, "warhorse"); Own(c, "boar_spear");
-                (k.Horse, k.Side) = ("warhorse", "boar_spear");
-                return "You ride a warhorse and know how to couch a lance.";
+                c.Skills["Riding"] = MathF.Max(Skills.Level(c, "Riding"), 10);
+                Own(c, "boar_spear");
+                k.Side = "boar_spear";
+                return "You carry a boar spear and know the saddle — earn your first mount in town.";
             case "bow":
-                c.Skills["Bowcraft"] = MathF.Max(Skills.Level(c, "Bowcraft"), 20);
+                c.Skills["Bowcraft"] = MathF.Max(Skills.Level(c, "Bowcraft"), 10);
                 Own(c, "hunting_bow");
                 (k.Weapon, k.Side) = ("hunting_bow", sidearm);
-                return "You carry a hunting bow and the eye to use it.";
+                return "You carry a battered hunting bow and the eye to use it.";
             case "great":
-                c.Skills["Arms"] = MathF.Max(Skills.Level(c, "Arms"), 20);
-                (k.Weapon, k.Side) = ("greatsword", sidearm);
-                return "You fight with the greatsword in both hands, as you always have.";
+                c.Skills["Arms"] = MathF.Max(Skills.Level(c, "Arms"), 10);
+                return "You favour heavy two-handed steel — train your Arms to wield it.";
             case "pole":
-                c.Skills["Arms"] = MathF.Max(Skills.Level(c, "Arms"), 15);
-                c.Skills["Tactics"] = MathF.Max(Skills.Level(c, "Tactics"), 15);
-                Own(c, "halberd");
-                (k.Weapon, k.Side) = ("halberd", sidearm);
-                return "You carry a halberd, and you learned your trade in the line.";
+                c.Skills["Arms"] = MathF.Max(Skills.Level(c, "Arms"), 8);
+                c.Skills["Tactics"] = MathF.Max(Skills.Level(c, "Tactics"), 8);
+                Own(c, "boar_spear");
+                k.Side = "boar_spear";
+                return "You carry a spear and learned your trade in the line.";
             default:
-                c.Skills["Arms"] = MathF.Max(Skills.Level(c, "Arms"), 20);
-                if (k.Shield is "" or "round_shield" or "no_shield")
+                c.Skills["Arms"] = MathF.Max(Skills.Level(c, "Arms"), 10);
+                if (k.Shield is "" or "no_shield")
                 {
-                    Own(c, "kite_shield");
-                    k.Shield = "kite_shield";
+                    Own(c, "round_shield");
+                    k.Shield = "round_shield";
                 }
-                return "You fight on foot behind a kite shield, as you always have.";
+                return "You fight on foot behind a plain wooden shield.";
         }
     }
 

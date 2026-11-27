@@ -331,7 +331,7 @@ public sealed partial class Campaign
         if (p.Breed != "spider" && p.Breed != "wyvern" && AnyProvinceWebbed() && IsProvinceWebbed(Map.ProvinceAt(p.Pos).Id)) s *= 0.7f; // webbed woods slow travel (WI2)
         if (p.Kind == PartyKind.Player) s *= (1 - MathF.Min(0.25f, p.Prisoners.Sum(g => g.Count) / 400f)) * BaggageDrag() * (1 - TrainDrag * p.Train.Count); // an overloaded baggage (C9), engines (SiegeWorks.cs)
         if (p.Kind == PartyKind.Player)
-            s *= (1 + Skill("Logistics") / 2000f) * (Has("Horsemaster") ? 1.05f : 1) * (Has("Pathfinder") ? 1.05f : 1) * (Has("ForcedMarch") ? 1.1f : 1) * (Captain.Birth == "marcher" ? 1.08f : 1);
+            s *= (1 + Skill("Logistics") / 500f) * (Has("Horsemaster") ? 1.05f : 1) * (Has("Pathfinder") ? 1.05f : 1) * (Has("ForcedMarch") ? 1.15f : 1) * (Captain.Birth == "marcher" ? 1.08f : 1);
         int men = p.Men, wounded = p.Wounded;
         if (men + wounded > 0) s *= 1 - MathF.Min(0.2f, wounded / (float)(men + wounded) * 0.5f);
         return s;
@@ -388,7 +388,12 @@ public sealed partial class Campaign
                 }
             }
             else p.Pos += d / dist * step;
-            if (p.Kind == PartyKind.Player) Practise("Logistics", MathF.Min(dist, step) * 0.006f); // days on the march (F4)
+            if (p.Kind == PartyKind.Player)
+            {
+                float marched = MathF.Min(dist, step);
+                Practise("Logistics", marched * 0.02f);
+                if (Captain.Kit.Horse != "on_foot") Practise("Riding", marched * 0.008f);
+            }
             p.Pos = Map.InLand(p.Pos);
         }
     }
@@ -544,7 +549,7 @@ public sealed partial class Campaign
                 {
                     if (st.Wounded > 0)
                     {
-                        float surgeon = p == Player ? (HasCompanion("Surgeon") ? 1.3f : 1) * (Captain.Origin == "surgeon" ? 1.25f : 1) * (!town && Has("FieldHospital") ? 1.5f : 1) * (HasBuff("poultices") ? 1.5f : 1) : 1;
+                        float surgeon = p == Player ? (1 + Skill("Medicine") / 200f) * (HasCompanion("Surgeon") ? 1.3f : 1) * (Captain.Origin == "surgeon" ? 1.25f : 1) * (!town && Has("FieldHospital") ? 1.5f : 1) * (HasBuff("poultices") ? 1.5f : 1) : 1;
                         int heal = Math.Min(st.Wounded, Math.Max(1, (int)MathF.Round(st.Wounded * (town ? B.HealTown : B.HealField) * (Winter ? 0.5f : 1) * surgeon)));
                         if (p == Player) Practise("Medicine", Rules.PerMan(heal * 0.1f));
                         st.Wounded -= heal;
@@ -553,7 +558,8 @@ public sealed partial class Campaign
                     // Daily drill: per fit man, into each pool (Old Hands drill harder).
                     if (!Outlaw(p) && st.Men > 0)
                         st.AddXp(st.Men * ((town ? B.DrillTown : B.DrillCamp) + (c.Traits.Contains("Drillmaster") ? 1 : 0)) * Honours.Of(c).DrillMul
-                            * (p == Player ? (HasCompanion("Drillmaster") ? 1.25f : 1) * (Captain.Origin == "drillmaster" || Captain.Birth == "camp" ? 1.25f : 1) * (1 + Skill("Training") / 200f) * (Has("Academy") ? 1.5f : 1) : 1));
+                            * (p == Player ? (HasCompanion("Drillmaster") ? 1.25f : 1) * (Captain.Origin == "drillmaster" || Captain.Birth == "camp" ? 1.25f : 1) * (1 + Skill("Training") / 100f) * (Has("Academy") ? 1.75f : 1) : 1));
+                    if (p == Player) Practise("Training", 0.08f);
                 }
                 bool campTrained = p == Player && (Captain.Origin is "drillmaster" or "sellsword" || Captain.Birth == "camp");
                 float cohCap = (SeniorNature(c) == "Merry" ? 18 : 12) + (campTrained ? 2 : 0);
@@ -647,14 +653,16 @@ public sealed partial class Campaign
             float upkeep = p.Companies.Sum(Rules.Upkeep);
             if (p == Player)
             {
+                upkeep *= MathF.Max(0.55f, 1 - Skill("Stewardship") / 400f);
                 if (Has("Quartermaster")) upkeep *= 0.9f;
                 if (HasCompanion("Quartermaster")) upkeep *= 0.95f;
                 if (Captain.Origin == "steward") upkeep *= 0.9f; // steward trims company upkeep drag (PF2)
+                Practise("Stewardship", 0.6f + upkeep / 250f);
                 float pay = upkeep * ContractPayRate * Settings.Current.PayFactor;
                 // A sworn man's liege keeps him in the field (F9): a retainer that lets a beaten company rebuild.
                 pay += Retainer;
                 float fiefs = S.Settlements.Where(t => t.Owner == Player.Id).Sum(Income) * (HasCompanion("Steward") ? 1.15f : 1)
-                    * (1 + Skill("Stewardship") / 500f) * (Has("TaxRoll") ? 1.15f : 1);
+                    * (1 + Skill("Stewardship") * 0.003f) * (Has("TaxRoll") ? 1.15f : 1);
                 if (fiefs > 0) Practise("Stewardship", 0.5f + fiefs / 40f);
                 S.LastWeekBalance = pay + fiefs - upkeep;
                 S.Gold += S.LastWeekBalance;

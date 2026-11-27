@@ -65,7 +65,7 @@ public partial class Campaign
     /// The levy price for a band of ArmyScale men here (shown in the recruit tab).
     public int LevyPrice(Settlement s) => (int)MathF.Ceiling(Troops.Get(RecruitTroopFor(s)).Cost * RecruitPriceFactor(s));
 
-    public int MercenaryPrice(CompanyRecord m) => (int)(m.Stacks.Sum(x => x.Men * Rules.PerMan(x.Type.Cost)) * B.MercMarkup * (Has("Haggler") ? 0.85f : 1));
+    public int MercenaryPrice(CompanyRecord m) => (int)(m.Stacks.Sum(x => x.Men * Rules.PerMan(x.Type.Cost)) * B.MercMarkup * MathF.Max(0.75f, 1 - Skill("Charm") * 0.0015f) * (Has("Haggler") ? 0.85f : 1) * (Has("Kingmaker") ? 0.8f : 1));
 
     /// Mages are super units: a captain keeps one circle of them at most.
     public bool HasCircle => Player.Companies.Any(c => Rules.RoleOf(c) == "casters");
@@ -86,7 +86,7 @@ public partial class Campaign
         return null;
     }
 
-    public int HorsePrice => (int)(Rules.PerMan(Troops.Mount("courser").Hp * B.HorseCostRate) * (Has("Horsemaster") ? 0.7f : 1) * (Has("Haggler") ? 0.85f : 1)
+    public int HorsePrice => (int)(Rules.PerMan(Troops.Mount("courser").Hp * B.HorseCostRate) * MathF.Max(0.75f, 1 - Skill("Charm") * 0.0015f) * (Has("Horsemaster") ? 0.7f : 1) * (Has("Haggler") ? 0.85f : 1) * (Has("Kingmaker") ? 0.8f : 1)
         * (SettlementAt(Player.Pos) is Settlement st && Level(st, "stables") > 0 ? 0.7f : 1));
 
     public string? BuyHorses(Settlement s, int n)

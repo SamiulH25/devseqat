@@ -23,7 +23,7 @@ public static class Skills
 
     static readonly SkillDef[] Defaults =
     {
-        new() { Id = "Leadership", Name = "Leadership", Rises = "BATTLES COMMANDED, MEN LED", Governs = "MEN LIMIT +1 PER 5 POINTS", Perks =
+        new() { Id = "Leadership", Name = "Leadership", Rises = "BATTLES COMMANDED, MEN LED", Governs = "MEN LIMIT +1 PER 3 PTS, WIDER BANNER AURA, STRONGER RALLY", Perks =
         {
             new() { Id = "Bannerman", Name = "Bannerman", Text = "AURA RADIUS +4 M" },
             new() { Id = "IronWill", Name = "Iron Will", Text = "COMPANIES NEAR YOU HOLD UNTIL 30% STRENGTH" },
@@ -31,31 +31,31 @@ public static class Skills
             new() { Id = "Rallying", Name = "Rallying Cry", Text = "EVERY COMPANY STARTS A BATTLE WITH +5 MORALE" },
             new() { Id = "Warlord", Name = "Warlord", Text = "NEAR YOU, NO COMPANY BREAKS WHILE YOU STAND" },
         } },
-        new() { Id = "Tactics", Name = "Tactics", Rises = "BATTLES WON OUTNUMBERED", Governs = "AUTO-RESOLVE +1% PER 10 POINTS", Perks =
+        new() { Id = "Tactics", Name = "Tactics", Rises = "BATTLES WON, CLEAN VICTORIES", Governs = "SCOUT VISION +0.3%/PT, FLANK DAMAGE +0.2%/PT, AUTO-RESOLVE +0.2%/PT", Perks =
         {
             new() { Id = "Tactician", Name = "Tactician", Text = "AUTO-RESOLVE +10%, SEE FOES DEPLOYING, SEE 25% FURTHER" },
             new() { Id = "Ambusher", Name = "Ambusher", Text = "RETREATS COST HALF THE REARGUARD, AMBUSHES SHAKE MORE" },
             new() { Id = "Siegecraft", Name = "Siegecraft", Text = "LADDERS AND RAM IN 6 HOURS, NOT 12" },
             new() { Id = "Pursuit", Name = "Pursuit", Text = "+25% PRISONERS AFTER A WIN" },
-            new() { Id = "MasterOfWar", Name = "Master of War", Text = "AUTO-RESOLVE +10%" },
+            new() { Id = "MasterOfWar", Name = "Master of War", Text = "AUTO-RESOLVE +15%, YOUR COMPANIES DEAL +12% FLANK DAMAGE" },
         } },
-        new() { Id = "Logistics", Name = "Logistics", Rises = "DAYS ON THE MARCH", Governs = "PARTY SPEED +1% PER 20 POINTS", Perks =
+        new() { Id = "Logistics", Name = "Logistics", Rises = "MARCHING AND KEEPING SUPPLY", Governs = "MAP SPEED +0.2%/PT, BAGGAGE +0.5%/PT, LESS FOOD EATEN", Perks =
         {
-            new() { Id = "Quartermaster", Name = "Quartermaster", Text = "UPKEEP -10%" },
+            new() { Id = "Quartermaster", Name = "Quartermaster", Text = "UPKEEP -10%, BAGGAGE +20%" },
             new() { Id = "Horsemaster", Name = "Horsemaster", Text = "HORSES -30%, PARTY SPEED +5%" },
             new() { Id = "Forager", Name = "Forager", Text = "THE COMPANY EATS 20% LESS" },
             new() { Id = "Pathfinder", Name = "Pathfinder", Text = "PARTY SPEED +5%, WOODS AND MARSH SLOW YOUR MEN LESS" },
-            new() { Id = "ForcedMarch", Name = "Forced March", Text = "PARTY SPEED +10%" },
+            new() { Id = "ForcedMarch", Name = "Forced March", Text = "PARTY SPEED +15%" },
         } },
-        new() { Id = "Training", Name = "Training", Rises = "MEN PROMOTED", Governs = "DRILL XP +1% PER 2 POINTS", Perks =
+        new() { Id = "Training", Name = "Training", Rises = "DAILY DRILL AND PROMOTIONS", Governs = "DRILL XP +1%/PT, PROMOTION COST -0.2%/PT", Perks =
         {
             new() { Id = "Drillmaster", Name = "Drillmaster", Text = "PROMOTE MEN OF ANY TIER IN CAMP" },
             new() { Id = "VeteranCadre", Name = "Veteran Cadre", Text = "RECRUITS JOIN WITH 20 XP EACH" },
             new() { Id = "CheapSteel", Name = "Cheap Steel", Text = "PROMOTIONS COST 20% LESS" },
             new() { Id = "Sergeants", Name = "Sergeants' Mess", Text = "COMPANIES FIND SERGEANTS TWICE AS OFTEN" },
-            new() { Id = "Academy", Name = "Academy", Text = "DRILL XP +50%" },
+            new() { Id = "Academy", Name = "Academy", Text = "DRILL XP +75%, NEW RECRUITS START WITH +40 XP" },
         } },
-        new() { Id = "Medicine", Name = "Medicine", Rises = "WOUNDED HEALED", Governs = "+1% OF FALLEN SURVIVE PER 10 POINTS", Perks =
+        new() { Id = "Medicine", Name = "Medicine", Rises = "BATTLES SURVIVED AND WOUNDED HEALED", Governs = "SURVIVAL +0.2%/PT, HEAL SPEED +0.5%/PT", Perks =
         {
             new() { Id = "Surgeon", Name = "Surgeon", Text = "+10% OF FALLEN SURVIVE WOUNDED" },
             new() { Id = "FieldHospital", Name = "Field Hospital", Text = "WOUNDED HEAL 50% FASTER OUTSIDE TOWNS" },
@@ -63,7 +63,7 @@ public static class Skills
             new() { Id = "Triage", Name = "Triage", Text = "COMPANIONS WHO FALL ARE NEVER KILLED" },
             new() { Id = "FieldSurgeon", Name = "Field Surgeon", Text = "ONCE A BATTLE YOU GET BACK UP AT HALF HEALTH" },
         } },
-        new() { Id = "Stewardship", Name = "Stewardship", Rises = "FIEF INCOME, DAYS RULING", Governs = "FIEF INCOME +1% PER 5 POINTS", Perks =
+        new() { Id = "Stewardship", Name = "Stewardship", Rises = "PAYING WAGES, FIEF INCOME, DAYS RULING", Governs = "UPKEEP -0.25%/PT, FIEF INCOME +0.3%/PT, CHEAPER BUILDINGS", Perks =
         {
             new() { Id = "TaxRoll", Name = "Tax Roll", Text = "FIEF INCOME +15%" },
             new() { Id = "Provisioner", Name = "Provisioner", Text = "FOOD COSTS 25% LESS" },
@@ -77,9 +77,9 @@ public static class Skills
             new() { Id = "RansomBroker", Name = "Ransom Broker", Text = "RANSOMS PAY 50% MORE" },
             new() { Id = "Recruiter", Name = "Recruiter", Text = "+20% OF A SETTLEMENT'S RECRUITS FOLLOW YOU" },
             new() { Id = "Haggler", Name = "Haggler", Text = "MERCENARIES AND HORSES 15% CHEAPER" },
-            new() { Id = "Kingmaker", Name = "Kingmaker", Text = "EVERY LORD THINKS 10 BETTER OF YOU" },
+            new() { Id = "Kingmaker", Name = "Kingmaker", Text = "EVERY LORD +15 OPINION, MERCENARIES AND HORSES 20% CHEAPER" },
         } },
-        new() { Id = "Arms", Name = "Arms", Rises = "YOUR KILLS ON FOOT, PARRIES AND RIPOSTES", Governs = "YOUR HEALTH +2% PER 10 POINTS, QUICKER BLOWS, HEAVY GEAR NEEDS ARMS", Perks =
+        new() { Id = "Arms", Name = "Arms", Rises = "MELEE KILLS (FOOT OR SADDLE), PARRIES AND RIPOSTES", Governs = "HP +1.5%/PT, MELEE DMG +0.85%/PT, FASTER SWINGS, UNLOCKS HEAVY GEAR", Perks =
         {
             new() { Id = "WarCry", Name = "War Cry", Text = "RALLY +10 MORALE, 3 S FASTER" },
             new() { Id = "Duellist", Name = "Duellist", Text = "YOUR DAMAGE +15%" },
@@ -87,7 +87,7 @@ public static class Skills
             new() { Id = "Hardened", Name = "Hardened", Text = "YOUR HEALTH +20%" },
             new() { Id = "Champion", Name = "Champion", Text = "YOUR RIPOSTE SLIPS ANY GUARD AND LASTS LONGER" },
         } },
-        new() { Id = "Riding", Name = "Riding", Rises = "KILLS AND LANCE HITS FROM THE SADDLE", Governs = "YOUR HORSE +1% HEALTH PER 4 POINTS, TURNS AND STRIKES BETTER, GREAT HORSES NEED RIDING", Perks =
+        new() { Id = "Riding", Name = "Riding", Rises = "RIDING ON THE MARCH, MOUNTED KILLS AND LANCE HITS", Governs = "HORSE HP +0.6%/PT, FASTER GALLOP AND TURNS, UNLOCKS WARHORSES", Perks =
         {
             new() { Id = "MountedLord", Name = "Mounted Lord", Text = "YOUR HORSE HAS 30% MORE HEALTH" },
             new() { Id = "Lancer", Name = "Lancer", Text = "YOUR COUCHED LANCE HITS 25% HARDER" },
@@ -95,7 +95,7 @@ public static class Skills
             new() { Id = "HorseBreaker", Name = "Horse Breaker", Text = "YOUR BLOWS AGAINST RIDERS +25%" },
             new() { Id = "KnightOfTheCharge", Name = "Knight of the Charge", Text = "SPEARS BELOW TIER IV CANNOT STOP YOUR CHARGE" },
         } },
-        new() { Id = "Bowcraft", Name = "Bowcraft", Rises = "YOUR OWN ARROW HITS AND KILLS", Governs = "QUICKER DRAW, TIGHTER AIM, THE WAR BOW NEEDS BOWCRAFT", Perks =
+        new() { Id = "Bowcraft", Name = "Bowcraft", Rises = "YOUR ARROW HITS AND KILLS", Governs = "BOW DMG +0.9%/PT, FASTER DRAW, TIGHTER AIM, UNLOCKS WAR BOWS", Perks =
         {
             new() { Id = "Fletcher", Name = "Fletcher", Text = "50% MORE ARROWS FOR YOUR BOW" },
             new() { Id = "SteadyAim", Name = "Steady Aim", Text = "YOUR SHOTS SCATTER 30% LESS" },
@@ -140,6 +140,31 @@ public static class Skills
     public static int PicksTotal(CaptainState c) => All.Sum(s => Math.Max(0, Picks(c, s.Id))) + c.FreePerks;
 
     /// Raise a skill by use, with diminishing returns as it climbs; returns the new level.
+    public const int MaxFocus = 3;
+    public static int FocusOf(CaptainState c, string skill) => Math.Clamp(c.Focus.GetValueOrDefault(skill), 0, MaxFocus);
+    public static float FocusMult(CaptainState c, string skill) => 1f + 0.5f * FocusOf(c, skill);
+    public static float XpForLevel(int level) => 100f + (level - 1) * 75f + (level - 1) * (level - 1) * 15f;
+
+    /// Live numeric readout of what this skill currently grants the captain (shown on the K sheet).
+    public static string CurrentBonus(CaptainState c, string id)
+    {
+        float v = Level(c, id);
+        return id switch
+        {
+            "Leadership" => $"NOW: +{(int)(v / 3)} MEN CAP, +{v * 0.08f:0.0}M AURA, +{v * 0.25f:0} RALLY",
+            "Tactics" => $"NOW: +{v * 0.3f:0}% VISION, +{v * 0.2f:0}% FLANK DMG, +{v * 0.2f:0}% AUTO-RES",
+            "Logistics" => $"NOW: +{v * 0.2f:0}% SPEED, +{v * 0.5f:0}% BAGGAGE, -{v * 0.25f:0}% FOOD",
+            "Training" => $"NOW: +{v:0}% DRILL XP, -{v * 0.2f:0}% PROMOTE COST",
+            "Medicine" => $"NOW: +{v * 0.2f:0}% SURVIVAL, +{v * 0.5f:0}% HEAL RATE",
+            "Stewardship" => $"NOW: -{v * 0.25f:0}% UPKEEP, +{v * 0.3f:0}% FIEF INCOME",
+            "Charm" => $"NOW: +{v * 0.4f:0}% GOODWILL, -{v * 0.15f:0}% PRICES",
+            "Arms" => $"NOW: +{v * 1.5f:0}% HP, +{v * 0.85f:0}% MELEE DMG, -{v * 0.35f:0}% SWING",
+            "Riding" => $"NOW: +{v * 0.6f:0}% HORSE HP, +{v * 0.15f:0}% GALLOP",
+            "Bowcraft" => $"NOW: +{v * 0.9f:0}% BOW DMG, -{v * 0.4f:0}% DRAW TIME",
+            _ => "",
+        };
+    }
+
     public static float Raise(CaptainState c, string skill, float amount)
     {
         if (amount <= 0) return Level(c, skill);
@@ -155,16 +180,57 @@ public sealed partial class Campaign
     public bool Has(string perk) => Captain.Perks.Contains(perk);
     public float Skill(string skill) => Skills.Level(Captain, skill);
 
-    /// Your edge in an auto-resolved fight: Tactics skill (+1% per 10 points) and the Tactician perk (+10%).
-    public float TacticsEdge => 1 + Skill("Tactics") / 1000f + (Has("Tactician") ? 0.1f : 0) + (Has("MasterOfWar") ? 0.1f : 0) + DivisionEdge;
+    /// Your edge in an auto-resolved fight: Tactics skill (+0.2% per point) and Tactics perks.
+    public float TacticsEdge => 1 + Skill("Tactics") / 500f + (Has("Tactician") ? 0.1f : 0) + (Has("MasterOfWar") ? 0.15f : 0) + DivisionEdge;
 
-    /// Starting skills for a new captain (a soldier who has led men before).
+    /// Starting skills for a new Day-1 captain: green and unproven, built up through play and Skill Points.
     internal static void StartingSkills(CaptainState c)
     {
-        foreach (var s in Skills.All) c.Skills[s.Id] = 5;
-        c.Skills["Leadership"] = 15;
-        c.Skills["Arms"] = 15;
-        c.Skills["Tactics"] = 10;
+        foreach (var s in Skills.All) c.Skills[s.Id] = 2;
+        c.Skills["Leadership"] = 5;
+        c.Skills["Arms"] = 5;
+        c.Skills["Tactics"] = 3;
+    }
+
+    /// Award Captain XP; each level-up grants +3 Skill Points and +1 Focus Point every 2 levels.
+    internal void GainXp(float amount)
+    {
+        if (amount <= 0 || S.GameOver) return;
+        Captain.Xp += amount;
+        while (Captain.Xp >= Skills.XpForLevel(Captain.Level))
+        {
+            Captain.Xp -= Skills.XpForLevel(Captain.Level);
+            Captain.Level++;
+            Captain.SkillPoints += 3;
+            bool gotFocus = Captain.Level % 2 == 0;
+            if (gotFocus) Captain.FocusPoints++;
+            LogYours($"You reach level {Captain.Level}: +3 skill points{(gotFocus ? ", +1 focus" : "")} (K).");
+        }
+    }
+
+    /// Spend 1 Skill Point to directly raise a skill by +5 (up to 100), opening perks on 25-point marks.
+    public string? InvestSkill(string skill)
+    {
+        if (Captain.SkillPoints <= 0) return "NO SKILL POINTS";
+        float before = Skill(skill);
+        if (before >= Skills.Max) return "ALREADY MASTERED";
+        Captain.SkillPoints--;
+        float after = Captain.Skills[skill] = MathF.Min(Skills.Max, before + 5f);
+        if ((int)(after / Skills.Step) > (int)(before / Skills.Step))
+            LogYours($"Your {skill.ToLowerInvariant()} reaches {(int)after}: a perk may be chosen (K).");
+        return null;
+    }
+
+    /// Spend 1 Focus Point to boost a skill's organic training speed (+50% per pip, max 3).
+    public string? InvestFocus(string skill)
+    {
+        if (Captain.FocusPoints <= 0) return "NO FOCUS POINTS";
+        int cur = Skills.FocusOf(Captain, skill);
+        if (cur >= Skills.MaxFocus) return "MAX FOCUS";
+        Captain.FocusPoints--;
+        Captain.Focus[skill] = cur + 1;
+        LogYours($"You focus on {skill.ToLowerInvariant()} (x{Skills.FocusMult(Captain, skill):0.#} learning).");
+        return null;
     }
 
     /// A save from before Riding and Bowcraft (P3): they start at half the captain's Arms (at least 5).
@@ -223,34 +289,36 @@ public sealed partial class Campaign
     internal void Practise(string skill, float amount)
     {
         if (amount <= 0 || S.GameOver) return;
-        amount *= AgeEdge(skill);
+        amount *= AgeEdge(skill) * Skills.FocusMult(Captain, skill);
         float before = Skill(skill), after = Skills.Raise(Captain, skill, amount);
+        float gained = after - before;
+        if (gained > 0) GainXp(gained * 16f);
         if ((int)(after / Skills.Step) > (int)(before / Skills.Step))
             LogYours($"Your {skill.ToLowerInvariant()} reaches {(int)after}: a perk may be chosen (K).");
     }
 
-    /// After a battle you fought: Leadership for commanding, Tactics for winning against the odds, and your own hands:
-    /// Arms for kills on foot, Riding for the saddle and the lance, Bowcraft for your arrows (P3).
+    /// After a battle you fought: Leadership for commanding, Tactics for winning, Medicine for tending survivors,
+    /// Arms for all melee kills (foot or saddle) + parries/ripostes, Riding for mounted work, Bowcraft for arrows, plus Captain XP.
     internal void SkillsAfterBattle(BattleResult r, bool won, float own, float foe, int menLed, int team = 0)
     {
-        Practise("Leadership", 1.5f + Rules.PerMan(menLed / 40f));
+        Practise("Leadership", 1.8f + Rules.PerMan(menLed / 35f));
         float odds = foe / MathF.Max(1, own);
-        Practise("Tactics", won ? 1 + 4 * Math.Clamp(odds - 0.8f, 0, 2) : 0.4f);
-        // A win that cost little is a lesson in itself.
+        Practise("Tactics", won ? 1.5f + 4 * Math.Clamp(odds - 0.7f, 0, 2) : 0.6f);
+        Practise("Medicine", 0.5f);
         var mine = r.Companies.Where(x => x.Team == team).ToList();
         int start = mine.Sum(x => x.Start), fell = mine.Sum(x => x.Fallen);
-        if (won && start > 0 && fell < start * CheapWin) Practise("Tactics", 1);
+        if (won && start > 0 && fell < start * CheapWin) Practise("Tactics", 1.2f);
+        GainXp((won ? 35f : 15f) + r.PlayerKills * 8f + (r.Parries + r.Ripostes) * 3f);
         if (r.Duration > 0)
         {
-            int onFoot = Math.Max(0, r.PlayerKills - r.SaddleKills - r.ArrowKills);
-            Practise("Arms", onFoot * 0.45f + (r.Parries + r.Ripostes) * 0.15f);
-            Practise("Riding", r.SaddleKills * 0.4f + r.LanceHits * 0.3f);
-            Practise("Bowcraft", r.ArrowKills * 0.35f + r.ArrowHits * 0.15f);
+            int meleeKills = Math.Max(0, r.PlayerKills - r.ArrowKills);
+            Practise("Arms", meleeKills * 0.55f + (r.Parries + r.Ripostes) * 0.22f);
+            Practise("Riding", r.SaddleKills * 0.55f + r.LanceHits * 0.4f);
+            Practise("Bowcraft", r.ArrowKills * 0.5f + r.ArrowHits * 0.22f);
             return;
         }
-        // An auto-resolved battle assumes you did your part, with what you carry, from the saddle you lead from.
         int kills = won ? rng.Next(1, 5) : rng.Next(0, 2);
-        Practise(Gear.Get(Captain.Kit.Weapon).Ranged ? "Bowcraft" : "Arms", kills * 0.45f);
-        Practise("Riding", 0.3f);
+        Practise(Gear.Get(Captain.Kit.Weapon).Ranged ? "Bowcraft" : "Arms", kills * 0.5f);
+        if (Captain.Kit.Horse != "on_foot") Practise("Riding", 0.4f);
     }
 }

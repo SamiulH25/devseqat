@@ -20,7 +20,7 @@ public sealed class BattleOptions
     /// Your Arms skill (0-100; a new captain has 15): quicker blows, a wider parry window, less stamina a swing (P2).
     public float Arms = 15;
     /// Your Riding and Bowcraft skills (P3; a new captain has 5) and the perks you hold that act in battle.
-    public float Riding = 5, Bowcraft = 5;
+    public float Riding = 5, Bowcraft = 5, Leadership = 5, Tactics = 5;
     public HashSet<string> Perks = new();
     /// The captain's aura tier (docs/archive/KNIGHT_ORDERS.md 5.1): 0 unawakened, 1 kindled, 2 aura blade, 3 aura armour, 4 master, 5 transcendent.
     public int AuraTier;
@@ -63,6 +63,7 @@ public sealed class BattleOptions
     /// Your second weapon (N swaps to it). Null with a PlayerType means none; with neither, the quick battle's greatsword.
     public UnitType? PlayerSide;
     public Mount? PlayerMount;
+    public bool PlayerOnFoot;
     public TerrainParams? Ground;
     /// The enemy realm's temper (Factions.Aggression, 0.3-3): how soon an AI holding good ground loses patience and attacks.
     public float EnemyAggression = 1;

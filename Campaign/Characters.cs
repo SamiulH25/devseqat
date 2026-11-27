@@ -160,7 +160,7 @@ public sealed partial class Campaign
     }
 
     /// What `a` thinks of `b`, -100..100.
-    public float OpinionOf(Character a, Character b) => Math.Clamp(BaseOpinion(a, b) + a.Opinion.GetValueOrDefault(b.Id) + (b.Id == S.CaptainChar ? (Has("Kingmaker") ? 10 : 0) + RegardOfTraits(a) + FameRegard + AuraRegard(a) + HomelandRegard(a) + OriginRegard(a) : 0), -100, 100);
+    public float OpinionOf(Character a, Character b) => Math.Clamp(BaseOpinion(a, b) + a.Opinion.GetValueOrDefault(b.Id) + (b.Id == S.CaptainChar ? (Has("Kingmaker") ? 15 : 0) + RegardOfTraits(a) + FameRegard + AuraRegard(a) + HomelandRegard(a) + OriginRegard(a) : 0), -100, 100);
 
     /// Lords of your own realm know your aura (docs/archive/MAGIC_AURA.md 4.3, MA8): +5 for an Aura Expert, +10 for a Master.
     float AuraRegard(Character a) => Captain.Contract < 0 || a.Faction != Captain.Contract ? 0 : Captain.AuraTier >= 4 ? 10 : Captain.AuraTier >= 3 ? 5 : 0;
@@ -190,7 +190,7 @@ public sealed partial class Campaign
         // Charm (F4): goodwill you earn counts more, and earning it teaches you.
         if (about == Me && weight > 0)
         {
-            weight *= 1 + Skill("Charm") / 400f + (Has("SilverTongue") ? 0.25f : 0);
+            weight *= 1 + Skill("Charm") / 250f + (Has("SilverTongue") ? 0.25f : 0);
             Practise("Charm", weight * 0.1f);
         }
         who.Opinion[about.Id] = Math.Clamp(who.Opinion.GetValueOrDefault(about.Id) + weight, -100, 100);

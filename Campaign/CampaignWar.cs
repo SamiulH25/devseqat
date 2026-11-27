@@ -191,7 +191,7 @@ public sealed partial class Campaign
             BuyFood(7);
             Log($"Your quartermaster buys a week of food in {here.Name}.");
         }
-        Player.Food -= (Winter ? 1.5f : 1) * (HasCompanion("Quartermaster") ? 0.85f : 1) * (Has("Forager") ? 0.8f : 1);
+        Player.Food -= (Winter ? 1.5f : 1) * MathF.Max(0.6f, 1 - Skill("Logistics") / 400f) * (HasCompanion("Quartermaster") ? 0.85f : 1) * (Has("Forager") ? 0.8f : 1);
         if (Player.Food >= 1) Practise("Logistics", 0.03f); // a fed company is a lesson in supply (P3)
         if (Player.Food >= 0) return;
         Player.Food = 0;

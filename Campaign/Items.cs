@@ -140,7 +140,7 @@ public sealed partial class Campaign
     // ---------- baggage ----------
 
     /// What the baggage can carry: a base, more for each spare horse (to six), each baggage wagon, and a fifth more with Quartermaster.
-    public int BaggageRoom() => (int)((B.BaggageBase + B.BaggagePerHorse * Math.Min(6, Player.Horses) + B.BaggagePerWagon * Player.Wagons) * (Has("Quartermaster") ? 1.2f : 1));
+    public int BaggageRoom() => (int)((B.BaggageBase + B.BaggagePerHorse * Math.Min(6, Player.Horses) + B.BaggagePerWagon * Player.Wagons) * (1 + Skill("Logistics") / 200f) * (Has("Quartermaster") ? 1.2f : 1));
 
     /// What it carries now: each piece of gear not worn (armour 2, the rest 1; a horse walks itself) and each ten lots of goods.
     public int BaggageLoad()

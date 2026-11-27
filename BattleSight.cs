@@ -40,8 +40,8 @@ public partial class Battle
             foreach (var s in Squads)
             {
                 if (s.Team != team || s.Alive == 0) continue;
-                bool keen = foe == 0 && Perk("Tactician"); // an eye for ground: you see further, and into the edge of a wood
-                if (!eyes.Any(e => Sees(e, s, keen))) continue;
+                float visionMult = foe == 0 ? (1f + Options.Tactics * 0.003f) * (Perk("Tactician") ? 1.25f : 1f) : 1f;
+                if (!eyes.Any(e => Sees(e, s, visionMult))) continue;
                 bool fresh = Time - s.SeenAt[foe] > 6;
                 s.SeenAt[foe] = Time;
                 s.LastSeen = s.Center;
@@ -52,15 +52,15 @@ public partial class Battle
     }
 
     /// Can a man standing at `eye` see company s? A keen eye (the Tactician perk) sees a quarter further.
-    bool Sees(Vector2 eye, Squad s, bool keen = false)
+    bool Sees(Vector2 eye, Squad s, float far = 1f)
     {
-        float d = MathF.Max(0, Vector2.Distance(eye, s.Center) - s.Radius), far = keen ? 1.25f : 1;
+        float d = MathF.Max(0, Vector2.Distance(eye, s.Center) - s.Radius);
         if (d > MistSight && InMist(s.Center)) return false; // a company in the mist is seen only close (docs/archive/MAGIC_AURA.md 3.5)
         if (d < CloseSight) return true;
         if (d > Weather.Vision * far) return false;
         if (Time - s.LooseAt < 2) return true; // a volley gives you away
         if (Terrain.CoverAt(s.Center) >= 0.5f && d > WoodSight * far) return false;
-        float through = keen ? 19 : 15;
+        float through = 15f * far;
         if (ClearLine(eye, s.Center, through)) return true;
         // A wide company is seen if either end of its line is in sight, not only its middle.
         var side = new Vector2(-s.Front.Y, s.Front.X) * s.Radius * 0.8f;

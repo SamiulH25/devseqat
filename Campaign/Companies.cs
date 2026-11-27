@@ -102,7 +102,11 @@ public sealed partial class Campaign
     {
         if (n <= 0) return;
         Rules.AddMen(c, troop, n);
-        if (Has("VeteranCadre") && Player.Companies.Contains(c)) c.Stack(troop).AddXp(20 * n); // F4: recruits who know a little
+        if (Player.Companies.Contains(c))
+        {
+            int bonusXp = (Has("VeteranCadre") ? 20 : 0) + (Has("Academy") ? 40 : 0);
+            if (bonusXp > 0) c.Stack(troop).AddXp(bonusXp * n);
+        }
         if (from != null && Player.Companies.Contains(c) && S.Pensioned.Contains(from.Name)) c.Stack(troop).AddXp(PensionXp * n); // an old man of the company came home here (C4)
         if (from != null)
         {
@@ -205,7 +209,7 @@ public sealed partial class Campaign
 
     /// What one promotion costs this party: Cheap Steel takes 20% off yours (F4).
     int PromoteCostFor(Party p, string from, string to, bool horse) =>
-        (int)MathF.Ceiling(Rules.PromoteCost(from, to, horse) * (p == Player && Has("CheapSteel") ? 0.8f : 1) * (p == Player ? YardDiscount : 1));
+        (int)MathF.Ceiling(Rules.PromoteCost(from, to, horse) * (p == Player ? MathF.Max(0.6f, 1 - Skill("Training") / 500f) * (Has("CheapSteel") ? 0.8f : 1) * YardDiscount : 1));
 
     /// A training yard of level II or III in the fief you stand in cuts promotion gold 10% or 20% (F6).
     float YardDiscount => SettlementAt(Player.Pos) is Settlement s && s.Owner == Player.Id ? 1 - 0.1f * Math.Max(0, Level(s, "yard") - 1) : 1;

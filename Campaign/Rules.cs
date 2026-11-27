@@ -283,12 +283,19 @@ public static class Rules
     }
 
     /// Your horse: Riding adds 1% health per 4 points; Mounted Lord +30% health, Saddle-Fast +10% gallop.
-    public static Mount CaptainMount(CaptainState c)
+    public static Mount? CaptainMount(CaptainState c)
     {
-        var m = Troops.Mount(Gear.Get(c.Kit.Horse).Mount);
+        var g = Gear.Get(c.Kit.Horse);
+        if (g.Mount == "") return null;
+        var m = Troops.Mount(g.Mount);
         float q = Campaign.QualityScale(Campaign.ItemInSlot(c, "horse")?.CountsAs() ?? ItemQuality.Plain); // a better bred horse (C9)
-        m = m with { Hp = m.Hp * q * (1 + Skills.Level(c, "Riding") / 400f + (c.Perks.Contains("MountedLord") ? 0.3f : 0)) };
-        return c.Perks.Contains("SaddleFast") ? m with { Gallop = m.Gallop * 1.1f } : m;
+        float rid = Skills.Level(c, "Riding");
+        m = m with
+        {
+            Hp = m.Hp * q * (1 + rid * 0.006f + (c.Perks.Contains("MountedLord") ? 0.3f : 0)),
+            Gallop = m.Gallop * (1 + rid * 0.0015f) * (c.Perks.Contains("SaddleFast") ? 1.1f : 1f),
+        };
+        return m;
     }
 
     /// The captain's part of a battle's options: skills, battle perks, kit and horse.
@@ -297,6 +304,8 @@ public static class Rules
         o.Arms = Skills.Level(c, "Arms");
         o.Riding = Skills.Level(c, "Riding");
         o.Bowcraft = Skills.Level(c, "Bowcraft");
+        o.Leadership = Skills.Level(c, "Leadership");
+        o.Tactics = Skills.Level(c, "Tactics");
         o.Perks = c.Perks.ToHashSet();
         o.Renown = c.Renown;
         o.Wounds = c.Wounds.ToHashSet();
@@ -311,12 +320,13 @@ public static class Rules
         o.PlayerType = CaptainType(c);
         o.PlayerSide = c.Kit.Side != "" ? CaptainType(c, side: true) : null;
         o.PlayerMount = CaptainMount(c);
+        o.PlayerOnFoot = o.PlayerMount == null;
         return o;
     }
 
     public static int CompanySlots(CaptainState c) => Math.Clamp((int)B.CompanySlotsBase, 1, 10) + (Campaign.GuardFor(c.BestRank).Men > 0 ? 1 : 0); // the guard's own (P5)
     /// Men you may lead: a base, renown, Leadership (+1 per 5 points) and the Born Captain perk.
-    public static int MenLimit(CaptainState c) => (int)(B.ArmyScale * (B.MenBase + (int)(c.Renown / B.MenRenownDivisor) + Skills.Level(c, "Leadership") / 5
+    public static int MenLimit(CaptainState c) => (int)(B.ArmyScale * (B.MenBase + (int)(c.Renown / B.MenRenownDivisor) + Skills.Level(c, "Leadership") / 3
         + (c.Perks.Contains("BornCaptain") ? 10 : 0) + Campaign.GuardFor(c.BestRank).Men)); // the household guard does not crowd your ranks (P5)
 
     /// The next rung of the renown ladder, for the panel: renown now raises only the men cap (perks come from skills, F4).
