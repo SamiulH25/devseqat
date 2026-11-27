@@ -9181,7 +9181,7 @@
     },
     {
       "id": "rift_marines",
-      "name": "Maren Marines",
+      "name": "Corsair Marines",
       "class": "Infantry",
       "culture": "southern_rift",
       "tier": 4,
@@ -11246,7 +11246,7 @@
     },
     {
       "id": "galley_slingers",
-      "name": "Galley Bowmen",
+      "name": "Galley Slingers",
       "class": "Archer",
       "culture": "southern_rift",
       "tier": 2,
@@ -11453,7 +11453,7 @@
     },
     {
       "id": "banner_spear_riders",
-      "name": "Banner Lancers",
+      "name": "Banner Spear-Riders",
       "class": "Cavalry",
       "culture": "steppe_horde",
       "tier": 3,
