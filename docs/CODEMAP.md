@@ -828,10 +828,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Hud.Command.cs (164 lines)
 - **Hud** (class, L8): ReserveAt:17, ToMeAt:18, AutoFillAt:19, HornAt:20, HornToggleAt:21, AddAt:22, OverCommand:23, DivisionColour:30, Movable:38, LayoutCommand:40, Tray:61, SmallButton:103, DivisionRings:116
 
-## Hud.cs (817 lines)
+## Hud.cs (819 lines)
 - **Cmd** (enum, L7)
 - **MenuItem** (enum, L14)
-- **Hud** (class, L20): StartAt:60, DeployToggleAt:64, Hud:89, U:91, Layout:105, CardAt:138, MapButtonAt:141, DeckTitleAt:143, ButtonAt:144, MenuAt:145, PauseAt:146, SpeedAt:147, ModeAt:149, CaptainAt:150, MinimapAt:151, Over:154, Rect:160, Panel:163, Frame:165, Line:173, Bar:179, Text:182, TW:187, TextC:188, TextR:189, MoraleColor:191, GradeColor:217, RanksOf:218, PlanOf:219, AvgMorale:226, AvgMorale:233, Draw:242, DrawCommand:300, DrawFight:323, Strength:340, SideArms:351, CompanyArms:355, GoalLines:365, MapButtons:378, MinimapPanel:391, FormBar:438, RelicSlot:465, SpellFan:477, OrderFlash:506, EffectMarks:517, Icon:535, Portrait:539, Crosshair:580, WheelPos:615, Banners:622, Banner:661, StateOf:755, FormationName:758, SquadTooltip:761, EnemyGlass:793
+- **Hud** (class, L20): StartAt:60, DeployToggleAt:64, Hud:89, U:91, Layout:105, CardAt:140, MapButtonAt:143, DeckTitleAt:145, ButtonAt:146, MenuAt:147, PauseAt:148, SpeedAt:149, ModeAt:151, CaptainAt:152, MinimapAt:153, Over:156, Rect:162, Panel:165, Frame:167, Line:175, Bar:181, Text:184, TW:189, TextC:190, TextR:191, MoraleColor:193, GradeColor:219, RanksOf:220, PlanOf:221, AvgMorale:228, AvgMorale:235, Draw:244, DrawCommand:302, DrawFight:325, Strength:342, SideArms:353, CompanyArms:357, GoalLines:367, MapButtons:380, MinimapPanel:393, FormBar:440, RelicSlot:467, SpellFan:479, OrderFlash:508, EffectMarks:519, Icon:537, Portrait:541, Crosshair:582, WheelPos:617, Banners:624, Banner:663, StateOf:757, FormationName:760, SquadTooltip:763, EnemyGlass:795
 
 ## Hud.Deck.cs (517 lines)
 - **Hud** (class, L11): OrderInfo:14, ShapeOf:45, Shoots:51, Listening:63, ButtonCentre:75, LayoutDeck:83, LayoutOrders:123, TopBar:194, CaptainPlate:278, Unlearned:320, Lit:324, EngineDeck:338, OrderDeck:375, Cards:437

@@ -355,7 +355,7 @@ public partial class Battle
 
     enum Side { Front, Flank, Rear }
     /// A blow from a man of a broken company (a crowd, not a line) does this much.
-    const float BrokenBlow = 0.7f;
+    const float BrokenBlow = 0.8f;
 
     static Side SideOf(Unit a, Unit t)
     {

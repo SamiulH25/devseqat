@@ -11,7 +11,7 @@ public partial class Battle
 {
     /// Drill by troop tier 1-6.
     /// Drill by tier (docs/post-demo/TIERS.md TI1): the grade follows the ladder: I Rabble, II-III Trained, IV-V Veteran, VI Elite.
-    static readonly float[] TierDrill = { 0.10f, 0.10f, 0.34f, 0.46f, 0.60f, 0.72f, 0.88f };
+    static readonly float[] TierDrill = { 0.16f, 0.16f, 0.34f, 0.46f, 0.60f, 0.72f, 0.88f };
 
     /// A tier as the game writes it.
     public static string Roman(int tier) => tier switch { 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", _ => tier.ToString() };

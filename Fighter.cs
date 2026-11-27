@@ -34,7 +34,7 @@ public static class Fighter
     /// a horse archer's Arms at 0.5), half the Arms for casters.
     public static FighterSkills SkillsFor(UnitClass c, int tier, bool shoots)
     {
-        float l = 10 + 15 * Math.Max(0, tier - 1);
+        float l = tier <= 1 ? 14 : 10 + 15 * (tier - 1);
         return c switch
         {
             UnitClass.Caster => new(l * 0.5f, 0, 0),

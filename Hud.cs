@@ -106,7 +106,9 @@ sealed partial class Hud
     {
         W = vp.Width;
         H = vp.Height;
-        Ui = Settings.UiFor(W, H);
+        float baseUi = Settings.UiFor(W, H);
+        float maxFit = MathF.Max(0.75f, MathF.Min(W / 1280f, H / 720f) * 0.95f);
+        Ui = Math.Clamp(MathF.Floor(MathF.Min(baseUi * 0.75f, maxFit) * 8f + 0.5f) / 8f, 0.75f, 2.25f);
         cards.Clear(); buttons.Clear(); menu.Clear(); speedBtns.Clear(); armChips.Clear();
         pauseBtn = modeBtn = captainBtn = topBar = deck = Rectangle.Empty;
         hiddenCards = 0;
