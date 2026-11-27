@@ -40,9 +40,9 @@ partial class BattleScreen
         if (wheelOpen && !wasWheel) wheelVec = Vector2.Zero;
         if (lockTap) ToggleLockTarget();
 
-        // Validate active soft lock-on target.
+        // Validate active soft lock-on target; auto-retarget nearest threat in front when your target falls.
         if (lockTarget != null && (!lockTarget.Active || lockTarget.Routing || Vector2.DistanceSquared(lockTarget.Pos, battle.Player.Pos) > 24f * 24f))
-            lockTarget = null;
+            lockTarget = (!lockTarget.Active || lockTarget.Routing) ? PickLockTarget(12f) : null;
 
         // The captain's ring: hold its key a moment and it opens; a tap is the couch (when it shares the couch key).
         bool wasCap = capWheel, wasCapDown = capDown, couchTap = false;
@@ -54,8 +54,8 @@ partial class BattleScreen
 
         bool attackDown = IsActive && !wheelOpen && !capWheel && ctl.Down(Act.Attack);
         bool blockDown = IsActive && !wheelOpen && !capWheel && ctl.Down(Act.Block);
-        // Lock-on-press (CR1): while holding attack or block in mouse-flick mode, camera panning does not flip your direction.
-        bool dirLocked = !Settings.Current.MoveDirControl && lockTarget == null && (attackDown || blockDown);
+        // Lock-on-press for attacks only: holding RMB still lets you flick to switch guard direction live.
+        bool dirLocked = !Settings.Current.MoveDirControl && lockTarget == null && attackDown;
 
         if (IsActive)
         {
@@ -175,7 +175,7 @@ partial class BattleScreen
             Attack = attackDown,
             Block = blockDown,
             Dodge = IsActive && !wheelOpen && !capWheel && !mounted && ctl.Pressed(Act.Dodge),
-            Feint = IsActive && !wheelOpen && !capWheel && couchTap,
+            Feint = IsActive && !wheelOpen && !capWheel && (couchTap || (battle.Player.Action == UnitAction.Windup && ctl.Pressed(Act.Couch))),
             Rally = ctl.Pressed(Act.Rally),
             Bash = ctl.Pressed(Act.Bash),
             Swap = ctl.Pressed(Act.SwapWeapon) || capPending == Hud.CapCmd.Swap,
@@ -201,7 +201,7 @@ partial class BattleScreen
         if (lockTarget == prev) lockTarget = null;
     }
 
-    Unit? PickLockTarget()
+    Unit? PickLockTarget(float maxDist = 18f)
     {
         var p = battle.Player;
         var fwd = Forward(yaw);
@@ -212,7 +212,7 @@ partial class BattleScreen
             if (!u.Active || u.Team == p.Team || u.Routing) continue;
             var to = u.Pos - p.Pos;
             float d = to.Length();
-            if (d > 18f || d < 0.01f) continue;
+            if (d > maxDist || d < 0.01f) continue;
             float dot = Vector2.Dot(to / d, fwd);
             if (dot < -0.25f) continue;
             float score = d * (1.4f - 0.6f * dot);

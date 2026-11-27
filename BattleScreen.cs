@@ -712,6 +712,7 @@ sealed partial class BattleScreen
         hud.MouseGround = mouseGround; hud.Dragging = dragCard is { } dc && dragMoved ? dc : null;
         if (selectedDivision == null) hornMode = false;
         hud.HornMode = hornMode;
+        hud.LockTarget = lockTarget;
         hud.WheelOpen = wheelOpen; hud.CapWheelOpen = capWheel; hud.WheelSector = WheelSector() ?? -1; hud.WheelCenter = command && wheelOpen ? wheelOrigin : null;
         hud.Aim = aimDir; hud.View = view; hud.Proj = proj; hud.Mouse = shotMouse ?? (shotNoMouse ? new Point(-999, -999) : ms.Position);
         hud.Box = boxStart is Point b && command ? BoxOf(b, ms.Position) : null;

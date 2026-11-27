@@ -49,40 +49,33 @@ partial class BattleScreen
             };
             if (text.Contains("GUARD BREAK") || text.Contains("GUARD BROKEN"))
             {
-                Kick(0.32f); KickDir(-f, 2.2f);
-                AddSparkFlash(p.Pos + p.Dir * 0.9f, 1.3f, 0.9f, new Color(255, 220, 120));
+                Kick(0.16f); KickDir(-f, 1.0f);
+                AddSparkFlash(p.Pos + p.Dir * 0.9f, 1.3f, 0.38f, new Color(255, 220, 120));
             }
             else if (text.StartsWith("PARRY") || text.StartsWith("CHAMBER") || text.StartsWith("BLADE CLASH"))
             {
-                Kick(0.20f); KickDir(-f, 1.8f);
-                AddSparkFlash(p.Pos + p.Dir * 0.85f, 1.35f, 0.95f, new Color(255, 245, 195));
+                Kick(0.10f); KickDir(-f, 0.8f);
+                AddSparkFlash(p.Pos + p.Dir * 0.85f, 1.35f, 0.34f, new Color(255, 245, 195));
             }
             else if (text.Contains("DMG"))
             {
                 bool heavy = battle.Blows.Count > 0 && battle.Blows[^1] is { OnPlayer: false } lb && (lb.Fatal || lb.Amount >= lb.Target.Type.MaxHp * 0.4f);
-                Kick(heavy ? 0.30f : 0.20f); KickDir(swingKick, heavy ? 2.0f : 1.3f);
+                Kick(heavy ? 0.14f : 0.08f); KickDir(swingKick, heavy ? 0.9f : 0.55f);
                 if (battle.Blows.Count > 0 && battle.Blows[^1] is { OnPlayer: false } hitBlow)
-                    Spray(hitBlow.Target.Pos, 1.15f, heavy ? 9 : 5, new Color(170, 26, 22), heavy ? 4.8f : 3.2f, 2.2f, 0.32f, true, 0.45f);
+                    Spray(hitBlow.Target.Pos, 1.15f, heavy ? 5 : 3, new Color(170, 26, 22), heavy ? 3.4f : 2.2f, 1.6f, 0.26f, true, 0.35f);
             }
-            else if (text == "BLOCKED" || text.EndsWith("BASH!") || text == "KICK!")
+            else if (text.EndsWith("BASH!") || text == "KICK!")
             {
-                Kick(0.14f); KickDir(-f, 1.2f);
-                AddSparkFlash(p.Pos + p.Dir * 0.85f, 1.25f, 0.65f, new Color(235, 225, 190));
+                Kick(0.08f); KickDir(-f, 0.6f);
             }
         }
-        // CR6: Steel clash sparks for any nearby parries, chambers, or shield blocks.
-        foreach (var (cue, at) in battle.Sounds)
-            if (cue is Cue.ParrySteel or Cue.ShieldSplinter && Vector2.DistanceSquared(at, p.Pos) < 22f * 22f)
-                AddSparkFlash(at, 1.3f, cue == Cue.ParrySteel ? 0.85f : 0.65f, cue == Cue.ParrySteel ? new Color(255, 244, 188) : new Color(235, 200, 140));
         if (lastPlayerHp >= 0 && p.Hp < lastPlayerHp - 0.5f)
         {
-            Kick(0.4f);
+            Kick(0.22f);
             var from = p.Pos - p.HitFrom;
-            if (from.LengthSquared() > 1e-4f) KickDir(new Vector3(from.X, 0.25f, from.Y), 2.4f);
+            if (from.LengthSquared() > 1e-4f) KickDir(new Vector3(from.X, 0.2f, from.Y), 1.1f);
         }
         lastPlayerHp = p.Hp;
-        foreach (var (cue, at) in battle.Sounds)
-            if (Synth.HeavyImpact(cue)) { float d = Vector2.Distance(at, p.Pos); if (d < 16) Kick(0.3f * (1 - d / 16)); }
     }
 
     void Kick(float amount) => trauma = MathF.Min(1, trauma + amount);
@@ -283,7 +276,7 @@ partial class BattleScreen
         {
             At = G(at, y),
             Born = battle.Time,
-            Life = 0.15f,
+            Life = 0.09f,
             Size = size,
             Seed = fx.Next(),
             Col = col,
@@ -292,39 +285,24 @@ partial class BattleScreen
 
     void TrackSlashes()
     {
-        if (quality == Quality.Low || slashArcs.Count > 40) return;
+        // Keep 3D swing ribbons exclusively for the player's lit Aura Blade (drops noisy melee ribbon clutter).
+        if (quality == Quality.Low || !battle.AuraBlade) return;
+        var u = battle.Player;
+        if (!u.Active || u.Action != UnitAction.Active || u.SwingProgress < 0.05f) return;
         float now = battle.Time;
-        var eye2 = new Vector2(eye.X, eye.Z);
-        float maxD2 = 42f * 42f;
-        var units = battle.Units;
-        for (int i = 0; i < units.Count; i++)
+        if (lastSlashAt.TryGetValue(u.Index, out float prev) && now - prev < 0.25f) return;
+        lastSlashAt[u.Index] = now;
+        slashArcs.Add(new SlashArc
         {
-            var u = units[i];
-            if (!u.Active || u.Action != UnitAction.Active) continue;
-            if (u.Type.Class is UnitClass.Archer or UnitClass.Caster) continue;
-            bool priority = u.IsPlayer || u.IsLeader || u.Hero || u.Type.Reach >= 2.2f;
-            if (!priority && Vector2.DistanceSquared(u.Pos, eye2) > maxD2) continue;
-            if (lastSlashAt.TryGetValue(u.Index, out float prev) && now - prev < 0.25f) continue;
-            if (u.SwingProgress < 0.05f) continue;
-            lastSlashAt[u.Index] = now;
-
-            Color col = u.IsPlayer && battle.AuraBlade ? AuraColour
-                : u.IsPlayer || u.IsLeader || u.Hero ? new Color(255, 232, 168)
-                : new Color(224, 232, 245);
-            float h = u.Mounted ? 2.05f : 1.28f;
-            slashArcs.Add(new SlashArc
-            {
-                Origin = G(u.Pos, h),
-                Yaw = u.ViewFacing,
-                Reach = Math.Clamp(u.Type.Reach * 0.72f, 1.05f, 2.35f),
-                Born = now,
-                Life = priority ? 0.20f : 0.15f,
-                Dir = u.Swing,
-                Col = col,
-                Heavy = priority || u.Type.Reach >= 2.1f,
-            });
-            if (slashArcs.Count > 40) break;
-        }
+            Origin = G(u.Pos, u.Mounted ? 2.05f : 1.28f),
+            Yaw = u.ViewFacing,
+            Reach = Math.Clamp(u.Type.Reach * 0.72f, 1.05f, 2.35f),
+            Born = now,
+            Life = 0.16f,
+            Dir = u.Swing,
+            Col = AuraColour,
+            Heavy = false,
+        });
     }
 
     /// Render tapered 3D weapon swing ribbons and steel parry starbursts in the alpha-blended ribbon pass.

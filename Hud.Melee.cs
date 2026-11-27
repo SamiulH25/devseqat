@@ -49,6 +49,7 @@ sealed partial class Hud
     Unit? Opponent()
     {
         var p = B.Player;
+        if (LockTarget is { Active: true, Routing: false } locked && locked.Team != p.Team) return locked;
         int duelFoes = B.Options.Duel ? B.Units.Count(u => u.Active && u.Team != p.Team) : 0;
         if (B.Options.Duel && duelFoes <= 1 && B.EnemyCaptain.Active) return B.EnemyCaptain;
         for (int i = B.Blows.Count - 1; i >= 0; i--)
@@ -79,8 +80,26 @@ sealed partial class Hud
         bool ripostePulse = B.Riposting || (B.Time - p.ClashedAt < 0.35f);
         float pulse = 0.65f + 0.35f * MathF.Sin(B.Time * 22f);
 
-        // Centre dot (bright gold during riposte/chamber window).
+        // Centre dot (bright gold during riposte/chamber window) + brief hitmarker X on hit/kill/parry.
         Rect(new Rectangle(cx - U(1), cy - U(1), U(3), U(3)), ripostePulse ? Gold : Color.White * 0.9f);
+        float hitAge = B.Time - B.PlayerHit.At;
+        if (hitAge is >= 0 and < 0.16f)
+        {
+            var ht = B.PlayerHit.Text;
+            bool isKill = B.Blows.Count > 0 && B.Blows[^1] is { OnPlayer: false, Fatal: true } fb && B.Time - fb.At < 0.18f;
+            bool isSpecial = ht.StartsWith("PARRY") || ht.StartsWith("CHAMBER") || ht.Contains("GUARD BREAK");
+            bool isDmg = ht.Contains("DMG");
+            if (isKill || isSpecial || isDmg)
+            {
+                float hf = 1f - hitAge / 0.16f;
+                var hc = (isKill ? Foe : isSpecial ? Gold : Color.White) * hf;
+                float g0 = U(5), g1 = U(11);
+                Line(new Vector2(cx - g1, cy - g1), new Vector2(cx - g0, cy - g0), hc, U(2));
+                Line(new Vector2(cx + g1, cy - g1), new Vector2(cx + g0, cy - g0), hc, U(2));
+                Line(new Vector2(cx - g1, cy + g1), new Vector2(cx - g0, cy + g0), hc, U(2));
+                Line(new Vector2(cx + g1, cy + g1), new Vector2(cx + g0, cy + g0), hc, U(2));
+            }
+        }
 
         var incoming = new bool[4];
         bool foeNear = B.Options.Duel;
@@ -119,14 +138,22 @@ sealed partial class Hud
             Line(tip, tip - dir * len - side * len, col, w);
         }
 
-        // Compact Stamina / Posture bar right beneath the reticle during melee.
+        // Melee swing charge bar + compact Stamina / Posture bar beneath the reticle.
+        int barY = cy + U(34);
+        if (p.Charging && p.Charge > 0.02f)
+        {
+            int bw = U(52), bh = U(3), bx = cx - bw / 2;
+            Rect(new Rectangle(bx - U(1), barY - U(1), bw + U(2), bh + U(2)), Color.Black * 0.65f);
+            Bar(new Rectangle(bx, barY, bw, bh), Math.Clamp(p.Charge, 0f, 1f), p.Charge >= 0.85f ? Gold : Color.White * 0.9f);
+            barY += U(6);
+        }
         if (foeNear || p.Stamina < 99.5f)
         {
-            int bw = U(52), bh = U(4), bx = cx - bw / 2, by = cy + U(34);
+            int bw = U(52), bh = U(4), bx = cx - bw / 2;
             float frac = Math.Clamp(p.Stamina / 100f, 0f, 1f);
             var barCol = frac < 0.25f ? Bad : frac < 0.5f ? Warn : Ok;
-            Rect(new Rectangle(bx - U(1), by - U(1), bw + U(2), bh + U(2)), Color.Black * 0.65f);
-            Bar(new Rectangle(bx, by, bw, bh), frac, barCol);
+            Rect(new Rectangle(bx - U(1), barY - U(1), bw + U(2), bh + U(2)), Color.Black * 0.65f);
+            Bar(new Rectangle(bx, barY, bw, bh), frac, barCol);
         }
     }
 
@@ -191,7 +218,7 @@ sealed partial class Hud
     {
         if (u.Action == UnitAction.Stagger) return (u.GuardBroken ? "GUARD BROKEN!" : "STAGGERED", Gold);
         if (u.Action is UnitAction.Windup or UnitAction.Active && u.Target == B.Player) return (u.Action == UnitAction.Active ? "STRIKING" : "WINDING UP", Foe);
-        if (u.Action == UnitAction.Block) return ("GUARDING", Dim);
+        if (u.Action == UnitAction.Block) return (u.GuardDir switch { AttackDir.Overhead => "GUARD HIGH", AttackDir.Thrust => "GUARD LOW", AttackDir.Left => "GUARD LEFT", _ => "GUARD RIGHT" }, Dim);
         if (u.Action == UnitAction.Recover) return ("OPEN", Ok);
         if (u.Stamina < 25) return ("SPENT", Ok);
         return ("", Dim);
@@ -205,8 +232,9 @@ sealed partial class Hud
         var v = vp.Project(new Vector3(u.Pos.X, B.Terrain.Height(u.Pos) + (u.Mounted ? 3.6f : 2.6f), u.Pos.Y), Proj, View, Matrix.Identity);
         if (v.Z is <= 0 or >= 1) return;
         int bw = U(64), x = (int)Math.Clamp(v.X, bw / 2 + U(4), W - bw / 2 - U(4)), y = (int)Math.Clamp(v.Y, U(70), H - U(140));
+        bool isLocked = u == LockTarget;
         string name = Battle.NameOf(u) is { Length: > 0 } n ? n : u.Type.Name;
-        Shadowed(name.ToUpperInvariant(), x, y - U(12), u.IsLeader || u.Hero ? Gold : Color.White, 1, 1);
+        Shadowed(isLocked ? $"[ {name.ToUpperInvariant()} ]" : name.ToUpperInvariant(), x, y - U(12), isLocked || u.IsLeader || u.Hero ? Gold : Color.White, 1, 1);
         var bar = new Rectangle(x - bw / 2, y, bw, U(5));
         Rect(new Rectangle(bar.X - U(1), bar.Y - U(1), bar.Width + U(2), bar.Height + U(2)), Color.Black * 0.75f);
         Bar(bar, Math.Clamp(u.Hp / u.Type.MaxHp, 0, 1), Foe);

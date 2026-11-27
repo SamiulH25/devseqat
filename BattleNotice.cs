@@ -17,12 +17,12 @@ public sealed partial class Battle
     Vector2 captainKillPos;
 
     /// Farthest a foe notices you from, in metres.
-    const float NoticeRange = 30;
+    const float NoticeRange = 18;
     /// How long rabble give ground after you kill one of them, and how near the kill they must be.
     const float GiveGroundFor = 1.5f, GiveGroundNear = 6;
 
-    /// Most foes that may mark you at once: 2 / 3 / 4 by difficulty, one more against an aura master or better.
-    public int MarkCap => (Options.EnemyDamage < 0.9f ? 2 : Options.EnemyDamage > 1.1f ? 4 : 3) + (AuraTier >= 4 ? 1 : 0);
+    /// Most foes that may mark you at once: 1 / 2 / 3 by difficulty, one more against an aura master or better.
+    public int MarkCap => (Options.EnemyDamage < 0.9f ? 1 : Options.EnemyDamage > 1.1f ? 3 : 2) + (AuraTier >= 4 ? 1 : 0);
 
     /// How worth noticing you are, 0-1: renown (full at a marshal's 500), aura tier, kills this battle, a horse, the banner near.
     public float Fame()
@@ -55,16 +55,17 @@ public sealed partial class Battle
         float pd = Vector2.Distance(u.Pos, p.Pos);
         if (enemy == p) return Mark(u, enemy, d);
         if (pd > NoticeRange) { u.OnCaptain = false; return (enemy, d); }
-        if (enemy != null && d <= ReachOf(u) + 0.5f && !u.OnCaptain) return (enemy, d); // at blows with someone: he keeps his man
+        // If one of your men is right in front of him, he fights that man instead of tunneling past him at you.
+        if (enemy != null && d <= ReachOf(u) + 1.4f) { u.OnCaptain = false; return (enemy, d); }
         var grade = s.Grade;
-        float factor = 1 - 0.5f * Fame();
-        if (grade == Grade.Rabble && Alone(p)) factor *= 0.7f; // the mob rushes a lone captain
+        float factor = 1 - 0.35f * Fame();
+        if (grade == Grade.Rabble && Alone(p)) factor *= 0.85f;
         if (grade >= Grade.Veteran && pd > 2.5f)
         {
             // Veterans send their best: one man steps out to meet you; the rest keep to their own fight and cover him.
             var best = MeetsCaptain(s);
             if (best != u) { u.OnCaptain = false; return (enemy, d); }
-            factor *= 0.6f;
+            factor *= 0.72f;
         }
         if (enemy != null && pd * factor >= d) { u.OnCaptain = false; return (enemy, d); }
         return Mark(u, enemy, d);
@@ -72,8 +73,8 @@ public sealed partial class Battle
         (Unit?, float) Mark(Unit m, Unit? e, float ed)
         {
             if (m.OnCaptain) return (p, pd);
-            bool champion = m.Squad?.Meets == m; // the man sent to meet you does not wait for a place
-            if (MarkedBy >= MarkCap && !champion) return e == p ? (NotThePlayer(m, ed)) : (e, ed); // no place round you: fight your men
+            bool champion = m.Squad?.Meets == m;
+            if (MarkedBy >= MarkCap && (!champion || MarkedBy >= MarkCap + 1)) return e == p ? (NotThePlayer(m, ed)) : (e, ed); // no place round you: fight your men
             m.OnCaptain = true;
             MarkedBy++;
             return (p, pd);
@@ -84,8 +85,8 @@ public sealed partial class Battle
     (Unit?, float) NotThePlayer(Unit u, float pd)
     {
         Unit? best = null;
-        float bd = 10 * 10;
-        foreach (var o in Near(u.Pos, 10, nearNotice))
+        float bd = 24 * 24;
+        foreach (var o in Near(u.Pos, 24, nearNotice))
         {
             if (o.Team == u.Team || o.Routing || o.IsPlayer) continue;
             float dd = Vector2.DistanceSquared(o.Pos, u.Pos);

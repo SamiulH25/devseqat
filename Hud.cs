@@ -72,6 +72,8 @@ sealed partial class Hud
     public Rectangle? Box;
     /// The company under the mouse in command view (for the tooltip).
     public Squad? HoverSquad;
+    /// The enemy currently soft-locked in fight view (shown with a lock-on bracket and prioritized by OpponentMark).
+    public Unit? LockTarget;
     /// The division you are giving goals to (cards, goal buttons and the goal wheel), or null.
     public Division? Div;
 

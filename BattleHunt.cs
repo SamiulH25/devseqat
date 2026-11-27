@@ -20,8 +20,8 @@ public sealed partial class Battle
     /// How you know what is coming: `Flashes` kind "mark" over where a volley will fall (drawn as the warning ring).
     public const float VolleyWarn = 1.6f, VolleyWindow = 0.6f, VolleyRadius = 4;
     /// Kills, or metres ahead of your own line, that make the general send for you.
-    const int HarmKills = 6;
-    const float ForwardBy = 30;
+    const int HarmKills = 12;
+    const float ForwardBy = 36;
 
     /// Seconds between the general's orders against you: longer on Easy, shorter on Hard.
     float HuntCooldown => (Options.EnemyDamage < 0.9f ? 90 : Options.EnemyDamage > 1.1f ? 40 : 60) * Nature.HuntWait;
@@ -31,7 +31,7 @@ public sealed partial class Battle
     internal void HuntGeneral()
     {
         var p = Player;
-        if (Hunter != null && (!p.Active || p.Routing || Hunter.Alive < Hunter.StartCount * 0.3f || Time - huntSentAt > 45))
+        if (Hunter != null && (!p.Active || p.Routing || Hunter.Alive < Hunter.StartCount * 0.3f || Time - huntSentAt > 25))
         {
             Hunter.HuntCaptain = false;
             Hunter = null;
@@ -155,7 +155,7 @@ public sealed partial class Battle
     {
         var p = Player;
         if (!p.Active || p.Routing) return false;
-        bool atBlows = enemy != null && enemy != p && d <= ReachOf(u) + 0.5f;
+        bool atBlows = enemy != null && enemy != p && d <= ReachOf(u) + 3.5f;
         if ((s.HuntCaptain || u == EnemyCaptain && Options.Grudge != "" && eGuard.Order == Order.Charge) && u.Team != p.Team && !atBlows)
         {
             enemy = p;

@@ -146,8 +146,8 @@ public partial class Battle
         if (!busy)
         {
             if (inp.Block && p.Charging) { p.Charging = false; p.Charge = 0; } // feint: cancel the swing into a block
-            if (inp.Block && p.Action != UnitAction.Block) { p.BlockStart = Time; p.GuardDir = inp.Dir; }
-            if (inp.Block) { p.Action = UnitAction.Block; if (SelfGuard) p.GuardDir = guardDir; }
+            if (inp.Block && p.Action != UnitAction.Block) p.BlockStart = Time;
+            if (inp.Block) { p.Action = UnitAction.Block; p.GuardDir = SelfGuard ? guardDir : inp.Dir; }
             else if (p.Action == UnitAction.Block) p.Action = UnitAction.None;
             if (p.Action == UnitAction.None && !p.Couched && p.Type.Ammo > 0) PlayerBow(p, inp, dt);
             else if (p.Action == UnitAction.None && !p.Couched)
@@ -247,7 +247,7 @@ public partial class Battle
         if (p.Action is UnitAction.Windup or UnitAction.Stagger) return;
         if (p.Mounted)
         {
-            if (MathF.Abs(p.Speed) > 1.5f) { Log("Slow down to dismount."); return; }
+            if (MathF.Abs(p.Speed) > 3.2f) { Log("Slow down to dismount."); return; }
             var side = new Vector2(-p.HeadingDir.Y, p.HeadingDir.X);
             LooseHorses.Add(new LooseHorse { Mount = p.Horse!, Hp = p.HorseHp, Pos = p.Pos, Heading = p.Heading, Team = p.Team, Coat = p.Coat });
             p.Pos -= side * 1.1f;
