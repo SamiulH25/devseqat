@@ -255,7 +255,7 @@ partial class BattleScreen
                 EngineOrder(mouseGround, click);
                 if (!selected.Any(s => s.Works == null)) return;
             }
-            if (click && PickSquad(mouseGround, 1) is Squad foe)
+            if (click && PickSquad(mouseGround, 1, 4.5f) is Squad foe)
             {
                 OrderArrows(foe.Centroid());
                 Charge(foe, Cue.Order);
@@ -501,10 +501,10 @@ partial class BattleScreen
         return v.Z is > 0 and < 1;
     }
 
-    Squad? PickSquad(Vector2 p, int team)
+    Squad? PickSquad(Vector2 p, int team, float radius = 2f)
     {
         Unit? best = null;
-        float bd = 2f * 2f;
+        float bd = radius * radius;
         foreach (var u in battle.Units)
         {
             if (u.Team != team || u.Squad == null || !u.Active || u.Routing) continue;

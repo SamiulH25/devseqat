@@ -233,11 +233,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Controls.cs (696 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, FieldCommandPointer:169, WheelSector:271, CapSector:272, Sector:273, CommandControls:280, CommandCursor:477, BoxOf:495, OnScreen:497, PickSquad:504, GroundUnderMouse:518, GroundUnder:520, UpdateCamera:532, PullCameraIn:605, SegSegT:644, SegCircleT:656, SegObbT:670
 
-## BattleScreen.cs (762 lines)
-- **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:137, Load:151, QuickGround:185, BeginCampaign:195, StartDeployment:232, StageCommandView:247, BenchStage:257, FinishCampaignBattle:298, BeginQuickBattle:314, NewBattle:341, WithMages:386, SetWorld:394, SetCommand:410, Pressed:424, Update:432, PlaySounds:566, PlayPlayerSounds:595, Soundscape:617, SyncHud:711, MenuChoice:744
+## BattleScreen.cs (763 lines)
+- **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:138, Load:152, QuickGround:186, BeginCampaign:196, StartDeployment:233, StageCommandView:248, BenchStage:258, FinishCampaignBattle:299, BeginQuickBattle:315, NewBattle:342, WithMages:387, SetWorld:395, SetCommand:411, Pressed:425, Update:433, PlaySounds:567, PlayPlayerSounds:596, Soundscape:618, SyncHud:712, MenuChoice:745
 
-## BattleScreen.Draw.cs (1252 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:60, Total3DVerts:177, Total3DInstances:178, DrawBlobs:180, EaseFacings:222, Spray:238, Effects:251, AtmosphereFx:323, GroundSteps:369, BuildSprites:434, EnsureSkinned:630, DrawUnits3D:638, LensFill:706, SpriteStates:709, DrawSpritesBasic:717, DrawSpritesShaded:727, DrawSoft:738, Line:752, G:753, OrderArrows:762, OrderArrowLines:764, FortressPointRings:780, Ring:791, DashedRing:802, SelectionBox:817, Band:850, BeamQuad:872, BattleTutorialRibbon:897, TorchRow:944, Precipitation:954, Fall:965, Stakes:985, SpellColor:1019, Spells:1025, AuraGlow:1041, ChampionGlow:1051, PlayerGlow:1064, PendingFormsDrawn:1078, RouteDots:1103, PlanHook:1116, DrawLines:1146
+## BattleScreen.Draw.cs (1424 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:60, Total3DVerts:177, Total3DInstances:178, DrawBlobs:180, EaseFacings:222, Spray:238, Effects:251, AtmosphereFx:323, GroundSteps:369, BuildSprites:434, EnsureSkinned:630, DrawUnits3D:638, LensFill:706, SpriteStates:709, DrawSpritesBasic:717, DrawSpritesShaded:727, DrawSoft:738, Line:752, G:753, OrderArrows:762, OrderArrowLines:764, FortressPointRings:780, Ring:791, DashedRing:802, SelectionBox:817, Band:850, BeamQuad:872, BattleTutorialRibbon:897, TorchRow:944, Precipitation:954, Fall:965, Stakes:985, SpellColor:1019, Spells:1025, AuraGlow:1041, ChampionGlow:1051, PlayerGlow:1064, PendingFormsDrawn:1078, RouteDots:1103, PlanHook:1116, DrawLines:1146, Quad3:1275, DrawFootprintDisc:1282, DrawFormationFootprints:1297, DrawCommandBanner:1324
 
 ## BattleScreen.Effects.cs (378 lines)
 - **BattleScreen** (class, L7): KickDir:15, UpdateCamKick:21, Feel:34, Kick:81, Shake:84, AddMark:101, LeaveMarks:111, DrawMarks:124, Stamp:149, Trample:158, MenMap:176, TrampleTexture:199, RearOf:216, BannerFalls:238, DrawFallingBanners:249, ResetCombatFx:270, AddSparkFlash:272, TrackSlashes:286, DrawCombatFx:309
@@ -273,8 +273,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Press.cs (194 lines)
 - **BattleScreen** (class, L8): PressShot:16, PressList:21, PressScript:49, MagicShot:78, Aim:102, Blocked:116, Behind:137, Over:145, Captain:152, Horse:163, Volley:174, Hot:184
 
-## BattleScreen.Shots.cs (872 lines)
-- **BattleScreen** (class, L8): ShotScript:12, BeastScene:311, readonly:330, readonly:338, PoseSheet:348, GripSheet:422, ShooterSheet:446, StanceSheet:478, LifeSheet:499, Clash:532, MarkedScene:559, NamedScene:586, HuntedScene:620, ArrowScene:647, MagicScene:683, SpectacleScene:734, WorkScene:784, StageCast:840, Gallery:848
+## BattleScreen.Shots.cs (889 lines)
+- **BattleScreen** (class, L8): ShotScript:12, BeastScene:328, readonly:347, readonly:355, PoseSheet:365, GripSheet:439, ShooterSheet:463, StanceSheet:495, LifeSheet:516, Clash:549, MarkedScene:576, NamedScene:603, HuntedScene:637, ArrowScene:664, MagicScene:700, SpectacleScene:751, WorkScene:801, StageCast:857, Gallery:865
 
 ## BattleScreen.Spectacle.cs (208 lines)
 - **BattleScreen** (class, L9): ResetSpectacle:32, Beat:44, BeatCaption:53, AddGlow:67, AddAwe:70, AddScar:73, SpectacleFrame:84, Omen:112, Brighten:114, Drain:117, Shimmer:118, Flash:119, SetGlows:123, Weight:139, ScarColour:156, DrawScars:165, LightsFx:184

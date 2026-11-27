@@ -1174,7 +1174,7 @@ partial class BattleScreen
             OrderArrowLines();
             FortressPointRings();
             HoldMarker(); // the fight view's hold-there marker (BattleScreen.Fight.cs)
-            if (command)
+            if (command || fieldCommand)
             {
                 if (battle.Player.Active) Ring(battle.Player.Pos, 0.75f, Gold * 0.65f, 12, 0.75f);
                 if (battle.EnemyCaptain.Active) Ring(battle.EnemyCaptain.Pos, 0.75f, Foe * 0.65f, 12, 0.75f);
@@ -1215,18 +1215,40 @@ partial class BattleScreen
                     Band(G(tip - s.Front * 0.5f - rt * 0.45f), G(tip), c, 0.75f);
                     Band(G(tip - s.Front * 0.5f + rt * 0.45f), G(tip), c, 0.75f);
                 }
-                if (!hud.Over(ms.Position) && PickSquad(mouseGround, 1) is Squad hover)
-                    foreach (var u in hover.Units) if (u.Active && !u.Routing) Ring(u.Pos, u.Mounted ? 1.1f : 0.5f, Foe * 0.8f, 8);
+                Vector2 cursorPos = shotGround ?? mouseGround;
+                bool cursorOnField = shotGround != null || (!shotNoMouse && !hud.Over(ms.Position));
+                Squad? hoverFoe = cursorOnField ? PickSquad(cursorPos, 1, fieldCommand ? 4.5f : 2.5f) : null;
+                if (hoverFoe != null)
+                    foreach (var u in hoverFoe.Units) if (u.Active && !u.Routing) Ring(u.Pos, u.Mounted ? 1.1f : 0.52f, Foe * 0.9f, 8, 1.0f);
+                bool canPreview = Targets().Count > 0;
                 if (dragStart is Vector2 d)
                 {
-                    // Formation preview: where every man will stand.
+                    // Formation drag preview: translucent white ground footprint discs + facing chevron.
                     var enemy = battle.Centroid(1);
-                    bool click = Vector2.Distance(d, mouseGround) < 2;
-                    var (a, b) = click ? LineEnds(mouseGround, enemy) : (d, mouseGround);
-                    Band(G(a, 0.12f), G(b, 0.12f), Color.White * 0.8f);
-                    foreach (var slot in PreviewSlots(a, b, enemy)) Ring(slot, 0.3f, Color.White * 0.7f, 6, 0.7f);
+                    bool click = Vector2.Distance(d, cursorPos) < 2;
+                    var (a, b) = click ? LineEnds(cursorPos, enemy) : (d, cursorPos);
+                    DrawFormationFootprints(a, b, enemy);
+                    DrawCommandBanner(click ? cursorPos : (a + b) * 0.5f, hostile: false);
                 }
-                Ring(mouseGround, 0.35f, Color.White * 0.55f, 10, 0.65f);
+                else if (cursorOnField)
+                {
+                    if (hoverFoe != null && !deploying)
+                    {
+                        // Snaps to hovered enemy centroid in crimson with crossed-swords emblem.
+                        DrawCommandBanner(hoverFoe.Centroid(), hostile: true);
+                    }
+                    else
+                    {
+                        // Ground hover: tall translucent blue heraldic banner + live white ground footprints for selected companies.
+                        if (canPreview && (fieldCommand || selected.Count > 0))
+                        {
+                            var enemy = battle.Centroid(1);
+                            var (a, b) = LineEnds(cursorPos, enemy);
+                            DrawFormationFootprints(a, b, enemy);
+                        }
+                        DrawCommandBanner(cursorPos, hostile: false);
+                    }
+                }
             }
         }
         var gd = GraphicsDevice;
@@ -1247,6 +1269,156 @@ partial class BattleScreen
             bands.Draw(gd, PrimitiveType.TriangleList, bands.N / 3);
             gd.BlendState = BlendState.Opaque;
             gd.DepthStencilState = DepthStencilState.Default;
+        }
+    }
+
+    void Quad3(Vector3 bl, Vector3 br, Vector3 tr, Vector3 tl, Color cBot, Color cTop)
+    {
+        bands.Add(new(bl, cBot)); bands.Add(new(br, cBot)); bands.Add(new(tr, cTop));
+        bands.Add(new(bl, cBot)); bands.Add(new(tr, cTop)); bands.Add(new(tl, cTop));
+    }
+
+    /// Translucent ground-projected footprint disc elevated slightly above terrain triangles so it reads cleanly from horseback (Pillar 1 P1.3).
+    void DrawFootprintDisc(Vector2 p, float r, Color fill, Color rim, float lift = 0.26f)
+    {
+        float y = battle.Terrain.Height(p) + lift;
+        var center = new Vector3(p.X, y, p.Y);
+        const int segs = 8;
+        for (int i = 0; i < segs; i++)
+        {
+            float a0 = i * MathHelper.TwoPi / segs, a1 = (i + 1) * MathHelper.TwoPi / segs;
+            var p0 = new Vector3(p.X + MathF.Cos(a0) * r, y, p.Y + MathF.Sin(a0) * r);
+            var p1 = new Vector3(p.X + MathF.Cos(a1) * r, y, p.Y + MathF.Sin(a1) * r);
+            bands.Add(new(center, fill)); bands.Add(new(p0, rim)); bands.Add(new(p1, rim));
+        }
+    }
+
+    /// Crisp two-tone translucent white ground footprint markers + bold front baseline & facing chevron for PreviewSlots (Pillar 1 P1.3).
+    void DrawFormationFootprints(Vector2 a, Vector2 b, Vector2 toward)
+    {
+        var shadowFill = Color.Black * 0.42f;
+        var shadowRim = Color.Black * 0.08f;
+        var fill = Color.White * 0.90f;
+        var rim = Color.White * 0.48f;
+        foreach (var slot in PreviewSlots(a, b, toward))
+        {
+            DrawFootprintDisc(slot, 0.56f, shadowFill, shadowRim, 0.24f);
+            DrawFootprintDisc(slot, 0.42f, fill, rim, 0.28f);
+        }
+        // Front baseline + bold directional facing chevron so formation width & orientation read from horseback.
+        var mid = (a + b) * 0.5f;
+        var seg = b - a;
+        var fwd = seg.LengthSquared() > 0.25f ? new Vector2(seg.Y, -seg.X) : toward - mid;
+        if (fwd.LengthSquared() < 1e-4f) fwd = Vector2.UnitY;
+        fwd.Normalize();
+        if (Vector2.Dot(fwd, toward - mid) < 0) fwd = -fwd;
+        var rt = new Vector2(-fwd.Y, fwd.X);
+        Band(G(a + fwd * 0.9f, 0.30f), G(b + fwd * 0.9f, 0.30f), new Color(110, 184, 255) * 0.78f, 1.15f);
+        var tip = mid + fwd * 3.2f;
+        Band(G(tip - fwd * 1.35f - rt * 1.35f, 0.32f), G(tip, 0.32f), Color.White * 0.92f, 1.3f);
+        Band(G(tip - fwd * 1.35f + rt * 1.35f, 0.32f), G(tip, 0.32f), Color.White * 0.92f, 1.3f);
+    }
+
+    /// 3D translucent ground-projected Command Banner (Pillar 1 P1.3): tall steel-blue heraldic standard on ground hover,
+    /// snapping to crimson with crossed swords when hovering an enemy company; gently distance-scaled for readability across the valley.
+    void DrawCommandBanner(Vector2 pos, bool hostile)
+    {
+        float gy = battle.Terrain.Height(pos);
+        var basePos = new Vector3(pos.X, gy + 0.24f, pos.Y);
+        var toCam3 = eye - basePos;
+        float camDist = toCam3.Length();
+        float sc = Math.Clamp(camDist / 26f, 0.9f, 2.4f);
+
+        var toCam = new Vector3(eye.X - pos.X, 0, eye.Z - pos.Y);
+        if (toCam.LengthSquared() < 1e-4f) toCam = Vector3.UnitZ;
+        toCam.Normalize();
+        var right = Vector3.Normalize(Vector3.Cross(Vector3.Up, toCam));
+        var fwd = toCam * (0.05f * sc);
+
+        Color main = hostile ? new Color(196, 34, 34) : new Color(36, 102, 212);
+        Color topCol = hostile ? new Color(238, 66, 60) : new Color(76, 148, 240);
+        Color trim = Gold;
+
+        // Ground beacon rings + soft disc.
+        DrawFootprintDisc(pos, (hostile ? 1.85f : 1.15f) * MathF.Min(sc, 1.6f), main * 0.44f, main * 0.08f, 0.26f);
+        Ring(pos, (hostile ? 1.9f : 1.15f) * MathF.Min(sc, 1.6f), main * 0.92f, 16, 1.1f);
+        DashedRing(pos, (hostile ? 2.6f : 1.75f) * MathF.Min(sc, 1.6f), trim * 0.85f);
+
+        // Tall vertical pole.
+        float poleH = (hostile ? 5.4f : 4.4f) * sc;
+        float pw = 0.075f * sc;
+        Quad3(basePos - right * pw, basePos + right * pw,
+            basePos + right * pw + Vector3.Up * poleH, basePos - right * pw + Vector3.Up * poleH,
+            trim * 0.55f, trim * 0.96f);
+
+        // Crossbar at top of banner.
+        float halfW = (hostile ? 1.05f : 0.84f) * sc;
+        float barY = poleH - 0.18f * sc;
+        Quad3(basePos - right * (halfW + 0.15f * sc) + Vector3.Up * (barY - 0.07f * sc),
+            basePos + right * (halfW + 0.15f * sc) + Vector3.Up * (barY - 0.07f * sc),
+            basePos + right * (halfW + 0.15f * sc) + Vector3.Up * (barY + 0.07f * sc),
+            basePos - right * (halfW + 0.15f * sc) + Vector3.Up * (barY + 0.07f * sc),
+            trim * 0.92f, trim);
+
+        // Tall heraldic swallowtail/pointed banner cloth with high contrast against sky and clouds.
+        float clothTop = barY - 0.05f * sc;
+        float clothMid = clothTop - (hostile ? 1.95f : 1.65f) * sc;
+        float clothTip = clothMid - 0.72f * sc;
+        Quad3(basePos - right * halfW + Vector3.Up * clothMid,
+            basePos + right * halfW + Vector3.Up * clothMid,
+            basePos + right * halfW + Vector3.Up * clothTop,
+            basePos - right * halfW + Vector3.Up * clothTop,
+            main * 0.88f, topCol * 0.92f);
+        bands.Add(new(basePos - right * halfW + Vector3.Up * clothMid, main * 0.88f));
+        bands.Add(new(basePos + right * halfW + Vector3.Up * clothMid, main * 0.88f));
+        bands.Add(new(basePos + Vector3.Up * clothTip, main * 0.62f));
+
+        // Aged-brass side trim borders.
+        float bw = 0.08f * sc;
+        Quad3(basePos - right * halfW + Vector3.Up * clothMid + fwd, basePos - right * (halfW - bw) + Vector3.Up * clothMid + fwd,
+            basePos - right * (halfW - bw) + Vector3.Up * clothTop + fwd, basePos - right * halfW + Vector3.Up * clothTop + fwd,
+            trim * 0.85f, trim);
+        Quad3(basePos + right * (halfW - bw) + Vector3.Up * clothMid + fwd, basePos + right * halfW + Vector3.Up * clothMid + fwd,
+            basePos + right * halfW + Vector3.Up * clothTop + fwd, basePos + right * (halfW - bw) + Vector3.Up * clothTop + fwd,
+            trim * 0.85f, trim);
+
+        // Center emblem with subtle dark shadow backing so white emblem stays crisp over bright clouds.
+        var center = basePos + Vector3.Up * ((clothTop + clothMid) * 0.5f) + fwd * 1.5f;
+        var shadowOff = -Vector3.Up * (0.05f * sc) - fwd * 0.4f;
+        Color emb = Color.White * 0.98f;
+        Color embShadow = Color.Black * 0.55f;
+        if (hostile)
+        {
+            void Blade(float sign, Vector3 off, Color cBot, Color cTop)
+            {
+                var d = Vector3.Normalize(right * sign * 0.78f + Vector3.Up * 0.82f);
+                var n = Vector3.Normalize(Vector3.Cross(d, toCam)) * (0.085f * sc);
+                var c = center + off;
+                var a0 = c - d * (0.68f * sc);
+                var a1 = c + d * (0.74f * sc);
+                Quad3(a0 - n, a0 + n, a1 + n, a1 - n, cBot, cTop);
+                var g0 = c - d * (0.40f * sc);
+                Quad3(g0 - n * 2.7f, g0 + n * 2.7f, g0 + d * (0.10f * sc) + n * 2.7f, g0 + d * (0.10f * sc) - n * 2.7f, cBot, cBot);
+            }
+            Blade(1f, shadowOff, embShadow, embShadow);
+            Blade(-1f, shadowOff, embShadow, embShadow);
+            Blade(1f, Vector3.Zero, trim, emb);
+            Blade(-1f, Vector3.Zero, trim, emb);
+        }
+        else
+        {
+            void Chev(Vector3 off, Color cBot, Color cTop)
+            {
+                var c = center + off;
+                var apex = c + Vector3.Up * (0.34f * sc);
+                var leftEnd = c - right * (0.48f * sc) - Vector3.Up * (0.16f * sc);
+                var rightEnd = c + right * (0.48f * sc) - Vector3.Up * (0.16f * sc);
+                var thick = Vector3.Up * (0.15f * sc);
+                Quad3(leftEnd - thick, apex - thick, apex, leftEnd, cBot, cTop);
+                Quad3(apex - thick, rightEnd - thick, rightEnd, apex, cBot, cTop);
+            }
+            Chev(shadowOff, embShadow, embShadow);
+            Chev(Vector3.Zero, emb * 0.9f, emb);
         }
     }
 }

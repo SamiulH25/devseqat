@@ -255,36 +255,53 @@ partial class BattleScreen
                 b.Player.Pos = new(0, -34 - Battle.Stand); yaw = MathHelper.PiOver2; pitch = 0.2f; aimDir = AttackDir.Right;
                 pendingShot = "fight-view"; shotIndex++; break;
             case 126 when pendingShot == null:
-                // Horseback Command Mode (Pillar 1): left roster, selected company card, bottom compact order bar.
+                // Horseback Command Mode (Pillar 1): left roster, selected company card, compact order bar, 3D blue banner cursor + white ground footprints.
                 fieldCommand = true;
                 selected.Clear();
                 if (b.Commanded.FirstOrDefault(q => q.Alive > 0) is Squad firstSq) selected.Add(firstSq);
                 shotNoMouse = true;
+                pitch = 0.28f;
+                shotGround = b.Player.Pos + new Vector2(2f, 19f);
                 shotFrames = 0; shotIndex++; break;
             case 127 when shotFrames > 4:
                 pendingShot = "fight-command-mode"; shotIndex++; break;
             case 128 when pendingShot == null:
-                fieldCommand = false; shotNoMouse = false;
+                // Hovering an enemy company in horseback Command Mode: crimson 3D banner with crossed swords snapped to enemy centroid.
+                if (b.SquadsOf(1).Where(q => q.Alive > 0).OrderBy(q => Vector2.Distance(q.Centroid(), b.Player.Pos)).FirstOrDefault() is Squad nearFoe)
+                {
+                    var foePos = nearFoe.Centroid();
+                    b.Player.Pos = foePos + new Vector2(-10f, -26f);
+                    shotGround = foePos;
+                    var toFoe = foePos - b.Player.Pos;
+                    yaw = MathF.Atan2(toFoe.Y, toFoe.X);
+                    pitch = 0.20f;
+                }
+                shotFrames = 0; shotIndex++; break;
+            case 129 when shotFrames > 4:
+                pendingShot = "fight-command-attack"; shotIndex++; break;
+            case 130 when pendingShot == null:
+                fieldCommand = false; shotNoMouse = false; shotGround = null;
+                b.Player.Pos = new(0, -34 - Battle.Stand); yaw = MathHelper.PiOver2; pitch = 0.2f;
                 ListenArm(1, false); Command(Cmd.Advance);
                 shotFrames = 0; shotIndex++; break;
-            case 129 when shotFrames > 6:
+            case 131 when shotFrames > 6:
                 pendingShot = "fight-orders"; shotIndex++; break;
-            case 130 when pendingShot == null:
+            case 132 when pendingShot == null:
                 shotWheel = wheelOpen = true; wheelVec = new Vector2(60, -60);
                 pendingShot = "fight-ring"; shotIndex++; break;
-            case 131 when pendingShot == null && !shotCapWheel:
+            case 133 when pendingShot == null && !shotCapWheel:
                 shotWheel = wheelOpen = false; shotCapWheel = capWheel = true; wheelVec = new Vector2(60, -60); // the captain's ring, leaning to a form
                 pendingShot = "fight-captain-ring"; break;
-            case 131 when pendingShot == null:
+            case 133 when pendingShot == null:
                 shotCapWheel = capWheel = false; wheelVec = Vector2.Zero; shotHold = true; holdHeld = 1; pitch = 0.32f; ListenArm(0, false);
                 shotFrames = 0; shotIndex++; break;
-            case 132 when shotFrames > 3:
+            case 134 when shotFrames > 3:
                 pendingShot = "fight-hold"; shotIndex++; break;
-            case 133 when pendingShot == null && b.Time > 20f:
+            case 135 when pendingShot == null && b.Time > 20f:
                 shotHold = false; holdHeld = -1;
                 SetCommand(true); blend = 1; camFocus = b.Centroid(0); camYaw = 1.9f; camPitch = 0.9f; zoom = 60; shotNoMouse = true;
                 pendingShot = "command-view"; shotIndex++; break;
-            case 134 when pendingShot == null:
+            case 136 when pendingShot == null:
             {
                 var mine = b.Commanded.Where(q => q.Alive > 0).ToList();
                 var foe = b.SquadsOf(1).Where(q => q.Alive > 0).OrderBy(q => Vector2.Distance(q.Centroid(), b.Centroid(0))).First();
@@ -292,18 +309,18 @@ partial class BattleScreen
                 if (mine.FirstOrDefault(q => q.Units[0].Type.Ammo > 0) is Squad bows) bows.FireAtWill = false;
                 shotFrames = 0; shotIndex++; break;
             }
-            case 135 when shotFrames > 3:
+            case 137 when shotFrames > 3:
                 pendingShot = "command-attack"; shotIndex++; break;
-            case 136 when pendingShot == null:
+            case 138 when pendingShot == null:
                 selected.Clear();
                 if (b.Commanded.FirstOrDefault(q => q.Alive > 0 && q.Units[0].Type.Ammo > 0) is Squad one) selected.Add(one);
                 paused = true; shotFrames = 0; shotIndex++; break;
-            case 137 when shotFrames > 3:
+            case 139 when shotFrames > 3:
                 shotMouse = hud.ButtonCentre(Cmd.FireAtWill);
                 shotFrames = 0; shotIndex++; break;
-            case 138 when shotFrames > 2:
+            case 140 when shotFrames > 2:
                 pendingShot = "command-bows"; shotIndex++; break;
-            case 139 when pendingShot == null: Exit(); break;
+            case 141 when pendingShot == null: Exit(); break;
         }
     }
 

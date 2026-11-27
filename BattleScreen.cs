@@ -133,6 +133,7 @@ sealed partial class BattleScreen
     float capSince;
     Hud.CapCmd? capPending;
     Point? shotMouse; // a shot points the mouse at something to show its hover card
+    Vector2? shotGround; // a shot points the 3D command banner cursor at a ground/enemy spot
 
     public BattleScreen(ScreenHost host) { this.host = host; }
 
