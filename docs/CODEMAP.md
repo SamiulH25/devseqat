@@ -206,8 +206,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattlePaths.cs (52 lines)
 - **Battle** (class, L10): FormCost:15, Hearthside:21, Anchored:25, HearthForm:28
 
-## BattlePlayer.cs (309 lines)
-- **Battle** (class, L6): Guard:17, BufferInput:43, UpdatePlayer:56, CanCouch:236, ToggleMount:245, Rally:280, KingsCharge:298
+## BattlePlayer.cs (307 lines)
+- **Battle** (class, L6): Guard:17, BufferInput:43, UpdatePlayer:56, CanCouch:234, ToggleMount:243, Rally:278, KingsCharge:296
 
 ## BattlePosts.cs (335 lines)
 - **Line** (struct, L7)
@@ -230,8 +230,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Arrows.cs (160 lines)
 - **BattleScreen** (class, L10): Landed:13, ResetArrows:25, TrackArrows:29, Steep:51, Puff:61, DrawMissiles:78, MissileLines:103, DrawArrowRibbons:131
 
-## BattleScreen.Controls.cs (563 lines)
-- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:138, CapSector:139, Sector:140, CommandControls:147, CommandCursor:344, BoxOf:362, OnScreen:364, PickSquad:371, GroundUnderMouse:385, GroundUnder:387, UpdateCamera:399, PullCameraIn:472, SegSegT:511, SegCircleT:523, SegObbT:537
+## BattleScreen.Controls.cs (556 lines)
+- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:131, CapSector:132, Sector:133, CommandControls:140, CommandCursor:337, BoxOf:355, OnScreen:357, PickSquad:364, GroundUnderMouse:378, GroundUnder:380, UpdateCamera:392, PullCameraIn:465, SegSegT:504, SegCircleT:516, SegObbT:530
 
 ## BattleScreen.cs (741 lines)
 - **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:137, Load:151, QuickGround:185, BeginCampaign:195, StartDeployment:232, StageCommandView:247, BenchStage:257, FinishCampaignBattle:298, BeginQuickBattle:314, NewBattle:341, WithMages:386, SetWorld:394, SetCommand:410, Pressed:422, Update:430, PlaySounds:546, PlayPlayerSounds:575, Soundscape:597, SyncHud:691, MenuChoice:723

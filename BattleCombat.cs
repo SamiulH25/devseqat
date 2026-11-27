@@ -89,7 +89,7 @@ public partial class Battle
             u.LastSwing = u.Swing;
             u.Action = UnitAction.Recover;
             float whiffMult = u.HitCount == 0 && IsCrushWeapon(u) ? 1.15f : 1f; // CR4: axes/maces have heavier whiff recovery
-            u.ActionTimer = (u.IsPlayer ? 0.28f * u.Type.Recover / 0.5f : u.Mounted ? MathF.Min(u.Type.Recover, SaddleRecover) : u.Type.Recover) * whiffMult;
+            u.ActionTimer = (u.IsPlayer ? 0.42f * u.Type.Recover / 0.5f : u.Mounted ? MathF.Min(u.Type.Recover, SaddleRecover) : u.Type.Recover) * whiffMult;
             return;
         }
         if ((u.ActionTimer -= dt) > 0) return;
@@ -237,7 +237,7 @@ public partial class Battle
                     if (a.IsPlayer) riposteSwing = false;
                     a.LastSwing = a.Swing;
                     a.Action = UnitAction.Recover;
-                    a.ActionTimer = a.IsPlayer ? 0.28f * a.Type.Recover / 0.5f : a.Mounted ? MathF.Min(a.Type.Recover, SaddleRecover) : a.Type.Recover;
+                    a.ActionTimer = a.IsPlayer ? 0.42f * a.Type.Recover / 0.5f : a.Mounted ? MathF.Min(a.Type.Recover, SaddleRecover) : a.Type.Recover;
                 }
                 return;
             }

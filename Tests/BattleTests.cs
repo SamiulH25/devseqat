@@ -453,8 +453,8 @@ public static partial class SelfTest
         Check(sq.Pressure == 0, "a square cannot be taken in the flank");
     }
 
-    /// On horseback the captain turns in the saddle, not round on the horse's back: looking behind him brings the horse
-    /// round, he never faces further from its head than MountReach, and the reins turn the view with the horse.
+    /// On horseback the camera and horse are delocked: looking behind never turns the horse, the rider's torso stays within
+    /// MountReach of the horse's head, and only A/D steering turns the horse.
     static void HorseFollowsRider()
     {
         var b = Battle.Empty(12);
@@ -462,19 +462,19 @@ public static partial class SelfTest
         p.Horse = Mount.Warhorse;
         float start = p.Heading, back = MathHelper.WrapAngle(start + MathHelper.Pi - 0.2f);
         float worst = 0;
-        for (int i = 0; i < 60 * 4; i++)
+        for (int i = 0; i < 60 * 2; i++)
         {
             b.Input = new PlayerInput { Facing = back };
             b.Update(1 / 60f);
             worst = MathF.Max(worst, MathF.Abs(MathHelper.WrapAngle(p.Facing - p.Heading)));
         }
         Check(worst <= Battle.MountReach + 1e-3f, $"he never faces more than MountReach from the horse's head ({worst:0.00} rad)");
-        Check(MathF.Abs(MathHelper.WrapAngle(back - p.Heading)) <= Battle.MountTwist + 0.05f, "looking back brings the horse round");
+        Check(MathF.Abs(MathHelper.WrapAngle(p.Heading - start)) < 1e-4f, "looking behind does not swerve the horse");
         b.Reined = 0;
         float h = p.Heading;
         b.Input = new PlayerInput { Facing = p.Heading, Steer = 1 };
         b.Update(1 / 60f);
-        Check(MathF.Abs(b.Reined - MathHelper.WrapAngle(p.Heading - h)) < 1e-4f && b.Reined > 0, "the reins report the turn for the camera");
+        Check(MathF.Abs(b.Reined - MathHelper.WrapAngle(p.Heading - h)) < 1e-4f && b.Reined > 0, "A/D steering turns the horse independently");
     }
 
     static void CaptainCombat()

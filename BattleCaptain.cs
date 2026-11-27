@@ -39,9 +39,9 @@ public sealed partial class Battle
             * (tired ? 0.6f : 1) * (riposteSwing ? 1.25f : 1) * FocusEdge * SpentEdge; // Focus (K2); spent, weaker (MA3)
         p.Charge = 0;
         p.Action = UnitAction.Windup;
-        float riposteMult = riposteSwing ? (IsSwordAndShield(p) ? 0.42f : 0.5f) : 1f; // CR4: sword & shield fastest riposte
-        float comboMult = opposite && Chain > 0 ? (IsTwoHandSword(p) ? 0.84f : 0.88f) : 1f; // CR4: 2H greatsword strong combo chaining
-        p.ActionTimer = (p.Swing == AttackDir.Overhead ? 0.2f : 0.15f) * p.Type.Windup / 0.4f // your weapon sets your pace (P1)
+        float riposteMult = riposteSwing ? (IsSwordAndShield(p) ? 0.55f : 0.62f) : 1f; // CR4: sword & shield fastest riposte
+        float comboMult = opposite && Chain > 0 ? (IsTwoHandSword(p) ? 0.90f : 0.93f) : 1f; // CR4: 2H greatsword strong combo chaining
+        p.ActionTimer = (p.Swing == AttackDir.Overhead ? 0.30f : 0.25f) * p.Type.Windup / 0.4f // your weapon sets your pace (P1)
             * (tired ? 1.4f : 1) * riposteMult * comboMult * (1 - 0.15f * ArmsEdge);
         p.WindupDuration = p.ActionTimer;
         p.ClearHits();

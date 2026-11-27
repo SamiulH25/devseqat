@@ -89,14 +89,7 @@ partial class BattleScreen
             fieldDist = Math.Clamp(fieldDist - wheelDelta * 0.0035f, 2.4f, 10f);
 
         bool mounted = battle.Player.Mounted;
-        if (mounted)
-        {
-            yaw += battle.Reined; // turning the horse on the reins turns the view with it (the horse follows the view: BattlePlayer.cs)
-            float relYaw = MathHelper.WrapAngle(yaw - battle.Player.Heading);
-            float maxCam = Battle.MountReach + 0.32f;
-            if (MathF.Abs(relYaw) > maxCam) yaw = battle.Player.Heading + MathF.Sign(relYaw) * maxCam;
-        }
-        battle.Reined = 0;
+        battle.Reined = 0; // camera is delocked from horse heading: 360-degree free look while riding
         var f = Forward(yaw);
         float fwdAxis = ctl.Axis(Act.Forward, Act.Back), rightAxis = ctl.Axis(Act.Right, Act.Left);
         var move = mounted ? Vector2.Zero : f * fwdAxis + RightOf(f) * rightAxis;
