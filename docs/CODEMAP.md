@@ -322,10 +322,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleUrge.cs (102 lines)
 - **Battle** (class, L11): TemperOf:17, ImpulsiveCompany:28, UpdateUrge:36, TipCompany:75
 
-## BattleVoice.cs (434 lines)
+## BattleVoice.cs (457 lines)
 - **BattleBarkLine** (class, L7)
-- **BattleBarks** (class, L12): Load:20, Pick:33
-- **Battle** (class, L46): PendingBark:48, QueueBark:85, DrainPendingBarks:92, SpeakSquadOrder:113, SpeakDivisionOrder:150, SpeakBrace:183, SpeakRally:212, SpeakVictory:238, CheckBattleBarks:253, QueueBrotherReply:419
+- **BattleBarks** (class, L12): Load:20, NormalizeOrigin:34, Pick:44
+- **Battle** (class, L69): PendingBark:71, QueueBark:108, DrainPendingBarks:115, SpeakSquadOrder:136, SpeakDivisionOrder:173, SpeakBrace:206, SpeakRally:235, SpeakVictory:261, CheckBattleBarks:276, QueueBrotherReply:442
 
 ## BattleWings.cs (164 lines)
 - **Battle** (class, L10): Rallies:13, RallyPoint:16, Broke:28, HorseReinIn:39, RideToRally:51, HorseWits:79, HorsePrey:99, ChargeLane:116, HoldsFire:130, BowsWits:134, Focus:163
@@ -1266,7 +1266,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/TierTests.cs (154 lines)
 - **SelfTest** (class, L6): Standing:9, SameRole:31, UpgradeNeverWorse:43, HigherTierWins:64, TierGap:85, TierSurvey:99, TierMatrix:122, TierLadder:137
 
-## Tests/VoiceDialogueTests.cs (72 lines)
+## Tests/VoiceDialogueTests.cs (81 lines)
 - **SelfTest** (class, L5): VoiceBankAndSpeech:7, BattleBarksAndParley:26
 
 ## Tests/WallTests.cs (219 lines)

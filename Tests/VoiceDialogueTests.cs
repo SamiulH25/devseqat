@@ -39,6 +39,15 @@ public static partial class SelfTest
         foreach (var t in topics)
             Check(BattleBarks.Pick(t, "Steady", 7).Length > 0, $"barks.json topic '{t}' resolves");
 
+        // Origin-styled vocal stims: each people speaks in its own voice, and subcultures map cleanly
+        string[] origins = { "azure", "crimson", "northern", "southern", "steppe", "league", "order", "bandit" };
+        var braceByOrigin = origins.Select(c => BattleBarks.Pick("brace_call", "", 3, c)).ToList();
+        Check(braceByOrigin.Distinct().Count() == origins.Length, "every troop origin has its own distinct brace call");
+        var holdByOrigin = origins.Select(c => BattleBarks.Pick("order_hold", "", 3, c)).ToList();
+        Check(holdByOrigin.Distinct().Count() == origins.Length, "every troop origin has its own distinct hold rebound");
+        Check(BattleBarks.Pick("brace_call", "", 3, "northern_fjord") == BattleBarks.Pick("brace_call", "", 3, "northern"), "subculture maps to parent origin voice");
+        Check(BattleBarks.Pick("order_hold", "", 3, "common") == BattleBarks.Pick("order_hold", "", 3, ""), "common falls back to generic lines");
+
         // Rebound commands (primary + second-company relay echo) and brace calls are read-only and replay-safe
         var b = new Battle(11,
             new ArmySpec("mine", 0, new List<Company> { new("manor_foot", 16, "infantry", 1), new("brevon_fyrd", 16, "infantry", 2) }),

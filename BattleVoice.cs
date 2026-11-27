@@ -6,7 +6,7 @@ namespace Ironfield;
 /// Battle bark lines loaded from `Data/dialogue/barks.json` (docs/VOICE_DIALOGUE.md).
 public sealed class BattleBarkLine
 {
-    public string Topic = "", Nature = "", Text = "";
+    public string Topic = "", Culture = "", Nature = "", Text = "";
 }
 
 public static class BattleBarks
@@ -30,10 +30,33 @@ public static class BattleBarks
         return new();
     }
 
-    public static string Pick(string topic, string nature, int seed)
+    /// Normalize a troop's culture id to its origin voice group (keeps bandit/wild distinct; common falls back to generic).
+    public static string NormalizeOrigin(string? culture)
     {
-        var fits = All.Where(l => l.Topic == topic && (l.Nature == "" || l.Nature == nature)).ToList();
-        if (fits.Any(l => l.Nature != "")) fits = fits.Where(l => l.Nature != "").ToList();
+        if (string.IsNullOrWhiteSpace(culture)) return "";
+        string c = culture.Trim().ToLowerInvariant();
+        if (c == "common") return "";
+        if (c.StartsWith("bandit")) return "bandit";
+        if (c.StartsWith("wild")) return "wild";
+        return VoiceProfile.NormalizeCulture(c);
+    }
+
+    public static string Pick(string topic, string nature, int seed, string culture = "")
+    {
+        string exact = string.IsNullOrWhiteSpace(culture) ? "" : culture.Trim().ToLowerInvariant();
+        string origin = NormalizeOrigin(culture);
+
+        List<BattleBarkLine> PickPool(string wantCulture)
+        {
+            var pool = All.Where(l => l.Topic == topic && l.Culture == wantCulture && (l.Nature == "" || l.Nature == nature)).ToList();
+            if (pool.Any(l => l.Nature != "")) pool = pool.Where(l => l.Nature != "").ToList();
+            return pool;
+        }
+
+        List<BattleBarkLine> fits = new();
+        if (exact != "" && exact != origin) fits = PickPool(exact);
+        if (fits.Count == 0 && origin != "") fits = PickPool(origin);
+        if (fits.Count == 0) fits = PickPool("");
         if (fits.Count == 0) return "";
         int idx = Math.Abs(seed) % fits.Count;
         return fits[idx].Text;
@@ -122,7 +145,7 @@ public sealed partial class Battle
             if (sp.Unit != null) { first = s; sp1 = sp; break; }
         }
         if (first == null || sp1.Unit == null) return;
-        string text = BattleBarks.Pick(topic, sp1.Nature, Rng.Mix(first.StartCount, (int)(Time * 10), Spoken.Count + pendingBarks.Count));
+        string text = BattleBarks.Pick(topic, sp1.Nature, Rng.Mix(first.StartCount, (int)(Time * 10), Spoken.Count + pendingBarks.Count), sp1.Unit.Type.Culture);
         if (text == "") return;
         lastOrderBarkAt = Time;
         QueueBark(new PendingBark(Time + 0.26f, sp1.SoldierId, sp1.Name, text, first,
@@ -136,7 +159,7 @@ public sealed partial class Battle
                 if (s == first || s.Team != 0 || s.Alive == 0) continue;
                 var sp2 = PickSpeaker(s);
                 if (sp2.Unit == null) continue;
-                string echo = BattleBarks.Pick("order_rebound_echo", sp2.Nature, Rng.Mix(s.StartCount, (int)(Time * 13), Spoken.Count + 7));
+                string echo = BattleBarks.Pick("order_rebound_echo", sp2.Nature, Rng.Mix(s.StartCount, (int)(Time * 13), Spoken.Count + 7), sp2.Unit.Type.Culture);
                 if (echo != "")
                     QueueBark(new PendingBark(Time + 0.66f, sp2.SoldierId, sp2.Name, echo, s,
                         Key: false, Team: 0, Mood: VoiceMood.Command, Culture: sp2.Unit.Type.Culture, Nature: sp2.Nature, Sergeant: false));
@@ -159,7 +182,7 @@ public sealed partial class Battle
             _ => "order_hold",
         };
         string nature = NamedOf(sgt)?.Nature ?? "";
-        string text = BattleBarks.Pick(topic, nature, Rng.Mix(d.Id, (int)(Time * 10), Spoken.Count));
+        string text = BattleBarks.Pick(topic, nature, Rng.Mix(d.Id, (int)(Time * 10), Spoken.Count), sgt.Type.Culture);
         if (text == "") return;
         lastOrderBarkAt = Time;
         string name = d.Name != "" ? d.Name : "Sergeant";
@@ -171,7 +194,7 @@ public sealed partial class Battle
             var sp2 = PickSpeaker(other);
             if (sp2.Unit != null)
             {
-                string echo = BattleBarks.Pick("order_rebound_echo", sp2.Nature, Rng.Mix(d.Id, (int)(Time * 13), Spoken.Count + 11));
+                string echo = BattleBarks.Pick("order_rebound_echo", sp2.Nature, Rng.Mix(d.Id, (int)(Time * 13), Spoken.Count + 11), sp2.Unit.Type.Culture);
                 if (echo != "")
                     QueueBark(new PendingBark(Time + 0.62f, sp2.SoldierId, sp2.Name, echo, other,
                         Key: false, Team: 0, Mood: VoiceMood.Command, Culture: sp2.Unit.Type.Culture, Nature: sp2.Nature, Sergeant: false));
@@ -188,7 +211,7 @@ public sealed partial class Battle
             if (s.Team != 0 || Time - lastBraceHitBarkAt < 10f) return;
             var sp = PickSpeaker(s);
             if (sp.Unit == null) return;
-            string text = BattleBarks.Pick("brace_hit", sp.Nature, Rng.Mix(s.StartCount, (int)(Time * 7), Spoken.Count));
+            string text = BattleBarks.Pick("brace_hit", sp.Nature, Rng.Mix(s.StartCount, (int)(Time * 7), Spoken.Count), sp.Unit.Type.Culture);
             if (text == "") return;
             lastBraceHitBarkAt = Time;
             Spoken.Add(new Said(sp.SoldierId, sp.Name, text, Time, s, Key: false, Team: 0, Mood: VoiceMood.Command, Culture: sp.Unit.Type.Culture, Nature: sp.Nature, Sergeant: sp.Sergeant));
@@ -199,7 +222,7 @@ public sealed partial class Battle
         var speaker = PickSpeaker(s);
         if (speaker.Unit == null) return;
         string topic = s.Team == 0 ? "brace_call" : "foe_brace";
-        string line = BattleBarks.Pick(topic, speaker.Nature, Rng.Mix(s.StartCount, (int)(Time * 9), Spoken.Count));
+        string line = BattleBarks.Pick(topic, speaker.Nature, Rng.Mix(s.StartCount, (int)(Time * 9), Spoken.Count), speaker.Unit.Type.Culture);
         if (line == "") return;
         lastBraceBarkAt = Time;
         squadBraceBarkAt[s] = Time;
@@ -228,7 +251,7 @@ public sealed partial class Battle
         var named = NamedOf(best);
         string nature = named?.Nature ?? "";
         string name = named != null ? named.Name : best.Squad?.Name is { Length: > 0 } sn ? sn : "Sergeant";
-        string text = BattleBarks.Pick("rally_answer", nature, Rng.Mix(best.SoldierId, (int)(Time * 11), Spoken.Count));
+        string text = BattleBarks.Pick("rally_answer", nature, Rng.Mix(best.SoldierId, (int)(Time * 11), Spoken.Count), best.Type.Culture);
         if (text == "") return;
         QueueBark(new PendingBark(Time + 0.32f, best.SoldierId, name, text, best.Squad,
             Key: true, Team: 0, Mood: VoiceMood.Command, Culture: best.Type.Culture, Nature: nature, Sergeant: true));
@@ -243,7 +266,7 @@ public sealed partial class Battle
         if (sq == null) return;
         var sp = PickSpeaker(sq);
         if (sp.Unit == null) return;
-        string text = BattleBarks.Pick("victory_cheer", sp.Nature, Rng.Mix(sq.StartCount, (int)(Time * 5), Spoken.Count));
+        string text = BattleBarks.Pick("victory_cheer", sp.Nature, Rng.Mix(sq.StartCount, (int)(Time * 5), Spoken.Count), sp.Unit.Type.Culture);
         if (text == "") return;
         Spoken.Add(new Said(sp.SoldierId, sp.Name, text, Time, sq, Key: true, Team: 0, Mood: VoiceMood.Command, Culture: sp.Unit.Type.Culture, Nature: sp.Nature, Sergeant: true));
     }
@@ -264,7 +287,7 @@ public sealed partial class Battle
                 foeTauntSpoken = true;
                 bool hasGrudge = !string.IsNullOrEmpty(Options.Grudge);
                 string topic = hasGrudge ? "foe_grudge_taunt" : "foe_taunt";
-                string text = BattleBarks.Pick(topic, "", Rng.Mix(u.SoldierId, 97, Spoken.Count));
+                string text = BattleBarks.Pick(topic, "", Rng.Mix(u.SoldierId, 97, Spoken.Count), u.Type.Culture);
                 if (text != "")
                 {
                     string name = u.Squad?.Name is { Length: > 0 } sn ? sn : "Enemy Captain";
@@ -287,7 +310,7 @@ public sealed partial class Battle
                 if (engaged < 3) continue;
                 var sp = PickSpeaker(s);
                 if (sp.Unit == null) continue;
-                string text = BattleBarks.Pick("clash_cry", sp.Nature, Rng.Mix(s.StartCount, (int)Time, 23));
+                string text = BattleBarks.Pick("clash_cry", sp.Nature, Rng.Mix(s.StartCount, (int)Time, 23), sp.Unit.Type.Culture);
                 if (text != "")
                 {
                     clashSpoken = true;
@@ -309,7 +332,7 @@ public sealed partial class Battle
                     if (s.Team != 0 || s.AiControlled || s.Alive < 3 || s.Pressure <= 2f) continue;
                     var sp = PickSpeaker(s);
                     if (sp.Unit == null) continue;
-                    string text = BattleBarks.Pick("flank_warn", sp.Nature, Rng.Mix(s.StartCount, (int)Time, 53));
+                    string text = BattleBarks.Pick("flank_warn", sp.Nature, Rng.Mix(s.StartCount, (int)Time, 53), sp.Unit.Type.Culture);
                     if (text != "")
                     {
                         lastFlankBarkAt = lastTacticalBarkAt = Time;
@@ -328,7 +351,7 @@ public sealed partial class Battle
                 dryArrowsSpoken.Add(s);
                 var sp = PickSpeaker(s);
                 if (sp.Unit == null) continue;
-                string text = BattleBarks.Pick("arrows_out", sp.Nature, Rng.Mix(s.StartCount, (int)Time, 61));
+                string text = BattleBarks.Pick("arrows_out", sp.Nature, Rng.Mix(s.StartCount, (int)Time, 61), sp.Unit.Type.Culture);
                 if (text != "")
                 {
                     lastTacticalBarkAt = Time;
@@ -346,7 +369,7 @@ public sealed partial class Battle
                     if (!s.Broken && AvgMorale(s) >= 42f) continue;
                     var sp = PickSpeaker(s);
                     if (sp.Unit == null) continue;
-                    string text = BattleBarks.Pick("waver_hold", sp.Nature, Rng.Mix(s.StartCount, (int)Time, 73));
+                    string text = BattleBarks.Pick("waver_hold", sp.Nature, Rng.Mix(s.StartCount, (int)Time, 73), sp.Unit.Type.Culture);
                     if (text != "")
                     {
                         lastWaverBarkAt = lastTacticalBarkAt = Time;
@@ -365,7 +388,7 @@ public sealed partial class Battle
                     if (Time - s.LoosedAt > 0.7f) continue;
                     var sp = PickSpeaker(s);
                     if (sp.Unit == null) continue;
-                    string text = BattleBarks.Pick("volley_call", sp.Nature, Rng.Mix(s.StartCount, (int)Time, 83));
+                    string text = BattleBarks.Pick("volley_call", sp.Nature, Rng.Mix(s.StartCount, (int)Time, 83), sp.Unit.Type.Culture);
                     if (text != "")
                     {
                         lastVolleyBarkAt = lastTacticalBarkAt = Time;
@@ -384,7 +407,7 @@ public sealed partial class Battle
                     if (Vector2.DistanceSquared(s.Center, Player.Pos) > 36f * 36f) continue;
                     var sp = PickSpeaker(s);
                     if (sp.Unit == null) continue;
-                    string text = BattleBarks.Pick("foe_charge", sp.Nature, Rng.Mix(s.StartCount, (int)Time, 91));
+                    string text = BattleBarks.Pick("foe_charge", sp.Nature, Rng.Mix(s.StartCount, (int)Time, 91), sp.Unit.Type.Culture);
                     if (text != "")
                     {
                         lastFoeChargeBarkAt = lastTacticalBarkAt = Time;
@@ -404,7 +427,7 @@ public sealed partial class Battle
                 if (u.Target is not { Active: true } foe || foe.Team == 0) continue;
                 if (Vector2.DistanceSquared(u.Pos, Player.Pos) > 14f * 14f) continue;
                 if (NamedOf(u) is not NamedSpec m) continue;
-                string text = BattleBarks.Pick("man_rally", m.Nature, Rng.Mix(m.Id, (int)Time, 41));
+                string text = BattleBarks.Pick("man_rally", m.Nature, Rng.Mix(m.Id, (int)Time, 41), u.Type.Culture);
                 if (text != "")
                 {
                     lastFlavorBarkAt = Time;
@@ -423,7 +446,7 @@ public sealed partial class Battle
         {
             if (u == speaker || !u.Active || u.SoldierId == 0 || !m.Brothers.Contains(u.SoldierId)) continue;
             if (NamedOf(u) is not NamedSpec bro) continue;
-            string text = BattleBarks.Pick("man_brother_reply", bro.Nature, Rng.Mix(bro.Id, Spoken.Count, 19))
+            string text = BattleBarks.Pick("man_brother_reply", bro.Nature, Rng.Mix(bro.Id, Spoken.Count, 19), u.Type.Culture)
                 .Replace("{other}", m.Name);
             if (text != "")
                 QueueBark(new PendingBark(Time + 1.45f, bro.Id, bro.Name, text, u.Squad,
