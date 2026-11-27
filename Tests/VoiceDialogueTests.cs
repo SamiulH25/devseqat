@@ -25,9 +25,39 @@ public static partial class SelfTest
 
     static void BattleBarksAndParley()
     {
-        Check(BattleBarks.All.Count >= 20, "barks.json loaded battle barks");
-        Check(BattleBarks.Pick("order_hold", "Steady", 7).Length > 0, "order_hold picks a line");
-        Check(BattleBarks.Pick("foe_grudge_taunt", "", 3).Length > 0, "foe_grudge_taunt picks a line");
+        Check(BattleBarks.All.Count >= 70, "barks.json loaded expanded battle vocal stims");
+        string[] topics =
+        {
+            "order_hold", "order_charge", "order_reckless", "order_follow", "order_advance", "order_fallback",
+            "order_move", "order_form_here", "order_fire", "order_hold_fire", "order_cast_hold", "order_cast_free",
+            "order_relieve", "order_merge", "order_split", "order_rebound_echo",
+            "form_wall", "form_square", "form_wedge", "form_loose", "form_line",
+            "brace_call", "brace_hit", "rally_answer", "flank_warn", "waver_hold",
+            "arrows_out", "volley_call", "clash_cry", "victory_cheer", "foe_brace", "foe_charge",
+            "foe_grudge_taunt",
+        };
+        foreach (var t in topics)
+            Check(BattleBarks.Pick(t, "Steady", 7).Length > 0, $"barks.json topic '{t}' resolves");
+
+        // Rebound commands (primary + second-company relay echo) and brace calls are read-only and replay-safe
+        var b = new Battle(11,
+            new ArmySpec("mine", 0, new List<Company> { new("manor_foot", 16, "infantry", 1), new("brevon_fyrd", 16, "infantry", 2) }),
+            new ArmySpec("theirs", 0, new List<Company> { new("march_scouts", 10, "cavalry", 3) }),
+            new BattleOptions());
+        for (int i = 0; i < 400; i++) b.Update(1 / 60f); // advance past t=6s
+        int before = b.Spoken.Count;
+        var mine = b.SquadsOf(0).ToList();
+        b.SpeakSquadOrder(mine, "form_wall");
+        Check(b.Spoken.Count == before, "rebound command waits briefly after the horn");
+        for (int i = 0; i < 20; i++) b.Update(1 / 60f); // +0.33s: primary rebound fires
+        Check(b.Spoken.Count == before + 1 && b.Spoken[^1].Key, "primary company rebounds the command");
+        for (int i = 0; i < 30; i++) b.Update(1 / 60f); // +0.50s: second-company relay echo fires
+        Check(b.Spoken.Count == before + 2 && !b.Spoken[^1].Key, "second company echoes the command down the line");
+        int beforeBrace = b.Spoken.Count;
+        b.SpeakBrace(mine[0]);
+        Check(b.Spoken.Count == beforeBrace + 1 && b.Spoken[^1].Key, "call to brace fires cleanly");
+        b.SpeakBrace(mine[0]);
+        Check(b.Spoken.Count == beforeBrace + 1, "call to brace respects cooldown");
 
         Check(DialogueLibrary.All.Count >= 3, "parley.json loaded multi-turn scenes");
         var camp = Campaign.New(seed: 19, layout: 5);

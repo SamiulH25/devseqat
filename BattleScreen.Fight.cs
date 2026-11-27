@@ -108,7 +108,12 @@ partial class BattleScreen
         {
             Formation.ShieldWall => "shield wall!", Formation.Square => "form square!", Formation.Wedge => "wedge!", Formation.Loose => "open ranks!", _ => "form line!",
         };
+        string bark = shape switch
+        {
+            Formation.ShieldWall => "form_wall", Formation.Square => "form_square", Formation.Wedge => "form_wedge", Formation.Loose => "form_loose", _ => "form_line",
+        };
         host.Audio?.Play(Cue.Order, 0.6f);
+        if (!deploying) battle.SpeakSquadOrder(list, bark);
         if (!command) Prompt(hud.ListenWord() + ": " + word.ToUpperInvariant());
         battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + word);
     }

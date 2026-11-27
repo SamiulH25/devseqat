@@ -290,7 +290,9 @@ public partial class Battle
         if (rallied > 0) AwardBattleSkill("Leadership", 0.45f);
         Log("Rally! Hold the line!");
         Sound(Cue.Horn, p.Pos);
-        if (Options.KingsCharge && !kingsCharged) KingsCharge(p);
+        bool king = Options.KingsCharge && !kingsCharged;
+        if (king) KingsCharge(p);
+        SpeakRally(p, king);
     }
 
     bool kingsCharged;

@@ -26,13 +26,14 @@ partial class BattleScreen
         Tips.Show("engines", "An engine's crew shoot at what you click: a company, a spot of ground, or the wall.\nHold position clears the mark. Stand by an engine in field view and press the use key to work it yourself.");
     }
 
-    void Issue(string what, Action<Squad> act, bool move = false, Cue horn = Cue.Order)
+    void Issue(string what, Action<Squad> act, bool move = false, Cue horn = Cue.Order, string? bark = null)
     {
         var list = Targets();
         if (list.Count == 0) return;
         foreach (var s in list) if (move) Move(s, act); else Send(s, act);
         if (move && queueing) what = "then " + what;
         host.Audio?.Play(horn, 0.65f);
+        if (!deploying && bark != null) battle.SpeakSquadOrder(list, bark);
         if (!command) Prompt(hud.ListenWord() + ": " + what.ToUpperInvariant());
         battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + what);
     }
@@ -76,7 +77,7 @@ partial class BattleScreen
         bool reckless = queueing;
         queueing = false; // read again from the keys next frame
         string what = reckless ? (foe != null ? "reckless charge at " + foe.Name + "!" : "reckless charge!") : foe != null ? "attack " + foe.Name + "!" : "charge!";
-        Issue(what, s => { s.Order = Order.Charge; s.Target = foe; s.Reckless = reckless; }, move: true, horn);
+        Issue(what, s => { s.Order = Order.Charge; s.Target = foe; s.Reckless = reckless; }, move: true, horn, reckless ? "order_reckless" : "order_charge");
         queueing = reckless;
     }
 
@@ -137,16 +138,21 @@ partial class BattleScreen
             case Cmd.ShapeLine or Cmd.ShapeWall or Cmd.ShapeSquare or Cmd.ShapeWedge or Cmd.ShapeLoose: SetShape(Hud.ShapeOf(c)!.Value); break;
             case Cmd.AttackMove:
                 if (command || fieldCommand) attackMoveMode = !attackMoveMode;
-                else Issue("advance!", s => s.Shift(enemy, 15), move: true, Cue.HornCharge);
+                else Issue("advance!", s => s.Shift(enemy, 15), move: true, Cue.HornCharge, "order_advance");
                 break;
-            case Cmd.Follow: Issue("follow me!", s => { s.Order = Order.Follow; s.Target = null; }, move: true, Cue.Order); break;
+            case Cmd.Follow: Issue("follow me!", s => { s.Order = Order.Follow; s.Target = null; }, move: true, Cue.Order, "order_follow"); break;
             case Cmd.Hold:
                 foreach (var cs in SelectedCrews()) Send(cs, q => { if (q.Works is { } e) battle.AimEngine(e, null, null); });
-                Issue("hold position!", s => s.HoldInPlace(), move: true, Cue.HornHold); break;
-            case Cmd.Advance: Issue("advance!", s => s.Shift(enemy, 15), move: true, Cue.HornCharge); break;
-            case Cmd.FallBack: Issue("fall back!", s => s.Shift(enemy, -20), move: true, Cue.HornRetreat); break;
+                Issue("hold position!", s => s.HoldInPlace(), move: true, Cue.HornHold, "order_hold"); break;
+            case Cmd.Advance: Issue("advance!", s => s.Shift(enemy, 15), move: true, Cue.HornCharge, "order_advance"); break;
+            case Cmd.FallBack: Issue("fall back!", s => s.Shift(enemy, -20), move: true, Cue.HornRetreat, "order_fallback"); break;
             case Cmd.Rule: NextRule(); break;
-            case Cmd.Spacing: Issue("change spacing", s => s.Loose = !s.Loose); break;
+            case Cmd.Spacing:
+            {
+                bool loose = Targets().FirstOrDefault()?.Loose != true;
+                Issue("change spacing", s => s.Loose = !s.Loose, bark: loose ? "form_loose" : "form_line");
+                break;
+            }
             case Cmd.Merge: MergeSelected(); break;
             case Cmd.Relieve: RelieveSelected(); break;
             case Cmd.Split: SplitSelected(); break;
@@ -169,11 +175,13 @@ partial class BattleScreen
                     // Casters hold their spells for your word, or cast at will again (docs/archive/MAGIC_AURA.md 3.1).
                     bool hold = !casters[0].HoldSpells;
                     foreach (var s in casters) Send(s, q => q.HoldSpells = hold);
+                    if (!deploying) battle.SpeakSquadOrder(casters, hold ? "order_cast_hold" : "order_cast_free");
                     battle.Log(hold ? "Casters: hold your spells for my word!" : "Casters: cast at will!");
                 }
                 if (archers.Count == 0) { if (casters.Count == 0) battle.Log("No archers selected."); break; }
                 bool fire = !archers[0].FireAtWill;
                 foreach (var s in archers) Send(s, q => q.FireAtWill = fire);
+                if (!deploying) battle.SpeakSquadOrder(archers, fire ? "order_fire" : "order_hold_fire");
                 battle.Log(fire ? "Archers: fire at will!" : "Archers: hold your arrows!");
                 break;
             }
@@ -182,7 +190,7 @@ partial class BattleScreen
                 var p = battle.Player;
                 if (!p.Active) break;
                 var center = p.Pos + p.Dir * 3;
-                LineAt(center, center + p.Dir * 10);
+                LineAt(center, center + p.Dir * 10, "order_form_here");
                 battle.Log("Form up on me!");
                 break;
             }
@@ -206,6 +214,7 @@ partial class BattleScreen
         selected.RemoveWhere(s => s.FoldedInto != null);
         if (sent == 0) return;
         host.Audio?.Play(Cue.Order, 0.6f);
+        if (!deploying) battle.SpeakSquadOrder(new[] { into }, "order_merge");
         Tips.Show("merge", "Folded companies fight as one: the newcomers fill the ranks from behind.\nThe fallen keep their own colours, so each company's men still go home to it after the battle.");
     }
 
@@ -221,6 +230,7 @@ partial class BattleScreen
         if (battle.CannotRelieve(tired, fresh) is string why) { battle.Log($"{fresh.Name} cannot relieve {tired.Name}: {why.ToLowerInvariant()}."); return; }
         Send(fresh, q => battle.Relieve(tired, q));
         host.Audio?.Play(Cue.Order, 0.6f);
+        if (!deploying) battle.SpeakSquadOrder(new[] { fresh, tired }, "order_relieve");
         Tips.Show("relieve", "The fresh company marches onto the tired one's line. When it is close behind, the tired men\nbreak off and walk back to where the fresh ones stood. Tired men fight badly: relieve them before they break.");
     }
 
@@ -235,6 +245,7 @@ partial class BattleScreen
             Send(s, q => battle.Split(q));
         }
         host.Audio?.Play(Cue.Order, 0.6f);
+        if (!deploying) battle.SpeakSquadOrder(list, "order_split");
         Tips.Show("split", "A split company stands as two halves side by side, each with its own card.\nAfter the battle both count as the one company. FOLD IN joins the halves again.");
     }
 
@@ -400,10 +411,10 @@ partial class BattleScreen
     }
 
     /// Line of the selected squads' combined width, centred on `center`, facing `toward`.
-    void LineAt(Vector2 center, Vector2 toward)
+    void LineAt(Vector2 center, Vector2 toward, string bark = "order_move")
     {
         var (a, b) = LineEnds(center, toward);
-        Distribute(a, b, toward);
+        Distribute(a, b, toward, bark);
     }
 
     (Vector2, Vector2) LineEnds(Vector2 center, Vector2 toward)
@@ -417,10 +428,12 @@ partial class BattleScreen
     }
 
     /// Split the segment a-b between target squads, proportional to their size.
-    void Distribute(Vector2 a, Vector2 b, Vector2 toward)
+    void Distribute(Vector2 a, Vector2 b, Vector2 toward, string bark = "order_move")
     {
         if (deploying) ClampToZone(ref a, ref b); // behind the deployment line (BattleScreen.Planning.cs)
-        foreach (var (s, a1, b1) in Split(a, b).ToList()) Move(s, q => q.SetLine(a1, b1, toward));
+        var pairs = Split(a, b).ToList();
+        foreach (var (s, a1, b1) in pairs) Move(s, q => q.SetLine(a1, b1, toward));
+        if (!deploying && pairs.Count > 0) battle.SpeakSquadOrder(pairs.Select(p => p.S).ToList(), bark);
     }
 
     IEnumerable<(Squad S, Vector2 A, Vector2 B)> Split(Vector2 a, Vector2 b)

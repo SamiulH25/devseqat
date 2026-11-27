@@ -13,6 +13,29 @@
     { "topic": "order_charge", "nature": "Merry", "text": "Come on, lads—first to their banner!" },
     { "topic": "order_charge", "nature": "Proud", "text": "Sweep them from the field!" },
 
+    { "topic": "order_reckless", "nature": "", "text": "All out! Cut them down!" },
+    { "topic": "order_reckless", "nature": "Bold", "text": "No quarter! Break them now!" },
+    { "topic": "order_reckless", "nature": "Grim", "text": "Drop ranks! Leave none standing!" },
+
+    { "topic": "order_follow", "nature": "", "text": "On the captain! Keep pace!" },
+    { "topic": "order_follow", "nature": "Steady", "text": "Close on the banner—move!" },
+    { "topic": "order_follow", "nature": "Bold", "text": "With the captain! Double time!" },
+
+    { "topic": "order_advance", "nature": "", "text": "Step forward! Keep your dressing!" },
+    { "topic": "order_advance", "nature": "Steady", "text": "Push up the line! Steady!" },
+    { "topic": "order_advance", "nature": "Bold", "text": "Forward—take the ground!" },
+
+    { "topic": "order_fallback", "nature": "", "text": "Give ground! Keep your shields up!" },
+    { "topic": "order_fallback", "nature": "Steady", "text": "Step back in order—don't turn!" },
+    { "topic": "order_fallback", "nature": "Grim", "text": "Fall back! Hold the ranks!" },
+
+    { "topic": "order_move", "nature": "", "text": "You heard the captain—dress there!" },
+    { "topic": "order_move", "nature": "Steady", "text": "Move to the mark! Keep ranks!" },
+    { "topic": "order_move", "nature": "Bold", "text": "Shift the line! Quick step!" },
+
+    { "topic": "order_form_here", "nature": "", "text": "Form on the captain! Close up!" },
+    { "topic": "order_form_here", "nature": "Steady", "text": "Dress on the banner! Shoulder to shoulder!" },
+
     { "topic": "order_skirmish", "nature": "", "text": "Loose order! Harass their ranks!" },
     { "topic": "order_skirmish", "nature": "Sly", "text": "Bleed them from afar. Stay out of reach." },
     { "topic": "order_skirmish", "nature": "Steady", "text": "Pick your marks and keep moving." },
@@ -23,6 +46,93 @@
 
     { "topic": "order_reserve", "nature": "", "text": "Pull back and catch your breath!" },
     { "topic": "order_reserve", "nature": "Steady", "text": "Dress the ranks. Wait for the call." },
+
+    { "topic": "order_fire", "nature": "", "text": "Bows up! Fire at will!" },
+    { "topic": "order_fire", "nature": "Steady", "text": "Nock and loose! Pick your marks!" },
+    { "topic": "order_fire", "nature": "Bold", "text": "Let them fly! Keep it steady!" },
+
+    { "topic": "order_hold_fire", "nature": "", "text": "Hold your shafts! Save the quiver!" },
+    { "topic": "order_hold_fire", "nature": "Steady", "text": "Ease bows! Wait for the word!" },
+
+    { "topic": "order_cast_hold", "nature": "", "text": "Hold your working! Wait for the word!" },
+    { "topic": "order_cast_free", "nature": "", "text": "Unleash it! Cast at will!" },
+
+    { "topic": "order_relieve", "nature": "", "text": "Fresh ranks forward! Pull the worn out!" },
+    { "topic": "order_relieve", "nature": "Steady", "text": "Step through! Take their place!" },
+
+    { "topic": "order_merge", "nature": "", "text": "Close up! Fold into the line!" },
+    { "topic": "order_merge", "nature": "Steady", "text": "Fill the gaps—one company now!" },
+
+    { "topic": "order_split", "nature": "", "text": "Split the ranks! Two wings!" },
+    { "topic": "order_split", "nature": "Steady", "text": "Halve the line—move!" },
+
+    { "topic": "order_rebound_echo", "nature": "", "text": "Heard it—pass it down!" },
+    { "topic": "order_rebound_echo", "nature": "", "text": "Down the line! Move!" },
+    { "topic": "order_rebound_echo", "nature": "", "text": "Aye—you heard the banner!" },
+    { "topic": "order_rebound_echo", "nature": "", "text": "Pass the word! Moving now!" },
+
+    { "topic": "form_wall", "nature": "", "text": "Lock shields! Make a wall!" },
+    { "topic": "form_wall", "nature": "Steady", "text": "Rim to rim! Nothing gets through!" },
+    { "topic": "form_wall", "nature": "Grim", "text": "Shield wall! Lean into it!" },
+
+    { "topic": "form_square", "nature": "", "text": "Form square! Faces out!" },
+    { "topic": "form_square", "nature": "Steady", "text": "Close the box! Watch all sides!" },
+    { "topic": "form_square", "nature": "Grim", "text": "Square up—keep the horse out!" },
+
+    { "topic": "form_wedge", "nature": "", "text": "Form the wedge! Drive straight through!" },
+    { "topic": "form_wedge", "nature": "Bold", "text": "Point forward! Split their line!" },
+    { "topic": "form_wedge", "nature": "Proud", "text": "Boar's head! Punch a hole!" },
+
+    { "topic": "form_loose", "nature": "", "text": "Open ranks! Give the arrows room!" },
+    { "topic": "form_loose", "nature": "Steady", "text": "Spread out! Don't bunch up!" },
+
+    { "topic": "form_line", "nature": "", "text": "Dress the line! Even front!" },
+    { "topic": "form_line", "nature": "Steady", "text": "Back to line! Shoulders squared!" },
+
+    { "topic": "brace_call", "nature": "", "text": "Horse! Spears up—brace!" },
+    { "topic": "brace_call", "nature": "", "text": "Cavalry incoming! Set your pikes!" },
+    { "topic": "brace_call", "nature": "", "text": "Brace! Plant the butt—hold steady!" },
+    { "topic": "brace_call", "nature": "Steady", "text": "Steady, lads. Take them on the points." },
+    { "topic": "brace_call", "nature": "Bold", "text": "Let them ride onto our iron! Brace!" },
+    { "topic": "brace_call", "nature": "Grim", "text": "Dig in. Stop the horse cold." },
+
+    { "topic": "brace_hit", "nature": "", "text": "Stopped them cold! Hold the points!" },
+    { "topic": "brace_hit", "nature": "", "text": "Horse down! Keep the spears low!" },
+    { "topic": "brace_hit", "nature": "Bold", "text": "Broke their charge! Press them!" },
+
+    { "topic": "rally_answer", "nature": "", "text": "With the captain! Stand fast!" },
+    { "topic": "rally_answer", "nature": "Bold", "text": "Turn back! For the captain!" },
+    { "topic": "rally_answer", "nature": "Steady", "text": "Hold! The banner still flies!" },
+    { "topic": "rally_answer", "nature": "Grim", "text": "We hold! No step back!" },
+
+    { "topic": "flank_warn", "nature": "", "text": "Flank! Wheel the line!" },
+    { "topic": "flank_warn", "nature": "", "text": "They're on our flank—turn shields!" },
+    { "topic": "flank_warn", "nature": "Steady", "text": "Watch the wing! Close the gap!" },
+
+    { "topic": "waver_hold", "nature": "", "text": "Hold your nerve! Don't run!" },
+    { "topic": "waver_hold", "nature": "Grim", "text": "Stand! Running gets you cut down!" },
+    { "topic": "waver_hold", "nature": "Steady", "text": "Close the line! Stay together!" },
+
+    { "topic": "arrows_out", "nature": "", "text": "Quivers dry! Draw steel!" },
+    { "topic": "arrows_out", "nature": "Grim", "text": "Last shaft gone! Blades out!" },
+
+    { "topic": "volley_call", "nature": "", "text": "Draw—loose!" },
+    { "topic": "volley_call", "nature": "", "text": "Volley! Rain on them!" },
+    { "topic": "volley_call", "nature": "Steady", "text": "High arc—let fly!" },
+
+    { "topic": "clash_cry", "nature": "", "text": "Here they come! Shields up!" },
+    { "topic": "clash_cry", "nature": "Bold", "text": "Into them! Give no ground!" },
+    { "topic": "clash_cry", "nature": "Grim", "text": "Steel meets steel—hold!" },
+
+    { "topic": "victory_cheer", "nature": "", "text": "They break! Ride them down!" },
+    { "topic": "victory_cheer", "nature": "Bold", "text": "The field is ours! Huzzah!" },
+    { "topic": "victory_cheer", "nature": "Merry", "text": "They're running! Run them off!" },
+
+    { "topic": "foe_brace", "nature": "", "text": "Horse! Set spears!" },
+    { "topic": "foe_brace", "nature": "", "text": "Brace the front! Take them!" },
+
+    { "topic": "foe_charge", "nature": "", "text": "Forward! Break their line!" },
+    { "topic": "foe_charge", "nature": "", "text": "Charge! Take their banner!" },
 
     { "topic": "foe_taunt", "nature": "", "text": "Show me that steel, captain!" },
     { "topic": "foe_taunt", "nature": "Proud", "text": "Step forward! Let both hosts watch!" },

@@ -931,6 +931,12 @@ public partial class Battle
                     }
                 }
                 b.Braced = threat;
+                if (threat && b.Squad != null && Time > 2f && Time - lastBraceBarkAt >= 6.5f)
+                {
+                    int bracedInSq = 0;
+                    foreach (var q in b.Squad.Units) if (q.Active && q.Braced && ++bracedInSq >= 2) break;
+                    if (bracedInSq >= 2) SpeakBrace(b.Squad);
+                }
             }
             if (b.BraceCd > 0) continue;
             float reach = ReachOf(b) + BraceExtra * (1 + b.Mods.Brace); // set spears reach further
@@ -961,6 +967,7 @@ public partial class Battle
                         b.ActionTimer = b.Type.Recover;
                         HitHorse(u, closing * (b.Type.Class == UnitClass.Skirmisher ? 8 : 4.5f) * (1 + b.Mods.Brace), b);
                         Sound(Cue.LanceImpact, u.Pos, priority: u.IsPlayer);
+                        if (b.Squad != null) SpeakBrace(b.Squad, impact: true);
                         if (u.Mounted) { u.Speed *= 0.25f; Stagger(u, 0.6f); }
                         hit = true;
                         break;

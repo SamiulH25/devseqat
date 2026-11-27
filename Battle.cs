@@ -456,6 +456,7 @@ public sealed partial class Battle
         Mark(7);
         UpdateMorale(dt);
         UpdateUrge(dt); // each man's itch to go in, or hang back (BattleUrge.cs)
+        DrainPendingBarks(); // delayed command rebounds & brother replies (BattleVoice.cs): read-only
         UpdateAlerts(dt); // what needs you (BattleAlerts.cs): reads the sim, changes nothing
         UpdateHunt(dt); // the stand goal when four come for you (BattleHunt.cs)
         UpdateBanner();
@@ -677,6 +678,7 @@ public sealed partial class Battle
             if (Units.Any(u => u.Team == t && u.Active && !u.Routing) || reserves[t].Count > 0 && Units.Any(u => u.Team == t && u.Active && u.Routing)) continue;
             Winner = 1 - t;
             Log(Winner == 0 ? "Victory! The field is yours." : "Defeat. Your army is broken.");
+            if (Winner == 0) SpeakVictory();
             return;
         }
     }
