@@ -78,7 +78,7 @@ partial class BattleScreen
         else skipMouse = true;
 
         if (wasCap && !capWheel && CapSector(wheelVec) is int cs) capPending = Hud.CaptainRing[cs];
-        if (wasWheel && !wheelOpen && WheelSector() is int sector)
+        if (wasWheel && !wheelOpen && Sector(wheelVec, selectedDivision != null ? Hud.WheelGoals(selectedDivision).Length : Hud.WheelOrder.Length) is int sector)
         {
             if (selectedDivision is { } dv) GiveGoal(dv, Hud.WheelGoals(dv)[sector]);
             else Command(Hud.WheelOrder[sector]);
@@ -135,7 +135,7 @@ partial class BattleScreen
         capPending = null;
     }
 
-    int? WheelSector() => wheelOpen ? Sector(wheelVec, Hud.WheelOrder.Length) : capWheel ? CapSector(wheelVec) : null;
+    int? WheelSector() => wheelOpen ? Sector(wheelVec, selectedDivision != null ? Hud.WheelGoals(selectedDivision).Length : Hud.WheelOrder.Length) : capWheel ? CapSector(wheelVec) : null;
     static int? CapSector(Vector2 v) => Sector(v, Hud.CaptainRing.Length);
     static int? Sector(Vector2 v, int n)
     {

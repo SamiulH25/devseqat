@@ -110,8 +110,8 @@ public sealed class LodGovernor
     public static float LodFor(float dist, float level, float zoomScale = 1f, float userDetail = 1f)
     {
         float scale = Math.Clamp(zoomScale, 0.35f, 1.25f) * Math.Clamp(userDetail, 0.20f, 1f);
-        float near = MathHelper.Lerp(NearMin * 0.55f, NearMax * 0.60f, level) * scale;
-        float far = MathHelper.Lerp(MidMin * 1.25f, MidMax * 0.80f, level) * scale;
+        float near = MathHelper.Lerp(NearMin * 0.45f, NearMax * 0.45f, level) * scale;
+        float far = MathHelper.Lerp(MidMin * 0.95f, MidMax * 0.60f, level) * scale;
         if (dist <= near) return Math.Clamp(userDetail, 0.20f, 1f);
         if (dist >= far) return 0.08f;
         float t = (dist - near) / MathF.Max(1f, far - near);

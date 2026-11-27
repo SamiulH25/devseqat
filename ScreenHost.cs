@@ -162,7 +162,7 @@ sealed class ScreenHost : Game
             AnimSheet.WriteFaceShowcase(GraphicsDevice, Art, Shading, faceDir);
             Environment.Exit(0);
         }
-        if (GpuReport.Requested) gpuReport = new GpuReport(this, Shading != null, shaderError);
+        if (GpuReport.Requested) { InactiveSleepTime = TimeSpan.Zero; gpuReport = new GpuReport(this, Shading != null, shaderError); }
 
         Audio = new AudioEngine();
         AudioEngine.Current = Audio;

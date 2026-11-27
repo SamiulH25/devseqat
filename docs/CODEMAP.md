@@ -236,8 +236,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.cs (738 lines)
 - **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:137, Load:151, QuickGround:182, BeginCampaign:192, StartDeployment:229, StageCommandView:244, BenchStage:254, FinishCampaignBattle:295, BeginQuickBattle:311, NewBattle:338, WithMages:383, SetWorld:391, SetCommand:407, Pressed:419, Update:427, PlaySounds:543, PlayPlayerSounds:572, Soundscape:594, SyncHud:688, MenuChoice:720
 
-## BattleScreen.Draw.cs (1192 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:60, Total3DVerts:160, DrawBlobs:162, EaseFacings:204, Spray:220, Effects:233, AtmosphereFx:305, GroundSteps:351, BuildSprites:416, EnsureSkinned:611, DrawUnits3D:619, LensFill:646, SpriteStates:649, DrawSpritesBasic:657, DrawSpritesShaded:667, DrawSoft:678, Line:692, G:693, OrderArrows:702, OrderArrowLines:704, FortressPointRings:720, Ring:731, DashedRing:742, SelectionBox:757, Band:790, BeamQuad:812, BattleTutorialRibbon:837, TorchRow:884, Precipitation:894, Fall:905, Stakes:925, SpellColor:959, Spells:965, AuraGlow:981, ChampionGlow:991, PlayerGlow:1004, PendingFormsDrawn:1018, RouteDots:1043, PlanHook:1056, DrawLines:1086
+## BattleScreen.Draw.cs (1236 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:60, Total3DVerts:175, DrawBlobs:177, EaseFacings:219, Spray:235, Effects:248, AtmosphereFx:320, GroundSteps:366, BuildSprites:431, EnsureSkinned:626, DrawUnits3D:634, LensFill:690, SpriteStates:693, DrawSpritesBasic:701, DrawSpritesShaded:711, DrawSoft:722, Line:736, G:737, OrderArrows:746, OrderArrowLines:748, FortressPointRings:764, Ring:775, DashedRing:786, SelectionBox:801, Band:834, BeamQuad:856, BattleTutorialRibbon:881, TorchRow:928, Precipitation:938, Fall:949, Stakes:969, SpellColor:1003, Spells:1009, AuraGlow:1025, ChampionGlow:1035, PlayerGlow:1048, PendingFormsDrawn:1062, RouteDots:1087, PlanHook:1100, DrawLines:1130
 
 ## BattleScreen.Effects.cs (378 lines)
 - **BattleScreen** (class, L7): KickDir:15, UpdateCamKick:21, Feel:34, Kick:81, Shake:84, AddMark:101, LeaveMarks:111, DrawMarks:124, Stamp:149, Trample:158, MenMap:176, TrampleTexture:199, RearOf:216, BannerFalls:238, DrawFallingBanners:249, ResetCombatFx:270, AddSparkFlash:272, TrackSlashes:286, DrawCombatFx:309
@@ -839,8 +839,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Hud.Divisions.cs (395 lines)
 - **Hud** (class, L8): WheelGoals:17, LayoutDivisions:20, LayoutGoals:34, DivisionAt:51, GoalAt:52, GoalCloseAt:53, DivisionTag:57, GoalTag:65, DivisionCards:67, StanceExplain:109, PostExplain:124, GoalPanel:133, DivisionTooltip:177, SergeantFieldBadge:197, GoalWheel:207, SergeantPennants:230, NamedMarks:248, BannerMark:303, DivisionMarkers:326
 
-## Hud.Fight.cs (297 lines)
-- **Hud** (class, L10): ArmOf:16, LayoutFight:21, ShadowL:34, ShadowR:40, ListenWord:43, FightTop:60, Vitals:87, SwingWords:120, ArmChips:131, OrderToast:168, FightHints:182, Wheel:191, CaptainWheel:262
+## Hud.Fight.cs (298 lines)
+- **Hud** (class, L10): ArmOf:16, LayoutFight:21, ShadowL:34, ShadowR:40, ListenWord:43, FightTop:60, Vitals:87, SwingWords:120, ArmChips:131, OrderToast:168, FightHints:182, Wheel:191, CaptainWheel:263
 
 ## Hud.Fights.cs (134 lines)
 - **Hud** (class, L11): SampleFights:22, Lost:45, FightLine:61, FightMarks:69, Swords:106, Dashed:127
@@ -1311,8 +1311,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Variety.cs (188 lines)
 - **Variety** (class, L9): static:16, Seed:72, Of:75, Of:83, Stature:111, Kin:113, Pick:116, Visage:125, Weighted:142, FaceFeatures:150, PackFeatures:153, PackFeatures:163, UnpackFeatures:165, DeriveFeatures:177
 
-## Verts.cs (45 lines)
-- **Verts<T>** (class, L6): Reserve:13, Add:22, Draw:28, Dispose:44
+## Verts.cs (56 lines)
+- **Verts<T>** (class, L7): Reserve:15, Add:24, Draw:30, Dispose:55
 
 ## VoiceProfile.cs (103 lines)
 - **VoiceMood** (enum, L4)

@@ -66,35 +66,43 @@ partial class BattleScreen
         sh.CutEye = new Vector4(eye, Vector2.Distance(new(eye.X, eye.Z), new(focusPoint.X, focusPoint.Z)) * MathHelper.SmoothStep(0, 1, blend)); // set before the sun's pass: thinned trees cast no shadow
         if (shadows)
         {
-            // Cover what the camera sees: about 90 m around you in the field, more as the command camera zooms out.
-            FrameProf.Begin("worldShadow");
             float k = MathHelper.SmoothStep(0, 1, blend);
-            sh.AimSun(focusPoint, MathHelper.Lerp(90, Math.Clamp(zoom * 2.6f, 70, 260), k));
-            gd.Textures[1] = null;
-            gd.SetRenderTarget(sh.ShadowMap);
-            gd.Clear(Color.White);
-            gd.DepthStencilState = DepthStencilState.Default;
-            gd.RasterizerState = RasterizerState.CullNone;
-            gd.BlendState = BlendState.Opaque;
-            world.DrawShadowCasters(sh, realTime);
-            FrameProf.End("worldShadow");
-            FrameProf.Begin("shadowBuild");
-            BuildSprites(sh.LightView, true); // puppets turned to face the sun, so shadows have their silhouette
-            FrameProf.End("shadowBuild");
-            FrameProf.Begin("shadowDraw");
-            sh.Setup(sh.Sprite, Matrix.Identity, sh.LightEye, realTime, false, 0);
-            sh.Sprite.Parameters["ShadowMap"].SetValue((Texture2D?)null);
-            DrawSpritesShaded(sh.Sprite, "SpriteShadow");
-            int shdN = do3D ? Total3DVerts() + skinnedQueue.Count : 0;
-            if (shdN > 0)
+            float shRadius = MathHelper.Lerp(65, Math.Clamp(zoom * 2.2f, 65, 190), k);
+            bool needShadow = !battleShadowValid || HasShots
+                || Vector3.DistanceSquared(focusPoint, battleShadowFocus) > 2.25f
+                || MathF.Abs(shRadius - battleShadowRad) > shRadius * 0.04f
+                || realTime - battleShadowAt >= 0.033f;
+            if (needShadow)
             {
-                sh.Setup(sh.Unit3D, Matrix.Identity, sh.LightEye, realTime, false, 0);
-                sh.Unit3D.Parameters["ShadowMap"].SetValue((Texture2D?)null);
-                sh.Unit3D.Parameters["View"].SetValue(sh.LightView);
-                DrawUnits3D(sh, sh.Unit3D, "Unit3DShadow", false);
-                if (FrameProf.On) FrameProf.Count("shdTris", shdN / 3);
+                battleShadowValid = true; battleShadowFocus = focusPoint; battleShadowRad = shRadius; battleShadowAt = realTime;
+                FrameProf.Begin("worldShadow");
+                sh.AimSun(focusPoint, shRadius);
+                gd.Textures[1] = null;
+                gd.SetRenderTarget(sh.ShadowMap);
+                gd.Clear(Color.White);
+                gd.DepthStencilState = DepthStencilState.Default;
+                gd.RasterizerState = RasterizerState.CullNone;
+                gd.BlendState = BlendState.Opaque;
+                world.DrawShadowCasters(sh, realTime);
+                FrameProf.End("worldShadow");
+                FrameProf.Begin("shadowBuild");
+                BuildSprites(sh.LightView, true); // puppets turned to face the sun, so shadows have their silhouette
+                FrameProf.End("shadowBuild");
+                FrameProf.Begin("shadowDraw");
+                sh.Setup(sh.Sprite, Matrix.Identity, sh.LightEye, realTime, false, 0);
+                sh.Sprite.Parameters["ShadowMap"].SetValue((Texture2D?)null);
+                DrawSpritesShaded(sh.Sprite, "SpriteShadow");
+                int shdN = do3D ? Total3DVerts() + skinnedQueue.Count : 0;
+                if (shdN > 0)
+                {
+                    sh.Setup(sh.Unit3D, Matrix.Identity, sh.LightEye, realTime, false, 0);
+                    sh.Unit3D.Parameters["ShadowMap"].SetValue((Texture2D?)null);
+                    sh.Unit3D.Parameters["View"].SetValue(sh.LightView);
+                    DrawUnits3D(sh, sh.Unit3D, "Unit3DShadow", false);
+                    if (FrameProf.On) FrameProf.Count("shdTris", shdN / 3);
+                }
+                FrameProf.End("shadowDraw");
             }
-            FrameProf.End("shadowDraw");
         }
         gd.Textures[1] = null;
         RenderTarget2D? normDepth = null;
@@ -156,6 +164,13 @@ partial class BattleScreen
     readonly List<Squad> goneSelected = new();
     Verts<VertexPNCT>[] workerVerts = Array.Empty<Verts<VertexPNCT>>();
     Puppet3D[] workerPuppets = Array.Empty<Puppet3D>();
+    const int U3dRingCount = 4;
+    readonly DynamicVertexBuffer?[] u3dVbs = new DynamicVertexBuffer?[U3dRingCount];
+    VertexPNCT[] u3dStage = Array.Empty<VertexPNCT>();
+    int u3dVbIdx;
+    bool battleShadowValid;
+    Vector3 battleShadowFocus;
+    float battleShadowRad, battleShadowAt;
     readonly List<(Unit U, float H, float Lod, float Rear, Look Look)> drawQueue3D = new(1024);
     int Total3DVerts() { int n = units3D.N; for (int i = 0; i < workerVerts.Length; i++) n += workerVerts[i].N; return n; }
 
@@ -624,9 +639,38 @@ partial class BattleScreen
         gd.RasterizerState = RasterizerState.CullNone;
         fx.CurrentTechnique = fx.Techniques[technique];
         fx.CurrentTechnique.Passes[0].Apply();
-        if (units3D.N > 0) units3D.Draw(gd, PrimitiveType.TriangleList, units3D.N / 3);
-        for (int i = 0; i < workerVerts.Length; i++)
-            if (workerVerts[i].N > 0) workerVerts[i].Draw(gd, PrimitiveType.TriangleList, workerVerts[i].N / 3);
+        int totalVerts = Total3DVerts();
+        if (totalVerts > 0)
+        {
+            const int Chunk = 60000;
+            int slot = u3dVbIdx++ % U3dRingCount;
+            var vb = u3dVbs[slot];
+            if (vb == null || vb.IsDisposed || vb.VertexCount < totalVerts)
+            {
+                vb?.Dispose();
+                int cap = 65536;
+                while (cap < totalVerts) cap *= 2;
+                u3dVbs[slot] = vb = new DynamicVertexBuffer(gd, VertexPNCT.Decl, cap, BufferUsage.WriteOnly);
+            }
+            if (u3dStage.Length < totalVerts)
+            {
+                int cap = Math.Max(65536, u3dStage.Length * 2);
+                while (cap < totalVerts) cap *= 2;
+                u3dStage = new VertexPNCT[cap];
+            }
+            int dst = 0;
+            if (units3D.N > 0) { Array.Copy(units3D.A, 0, u3dStage, dst, units3D.N); dst += units3D.N; }
+            for (int i = 0; i < workerVerts.Length; i++)
+            {
+                var wv = workerVerts[i];
+                if (wv.N > 0) { Array.Copy(wv.A, 0, u3dStage, dst, wv.N); dst += wv.N; }
+            }
+            vb.SetData(u3dStage, 0, totalVerts, SetDataOptions.Discard);
+            gd.SetVertexBuffer(vb);
+            int totalTris = totalVerts / 3;
+            for (int s = 0; s < totalTris; s += Chunk)
+                gd.DrawPrimitives(PrimitiveType.TriangleList, s * 3, Math.Min(Chunk, totalTris - s));
+        }
         if (skinnedQueue.Count > 0)
         {
             bool shadow = technique == "Unit3DShadow";

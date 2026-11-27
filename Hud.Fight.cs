@@ -217,7 +217,8 @@ sealed partial class Hud
         if (WheelSector >= 0 && WheelSector < order.Length)
         {
             var info = Info[order[WheelSector]];
-            Shadowed(info.Name, c.X, c.Y - U(24), Gold, 2, 1);
+            string title = order[WheelSector] == Cmd.Charge && LookFoe != null ? $"CHARGE {LookFoe.Name.ToUpperInvariant()}" : info.Name;
+            Shadowed(title, c.X, c.Y - U(24), order[WheelSector] == Cmd.Charge && LookFoe != null ? Foe : Gold, title.Length > 14 ? 1 : 2, 1);
         }
         else Shadowed("ORDERS", c.X, c.Y - U(24), Color.White, 2, 1);
         Shadowed("TO " + ListenWord(), c.X, c.Y - U(2), Style.Text, 1, 1);
