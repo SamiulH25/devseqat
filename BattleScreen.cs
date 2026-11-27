@@ -411,6 +411,7 @@ sealed partial class BattleScreen
     {
         command = on;
         fieldCommand = false;
+        hudSynced = false;
         attackMoveMode = false;
         wheelOpen = false;
         holdHeld = -1;
@@ -484,18 +485,21 @@ sealed partial class BattleScreen
             if ((!alive || deploying) && !command) SetCommand(true);
             else if (alive && !deploying && ctl.Pressed(Act.CommandView))
                 SetCommand(!command);
-            bool wasFieldCmd = fieldCommand;
-            if (!command && !deploying && alive)
+            if (shotDir == null)
             {
-                if (Settings.Current.ToggleFieldCommand) { if (ctl.Pressed(Act.FieldCommand)) fieldCommand = !fieldCommand; }
-                else fieldCommand = ctl.Down(Act.FieldCommand);
-            }
-            else fieldCommand = false;
-            if (fieldCommand != wasFieldCmd)
-            {
-                dragStart = null; boxStart = null; attackMoveMode = false; holdHeld = -1;
-                if (fieldCommand) { wheelOpen = capWheel = capDown = false; }
-                else skipMouse = true;
+                bool wasFieldCmd = fieldCommand;
+                if (!command && !deploying && alive)
+                {
+                    if (Settings.Current.ToggleFieldCommand) { if (ctl.Pressed(Act.FieldCommand)) fieldCommand = !fieldCommand; }
+                    else fieldCommand = ctl.Down(Act.FieldCommand);
+                }
+                else fieldCommand = false;
+                if (fieldCommand != wasFieldCmd)
+                {
+                    dragStart = null; boxStart = null; attackMoveMode = false; holdHeld = -1;
+                    if (fieldCommand) { wheelOpen = capWheel = capDown = false; }
+                    else skipMouse = true;
+                }
             }
             if (deploying && (ctl.Pressed(Act.Pause) || (LmbPressed && hud.StartAt(ms.Position))))
             {
@@ -550,7 +554,7 @@ sealed partial class BattleScreen
         if (soundscapeAcc >= 0.1f || battle.Winner >= 0) { soundscapeAcc = 0; Soundscape(); }
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;
-        if (shotDir != null) { shotFrames++; if (PressSeed != null) PressScript(); else ShotScript(); }
+        if (shotDir != null) { shotFrames++; if (PressSeed != null) PressScript(); else ShotScript(); hudSynced = false; }
         UpdateCamera();
     }
 

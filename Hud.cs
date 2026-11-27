@@ -111,7 +111,8 @@ sealed partial class Hud
         float maxFit = MathF.Max(0.75f, MathF.Min(W / 1280f, H / 720f) * 0.95f);
         Ui = Math.Clamp(MathF.Floor(MathF.Min(baseUi * 0.75f, maxFit) * 8f + 0.5f) / 8f, 0.75f, 2.25f);
         cards.Clear(); buttons.Clear(); menu.Clear(); speedBtns.Clear(); armChips.Clear();
-        pauseBtn = modeBtn = captainBtn = topBar = deck = Rectangle.Empty;
+        pauseBtn = modeBtn = captainBtn = topBar = deck = selectedCard = compactBar = Rectangle.Empty;
+        cardBtns.Clear();
         hiddenCards = 0;
         int ms = U(150);
         minimap = new Rectangle(W - ms - U(10), U(10), ms, ms);
@@ -122,7 +123,12 @@ sealed partial class Hud
             int bw = (ms - U(8)) / 3;
             for (int i = 0; i < 3; i++) mapBtns.Add(new Rectangle(minimap.X + i * (bw + U(4)), minimap.Bottom + U(8), bw, U(13)));
         }
-        if (Command) LayoutDeck(); else LayoutFight();
+        if (Command) LayoutDeck();
+        else
+        {
+            LayoutFight();
+            if (FieldCommand) LayoutFieldCommand();
+        }
         LayoutDivisions();
         if (Command && Div != null) LayoutGoals();
 
@@ -153,8 +159,16 @@ sealed partial class Hud
     public bool CaptainAt(Point p) => Command && !ShowResult && captainBtn.Contains(p);
     public Vector2? MinimapAt(Point p) => Command && minimap.Contains(p)
         ? World.MinimapToWorld(new Vector2((p.X - minimap.X) / (float)minimap.Width, (p.Y - minimap.Y) / (float)minimap.Height)) : null;
-    /// The mouse is on the interface, not the field (command view; the fight view has no cursor).
-    public bool Over(Point p) => Command && (topBar.Contains(p) || deck.Contains(p) || player.Contains(p) || minimap.Contains(p) || MapButtonAt(p) != null)
+    public Squad? BannerAt(Point p)
+    {
+        for (int i = 0; i < bannerPlaced.Count; i++)
+            if (bannerPlaced[i].R.Contains(p)) return bannerPlaced[i].S;
+        return null;
+    }
+
+    /// The mouse is on the interface, not the field.
+    public bool Over(Point p) => Command && (topBar.Contains(p) || deck.Contains(p) || player.Contains(p) || minimap.Contains(p) || MapButtonAt(p) != null || selectedCard.Contains(p))
+        || FieldCommand && (selectedCard.Contains(p) || compactBar.Contains(p))
         || AlertAt(p) != null || CardAt(p) != null || ButtonAt(p) != null || DivisionAt(p) != null || GoalAt(p) != null || GoalCloseAt(p) || OverCommand(p)
         || start.Contains(p) || deployToggle.Contains(p);
 
@@ -311,8 +325,9 @@ sealed partial class Hud
         PostZones();
         DivisionRings();
         DivisionMarkers();
-        Cards();
+        DrawRosterLeft();
         CaptainPlate();
+        DrawSelectedCard();
         Tray();
         DivisionCards();
         if (Div != null) GoalPanel(); else OrderDeck();
@@ -322,21 +337,34 @@ sealed partial class Hud
         DragGhost();
     }
 
-    /// The fight view: you are the captain. Vitals, the arms that listen to you and the reticle; no cards, no map, no buttons.
+    /// The fight view: clean combat HUD by default; expands seamlessly into on-horseback Command Mode (Left Ctrl) or Info Mode (Left Alt).
     void DrawFight()
     {
+        Banners();
         FightTop();
-        AlertStrip(2);
-        Vitals();
-        if (B.AuraTier > 0) FormBar();
-        ArmChips();
-        if (Div != null) SergeantFieldBadge();
-        OpponentMark();
-        MarkedMarks();
-        Crosshair();
-        SwingWords();
-        OrderToast();
-        FightHints();
+        AlertStrip(6);
+        if (FieldCommand)
+        {
+            DrawRosterLeft();
+            DrawSelectedCard();
+            DrawCompactOrderBar();
+            if (Div != null) SergeantFieldBadge();
+            if (!ShowResult && !MenuOpen) { SquadTooltip(); GroundHints(); }
+        }
+        else
+        {
+            Vitals();
+            if (B.AuraTier > 0) FormBar();
+            ArmChips();
+            if (Div != null) SergeantFieldBadge();
+            OpponentMark();
+            MarkedMarks();
+            Crosshair();
+            SwingWords();
+            OrderToast();
+            ControlHints();
+            FightHints();
+        }
     }
 
     /// The fighting strength of a side: men standing, weighted by health and arm (a rider counts for more than a bowman).
@@ -624,10 +652,10 @@ sealed partial class Hud
 
     void Banners()
     {
+        if (B.Options.Duel) return;
         var vp = new Viewport(0, 0, W, H);
         var mine = Mine;
-        // Place the chosen and hovered flags first so they keep their spot; a flag that would sit on another steps up, and if
-        // there is still no room it shrinks to a plain small flag. Drawn in reverse, so the chosen ones are in front (V7).
+        // Place chosen and hovered badges first so they keep their spot; overlaps step upward cleanly.
         bannerOrder.Clear();
         foreach (var s in B.Squads) if (s.Alive > 0) bannerOrder.Add(s);
         bannerOrder.Sort((a, b) =>
@@ -637,15 +665,19 @@ sealed partial class Hud
             return ka.CompareTo(kb);
         });
         bannerPlaced.Clear();
+        bool tactical = Command || FieldCommand || InfoMode;
         foreach (var s in bannerOrder)
         {
             bool seen = B.Shown(s);
-            var c = seen ? s.Centroid() : s.LastSeen; // an enemy you cannot see: its flag stays where you last saw it, faded
-            var sp = vp.Project(new Vector3(c.X, B.Terrain.Height(c) + 3.4f, c.Y), Proj, View, Matrix.Identity);
+            if (!tactical && !seen && s.Team != 0) continue; // keep clean combat uncluttered by unseen ghost badges
+            var c = seen ? s.Centroid() : s.LastSeen;
+            var sp = vp.Project(new Vector3(c.X, B.Terrain.Height(c) + 3.2f, c.Y), Proj, View, Matrix.Identity);
             if (sp.Z < 0 || sp.Z > 1) continue;
             int x = (int)sp.X, y = (int)sp.Y;
+            if (x < U(22) || x > W - U(22) || y < U(24) || y > H - U(20)) continue;
             bool small = false;
-            Rectangle R(int yy) => new(x, yy - U(24), U(26), U(22));
+            int bw = U(40), bh = U(18);
+            Rectangle R(int yy) => new(x - bw / 2, yy - bh, bw, bh);
             for (int step = 0; ; step++)
             {
                 var r = R(y);
@@ -653,106 +685,114 @@ sealed partial class Hud
                 for (int j = 0; j < bannerPlaced.Count; j++) if (bannerPlaced[j].R.Intersects(r)) { hit = true; break; }
                 if (!hit) break;
                 if (step == 2) { small = true; y = (int)sp.Y; break; }
-                y -= U(12);
+                y -= U(14);
             }
-            bannerPlaced.Add((s, x, y, small, small ? new Rectangle(x, y - U(12), U(12), U(12)) : R(y)));
+            bannerPlaced.Add((s, x, y, small, small ? new Rectangle(x - U(8), y - U(10), U(16), U(10)) : R(y)));
         }
         for (int i = bannerPlaced.Count - 1; i >= 0; i--) Banner(bannerPlaced[i].S, bannerPlaced[i].X, bannerPlaced[i].Y, bannerPlaced[i].Small, mine);
     }
 
-    /// One company's flag on its pole: colour, number or letter, morale bar, honours. Wavering flags shake; routed ones droop grey.
+    /// Clean medieval shield/diamond world-space squad badge (Pillar 1 P1.2): role icon + alive count + subtle morale pip.
+    /// Dims when routing, highlights brass when selected or hovered, and expands with full unit/morale info in Info Mode (Left Alt).
     void Banner(Squad s, int x, int y, bool small, List<Squad> mine)
     {
-        bool seen = B.Shown(s), own = s.Team == 0, sel = Selected.Contains(s);
+        bool seen = B.Shown(s), own = s.Team == 0, sel = Selected.Contains(s), hover = s == HoverSquad;
         int active = 0, routing = 0;
         float moraleSum = 0;
         foreach (var u in s.Units) if (u.Active) { active++; if (u.Routing) routing++; moraleSum += u.Morale; }
         int morale = active == 0 ? 0 : (int)(moraleSum / active);
-        bool routed = routing * 2 > s.Alive, wavering = !routed && morale < 35;
-        var col = own ? Friendly : seen ? Foe : Color.Lerp(Foe, Dim, 0.6f);
-        if (routed) { col = Color.Lerp(col, Dim, 0.65f); y += U(8); }
-        if (wavering) x += (int)(MathF.Sin(Ironfield.Ui.Now * 11 + s.GetHashCode()) * U(1.5f));
+        bool routed = routing * 2 > Math.Max(1, s.Alive), wavering = !routed && morale < 35;
+        bool tactical = Command || FieldCommand || InfoMode;
+        float alpha = routed ? 0.58f : !seen ? 0.52f : (tactical || sel || hover) ? 0.96f : 0.80f;
+        var baseCol = own ? (s.Company != null ? CompanyArms(s).Cloth : Friendly) : Foe;
+        if (routed) baseCol = Color.Lerp(baseCol, Dim, 0.72f);
+        if (wavering) x += (int)(MathF.Sin(Ironfield.Ui.Now * 11 + s.Id * 13) * U(1.2f));
+
         if (small)
         {
-            Rect(new Rectangle(x, y - U(12), U(1), U(13)), Color.Black * 0.6f);
-            Rect(new Rectangle(x + U(1), y - U(12), U(8), U(5)), col * 0.8f);
+            var sr = new Rectangle(x - U(7), y - U(9), U(14), U(9));
+            Rect(sr, Color.Lerp(Kit.IronDark, baseCol, 0.45f) * alpha);
+            Frame(sr, (sel || hover ? Gold : baseCol) * alpha, U(1));
             return;
         }
-        Rect(new Rectangle(x, y - U(24), U(2), U(26)), Color.Black * 0.7f); // pole
-        var flag = new Rectangle(x + U(2), y - U(24), U(24), U(15));
-        if (routed) // the flag hangs: a narrow drooping cloth, no letter
+
+        string countStr = seen || own ? $"{active}" : "?";
+        int bw = Math.Max(U(38), U(20) + TW(countStr, 1) + U(6));
+        int bh = U(17);
+        var badge = new Rectangle(x - bw / 2, y - bh, bw, bh);
+
+        // Shield/diamond silhouette: chamfered iron-dark body tinted by side/company heraldry + pointed bottom tip.
+        Color fill = Color.Lerp(Kit.IronDark, baseCol, routed ? 0.22f : 0.48f) * alpha;
+        Color edge = (sel || hover ? Gold : own && s.Division != null && s.Division == Div ? Gold : routed ? Dim : Color.Lerp(baseCol, Kit.Gilt, 0.35f)) * alpha;
+        if (sel || hover)
         {
-            Rect(new Rectangle(flag.X, flag.Y, U(9), U(18)), col * 0.8f);
-            return;
+            Rect(new Rectangle(badge.X - U(2), badge.Y - U(2), badge.Width + U(4), badge.Height + U(4)), Gold * 0.32f);
+            // Brass selection chevron above badge.
+            for (int i = 0; i < 4; i++) Rect(new Rectangle(x - U(4 - i), badge.Y - U(7) + U(i), U(8 - 2 * i), U(1)), Gold);
         }
-        if (sel) // chosen: a gold glow round the flag and a pointer over it
+        Rect(badge, fill);
+        Frame(badge, edge, U(sel || hover ? 2 : 1));
+        // Shield point under the badge.
+        Rect(new Rectangle(x - U(4), badge.Bottom, U(8), U(2)), fill);
+        Rect(new Rectangle(x - U(2), badge.Bottom + U(2), U(4), U(2)), edge);
+
+        // Role icon + alive count.
+        var iconCol = (routed ? Dim : sel ? Gold : Color.White) * alpha;
+        kit.Icon(RoleIconOf(s), badge.X + U(4), badge.Y + U(2), iconCol, 2);
+        if (badge.X >= 0 && badge.Right <= W)
+            TextR(countStr, badge.Right - U(4), badge.Y + U(4), (routed ? Dim : Color.White) * alpha, 1);
+
+        // Slim morale bar along the bottom edge of the badge.
+        if (seen || own)
         {
-            Rect(new Rectangle(flag.X - U(3), flag.Y - U(3), flag.Width + U(6), flag.Height + U(6)), Gold * 0.45f);
-            for (int i = 0; i < 4; i++) Rect(new Rectangle(flag.Center.X - U(4 - i), flag.Y - U(12) + U(i), U(8 - 2 * i), U(1)), Gold);
+            var mb = new Rectangle(badge.X + U(2), badge.Bottom - U(3), badge.Width - U(4), U(2));
+            Rect(mb, Color.Black * (0.65f * alpha));
+            Rect(new Rectangle(mb.X, mb.Y, (int)(mb.Width * (morale / 100f)), mb.Height), MoraleColor(morale) * alpha);
         }
-        if (own && s.Company != null)
+
+        // Info Mode (Left Alt): full squad name, tier/class label, and wider morale strip above the badge.
+        if (InfoMode && (seen || own) && badge.X >= U(10) && badge.Right <= W - U(10))
         {
-            var chd = CompanyArms(s);
-            Color f2 = chd.Field2 ?? chd.ClothDark;
-            Rect(flag, chd.Cloth * 0.92f);
-            if (chd.Division != BannerDivision.Plain)
-                Rect(new Rectangle(flag.X + flag.Width / 2, flag.Y, flag.Width - flag.Width / 2, flag.Height), f2 * 0.92f);
-            if (chd.Border != BannerBorder.None)
-                Frame(Kit.Inset(flag, U(1)), chd.Trim * 0.85f, U(1));
-            Frame(flag, sel ? Gold : Color.Black * 0.7f, U(sel ? 2 : 1));
+            var t = s.Units.Count > 0 ? s.Units[0].Type : UnitType.Shieldman;
+            string nm = s.Name.ToUpperInvariant();
+            string sub = $"T{t.Tier} {t.Class.ToString().ToUpperInvariant()} · {MoraleWord(morale, routed)}";
+            int iw = Math.Max(TW(nm, 1), TW(sub, 1)) + U(10);
+            var ir = new Rectangle(Math.Clamp(x - iw / 2, U(4), W - iw - U(4)), badge.Y - U(24), iw, U(21));
+            Rect(ir, new Color(12, 14, 18) * 0.85f);
+            Frame(ir, own ? Friendly * 0.8f : Foe * 0.85f, U(1));
+            TextC(nm, ir.Center.X, ir.Y + U(2), own ? Friendly : Foe, 1);
+            TextC(sub, ir.Center.X, ir.Y + U(11), Style.Text * 0.9f, 1);
         }
-        else
+
+        // Order target line for selected squads (or all friendly squads while Info Mode is held).
+        if (own && (sel || InfoMode) && !fights.ContainsKey(s) && s.Target is Squad foe && foe.Alive > 0)
         {
-            Rect(flag, col * 0.9f);
-            Frame(flag, sel ? Gold : Color.Black * 0.6f, U(sel ? 2 : 1));
-        }
-        string label = !own ? s.Name[..1] : s.Division != null ? DivisionTag(s.Division) : $"{mine.IndexOf(s) + 1}";
-        if (own && s.Division != null && s.Division == Div) Frame(new Rectangle(flag.X - U(1), flag.Y - U(1), flag.Width + U(2), flag.Height + U(2)), Gold, U(1));
-        if (flag.X >= 0 && flag.Right <= W) TextC(label, flag.X + flag.Width / 2f, flag.Y + U(4), Color.White, 1); // cut by the edge: no letter
-        // The company's history on its flag (L5): a gold fringe after ten battles, a streamer for each battle honour.
-        if (own && s.Company is Company co)
-        {
-            if (co.Fringe) Rect(new Rectangle(flag.X, flag.Bottom - U(2), flag.Width, U(2)), Gold);
-            for (int i = 0; i < Math.Min(3, co.Streamers); i++) Rect(new Rectangle(flag.Right, flag.Y + U(2) + i * U(4), U(6 - i), U(2)), Gold);
-        }
-        Bar(new Rectangle(flag.X, flag.Bottom + U(2), flag.Width, U(3)), morale / 100f, MoraleColor(morale));
-        // Its order as a picture beside the flag (PT4): sword to attack, shield to hold, flag to follow; at blows, its fight
-        // mark says how it goes. The chosen ones' attack also draws a line to the foe.
-        if (own && !fights.ContainsKey(s))
-        {
-            var (oi, oc) = OrderMark(s);
-            float a = sel ? 1f : 0.6f;
-            Rect(new Rectangle(flag.Right + U(2), flag.Y - U(1), U(17), U(17)), Color.Black * 0.6f * a);
-            kit.Icon(oi, flag.Right + U(4), flag.Y + U(1), oc * a, 2);
-            if (sel && s.Target is Squad foe && foe.Alive > 0)
+            var c = foe.Centroid();
+            var tp = new Viewport(0, 0, W, H).Project(new Vector3(c.X, B.Terrain.Height(c) + 1, c.Y), Proj, View, Matrix.Identity);
+            if (tp.Z is > 0 and < 1)
             {
-                var c = foe.Centroid();
-                var tp = new Viewport(0, 0, W, H).Project(new Vector3(c.X, B.Terrain.Height(c) + 1, c.Y), Proj, View, Matrix.Identity);
-                if (tp.Z is > 0 and < 1)
+                var from = new Vector2(x, y + U(2));
+                var to = new Vector2(tp.X, tp.Y);
+                float m = U(14), k = 1;
+                if (to.X < m) k = MathF.Min(k, (from.X - m) / MathF.Max(1, from.X - to.X));
+                if (to.X > W - m) k = MathF.Min(k, (W - m - from.X) / MathF.Max(1, to.X - from.X));
+                float topM = U(52);
+                if (to.Y < topM) k = MathF.Min(k, (from.Y - topM) / MathF.Max(1, from.Y - to.Y));
+                if (to.Y > H - m) k = MathF.Min(k, (H - m - from.Y) / MathF.Max(1, to.Y - from.Y));
+                to = from + (to - from) * Math.Clamp(k, 0, 1);
+                var step = to - from; float len = step.Length();
+                float la = sel ? 0.95f : 0.55f;
+                for (float t0 = 0; t0 < len; t0 += U(12))
                 {
-                    var from = new Vector2(x, y + U(2));
-                    var to = new Vector2(tp.X, tp.Y);
-                    // A foe off the screen: the line stops at the edge, where its sword shows the way.
-                    float m = U(14), k = 1;
-                    if (to.X < m) k = MathF.Min(k, (from.X - m) / MathF.Max(1, from.X - to.X));
-                    if (to.X > W - m) k = MathF.Min(k, (W - m - from.X) / MathF.Max(1, to.X - from.X));
-                    float topM = U(74);
-                    if (to.Y < topM) k = MathF.Min(k, (from.Y - topM) / MathF.Max(1, from.Y - to.Y));
-                    if (to.Y > H - m) k = MathF.Min(k, (H - m - from.Y) / MathF.Max(1, to.Y - from.Y));
-                    to = from + (to - from) * Math.Clamp(k, 0, 1);
-                    var step = to - from; float len = step.Length();
-                    for (float t0 = 0; t0 < len; t0 += U(12))
-                    {
-                        var p0 = from + step * (t0 / len); var p1 = from + step * (MathF.Min(len, t0 + U(7)) / len);
-                        Line(p0, p1, Color.Black * 0.6f, U(4)); // a dark edge, so the line reads on grass and snow
-                        Line(p0, p1, Bad, U(2));
-                    }
-                    Rect(new Rectangle((int)to.X - U(9), (int)to.Y - U(9), U(18), U(18)), Color.Black * 0.6f);
-                    kit.Icon("sword", (int)to.X - U(7), (int)to.Y - U(7), Bad, 2);
+                    var p0 = from + step * (t0 / len); var p1 = from + step * (MathF.Min(len, t0 + U(7)) / len);
+                    Line(p0, p1, Color.Black * (0.55f * la), U(3));
+                    Line(p0, p1, Bad * la, U(1.5f));
                 }
+                Rect(new Rectangle((int)to.X - U(8), (int)to.Y - U(8), U(16), U(16)), Color.Black * (0.6f * la));
+                kit.Icon("sword", (int)to.X - U(6), (int)to.Y - U(6), Bad * la, 2);
             }
         }
-        if (own && OrderFlash(s) is float fl and > 0) Frame(new Rectangle(flag.X - U(2), flag.Y - U(2), flag.Width + U(4), flag.Height + U(4)), Gold * fl, U(2));
+        if (own && OrderFlash(s) is float fl and > 0) Frame(new Rectangle(badge.X - U(2), badge.Y - U(2), badge.Width + U(4), badge.Height + U(4)), Gold * fl, U(2));
     }
 
     static string StateOf(Squad s) => s.Alive == 0 ? "BROKEN" : s.Units.Count(u => u.Active && u.Routing) > s.Alive ? "ROUTING"

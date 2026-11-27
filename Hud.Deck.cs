@@ -76,9 +76,8 @@ sealed partial class Hud
 
     // ---------- layout ----------
 
-    /// How far the command view's top-of-screen panels (deployment, the pause box, goals) sit below where they would with no
-    /// cards over them: the cards take the top.
-    int Drop => Command ? U(82) : 0;
+    /// How far the command view's top-of-screen panels (deployment, the pause box, goals) sit below the top-center bar.
+    int Drop => Command ? U(56) : 0;
 
     void LayoutDeck()
     {
@@ -88,32 +87,29 @@ sealed partial class Hud
         captainBtn = new Rectangle(player.X + U(6), player.Y + U(6), U(54), ph - U(12));
         if (B.Player.Active && !Deploying) modeBtn = new Rectangle(captainBtn.Right + U(8), player.Bottom - U(28), player.Right - captainBtn.Right - U(14), U(22));
 
-        // Bottom right: the order deck, or the chosen sergeant's goals (Hud.Divisions.cs).
-        int rightEdge = W - U(240);
-        if (Div == null) { LayoutOrders(); rightEdge = deck.X - U(8); }
+        // Left-edge vertical company roster (shared with FieldCommand) above the reserve tray/captain plate.
+        int reserveRows = Math.Max(1, (Math.Min(8, B.ReservesOf(0).Count + B.CallUpsOf(0).Count()) + 1) / 2);
+        int trayH = U(30) + reserveRows * U(18);
+        LayoutRosterLeft(player.Y - trayH - U(12));
 
-        // Bottom, between them: one plate. Time in its left wing, the balance in the middle, the clock in its right; the
-        // balance bar narrows when the room is short.
-        int wing = U(96), fixedW = U(112) + 2 * wing, room0 = rightEdge - player.Right - U(20);
-        barW = Math.Clamp(room0 - fixedW, U(140), U(300));
-        int tw = barW + fixedW, tx = Math.Clamp((W - tw) / 2, player.Right + U(10), Math.Max(player.Right + U(10), rightEdge - tw));
-        topBar = new Rectangle(tx, H - U(46) - U(10), tw, U(46));
+        // Bottom-left selected company card beside captain plate when a company is selected.
+        if (Selected.Count > 0) LayoutSelectedCard(player.Right + U(8), H - U(10));
+        else { selectedCard = Rectangle.Empty; cardBtns.Clear(); }
+
+        // Bottom right: the order deck, or the chosen sergeant's goals (Hud.Divisions.cs).
+        if (Div == null) LayoutOrders();
+
+        // Top centre: one plate with pause/speeds, heraldic shields + balance tug bar, and clock (clear of left roster & right minimap).
+        int wing = U(96), fixedW = U(112) + 2 * wing;
+        int availW = minimap.X - U(216) - U(20);
+        barW = Math.Clamp(availW - fixedW, U(140), U(260));
+        int tw = barW + fixedW, tx = Math.Clamp((W - tw) / 2, U(212), Math.Max(U(212), minimap.X - U(12) - tw));
+        topBar = new Rectangle(tx, U(10), tw, U(46));
         if (!Deploying && !ShowResult)
         {
             pauseBtn = new Rectangle(topBar.X + U(8), topBar.Y + U(12), U(22), U(22));
             for (int i = 0; i < 5; i++) speedBtns.Add((new Rectangle(pauseBtn.Right + U(6) + i * U(11), topBar.Y + U(14), U(11), U(26)), i));
         }
-
-        // Top, left of the minimap: the cards. They shrink to fit a big retinue; past what fits, the rest are summed on the
-        // last card. A chosen company's card steps down out of the row.
-        var mine = Mine;
-        int left = U(10), room = minimap.X - U(10) - left, gap = mine.Count > 8 ? U(4) : U(6), ch = U(94);
-        int cw = Math.Clamp((room - gap * Math.Max(0, mine.Count - 1)) / Math.Max(1, mine.Count), U(60), U(78));
-        int fit = Math.Max(1, (room + gap) / (cw + gap));
-        int shown = Math.Min(mine.Count, fit), total = shown * cw + Math.Max(0, shown - 1) * gap;
-        int cx0 = left + Math.Max(0, (room - total) / 2);
-        for (int i = 0; i < shown; i++) cards.Add((new Rectangle(cx0 + i * (cw + gap), U(14) + (Selected.Contains(mine[i]) ? U(8) : 0), cw, ch), mine[i]));
-        hiddenCards = mine.Count - shown;
     }
 
     readonly List<Cmd> layoutShapes = new(8), layoutMore = new(12);
@@ -155,7 +151,7 @@ sealed partial class Hud
 
         const int cols = 6;
         int rowCount = 1 + (layoutShapes.Count > 0 ? 1 : 0) + (layoutMore.Count + cols - 1) / cols;
-        int bs = U(44), bh = U(38), gap = U(3), gw = cols * bs + (cols - 1) * gap;
+        int bs = U(50), bh = U(42), gap = U(3), gw = cols * bs + (cols - 1) * gap;
         int x0 = W - gw - U(18), y0 = H - U(18) - rowCount * (bh + gap) + gap;
         deck = new Rectangle(x0 - U(8), y0 - U(22), gw + U(16), H - U(10) - (y0 - U(22)));
         int r = 0;
@@ -216,8 +212,8 @@ sealed partial class Hud
         kit.Shield(new Rectangle(x - U(48), y - U(4), U(30), U(36)), SideArms(0));
         kit.Shield(new Rectangle(x + bw + U(18), y - U(4), U(30), U(36)), SideArms(1));
         kit.TugBar(new Rectangle(x, y + U(20), bw, U(8)), f, SideArms(0).Ui, Foe);
-        Text($"{mine}", x, y, SideArms(0).Ui);
-        TextR($"{foes}", x + bw, y, Foe);
+        Text($"{mine}", x, y, Kit.Parchment);
+        TextR($"{foes}", x + bw, y, Kit.Parchment);
         TextC(f > 0.6f ? "WINNING" : f < 0.4f ? "LOSING" : "EVEN", x + bw / 2f, y + U(4), f > 0.6f ? Ok : f < 0.4f ? Bad : Dim, 1);
         int t = (int)B.Time, rx = x + bw + U(60);
         kit.Icon("clock", rx, y + U(3), Dim, 1);
@@ -235,7 +231,7 @@ sealed partial class Hud
         if (B.Wall is Fortress w && !Deploying)
         {
             // Siege status strip (SE3): time left, gate status, and heart capture/hold bar.
-            var g = new Rectangle(x + bw / 6, topBar.Y - U(22), bw * 2 / 3, U(18));
+            var g = new Rectangle(x + bw / 6, topBar.Bottom + U(4), bw * 2 / 3, U(18));
             Panel(g);
             int mins = (int)(B.SiegeTimeLeft / 60), secs = (int)(B.SiegeTimeLeft % 60);
             Text($"{mins:00}:{secs:00}", g.X + U(6), g.Y + U(5), B.SiegeTimeLeft < 180 ? Warn : Dim, 1);
@@ -265,7 +261,7 @@ sealed partial class Hud
         if (hint != null)
         {
             int hw = TW(hint, 1) + U(14);
-            var hr = new Rectangle(Math.Clamp(Mouse.X - hw / 2, U(4), W - hw - U(4)), topBar.Y - U(19) - (B.Wall != null && !Deploying ? U(20) : 0), hw, U(16));
+            var hr = new Rectangle(Math.Clamp(Mouse.X - hw / 2, U(4), W - hw - U(4)), topBar.Bottom + U(6) + (B.Wall != null && !Deploying ? U(20) : 0), hw, U(16));
             Panel(hr);
             TextC(hint, hr.Center.X, hr.Y + U(5), Color.White, 1);
         }
@@ -391,19 +387,21 @@ sealed partial class Hud
         if (titleHover) Text("ALL COMPANIES", deck.X + U(8), deck.Y - U(12), Color.White, 1);
         TextR(men, deck.Right - U(8), deck.Y + U(8), Dim, 1);
         Cmd? over = null;
+        var chrome = UiChrome.For(sb.GraphicsDevice);
+        int bb = Math.Max(3, U(5));
         foreach (var (r, c) in buttons)
         {
+            if (!deck.Contains(r.Center)) continue;
             bool lit = Lit(c, who), hover = r.Contains(Mouse), locked = Unlearned(c, who) != null;
             if (hover) over = c;
             var info = Info[c];
-            Rect(new Rectangle(r.X + U(1), r.Y + U(2), r.Width, r.Height), Color.Black * 0.4f);
-            kit.VGrad(r, lit ? new Color(104, 84, 36) : hover ? new Color(60, 60, 68) : new Color(38, 40, 46), lit ? new Color(54, 44, 20) : Kit.IronDark, 1);
-            Frame(r, lit || hover ? Gold : Color.Black * 0.7f, U(1));
-            Rect(new Rectangle(r.X + U(1), r.Y + U(1), r.Width - U(2), U(1)), Color.White * (hover ? 0.3f : 0.1f));
-            var col = locked ? Kit.Mul(Dim, 0.7f) : lit ? Gold : hover ? Color.White : Style.Text;
-            kit.Icon(info.Icon, r.X + (r.Width - U(21)) / 2, r.Y + U(4), col, 3);
-            TextC(kit.Fit(info.Short, r.Width - U(2)), r.Center.X, r.Bottom - U(10), col, 1);
-            if (info.Key is Act k && Ctl.Name(k) is { Length: > 0 and <= 2 } key) TextR(key, r.Right - U(3), r.Y + U(3), hover ? Kit.Parchment : Dim, 1);
+            var fill = locked ? new Color(26, 25, 29) : lit ? new Color(118, 90, 36) : hover ? new Color(82, 68, 42) : new Color(44, 42, 48);
+            chrome.Draw9(sb, r, UiChrome.BtnFill, 8, bb, fill);
+            chrome.Draw9(sb, r, UiChrome.BtnFrame, 8, bb, lit || hover ? Gold : Kit.GiltDark * 0.85f);
+            var col = locked ? Kit.Mul(Dim, 0.7f) : lit ? Color.White : hover ? Kit.Parchment : Style.Text;
+            kit.Icon(info.Icon, r.X + (r.Width - U(21)) / 2, r.Y + U(5), col, 3);
+            TextC(kit.Fit(info.Short, r.Width - U(4)), r.Center.X, r.Bottom - U(12), col, 1);
+            if (info.Key is Act k && Ctl.Name(k) is { Length: > 0 and <= 2 } key) TextR(key, r.Right - U(4), r.Y + U(3), lit ? Kit.Parchment : hover ? Gold : Dim, 1);
         }
         if (over is not Cmd oc)
         {

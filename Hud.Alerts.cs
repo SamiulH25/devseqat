@@ -8,31 +8,52 @@ partial class Hud
 {
     readonly List<(Rectangle R, Alert A)> alertRows = new();
 
-    public Alert? AlertAt(Point p) => Command ? alertRows.FirstOrDefault(a => a.R.Contains(p)).A : null;
+    public Alert? AlertAt(Point p) => (Command || FieldCommand) ? alertRows.FirstOrDefault(a => a.R.Contains(p)).A : null;
 
-    void AlertStrip(int most = 4)
+    /// Top-right morale & state event pills (Pillar 1 P1.2): dark-iron pill with role icon + single crisp state word, max 6 stacked, ~5s fade.
+    void AlertStrip(int most = 6)
     {
         alertRows.Clear();
         if (ShowResult || Deploying) return;
-        int y = U(10) + (Command ? U(118) : 0), room = (W - U(604)) / 2 - U(24); // in the command view the cards hold the top
-        foreach (var a in B.RecentAlerts(10, most))
+        int pillW = U(166), pillH = U(20), gap = U(3);
+        int x = Command ? minimap.X - pillW - U(10) : W - pillW - U(12);
+        int y = Command ? U(12) : U(32);
+        var chrome = UiChrome.For(sb.GraphicsDevice);
+        int b = Math.Max(3, U(5));
+        int drawn = 0;
+        foreach (var a in B.RecentAlerts(5.5f, 12))
         {
-            if (a.Kind is not ("breaking" or "arrows" or "leaderless")) continue;
-            if (!Command && a.Kind != "breaking") continue;
-            float alpha = Math.Clamp((10 - (B.Time - a.Time)) / 2f, 0, 1);
-            var (c, icon) = a.Kind switch
+            if (drawn >= most) break;
+            var (word, c, showInFight) = a.Kind switch
             {
-                "breaking" or "worn" => (Bad, "flag"), "horse" => (Foe, "horse"), "arrows" => (Warn, "arrow"), "rally" => (Ok, "horse"),
-                "tired" => (Warn, "heart"), "leaderless" => (Bad, "crown"), "pressed" => (Bad, "shield"), _ => (Warn, "shield"),
+                "inspired" => ("INSPIRED", Ok, true),
+                "wavering" => ("WAVERING", Warn, true),
+                "broken" => ("BROKEN", Orange, true),
+                "breaking" => ("ROUTING", Bad, true),
+                "obliterated" => ("OBLITERATED", Bad, true),
+                "arrows" => ("NO ARROWS", Warn, false),
+                "leaderless" => ("LEADERLESS", Bad, false),
+                _ => ("", Dim, false),
             };
-            var text = kit.Fit("! " + a.Text.ToUpperInvariant(), room);
-            var r = new Rectangle(U(10), y, Math.Min(room, TW(text, 1) + U(36)), U(18));
-            bool hover = Command && r.Contains(Mouse);
-            kit.Toast(U(10), y, text, hover ? Gold : c, icon, alpha);
+            if (word == "" || (!Command && !FieldCommand && !showInFight)) continue;
+            float alpha = Math.Clamp((5.5f - (B.Time - a.Time)) / 1.2f, 0, 1);
+            var r = new Rectangle(x, y, pillW, pillH);
+            bool hover = (Command || FieldCommand) && r.Contains(Mouse);
+            chrome.Draw9(sb, r, UiChrome.PlateFill, 10, b, Color.White * (0.9f * alpha));
+            chrome.Draw9(sb, r, UiChrome.PlateFrame, 10, b, (hover ? Gold : c) * (0.85f * alpha));
+            string icon = a.Squad != null ? RoleIconOf(a.Squad) : a.Kind == "leaderless" ? "crown" : "flag";
+            kit.Icon(icon, r.X + U(6), r.Y + U(3), c * alpha, 2);
+            string who = a.Squad != null ? a.Squad.Name.ToUpperInvariant() : "DIVISION";
+            int ww = TW(word, 1);
+            Text(kit.Fit(who, pillW - ww - U(34)), r.X + U(23), r.Y + U(6), Style.Text * (0.9f * alpha), 1);
+            TextR(word, r.Right - U(7), r.Y + U(6), c * alpha, 1);
             alertRows.Add((r, a));
-            y += U(21);
+            y += pillH + gap;
+            drawn++;
         }
-        SpokenLines(y, room);
+        int barkY = (Command || FieldCommand) ? (cards.Count > 0 ? cards[^1].R.Bottom + U(14) : U(14)) : U(14);
+        int barkRoom = Math.Min(U(260), (W - U(520)) / 2);
+        if (barkY < H - U(140)) SpokenLines(barkY, barkRoom);
     }
 
     /// What your named men have said in the last few seconds (C6): his face, his name, his words; newest first, two at most.

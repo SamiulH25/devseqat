@@ -25,8 +25,11 @@ public sealed partial class Battle
             int routing = s.Units.Count(u => u.Active && u.Routing);
             bool live = s.Alive > 0 && routing <= s.Alive;
             float morale = AvgMorale(s), stamina = s.Units.Where(u => u.Active && !u.Routing).Select(u => u.Stamina).DefaultIfEmpty(100).Average();
-            Raise("breaking", s, s.Alive > 0 && routing > s.Alive, $"{s.Name} are breaking!");
+            Raise("breaking", s, routing > 0 && routing > s.Alive, $"{s.Name} are breaking!");
+            Raise("broken", s, live && s.Broken && !s.Cavalry, $"{s.Name} ranks broken!");
             Raise("wavering", s, live && morale < 40, $"{s.Name} wavering" + (s.Pressure > 1 ? " (flank)" : ""));
+            Raise("inspired", s, live && Time > 2f && morale >= 85, $"{s.Name} inspired!");
+            Raise("obliterated", s, s.Alive == 0 && routing == 0 && s.StartCount > 0, $"{s.Name} obliterated!");
             Raise("flank", s, live && s.Pressure > 2 && morale >= 40, $"{s.Name} hit in the flank");
             Raise("arrows", s, live && t.Ammo > 0 && s.Units.All(u => !u.Active || u.Ammo == 0), $"{s.Name} out of arrows");
             Raise("tired", s, live && s.InContact && stamina < 25, $"{s.Name} tiring: relieve them");

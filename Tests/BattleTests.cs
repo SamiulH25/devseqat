@@ -1913,6 +1913,19 @@ public static partial class SelfTest
         foreach (var u in bows.Units) u.Ammo = 0;
         for (int i = 0; i < 40; i++) b.Update(1 / 60f);
         Check(Count("arrows", bows) == 2, "once the state clears it can fire again");
+        // Morale state transition pills (Pillar 1 P1.2): inspired, wavering, breaking (routing), obliterated fire once per transition.
+        foreach (var u in bows.Units) if (u.Active) u.Morale = 90;
+        for (int i = 0; i < 40; i++) b.Update(1 / 60f);
+        Check(Count("inspired", bows) == 1, $"high morale raises one inspired alert ({Count("inspired", bows)})");
+        foreach (var u in bows.Units) if (u.Active) u.Morale = 28;
+        for (int i = 0; i < 40; i++) b.Update(1 / 60f);
+        Check(Count("wavering", bows) == 1, $"low morale raises one wavering alert ({Count("wavering", bows)})");
+        foreach (var u in bows.Units) if (u.Active) u.Morale = 5;
+        for (int i = 0; i < 40; i++) b.Update(1 / 60f);
+        Check(Count("breaking", bows) == 1, $"routing raises one breaking alert ({Count("breaking", bows)})");
+        foreach (var u in bows.Units.ToList()) if (u.Active) b.KillForTest(u, killer);
+        for (int i = 0; i < 40; i++) b.Update(1 / 60f);
+        Check(Count("obliterated", bows) == 1, $"wiping a company raises one obliterated alert ({Count("obliterated", bows)})");
     }
 
     /// Remembered deployments and control groups (docs/archive/COMBAT_QOL.md Q6).

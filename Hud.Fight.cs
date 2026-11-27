@@ -55,65 +55,90 @@ sealed partial class Hud
         return arms.Count > 0 && inArms == live ? string.Join(" + ", arms) : live == 1 ? Selected.First(s => s.Alive > 0).Name.ToUpperInvariant() : $"{live} COMPANIES";
     }
 
-    /// Top centre: the two sides on one thin bar, with the men standing, and under it the battle's speed: the five steps
-    /// as rising bars (keys [ and ]), a pause mark when paused.
+    /// Top centre: friendly and enemy heraldic shields flanking live headcounts and a forged-brass-framed tug bar (Pillar 1 P1.2).
     void FightTop()
     {
         if (B.Options.Duel) return;
         var (f, mine, foes) = Tally();
-        int bw = U(200), x = (W - bw) / 2, y = U(12);
-        int lw = TW($"{mine}", 1) + U(12), rw = TW($"{foes}", 1) + U(12);
-        var cap = new Rectangle(x - lw, y - U(5), bw + lw + rw, U(15));
-        Rect(cap, new Color(12, 14, 20) * 0.72f);
-        Frame(cap, Kit.Gilt * 0.35f, U(1));
-        Rect(new Rectangle(x - U(1), y - U(1), bw + U(2), U(7)), Color.Black * 0.6f);
-        kit.TugBar(new Rectangle(x, y, bw, U(5)), f, SideArms(0).Ui, Foe);
-        ShadowR($"{mine}", x - U(6), y - U(1), SideArms(0).Ui, 1);
-        ShadowL($"{foes}", x + bw + U(6), y - U(1), Foe, 1);
-        if (Deploying) return;
-        string word = Paused ? "PAUSED" : Speed != 1 ? $"X{Speed:0.##}" : "SPEED";
-        int sx = W / 2 - (5 * U(6) + U(6) + TW(word, 1)) / 2, sy = y + U(10);
-        var shade = new Rectangle(sx - U(4), sy - U(2), 5 * U(6) + U(14) + TW(word, 1), U(20));
-        Rect(shade, Color.Black * 0.5f);
+        int bw = U(210), x = (W - bw) / 2, y = U(15);
+        int sw = U(22), sh = U(26);
+        int lw = TW($"{mine}", 1) + sw + U(16), rw = TW($"{foes}", 1) + sw + U(16);
+        var cap = new Rectangle(x - lw, y - U(8), bw + lw + rw, U(26));
+        var chrome = UiChrome.For(sb.GraphicsDevice);
+        int cb = Math.Max(4, U(6));
+        chrome.Draw9(sb, cap, UiChrome.PlateFill, 10, cb, Color.White * 0.88f);
+        chrome.Draw9(sb, cap, UiChrome.PlateFrame, 10, cb, Kit.Gilt * 0.85f);
+
+        kit.Shield(new Rectangle(cap.X + U(5), cap.Y + (cap.Height - sh) / 2, sw, sh), SideArms(0));
+        kit.Shield(new Rectangle(cap.Right - sw - U(5), cap.Y + (cap.Height - sh) / 2, sw, sh), SideArms(1));
+        ShadowR($"{mine}", x - U(7), y + U(1), Kit.Parchment, 1);
+        ShadowL($"{foes}", x + bw + U(7), y + U(1), Kit.Parchment, 1);
+
+        var barFrame = new Rectangle(x - U(2), y, bw + U(4), U(10));
+        Rect(barFrame, Color.Black * 0.72f);
+        kit.TugBar(new Rectangle(x, y + U(2), bw, U(6)), f, SideArms(0).Ui, Foe);
+        Frame(barFrame, Kit.Gilt * 0.75f, U(1));
+
+        if (Deploying || (!Paused && Speed == 1 && !FieldCommand)) return;
+        string word = Paused ? "PAUSED" : Speed != 1 ? $"X{Speed:0.##}" : "COMMAND MODE";
+        int sx = W / 2 - (5 * U(6) + U(6) + TW(word, 1)) / 2, sy = cap.Bottom + U(3);
+        var shade = new Rectangle(sx - U(5), sy - U(1), 5 * U(6) + U(16) + TW(word, 1), U(18));
+        Rect(shade, new Color(12, 14, 18) * 0.72f);
+        Frame(shade, Kit.GiltDark * 0.6f, U(1));
         for (int i = 0; i < 5; i++)
         {
-            int h = U(4 + 3 * i);
-            Rect(new Rectangle(sx + i * U(6), sy + U(16) - h, U(4), h), i <= SpeedIdx ? (Paused ? Dim : Gold) : Color.White * 0.18f);
+            int h = U(4 + 2 * i);
+            Rect(new Rectangle(sx + i * U(6), sy + U(14) - h, U(4), h), i <= SpeedIdx ? (Paused ? Dim : Gold) : Color.White * 0.18f);
         }
-        ShadowL(word, sx + 5 * U(6) + U(6), sy + U(6), Paused ? Gold : Speed != 1 ? Warn : Dim, 1);
+        ShadowL(word, sx + 5 * U(6) + U(6), sy + U(4), Paused ? Gold : Speed != 1 ? Warn : Gold, 1);
     }
 
-    /// Bottom left: health, breath, aura and horse as bare bars, what is in your hands, the rally and your kills.
+    /// Bottom left: minimal player vitals (HP, stamina, aura, horse) with no heavy box chrome during combat (Pillar 1 P1.2).
     void Vitals()
     {
         var p = B.Player;
         if (!p.Active) return;
-        int x = player.X, y = player.Y, bx = x + U(42), bw = U(170);
-        Rect(new Rectangle(x - U(6), y - U(6), player.Width + U(12), player.Height + U(10)), Color.Black * 0.62f); // a shade, so the bars read over men and grass
-        kit.Shield(new Rectangle(x, y + U(1), U(24), U(29)), SideArms(0));
+        int x = player.X, y = player.Y + U(6), bx = x + U(14), bw = U(164);
         void Row(string icon, float frac, Color c, int h)
         {
-            Rect(new Rectangle(bx - U(1), y - U(1), bw + U(2), h + U(2)), Color.Black * 0.55f);
+            Rect(new Rectangle(bx - U(1), y - U(1), bw + U(2), h + U(2)), Color.Black * 0.72f);
             kit.Gauge(new Rectangle(bx, y, bw, h), Math.Clamp(frac, 0, 1), c);
-            kit.Icon(icon, bx - U(11), y + (h - U(7)) / 2, c, 1);
+            kit.Icon(icon, bx - U(12), y + (h - U(7)) / 2, c, 1);
             y += h + U(4);
         }
-        Row("heart", p.Hp / p.Type.MaxHp, Bad, U(9));
-        Row("boot", p.Stamina / 100, B.Fevered ? Bad : Ok, U(5)); // a curse on you shows in red (MA9)
+        Row("heart", p.Hp / p.Type.MaxHp, Bad, U(8));
+        Row("boot", p.Stamina / 100, B.Fevered ? Bad : Ok, U(5));
         if (B.AuraTier > 0) Row("star", B.Aura / Battle.AuraMax, B.Quenched ? Bad : B.Spent ? Dim : Style.Aura, U(5));
         if (p.Mounted) Row("horse", p.HorseHp / p.Horse!.Hp, HorseBright, U(5));
-        // What is in your hands (P7), the swap key when a second weapon waits, your shots (P1).
         string hands = p.Couched ? "LANCE COUCHED" : B.PlayerWeapon.ToUpperInvariant() + (B.HasSecondWeapon ? $" ({Ctl.Name(Act.SwapWeapon)})" : "");
-        ShadowL(hands, bx, y, p.Couched ? Gold : Color.White, 1);
-        if (p.Type.Ammo > 0) ShadowR($"{p.Ammo} SHOTS", bx + bw, y, p.Ammo > 0 ? Gold : Bad, 1);
-        int rx = bx + bw + U(13), ry = player.Y;
+        ShadowL(hands, bx, y + U(1), p.Couched ? Gold : Color.White * 0.92f, 1);
+        if (p.Type.Ammo > 0) ShadowR($"{p.Ammo}", bx + bw, y + U(1), p.Ammo > 0 ? Gold : Bad, 1);
+        int rx = bx + bw + U(10), ry = player.Y + U(6);
         bool ready = B.RallyCooldown <= 0;
         kit.Icon("flag", rx, ry, ready ? Gold : Dim, 1);
-        ShadowL(ready ? $"RALLY {Ctl.Name(Act.Rally)}" : $"RALLY IN {B.RallyCooldown:0}", rx + U(11), ry, ready ? Gold : Dim, 1);
+        ShadowL(ready ? $"{Ctl.Name(Act.Rally)}" : $"{B.RallyCooldown:0}S", rx + U(10), ry, ready ? Gold : Dim, 1);
         kit.Icon("skull", rx, ry + U(12), Dim, 1);
-        ShadowL($"{B.PlayerKills} KILLS", rx + U(11), ry + U(12), Color.White, 1);
+        ShadowL($"{B.PlayerKills}", rx + U(10), ry + U(12), Color.White * 0.9f, 1);
         if (B.AuraTier > 0 && (B.AuraBlade ? "BLADE" : B.Quenched ? "QUENCHED" : B.Spent ? "SPENT" : B.Surge >= 1 ? $"SURGE {B.Surge:0}" : "") is { Length: > 0 } aura)
             ShadowL(aura, rx, ry + U(24), B.Quenched ? Bad : B.Spent ? Dim : Style.Aura, 1);
+    }
+
+    /// Subtle mid-left control hint tag in default combat (hideable in Settings).
+    void ControlHints()
+    {
+        if (FieldCommand || Deploying || Settings.Current.HideControlHints) return;
+        int x = U(12), y = H / 2 - U(18);
+        void Tag(string key, string label, int ty)
+        {
+            string s = $"[{key}] {label}";
+            int tw = TW(s, 1) + U(10);
+            var r = new Rectangle(x, ty, tw, U(14));
+            Rect(r, new Color(12, 14, 18) * 0.52f);
+            Frame(r, Kit.GiltDark * 0.45f, U(1));
+            Text(s, r.X + U(5), r.Y + U(4), Style.Text * 0.85f, 1);
+        }
+        Tag(Ctl.First(Act.FieldCommand), "COMMAND MODE", y);
+        Tag(Ctl.First(Act.InfoMode), "INFO MODE", y + U(17));
     }
 
     /// The swing (P2) under the reticle: a riposte window open, a chain of blows under way, the Black Flame on you.

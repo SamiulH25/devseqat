@@ -224,7 +224,8 @@ partial class BattleScreen
             }
             if (!hud.Over(ms.Position))
             {
-                var sq = PickSquad(mouseGround, 0);
+                var badge = hud.BannerAt(ms.Position);
+                var sq = (badge is { Team: 0, AiControlled: false } ? badge : null) ?? PickSquad(mouseGround, 0);
                 if (sq?.AiControlled == true) sq = null;
                 if (sq != null) selectedDivision = null;
                 if (sq == null) { if (!add) selected.Clear(); }
