@@ -133,6 +133,7 @@ public static partial class SelfTest
         }
         Check(Hud.CaptainRing.Distinct().Count() == Enum.GetValues<Hud.CapCmd>().Length, "the captain's ring holds each thing once");
         Check(Controls.Defaults[Act.CaptainWheel][0] == Controls.Defaults[Act.Couch][0], "the ring shares the couch key");
+        Check(Controls.Defaults[Act.FieldCommand][0] == "CTRL" && Controls.Defaults[Act.InfoMode][0] == "ALT", "field command and info mode default to Ctrl and Alt");
     }
 
     static void LineScreensBows()

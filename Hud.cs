@@ -50,7 +50,7 @@ sealed partial class Hud
     public float Speed = 1;
     public int SpeedIdx = 1;
     public bool CapWheelOpen;
-    public bool Command, Paused, MenuOpen, HelpOpen, WheelOpen, ShowResult, InCampaign, Deploying, AttackMoveMode;
+    public bool Command, FieldCommand, InfoMode, Paused, MenuOpen, HelpOpen, WheelOpen, ShowResult, InCampaign, Deploying, AttackMoveMode;
     public string? CombatPrompt;
     public float CombatPromptAt = -99;
     /// Fight view: how long the hold key has been down (under 0 = not held), and the enemy company you look at.

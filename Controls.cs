@@ -33,6 +33,8 @@ public enum Act
     CaptainWheel,
     // directional combat rework (CR1-CR2): soft lock-on, sidestep dodge, camera view toggle
     Dodge, CameraView,
+    // tactical HUD & on-horseback command mode (Pillar 1)
+    FieldCommand, InfoMode,
 }
 
 public enum MouseButton { Left, Right, Middle, X1, X2 }
@@ -135,6 +137,7 @@ public sealed class Controls
         [Act.Relieve] = new[] { "." }, [Act.SplitCompany] = new[] { "/" }, [Act.StandingOrder] = new[] { "=" },
         [Act.Horn] = new[] { "TILDE" }, [Act.CaptainWheel] = new[] { "Q" },
         [Act.Dodge] = new[] { "Space" }, [Act.CameraView] = new[] { "F4" },
+        [Act.FieldCommand] = new[] { "CTRL" }, [Act.InfoMode] = new[] { "ALT" },
         [Act.LordsScreen] = new[] { "L" }, [Act.SkillsScreen] = new[] { "K" }, [Act.RealmScreen] = new[] { "R" },
         [Act.DivisionsScreen] = new[] { "V" }, [Act.AtlasScreen] = new[] { "M" }, [Act.SiegeScreen] = new[] { "B" },
         [Act.InventoryScreen] = new[] { "I" }, [Act.QuestsScreen] = new[] { "J" }, [Act.CampScreen] = new[] { "C" }, [Act.LegendScreen] = new[] { "G" },
@@ -159,6 +162,7 @@ public sealed class Controls
         [Act.Slower] = "BATTLE SLOWER", [Act.Faster] = "BATTLE FASTER", [Act.Relieve] = "RELIEVE (FRESH TAKES THE TIRED'S PLACE)", [Act.SplitCompany] = "SPLIT A COMPANY IN TWO", [Act.StandingOrder] = "STANDING ORDER (CYCLE)",
         [Act.Horn] = "SOUND THE HORN (OFFICERS' PLANS)", [Act.CaptainWheel] = "CAPTAIN'S RING (HOLD; TAP = COUCH)",
         [Act.Dodge] = "SIDESTEP / DODGE (ON FOOT)", [Act.CameraView] = "COMBAT CAMERA (OTS / CLOSE / 1ST)",
+        [Act.FieldCommand] = "COMMAND MODE (FIELD)", [Act.InfoMode] = "INFO MODE (HOLD)",
         [Act.LordsScreen] = "LORDS AND COMPANIONS (MAP)", [Act.SkillsScreen] = "THE CAPTAIN (MAP)", [Act.RealmScreen] = "THE REALMS (MAP)",
         [Act.DivisionsScreen] = "DIVISIONS (MAP)", [Act.AtlasScreen] = "REALM MAP (MAP)", [Act.SiegeScreen] = "YOUR SIEGE (MAP)", [Act.InventoryScreen] = "KIT AND BAGGAGE (MAP)", [Act.QuestsScreen] = "QUESTS (MAP)", [Act.CampScreen] = "THE CAMP (MAP)", [Act.LegendScreen] = "YOUR LEGEND (MAP)",
     };

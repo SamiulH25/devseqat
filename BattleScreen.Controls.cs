@@ -20,6 +20,44 @@ partial class BattleScreen
             battle.Log(camMode switch { 1 => "Camera: Close Duel", 2 => "Camera: First Person", _ => "Camera: Over-the-Shoulder" });
         }
 
+        if (fieldCommand)
+        {
+            wheelOpen = shotWheel;
+            capWheel = capDown = false;
+            skipMouse = true;
+            if (IsActive && ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Pressed)
+            {
+                float k = 0.005f * ctl.Sensitivity;
+                yaw += (ms.X - pms.X) * k;
+                pitch = Math.Clamp(pitch + (ms.Y - pms.Y) * k * (ctl.InvertY ? -1 : 1), -0.58f, 1.1f);
+            }
+            int fcWheel = ms.ScrollWheelValue - pms.ScrollWheelValue;
+            if (fcWheel != 0 && !hud.Over(ms.Position))
+                fieldDist = Math.Clamp(fieldDist - fcWheel * 0.0035f, 2.4f, 10f);
+
+            bool fcMounted = battle.Player.Mounted;
+            battle.Reined = 0;
+            var fcf = Forward(yaw);
+            float fcFwd = ctl.Axis(Act.Forward, Act.Back), fcRight = ctl.Axis(Act.Right, Act.Left);
+            var fcMove = fcMounted ? Vector2.Zero : fcf * fcFwd + RightOf(fcf) * fcRight;
+            if (fcMove != Vector2.Zero) fcMove.Normalize();
+            battle.Input = new PlayerInput
+            {
+                Move = fcMove,
+                Throttle = fcMounted ? fcFwd : 0,
+                Steer = fcMounted ? fcRight : 0,
+                Dir = aimDir,
+                Mount = ctl.Pressed(Act.Interact),
+                Facing = yaw,
+                Pitch = pitch,
+                Sprint = ctl.Down(Act.Sprint),
+                Rally = ctl.Pressed(Act.Rally),
+            };
+            capPending = null;
+            FieldCommandPointer();
+            return;
+        }
+
         bool wasWheel = wheelOpen;
         wheelOpen = (ctl.Down(Act.OrderWheel) && !capWheel) || shotWheel;
         if (wheelOpen && !wasWheel) wheelVec = Vector2.Zero;
@@ -126,6 +164,107 @@ partial class BattleScreen
             Relic = ctl.Pressed(Act.Relic) || capPending == Hud.CapCmd.Relic,
         };
         capPending = null;
+    }
+
+    void FieldCommandPointer()
+    {
+        if (!IsActive) return;
+        mouseGround = GroundUnderMouse();
+        bool add = ctl.Down(Act.AddToSelection);
+        Cursors.Want = CommandCursor();
+        if (wheelOpen) return;
+
+        if (castBy != null && (castBy.Alive == 0 || !selected.Contains(castBy) && selected.Count > 0)) { castBy = null; castPick = -1; }
+        if (castBy != null && ms.RightButton == ButtonState.Pressed && pms.RightButton == ButtonState.Released) { castBy = null; castPick = -1; return; }
+        if (castBy != null && LmbPressed && !hud.Over(ms.Position)) { CastAt(mouseGround); return; }
+        if (LmbPressed && CommandClick(ms.Position)) return;
+        if (attackMoveMode)
+        {
+            if (ms.RightButton == ButtonState.Pressed && pms.RightButton == ButtonState.Released) { attackMoveMode = false; return; }
+            if (LmbPressed && !hud.Over(ms.Position))
+            {
+                attackMoveMode = false;
+                if (selectedDivision is { } dv) OrderDivisionCompanies(dv);
+                if (PickSquad(mouseGround, 1) is Squad foe) { OrderArrows(foe.Centroid()); Charge(foe, Cue.Order); }
+                else
+                {
+                    OrderArrows(mouseGround); LineAt(mouseGround, battle.Centroid(1));
+                    foreach (var s in Targets().Where(s => Battle.RulesFor(s).Contains(StandingRule.ChargeWhenClose)))
+                        Send(s, q => { q.Rule = StandingRule.ChargeWhenClose; q.RuleFired = false; });
+                    battle.Log((selected.Count == 0 ? "All troops: " : "Squads: ") + "march there, and charge what comes near");
+                }
+                return;
+            }
+        }
+
+        if (LmbPressed)
+        {
+            if (hud.DeckTitleAt(ms.Position)) { selected.Clear(); selectedDivision = null; return; }
+            if (hud.GoalCloseAt(ms.Position)) { selectedDivision = null; return; }
+            if (selectedDivision != null && hud.GoalAt(ms.Position) is Goal gg) { GiveGoal(selectedDivision, gg); return; }
+            if (hud.DivisionAt(ms.Position) is Division dc)
+            {
+                selectedDivision = selectedDivision == dc ? null : dc;
+                if (selectedDivision != null) selected.Clear();
+                return;
+            }
+            if (hud.ButtonAt(ms.Position) is Cmd cmd) { Command(cmd); return; }
+            if (hud.AlertAt(ms.Position) is Alert al)
+            {
+                if (al.Squad is { } q && Selectable.Contains(q)) { selected.Clear(); selected.Add(q); selectedDivision = null; }
+                return;
+            }
+            if (hud.CardAt(ms.Position) is Squad card)
+            {
+                selectedDivision = null;
+                if (add) { if (!selected.Remove(card)) selected.Add(card); }
+                else if (selected.Count == 1 && selected.Contains(card)) selected.Clear();
+                else { selected.Clear(); selected.Add(card); }
+                return;
+            }
+            if (!hud.Over(ms.Position))
+            {
+                var sq = PickSquad(mouseGround, 0);
+                if (sq?.AiControlled == true) sq = null;
+                if (sq != null) selectedDivision = null;
+                if (sq == null) { if (!add) selected.Clear(); }
+                else if (add) { if (!selected.Remove(sq)) selected.Add(sq); }
+                else if (sq == lastFieldSquad && realTime - lastFieldClick < DoubleClick)
+                {
+                    selected.Clear();
+                    var kind = sq.Units.FirstOrDefault(u => u.Active)?.Type.Id;
+                    foreach (var s in Selectable)
+                        if (s == sq || (kind != null && s.Units.Any(u => u.Active && u.Type.Id == kind))) selected.Add(s);
+                }
+                else { selected.Clear(); selected.Add(sq); }
+                if (sq != null) { lastFieldSquad = sq; lastFieldClick = realTime; }
+            }
+        }
+
+        // Right button: move / draw a line / attack enemy target directly from horseback.
+        if (ms.RightButton == ButtonState.Pressed && pms.RightButton == ButtonState.Released && !hud.Over(ms.Position)) dragStart = mouseGround;
+        if (ms.RightButton == ButtonState.Released && dragStart is Vector2 a)
+        {
+            dragStart = null;
+            var enemy = battle.Centroid(1);
+            bool click = Vector2.Distance(a, mouseGround) < 2;
+            if (selectedDivision is { } dv) OrderDivisionCompanies(dv);
+            if (SelectedCrews().Count > 0)
+            {
+                EngineOrder(mouseGround, click);
+                if (!selected.Any(s => s.Works == null)) return;
+            }
+            if (click && PickSquad(mouseGround, 1) is Squad foe)
+            {
+                OrderArrows(foe.Centroid());
+                Charge(foe, Cue.Order);
+                return;
+            }
+            OrderArrows(click ? mouseGround : (a + mouseGround) / 2);
+            if (click) LineAt(mouseGround, enemy);
+            else Distribute(a, mouseGround, enemy);
+            battle.Log((selected.Count == 0 ? "All troops: " : "Squads: ") + (queueing ? "then move there" : "move"));
+        }
     }
 
     int? WheelSector() => wheelOpen ? Sector(wheelVec, selectedDivision != null ? Hud.WheelGoals(selectedDivision).Length : Hud.WheelOrder.Length) : capWheel ? CapSector(wheelVec) : null;

@@ -209,6 +209,11 @@ sealed class SettingsScreen
                 Row();
                 ui.Text("BLUE, VERMILION AND PURPLE HERALDRY THAT STAY APART WITH RED-GREEN COLOUR BLINDNESS. APPLIES ON RESTART.", body.X, y, Style.Dim, 1);
                 y += ui.U(26);
+                Label("COMMAND MODE");
+                if (Choice(0, "HOLD", !s.ToggleFieldCommand)) s.ToggleFieldCommand = false;
+                if (Choice(1, "TOGGLE", s.ToggleFieldCommand)) s.ToggleFieldCommand = true;
+                if (Choice(2, s.HideControlHints ? "HINTS: OFF" : "HINTS: ON", !s.HideControlHints)) s.HideControlHints = !s.HideControlHints;
+                Row();
                 if (ui.Button(new Rectangle(body.X, y, ui.U(240), ui.U(26)), "SHOW TIPS AGAIN", s.TipsSeen.Count > 0)) { s.TipsSeen.Clear(); s.Save(); }
                 if (ui.Button(new Rectangle(body.X + ui.U(252), y, ui.U(240), ui.U(26)), "REPLAY TUTORIAL", s.TutorialDone)) { s.TutorialDone = false; s.Save(); }
                 break;

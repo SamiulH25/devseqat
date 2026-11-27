@@ -129,14 +129,14 @@ partial class BattleScreen
         {
             case Cmd.Charge:
                 // In the fight view the charge goes at the company you look at (BattleScreen.Fight.cs); else at the nearest.
-                if (!command && LookFoe() is Squad lf) { OrderArrows(lf.Centroid()); Charge(lf); }
+                if (!command && !fieldCommand && LookFoe() is Squad lf) { OrderArrows(lf.Centroid()); Charge(lf); }
                 else Charge(null);
                 break;
             case Cmd.Stakes: PlantStakes(); break;
             case Cmd.Cast: NextSpell(); break;
             case Cmd.ShapeLine or Cmd.ShapeWall or Cmd.ShapeSquare or Cmd.ShapeWedge or Cmd.ShapeLoose: SetShape(Hud.ShapeOf(c)!.Value); break;
             case Cmd.AttackMove:
-                if (command) attackMoveMode = !attackMoveMode;
+                if (command || fieldCommand) attackMoveMode = !attackMoveMode;
                 else Issue("advance!", s => s.Shift(enemy, 15), move: true, Cue.HornCharge);
                 break;
             case Cmd.Follow: Issue("follow me!", s => { s.Order = Order.Follow; s.Target = null; }, move: true, Cue.Order); break;
@@ -268,15 +268,26 @@ partial class BattleScreen
         selected.RemoveWhere(s => s.FoldedInto != null);
         queueing = ctl.Down(Act.AddToSelection);
         var mine = battle.Commanded.ToList();
-        bool fight = !command && !deploying;
-        bool ctrl = kb.IsKeyDown(Keys.LeftControl) || kb.IsKeyDown(Keys.RightControl);
+        bool fight = !command && !fieldCommand && !deploying;
+        bool ctrl = !fieldCommand && (kb.IsKeyDown(Keys.LeftControl) || kb.IsKeyDown(Keys.RightControl));
         for (int i = 0; i < 10; i++)
         {
             if (!Pressed(i == 9 ? Keys.D0 : Keys.D1 + i)) continue;
             int digit = (i + 1) % 10;
             if (fight) { ListenArm(digit, queueing); continue; } // the fight view picks arms, not companies (BattleScreen.Fight.cs)
             if (selectedDivision is { } sd && digit is >= 1 and <= 3) { GiveGoal(sd, new Goal(sd.Post, Goal.StancesOf(sd.Post)[digit - 1])); continue; } // an officer's stances (OF4)
-            if (digit > 0 && (ctrl || groups.ContainsKey(digit))) { Group(digit, ctrl); continue; } // control groups (Q6)
+            if (digit > 0 && (ctrl || (!fieldCommand && groups.ContainsKey(digit)))) { Group(digit, ctrl); continue; } // control groups (Q6)
+            if (fieldCommand)
+            {
+                if (digit == 0) { selected.Clear(); selectedDivision = null; }
+                else if (i < mine.Count)
+                {
+                    selectedDivision = null;
+                    if (queueing) { if (!selected.Remove(mine[i])) selected.Add(mine[i]); }
+                    else { selected.Clear(); selected.Add(mine[i]); }
+                }
+                continue;
+            }
             if (i < mine.Count && !selected.Remove(mine[i])) selected.Add(mine[i]);
         }
         if (ctl.Pressed(Act.SelectAll)) { selected.Clear(); selectedDivision = null; }
@@ -299,7 +310,7 @@ partial class BattleScreen
     {
         var who = Targets().Where(s => s.Spells.Length > 0 && s.Team == 0).OrderByDescending(Battle.CasterCompany).FirstOrDefault();
         if (who == null) { battle.Log("Select a circle of mages, or a company led by a companion, to cast."); castBy = null; castPick = -1; return; }
-        if (!command) { battle.Log($"Open the command view ({ctl.Name(Act.CommandView)}) to direct your casters."); return; }
+        if (!command && !fieldCommand) { battle.Log($"Open the command view ({ctl.Name(Act.CommandView)}) or Command Mode ({ctl.Name(Act.FieldCommand)}) to direct your casters."); return; }
         if (castBy != who) { castBy = who; castPick = -1; }
         Tips.Show("tide", "The violet bar under the balance bar is the Tide: the power in this ground, set by the well near it.\nEvery cast draws on it, the enemy's too. Run dry, your order makes the circle overreach: twice the Will, and the working may turn on them.");
         castPick = castPick + 1 >= who.Spells.Length ? -1 : castPick + 1;

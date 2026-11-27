@@ -95,7 +95,7 @@ sealed partial class BattleScreen
     readonly Verts<VertexPositionColor> lines = new();
     readonly Verts<VertexPositionColor> bands = new(); // ground marks as soft ribbons (Band)
 
-    bool command, paused, menuOpen, helpOpen, wheelOpen, skipMouse = true, shotNoMouse, attackMoveMode;
+    bool command, fieldCommand, infoMode, paused, menuOpen, helpOpen, wheelOpen, skipMouse = true, shotNoMouse, attackMoveMode;
     float yaw, pitch, fieldDist = 3.8f;       // field camera: closer OTS behind the player (CR1)
     float camYaw, camPitch, zoom = 45;        // command camera: free orbit around camFocus
     // CR1 combat camera state: critically damped focus height, dynamic FOV, camera mode (0=OTS, 1=close duel, 2=first-person), soft lock-on.
@@ -211,7 +211,7 @@ sealed partial class BattleScreen
         selected.Clear();
         yaw = MathHelper.PiOver2;
         pitch = 0.3f;
-        paused = menuOpen = helpOpen = wheelOpen = false;
+        paused = menuOpen = helpOpen = wheelOpen = fieldCommand = infoMode = false;
         kb = pkb = Keyboard.GetState();
         ms = pms = Mouse.GetState();
         if (s.Options.Duel)
@@ -329,7 +329,7 @@ sealed partial class BattleScreen
         yaw = MathHelper.PiOver2;
         pitch = 0.3f;
         blend = 0;
-        paused = menuOpen = helpOpen = wheelOpen = false;
+        paused = menuOpen = helpOpen = wheelOpen = fieldCommand = infoMode = false;
         SetCommand(false);
         kb = pkb = Keyboard.GetState();
         ms = pms = Mouse.GetState();
@@ -372,7 +372,7 @@ sealed partial class BattleScreen
         yaw = MathHelper.PiOver2;
         pitch = 0.3f;
         blend = 0;
-        paused = menuOpen = helpOpen = wheelOpen = false;
+        paused = menuOpen = helpOpen = wheelOpen = fieldCommand = infoMode = false;
         SetCommand(false);
         kb = pkb = Keyboard.GetState();
         ms = pms = Mouse.GetState();
@@ -410,6 +410,7 @@ sealed partial class BattleScreen
     void SetCommand(bool on)
     {
         command = on;
+        fieldCommand = false;
         attackMoveMode = false;
         wheelOpen = false;
         holdHeld = -1;
@@ -469,10 +470,12 @@ sealed partial class BattleScreen
         SyncHud();
 
         bool alive = battle.Player.Active;
+        infoMode = !Overlay && ctl.Down(Act.InfoMode);
         if (Overlay)
         {
             battle.Input = new PlayerInput { Dir = aimDir };
             wheelOpen = false;
+            fieldCommand = false;
             if (battle.Winner >= 0 && !Ending && Pressed(Keys.Enter)) { if (campaignBattle != null) FinishCampaignBattle(); else NewBattle(); }
             else if (!Ending && LmbPressed && hud.MenuAt(ms.Position) is MenuItem m) MenuChoice(m);
         }
@@ -481,6 +484,19 @@ sealed partial class BattleScreen
             if ((!alive || deploying) && !command) SetCommand(true);
             else if (alive && !deploying && ctl.Pressed(Act.CommandView))
                 SetCommand(!command);
+            bool wasFieldCmd = fieldCommand;
+            if (!command && !deploying && alive)
+            {
+                if (Settings.Current.ToggleFieldCommand) { if (ctl.Pressed(Act.FieldCommand)) fieldCommand = !fieldCommand; }
+                else fieldCommand = ctl.Down(Act.FieldCommand);
+            }
+            else fieldCommand = false;
+            if (fieldCommand != wasFieldCmd)
+            {
+                dragStart = null; boxStart = null; attackMoveMode = false; holdHeld = -1;
+                if (fieldCommand) { wheelOpen = capWheel = capDown = false; }
+                else skipMouse = true;
+            }
             if (deploying && (ctl.Pressed(Act.Pause) || (LmbPressed && hud.StartAt(ms.Position))))
             {
                 deploying = false;
@@ -490,7 +506,7 @@ sealed partial class BattleScreen
             else if (ctl.Pressed(Act.Pause))
             {
                 // On foot in field view, Space dodges when shared with Act.Dodge; in command view or mounted it pauses.
-                bool dodgeSharesPause = !command && !battle.Player.Mounted && ctl.Binds.TryGetValue(Act.Pause, out var pb) && ctl.Binds.TryGetValue(Act.Dodge, out var db) && pb.Any(db.Contains);
+                bool dodgeSharesPause = !command && !fieldCommand && !battle.Player.Mounted && ctl.Binds.TryGetValue(Act.Pause, out var pb) && ctl.Binds.TryGetValue(Act.Dodge, out var db) && pb.Any(db.Contains);
                 if (!dodgeSharesPause) paused = !paused;
             }
             if (ctl.Pressed(Act.Slower) && speed > 0) speed--;
@@ -498,7 +514,7 @@ sealed partial class BattleScreen
             OrderKeys();
             if (command) CommandControls(dt); else FieldControls(dt);
         }
-        IsMouseVisible = command || Overlay;
+        IsMouseVisible = command || fieldCommand || Overlay;
         battle.Commanding = command;
 
         // The opening sweep runs until it ends or you press anything.
@@ -692,17 +708,18 @@ sealed partial class BattleScreen
     {
         hudSynced = true;
         hud.B = battle; hud.Selected = selected; hud.Ctl = ctl; hud.Minimap = world.Minimap; hud.GroundMap = world.GroundMap;
+        bool tac = command || fieldCommand;
         hud.GroundView = groundView ?? deploying; // the ground map is up while you deploy, until you close it
-        hud.GroundLine = command && shotMouse == null && !hud.Over(ms.Position) && dragStart == null ? Grounds.Describe(battle.Terrain.GroundAt(mouseGround)) : null;
-        hud.OrderWarning = command && dragStart != null && Targets().Count > 0 ? battle.GroundWarning(Targets(), mouseGround) : null;
-        if (command && dragStart != null && Targets() is { Count: > 0 } ts)
+        hud.GroundLine = tac && shotMouse == null && !hud.Over(ms.Position) && dragStart == null ? Grounds.Describe(battle.Terrain.GroundAt(mouseGround)) : null;
+        hud.OrderWarning = tac && dragStart != null && Targets().Count > 0 ? battle.GroundWarning(Targets(), mouseGround) : null;
+        if (tac && dragStart != null && Targets() is { Count: > 0 } ts)
         {
             if (routeAt == null || Vector2.DistanceSquared(routeAt.Value, mouseGround) > 4) { route = battle.Route(ts[0], mouseGround); routeAt = mouseGround; }
         }
         else { route = null; routeAt = null; }
         hud.CastBy = castBy; hud.CastPick = castPick;
-        hud.HoldPlace = command ? -1 : holdHeld; hud.LookFoe = !command && !deploying && !Overlay && Targets().Count > 0 ? LookFoe() : null;
-        hud.Command = command; hud.Paused = paused; hud.Speed = Speeds[speed]; hud.SpeedIdx = speed; hud.AttackMoveMode = attackMoveMode; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
+        hud.HoldPlace = tac ? -1 : holdHeld; hud.LookFoe = !tac && !deploying && !Overlay && Targets().Count > 0 ? LookFoe() : null;
+        hud.Command = command; hud.FieldCommand = fieldCommand; hud.InfoMode = infoMode; hud.Paused = paused; hud.Speed = Speeds[speed]; hud.SpeedIdx = speed; hud.AttackMoveMode = attackMoveMode; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
         hud.ShowResult = battle.Winner >= 0 && !helpOpen && !Ending;
         hud.InCampaign = campaignBattle != null;
         hud.Deploying = deploying;
@@ -715,7 +732,7 @@ sealed partial class BattleScreen
         hud.WheelOpen = wheelOpen; hud.CapWheelOpen = capWheel; hud.WheelSector = WheelSector() ?? -1; hud.WheelCenter = command && wheelOpen ? wheelOrigin : null;
         hud.Aim = aimDir; hud.View = view; hud.Proj = proj; hud.Mouse = shotMouse ?? (shotNoMouse ? new Point(-999, -999) : ms.Position);
         hud.Box = boxStart is Point b && command ? BoxOf(b, ms.Position) : null;
-        hud.HoverSquad = command && shotMouse == null && !shotNoMouse && !hud.Over(ms.Position) ? PickSquad(mouseGround, 1) ?? PickSquad(mouseGround, 0) : null;
+        hud.HoverSquad = tac && shotMouse == null && !shotNoMouse && !hud.Over(ms.Position) ? PickSquad(mouseGround, 1) ?? PickSquad(mouseGround, 0) : null;
         if (hud.Box is { Width: < 6, Height: < 6 }) hud.Box = null;
         hud.Layout(GraphicsDevice.Viewport);
     }
