@@ -160,7 +160,7 @@ sealed partial class Hud
 
     // ---------- primitives ----------
 
-    void Rect(Rectangle r, Color c) => sb.Draw(art.Pixel, r, c);
+    void Rect(Rectangle r, Color c) => sb.Draw(font.Texture, r, font.White, c);
 
     /// The one panel style, the iron plate of the shared kit (Ui.Panel).
     void Panel(Rectangle r, Color? edge = null, int thick = 1) => kit.Panel(r, edge == Edge ? null : edge, thick);
@@ -176,7 +176,7 @@ sealed partial class Hud
     void Line(Vector2 a, Vector2 b, Color c, float w)
     {
         var d = b - a;
-        sb.Draw(art.Pixel, a, null, c, MathF.Atan2(d.Y, d.X), new Vector2(0, 0.5f), new Vector2(d.Length(), w), SpriteEffects.None, 0);
+        sb.Draw(font.Texture, a, font.White, c, MathF.Atan2(d.Y, d.X), new Vector2(0, 0.5f), new Vector2(d.Length(), w), SpriteEffects.None, 0);
     }
 
     void Bar(Rectangle r, float frac, Color c) => kit.Bar(r, frac, c);

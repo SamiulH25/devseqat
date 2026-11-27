@@ -154,14 +154,17 @@ sealed partial class BattleScreen
         puppet = new Puppet(art, sprites) { Soft = soft };
         if (host.MeshKit != null)
         {
-            puppet3D = new Puppet3D(host.MeshKit, units3D) { FxPuppet = puppet };
+            meshAtlas = new MeshAtlas3D(GraphicsDevice, host.MeshKit);
             int nW = Math.Clamp(Environment.ProcessorCount, 1, 8);
+            allBatches = new InstanceBatch[nW + 1];
+            for (int i = 0; i < allBatches.Length; i++) allBatches[i] = new InstanceBatch();
+            puppet3D = new Puppet3D(host.MeshKit, units3D) { FxPuppet = puppet, Atlas = meshAtlas, InstBatch = allBatches[0] };
             workerVerts = new Verts<VertexPNCT>[nW];
             workerPuppets = new Puppet3D[nW];
             for (int i = 0; i < nW; i++)
             {
                 workerVerts[i] = new Verts<VertexPNCT>();
-                workerPuppets[i] = new Puppet3D(host.MeshKit, workerVerts[i]) { FxPuppet = puppet, DeferHaze = true };
+                workerPuppets[i] = new Puppet3D(host.MeshKit, workerVerts[i]) { FxPuppet = puppet, DeferHaze = true, Atlas = meshAtlas, InstBatch = allBatches[i + 1] };
             }
         }
         hud = new Hud(sb, art, font);

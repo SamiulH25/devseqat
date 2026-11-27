@@ -92,14 +92,14 @@ partial class BattleScreen
                 sh.Setup(sh.Sprite, Matrix.Identity, sh.LightEye, realTime, false, 0);
                 sh.Sprite.Parameters["ShadowMap"].SetValue((Texture2D?)null);
                 DrawSpritesShaded(sh.Sprite, "SpriteShadow");
-                int shdN = do3D ? Total3DVerts() + skinnedQueue.Count : 0;
+                int shdN = do3D ? Total3DVerts() + Total3DInstances() + skinnedQueue.Count : 0;
                 if (shdN > 0)
                 {
                     sh.Setup(sh.Unit3D, Matrix.Identity, sh.LightEye, realTime, false, 0);
                     sh.Unit3D.Parameters["ShadowMap"].SetValue((Texture2D?)null);
                     sh.Unit3D.Parameters["View"].SetValue(sh.LightView);
-                    DrawUnits3D(sh, sh.Unit3D, "Unit3DShadow", false);
-                    if (FrameProf.On) FrameProf.Count("shdTris", shdN / 3);
+                    int instTris = DrawUnits3D(sh, sh.Unit3D, "Unit3DShadow", false);
+                    if (FrameProf.On) FrameProf.Count("shdTris", Total3DVerts() / 3 + instTris);
                 }
                 FrameProf.End("shadowDraw");
             }
@@ -130,7 +130,7 @@ partial class BattleScreen
         FrameProf.Begin("mainBuild");
         BuildSprites(view, false);
         FrameProf.End("mainBuild");
-        int mainN = do3D ? Total3DVerts() + skinnedQueue.Count : 0;
+        int mainN = do3D ? Total3DVerts() + Total3DInstances() + skinnedQueue.Count : 0;
         if (mainN > 0)
         {
             FrameProf.Begin("u3dDraw");
@@ -138,9 +138,9 @@ partial class BattleScreen
             gd.SetRenderTargets(pCol, pNd);
             sh.Setup(sh.Unit3D, view * proj, eye, realTime, shadows, 0.45f);
             sh.Unit3D.Parameters["View"].SetValue(view);
-            DrawUnits3D(sh, sh.Unit3D, "Unit3D", shadows);
+            int instTris = DrawUnits3D(sh, sh.Unit3D, "Unit3D", shadows);
             gd.SetRenderTarget(pCol);
-            if (FrameProf.On) FrameProf.Count("u3dTris", mainN / 3);
+            if (FrameProf.On) FrameProf.Count("u3dTris", Total3DVerts() / 3 + instTris);
             FrameProf.End("u3dDraw");
         }
         FrameProf.Begin("spritesAndPost");
@@ -164,6 +164,8 @@ partial class BattleScreen
     readonly List<Squad> goneSelected = new();
     Verts<VertexPNCT>[] workerVerts = Array.Empty<Verts<VertexPNCT>>();
     Puppet3D[] workerPuppets = Array.Empty<Puppet3D>();
+    MeshAtlas3D? meshAtlas;
+    InstanceBatch[] allBatches = Array.Empty<InstanceBatch>();
     const int U3dRingCount = 4;
     readonly DynamicVertexBuffer?[] u3dVbs = new DynamicVertexBuffer?[U3dRingCount];
     VertexPNCT[] u3dStage = Array.Empty<VertexPNCT>();
@@ -173,6 +175,7 @@ partial class BattleScreen
     float battleShadowRad, battleShadowAt;
     readonly List<(Unit U, float H, float Lod, float Rear, Look Look)> drawQueue3D = new(1024);
     int Total3DVerts() { int n = units3D.N; for (int i = 0; i < workerVerts.Length; i++) n += workerVerts[i].N; return n; }
+    int Total3DInstances() { int n = 0; for (int i = 0; i < allBatches.Length; i++) n += allBatches[i].Count; return n; }
 
     void DrawBlobs(float alpha)
     {
@@ -445,6 +448,7 @@ partial class BattleScreen
             puppet3D.BeginCamera(viewer);
         }
         for (int i = 0; i < workerVerts.Length; i++) workerVerts[i].N = 0;
+        for (int i = 0; i < allBatches.Length; i++) allBatches[i].Clear();
         if (do3D) puppet3D!.ShadowOnly = forSun;
         var eye2 = new Vector2(eye.X, eye.Z);
         // Men outside the view (or, for the sun's pass, outside the shadow map) are skipped; men far off
@@ -631,15 +635,27 @@ partial class BattleScreen
         skinnedWolf = SkinnedMesh3D.TryLoad(GraphicsDevice, "wolf_skinned.skin", "wolf_tex.png");
     }
 
-    void DrawUnits3D(Shading sh, Effect fx, string technique, bool drawShadows)
+    int DrawUnits3D(Shading sh, Effect fx, string technique, bool drawShadows)
     {
         var gd = GraphicsDevice;
+        bool shadow = technique == "Unit3DShadow";
+        int instTris = 0;
+        if (meshAtlas != null && Total3DInstances() > 0)
+        {
+            sh.Setup(sh.InstancedUnit3D, shadow ? Matrix.Identity : view * proj, shadow ? sh.LightEye : eye, realTime, !shadow && drawShadows, shadow ? 0f : 0.45f);
+            if (shadow) sh.InstancedUnit3D.Parameters["ShadowMap"]?.SetValue((Texture2D?)null);
+            sh.InstancedUnit3D.Parameters["View"]?.SetValue(shadow ? sh.LightView : view);
+            instTris = meshAtlas.DrawBatches(gd, sh, sh.InstancedUnit3D, technique, shadow, allBatches);
+        }
         gd.BlendState = BlendState.Opaque;
         gd.DepthStencilState = DepthStencilState.Default;
         gd.RasterizerState = RasterizerState.CullNone;
-        fx.CurrentTechnique = fx.Techniques[technique];
-        fx.CurrentTechnique.Passes[0].Apply();
         int totalVerts = Total3DVerts();
+        if (totalVerts > 0)
+        {
+            fx.CurrentTechnique = fx.Techniques[technique];
+            fx.CurrentTechnique.Passes[0].Apply();
+        }
         if (totalVerts > 0)
         {
             const int Chunk = 60000;
@@ -673,7 +689,6 @@ partial class BattleScreen
         }
         if (skinnedQueue.Count > 0)
         {
-            bool shadow = technique == "Unit3DShadow";
             sh.Setup(sh.SkinnedUnit3D, shadow ? Matrix.Identity : view * proj, shadow ? sh.LightEye : eye, realTime, !shadow && drawShadows, shadow ? 0f : 0.45f);
             if (shadow) sh.SkinnedUnit3D.Parameters["ShadowMap"]?.SetValue((Texture2D?)null);
             sh.SkinnedUnit3D.Parameters["View"]?.SetValue(shadow ? sh.LightView : view);
@@ -683,6 +698,7 @@ partial class BattleScreen
                 else skinnedWolf!.DrawWolf(gd, sh, su, shH, 1f, technique);
             }
         }
+        return instTris;
     }
 
     /// A man so close to the field camera that his body would fill the lens. Only these are left out:

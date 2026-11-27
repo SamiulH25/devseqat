@@ -44,7 +44,7 @@ sealed partial class Puppet3D
             : dark ? new Color(82, 78, 76)
             : new Color(148, 146, 142);
         Color mane = alpha ? new Color(200, 206, 218) : dark ? new Color(46, 42, 42) : new Color(92, 88, 84);
-        UnitMatTable.FillBeast(coat, mane, new Color(42, 36, 34), tint, palCols);
+        UnitMatTable.FillBeast(coat, mane, new Color(42, 36, 34), tint, palCols); palDirty = true;
         float turnDelta = MathHelper.WrapAngle(u.Facing - u.ViewFacing);
         DrawWolfRig(u.Pos, ground, u.ViewFacing, u.Anim, u.Vel.Length(), u.Type.Size * Scale, lunge, wind, strike, turnDelta);
     }
@@ -99,7 +99,7 @@ sealed partial class Puppet3D
     float DrawWarg3D(Unit u, float ground, Color tint, float turnDelta = 0f)
     {
         const float wargSize = 1.5f;
-        UnitMatTable.FillBeast(new Color(78, 74, 72), new Color(44, 40, 40), new Color(34, 30, 30), tint, palCols);
+        UnitMatTable.FillBeast(new Color(78, 74, 72), new Color(44, 40, 40), new Color(34, 30, 30), tint, palCols); palDirty = true;
         float seat = DrawWolfRig(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, wargSize * Scale, 0, 0, 0, turnDelta);
         return seat - 0.63f * u.Type.Size * Scale;
     }
@@ -111,7 +111,7 @@ sealed partial class Puppet3D
         UnitMatTable.FillBeast(
             king ? new Color(92, 62, 42) : new Color(118, 82, 54),
             king ? new Color(48, 34, 24) : new Color(76, 52, 36),
-            new Color(40, 32, 26), tint, palCols);
+            new Color(40, 32, 26), tint, palCols); palDirty = true;
         float speed = u.Vel.Length(), gait = Math.Clamp(speed / 6f, 0, 1);
         float amp = speed < 0.3f ? 0 : 14 + 22 * gait;
         float waddle = MathF.Sin(u.Anim * MathF.Tau * 1.2f) * 0.055f * gait;
@@ -159,7 +159,7 @@ sealed partial class Puppet3D
         Color hide = u.Type.Id == "brood_mother" ? new Color(72, 46, 82)
             : u.Type.Id == "spiderling" ? new Color(138, 114, 88)
             : new Color(56, 48, 52);
-        UnitMatTable.FillBeast(hide, new Color(150, 44, 36), new Color(32, 26, 28), tint, palCols);
+        UnitMatTable.FillBeast(hide, new Color(150, 44, 36), new Color(32, 26, 28), tint, palCols); palDirty = true;
 
         float gait = Math.Clamp(u.Vel.Length() / 6f, 0, 1);
         float rear = BeastRearing(u), lunge = u.Action == UnitAction.Recover ? 0.24f * rear : -0.10f * rear;
@@ -193,7 +193,7 @@ sealed partial class Puppet3D
     {
         Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
         // Deep emerald/bronze-scaled wyvern hide, leathery warm wing membranes, pale bone horns & sting
-        UnitMatTable.FillBeast(new Color(62, 102, 74), new Color(142, 114, 82), new Color(218, 206, 178), tint, palCols);
+        UnitMatTable.FillBeast(new Color(62, 102, 74), new Color(142, 114, 82), new Color(218, 206, 178), tint, palCols); palDirty = true;
 
         bool aloft = u.Altitude > 0.4f;
         float rear = BeastRearing(u);
@@ -259,7 +259,7 @@ sealed partial class Puppet3D
         bool great = u.Type.Id == "great_boar", tusker = u.Type.Id == "tusker";
         Color hide = great ? new Color(68, 56, 52) : tusker ? new Color(96, 68, 52) : new Color(112, 82, 62);
         Color mane = great ? new Color(36, 30, 30) : new Color(56, 40, 34);
-        UnitMatTable.FillBeast(hide, mane, new Color(32, 26, 24), tint, palCols);
+        UnitMatTable.FillBeast(hide, mane, new Color(32, 26, 24), tint, palCols); palDirty = true;
         float speed = u.Vel.Length(), gait = Math.Clamp(speed / 7f, 0, 1);
         float amp = speed < 0.3f ? 0 : 18 + 30 * gait;
         float bob = MathF.Sin(u.Anim * MathF.Tau * 1.6f) * 0.04f * gait;
@@ -286,7 +286,7 @@ sealed partial class Puppet3D
     void DrawHarpy3D(Unit u, float ground, Color tint)
     {
         Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
-        UnitMatTable.FillBeast(new Color(128, 96, 86), new Color(68, 52, 64), new Color(42, 34, 32), tint, palCols);
+        UnitMatTable.FillBeast(new Color(128, 96, 86), new Color(68, 52, 64), new Color(42, 34, 32), tint, palCols); palDirty = true;
         bool aloft = u.Altitude > 0.3f;
         float rear = BeastRearing(u);
         float flap = MathF.Sin((Now * 2.4f + Ease.Hash(u.Index)) * MathF.Tau);
@@ -313,7 +313,7 @@ sealed partial class Puppet3D
     {
         Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
         // Warm golden-tawny lion body, deep bronze-brown eagle plumage, golden beak & eyes
-        UnitMatTable.FillBeast(new Color(176, 134, 78), new Color(92, 62, 40), new Color(44, 34, 26), tint, palCols);
+        UnitMatTable.FillBeast(new Color(176, 134, 78), new Color(92, 62, 40), new Color(44, 34, 26), tint, palCols); palDirty = true;
         bool aloft = u.Altitude > 0.4f;
         float rear = BeastRearing(u);
         float flap = MathF.Sin((Now * 1.8f + Ease.Hash(u.Index)) * MathF.Tau);
@@ -352,7 +352,7 @@ sealed partial class Puppet3D
     {
         Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
         // Deep venomous jade-olive scales, dark mossy carapace plates, glowing amber-gold eyes & crest
-        UnitMatTable.FillBeast(new Color(64, 108, 66), new Color(36, 62, 42), new Color(28, 34, 24), tint, palCols);
+        UnitMatTable.FillBeast(new Color(64, 108, 66), new Color(36, 62, 42), new Color(28, 34, 24), tint, palCols); palDirty = true;
         float speed = u.Vel.Length(), gait = Math.Clamp(speed / 5f, 0, 1);
         float sway = MathF.Sin(u.Anim * MathF.Tau * 1.4f + u.Index) * 0.08f;
         float rear = BeastRearing(u);
@@ -383,7 +383,7 @@ sealed partial class Puppet3D
     {
         Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
         // Sun-baked ochre/sandstone carapace, burnt umber chitin rings, dark gullet & ivory teeth
-        UnitMatTable.FillBeast(new Color(184, 148, 96), new Color(118, 84, 52), new Color(46, 32, 22), tint, palCols);
+        UnitMatTable.FillBeast(new Color(184, 148, 96), new Color(118, 84, 52), new Color(46, 32, 22), tint, palCols); palDirty = true;
         float rear = BeastRearing(u);
         float wave = MathF.Sin(Now * 2.2f + u.Index) * 0.18f;
         float strike = u.Action == UnitAction.Recover ? rear : 0f;
@@ -404,7 +404,7 @@ sealed partial class Puppet3D
     {
         Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
         // Ash-charcoal pelage, dark iron mane, amber glowing eyes & ivory claws/fangs
-        UnitMatTable.FillBeast(new Color(92, 88, 94), new Color(44, 42, 48), new Color(30, 28, 32), tint, palCols);
+        UnitMatTable.FillBeast(new Color(92, 88, 94), new Color(44, 42, 48), new Color(30, 28, 32), tint, palCols); palDirty = true;
         float speed = u.Vel.Length(), gait = Math.Clamp(speed / 7.5f, 0, 1);
         float rear = BeastRearing(u);
         float stride = MathF.Sin(u.Anim * MathF.Tau * 1.4f) * 0.34f * gait;
@@ -466,7 +466,7 @@ sealed partial class Puppet3D
                 trim = new Color(190, 158, 86);
                 break;
         }
-        UnitMatTable.FillBeast(skin, pelt, trim, tint, palCols);
+        UnitMatTable.FillBeast(skin, pelt, trim, tint, palCols); palDirty = true;
 
         float speed = u.Vel.Length(), gait = Math.Clamp(speed / 5.5f, 0, 1);
         float rear = BeastRearing(u);

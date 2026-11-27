@@ -35,6 +35,10 @@ sealed partial class Puppet3D
     public bool ShadowOnly;
     /// Defer soft-particle weapon glints into PendingHaze so TryDraw is 100% thread-safe across Parallel.For workers.
     public bool DeferHaze;
+    /// Optional GPU hardware instancing target: when set, EmitLocal emits 64-byte instances instead of transforming vertices on CPU.
+    public MeshAtlas3D? Atlas;
+    public InstanceBatch? InstBatch;
+    bool palDirty = true;
     public readonly List<(Vector3 Pos, float Size, Color Col, float Alpha, float Seed)> PendingHaze = new();
 
     const float RearDeg = 38f, Saddle = 0.62f, Shank = 0.41f, UpperArm = 0.305f, Forearm = 0.295f;
@@ -150,6 +154,19 @@ sealed partial class Puppet3D
         float wUx = nU.X * sUy, wUy = nU.Y * sUy, wUz = nU.Z * sUy;
         float wFx = nF.X * sFz, wFy = nF.Y * sFz, wFz = nF.Z * sFz;
         float oX = wPos.X, oY = wPos.Y, oZ = wPos.Z;
+
+        if (Atlas != null && InstBatch != null && Atlas.TryGetPart(part, out int pid))
+        {
+            if (!ShadowOnly && palDirty) { InstBatch.PushPalette(palCols); palDirty = false; }
+            InstBatch.Add(pid, new Instance3D
+            {
+                Row0 = new Vector4(wRx, wUx, wFx, oX),
+                Row1 = new Vector4(wRy, wUy, wFy, oY),
+                Row2 = new Vector4(wRz, wUz, wFz, oZ),
+                Meta = new Vector4(ShadowOnly ? 0 : InstBatch.CurrentPalRow, partPat / 255f, 0f, 0f),
+            });
+            return;
+        }
 
         verts.Reserve(len);
         var dst = verts.A;
@@ -344,7 +361,7 @@ sealed partial class Puppet3D
         if (look.Beast || u.Type.Breed is "troll" or "ogre" or "giant") return DrawBeast3D(u, ground, tint, look);
 
         bool camel = u.Mounted && u.Horse?.Barding == "camel";
-        if (!ShadowOnly) UnitMatTable.Fill(palIdx, look.Visage, u.Coat, camel, tint, palCols, look.Face);
+        if (!ShadowOnly) { UnitMatTable.Fill(palIdx, look.Visage, u.Coat, camel, tint, palCols, look.Face); palDirty = true; }
 
         float size = (u.Type.Class == UnitClass.Captain ? 1.12f : 1f) * u.Type.Size * Scale * Variety.Stature(u);
 
@@ -365,7 +382,7 @@ sealed partial class Puppet3D
             else if (u.Mounted && u.Horse!.Barding == "wolf")
             {
                 liftFar = ground + DrawWarg3D(u, ground, tint);
-                if (!ShadowOnly) UnitMatTable.Fill(palIdx, look.Visage, u.Coat, false, tint, palCols, look.Face);
+                if (!ShadowOnly) { UnitMatTable.Fill(palIdx, look.Visage, u.Coat, false, tint, palCols, look.Face); palDirty = true; }
             }
             Frame(u.Pos, u.ViewFacing, liftFar + (u.Mounted ? 0f : bob * size), size);
             if (!u.Mounted && spd > 0.3f) Lean(stride * 3.5f, Math.Clamp(spd * 2.5f, 0f, 10f));
@@ -1111,7 +1128,7 @@ sealed partial class Puppet3D
             var eyeC = PortraitPainter.EyeColours[Math.Clamp(feat.Eye, 0, PortraitPainter.EyeColours.Length - 1)];
             palCols[11] = new Vector3(eyeC.R / 255f * tv.X, eyeC.G / 255f * tv.Y, eyeC.B / 255f * tv.Z);
             var skin = palCols[9];
-            palCols[12] = Vector3.Lerp(skin * 0.62f, new Vector3(150f / 255f, 52f / 255f, 56f / 255f) * tv, 0.34f);
+            palCols[12] = Vector3.Lerp(skin * 0.62f, new Vector3(150f / 255f, 52f / 255f, 56f / 255f) * tv, 0.34f); palDirty = true;
         }
 
         var headMesh = kit.HeadJaw[Math.Clamp(feat.Jaw, 0, 2)];
@@ -1126,7 +1143,7 @@ sealed partial class Puppet3D
             if (feat.Scar > 0 && feat.Scar < kit.ScarStyle.Length && kit.ScarStyle[feat.Scar].Length > 0)
             {
                 if (!ShadowOnly)
-                    palCols[12] = Vector3.Lerp(palCols[9], new Vector3(150f / 255f, 56f / 255f, 60f / 255f) * palCols[0], 0.70f);
+                    palCols[12] = Vector3.Lerp(palCols[9], new Vector3(150f / 255f, 56f / 255f, 60f / 255f) * palCols[0], 0.70f); palDirty = true;
                 EmitLocal(kit.ScarStyle[feat.Scar], pos, rx, uy, fz, hs, hs, hs);
             }
         }
@@ -1149,7 +1166,7 @@ sealed partial class Puppet3D
         }
 
         palCols[11] = saved11;
-        palCols[12] = saved12;
+        palCols[12] = saved12; palDirty = true;
     }
 
     void DrawFallen3D(Unit u, float ground, float size, float phase, int palIdx, Look look, MeshKit3D.LookMeshes lm)
@@ -1267,7 +1284,7 @@ sealed partial class Puppet3D
     public void Banner(Vector2 pos, float ground, int palette, float wave, int charge = -1, float stream = 0, float lean = 0, Vector2 fallDir = default, int streamers = 0, bool fringe = false)
     {
         int palIdx = Math.Clamp(palette, 0, Style.Sides.Length - 1);
-        UnitMatTable.Fill(palIdx, -1, 0, false, Color.White, palCols);
+        UnitMatTable.Fill(palIdx, -1, 0, false, Color.White, palCols); palDirty = true;
         WorldFrame(new Vector3(pos.X, ground, pos.Y));
 
         Vector3 up = Vector3.UnitY;
@@ -1408,7 +1425,7 @@ sealed partial class Puppet3D
         float len = diff.Length();
         if (len < 1e-4f) return;
         int palIdx = Math.Clamp(palette, 0, Style.Sides.Length - 1);
-        UnitMatTable.Fill(palIdx, -1, 0, false, Color.White, palCols);
+        UnitMatTable.Fill(palIdx, -1, 0, false, Color.White, palCols); palDirty = true;
         WorldFrame(tail);
         var dir = diff / len;
         if (kind == Grip.Thrown && kit.Javelin.Length > 0)
@@ -1600,7 +1617,7 @@ sealed partial class Puppet3D
     public void DrawLooseHorse(LooseHorse h, float ground)
     {
         if (h.Mount.Barding == "wolf") return;
-        UnitMatTable.Fill(h.Team, -1, h.Coat, h.Mount.Barding == "camel", Color.White, palCols);
+        UnitMatTable.Fill(h.Team, -1, h.Coat, h.Mount.Barding == "camel", Color.White, palCols); palDirty = true;
         unitIdHash = Ease.Hash((int)(h.Pos.X * 13 + h.Pos.Y * 29));
         if (Detail >= 2)
         {
@@ -1616,7 +1633,7 @@ sealed partial class Puppet3D
         if (h.Barding == "wolf") return;
         float k = Now > 0 ? (Now - h.At) / 0.7f : 1f;
         if (k >= 1f) return;
-        UnitMatTable.Fill(h.Team, -1, h.Coat, h.Barding == "camel", Color.White, palCols);
+        UnitMatTable.Fill(h.Team, -1, h.Coat, h.Barding == "camel", Color.White, palCols); palDirty = true;
         unitIdHash = Ease.Hash((int)(h.Pos.X * 13 + h.Pos.Y * 29));
         float hScale = HorseScale(h.Barding);
         float drop = Ease.Out(MathF.Min(1f, k * 2f)) * 0.34f * Scale * hScale;

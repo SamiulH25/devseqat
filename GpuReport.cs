@@ -30,7 +30,6 @@ sealed class GpuReport
                 ("Melee-Field-High", Quality.High, 1),
                 ("Melee-Overview-High", Quality.High, 2),
                 ("Melee-Overview-Med", Quality.Medium, -1),
-                ("Melee-Overview-Low", Quality.Low, -1),
             }
             : new[]
             {

@@ -46,6 +46,15 @@ sealed class MeshKit3D
     public const int LodLevels = 8;
     static readonly float[] LodRatios = { 0.18f, 0.28f, 0.38f, 0.50f, 0.62f, 0.74f, 0.87f, 1.00f };
 
+    /// All unique mesh part arrays (base parts + QEM LOD slices) for static GPU atlas packing.
+    public IEnumerable<Vert[]> AllPartArrays()
+    {
+        var seen = new HashSet<Vert[]>(ReferenceEqualityComparer.Instance);
+        foreach (var v in Parts.Values) if (v.Length > 0 && seen.Add(v)) yield return v;
+        foreach (var ladder in lodLadders.Values)
+            foreach (var v in ladder) if (v.Length > 0 && seen.Add(v)) yield return v;
+    }
+
     /// Return the progressively simplified mesh slice for a continuous 0..1 LOD slider value (zero allocations, thread-safe).
     public Vert[] ForLod(Vert[] part, float lod)
     {

@@ -18,7 +18,7 @@ sealed class Shading : IDisposable
     public static readonly Vector2 SpriteLight = new(1.05f, 0.62f); // sprite brightness: sky part, sun part (lit ~1.0, shade ~0.5)
     public static readonly Vector4 Wind = new(0.8f, 0.6f, 0.12f, 0.25f); // direction xz, strength, steady lean
 
-    public readonly Effect World, Sprite, Sky, Post, Unit3D, SkinnedUnit3D, PixelPost;
+    public readonly Effect World, Sprite, Sky, Post, Unit3D, InstancedUnit3D, SkinnedUnit3D, PixelPost;
     public readonly Texture2D WhiteTex, HumanTex;
     public readonly RenderTarget2D ShadowMap;
     public Matrix LightView, LightViewProj;
@@ -100,6 +100,15 @@ sealed class Shading : IDisposable
             new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aNormal", VertexElementUsage.Normal),
                     new Attribute("aColor", VertexElementUsage.Color), new Attribute("aUV", VertexElementUsage.TextureCoordinate) },
             new GlslEffect.Technique("Unit3D"), new GlslEffect.Technique("Unit3DShadow", "SHADOW"));
+
+        var palTexSlot = new TextureSlot("PalTex", 3, SamplerState.PointClamp);
+        InstancedUnit3D = GlslEffect.Create(gd, "instanced_unit3d", common + Source("unit3d.glsl"), lit3D,
+            new[] { shadowTex, unitTexSlot, palTexSlot },
+            new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aNormal", VertexElementUsage.Normal),
+                    new Attribute("aColor", VertexElementUsage.Color), new Attribute("aUV", VertexElementUsage.TextureCoordinate),
+                    new Attribute("iRow0", VertexElementUsage.TextureCoordinate, 1), new Attribute("iRow1", VertexElementUsage.TextureCoordinate, 2),
+                    new Attribute("iRow2", VertexElementUsage.TextureCoordinate, 3), new Attribute("iMeta", VertexElementUsage.TextureCoordinate, 4) },
+            new GlslEffect.Technique("Unit3D", "INSTANCED"), new GlslEffect.Technique("Unit3DShadow", "INSTANCED", "SHADOW"));
 
         var skinnedLit = lit3D.Concat(new[]
         {
@@ -194,7 +203,7 @@ sealed class Shading : IDisposable
         p["Palette"]?.SetValue(Looks.Palette);
         p["Look"]?.SetValue(new Vector4(Ironfield.Sky.Snow, NearDetail ? 1 : 0, Ironfield.Sky.Night, Ironfield.Sky.Rain));
         if (p["GroundMap"] is { } gm) gm.SetValue(GroundMap ?? Blank(gd));
-        bool useHuman = fx == Unit3D && HumanTex != WhiteTex;
+        bool useHuman = (fx == Unit3D || fx == InstancedUnit3D) && HumanTex != WhiteTex;
         p["UnitTex"]?.SetValue(useHuman ? HumanTex : WhiteTex);
         p["HasUnitTex"]?.SetValue(useHuman ? 1f : 0f);
     }
@@ -294,7 +303,7 @@ sealed class Shading : IDisposable
 
     public void Dispose()
     {
-        World.Dispose(); Sprite.Dispose(); Sky.Dispose(); Post.Dispose(); Unit3D.Dispose(); SkinnedUnit3D.Dispose(); PixelPost.Dispose(); WhiteTex.Dispose(); if (HumanTex != WhiteTex) HumanTex.Dispose();
+        World.Dispose(); Sprite.Dispose(); Sky.Dispose(); Post.Dispose(); Unit3D.Dispose(); InstancedUnit3D.Dispose(); SkinnedUnit3D.Dispose(); PixelPost.Dispose(); WhiteTex.Dispose(); if (HumanTex != WhiteTex) HumanTex.Dispose();
         ShadowMap.Dispose(); scene?.Dispose(); pixelScene?.Dispose(); pixelNormDepth?.Dispose();
     }
 }

@@ -13,12 +13,21 @@ varying vec3 vNormal;
 varying vec4 vColor;
 varying vec2 vUV;
 varying vec4 vLight;
+#ifdef INSTANCED
+varying vec2 vMeta;
+#endif
 
 #ifdef VERTEX
 attribute vec4 aPos;
 attribute vec3 aNormal;
 attribute vec4 aColor;
 attribute vec2 aUV;
+#ifdef INSTANCED
+attribute vec4 iRow0;
+attribute vec4 iRow1;
+attribute vec4 iRow2;
+attribute vec4 iMeta;
+#endif
 #ifdef SKINNED
 attribute vec4 aBones;
 attribute vec4 aWeights;
@@ -46,6 +55,16 @@ void main()
     vec4 ln = vec4(aNormal, 0.0);
     vec3 sn = (ln * b0).xyz * aWeights.x + (ln * b1).xyz * aWeights.y + (ln * b2).xyz * aWeights.z + (ln * b3).xyz * aWeights.w;
     vNormal = normalize((vec4(sn, 0.0) * World).xyz);
+#elif defined(INSTANCED)
+    vec3 p = vec3(
+        iRow0.w + dot(iRow0.xyz, aPos.xyz),
+        iRow1.w + dot(iRow1.xyz, aPos.xyz),
+        iRow2.w + dot(iRow2.xyz, aPos.xyz));
+    vec3 nR = vec3(iRow0.x, iRow1.x, iRow2.x);
+    vec3 nU = vec3(iRow0.y, iRow1.y, iRow2.y);
+    vec3 nF = vec3(iRow0.z, iRow1.z, iRow2.z);
+    vNormal = normalize(normalize(nR) * aNormal.x + normalize(nU) * aNormal.y + normalize(nF) * aNormal.z);
+    vMeta = iMeta.xy;
 #else
     vec3 p = aPos.xyz;
     vNormal = aNormal;
@@ -76,16 +95,30 @@ void main()
     vec3 v = normalize(CameraPos - vWorld);
     float sh = ShadowAt(vWorld + n * 0.06) * CloudAt(vWorld);
 
-    // Unpack surface pattern ID (0..4) and metallic weight (0..1) from constant-per-triangle aColor.a.
-    float aInt = floor(vColor.a * 255.0 + 0.5);
-    float patId = floor(aInt / 16.0);
-    float metal = mod(aInt, 16.0) / 15.0;
-
     // Subtle distance-faded surface micro-detail (kept gentle so crisp low-poly planes stay clean, never noisy static).
     float dist = length(CameraPos - vWorld);
     float detailFade = 1.0 - smoothstep(10.0, 26.0, dist);
 
+#ifdef INSTANCED
+    float matId = floor(vColor.a * 255.0 + 0.5);
+    vec4 pal = texture2D(PalTex, vec2((matId + 0.5) / 14.0, vMeta.x));
+    vec3 albedo = vColor.rgb * pal.rgb;
+    float pPart = floor(vMeta.y * 255.0 + 0.5);
+    float patId = 0.0;
+    if (abs(pPart - 1.0) < 0.5 && abs(matId - 5.0) < 0.5) patId = 1.0;
+    else if (abs(pPart - 2.0) < 0.5 && matId >= 3.5 && matId <= 7.5) patId = 2.0;
+    else if (abs(pPart - 3.0) < 0.5 && matId >= 0.5 && matId <= 2.5) patId = 3.0;
+    else if (abs(pPart - 13.0) < 0.5 && matId >= 0.5 && matId <= 2.5) patId = 13.0;
+    else if (abs(pPart - 5.0) < 0.5 && matId >= 9.5 && matId <= 13.5) patId = 5.0;
+    else if (abs(matId - 4.0) < 0.5 || abs(matId - 8.0) < 0.5) patId = 4.0;
+    float metal = floor(pal.a * 255.0 + 0.5) / 15.0;
+#else
+    // Unpack surface pattern ID (0..4) and metallic weight (0..1) from constant-per-triangle aColor.a.
+    float aInt = floor(vColor.a * 255.0 + 0.5);
+    float patId = floor(aInt / 16.0);
+    float metal = mod(aInt, 16.0) / 15.0;
     vec3 albedo = vColor.rgb;
+#endif
     float specBoost = 1.0;
 
     if (HasUnitTex > 0.5)

@@ -233,11 +233,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Controls.cs (563 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:138, CapSector:139, Sector:140, CommandControls:147, CommandCursor:344, BoxOf:362, OnScreen:364, PickSquad:371, GroundUnderMouse:385, GroundUnder:387, UpdateCamera:399, PullCameraIn:472, SegSegT:511, SegCircleT:523, SegObbT:537
 
-## BattleScreen.cs (738 lines)
-- **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:137, Load:151, QuickGround:182, BeginCampaign:192, StartDeployment:229, StageCommandView:244, BenchStage:254, FinishCampaignBattle:295, BeginQuickBattle:311, NewBattle:338, WithMages:383, SetWorld:391, SetCommand:407, Pressed:419, Update:427, PlaySounds:543, PlayPlayerSounds:572, Soundscape:594, SyncHud:688, MenuChoice:720
+## BattleScreen.cs (741 lines)
+- **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:137, Load:151, QuickGround:185, BeginCampaign:195, StartDeployment:232, StageCommandView:247, BenchStage:257, FinishCampaignBattle:298, BeginQuickBattle:314, NewBattle:341, WithMages:386, SetWorld:394, SetCommand:410, Pressed:422, Update:430, PlaySounds:546, PlayPlayerSounds:575, Soundscape:597, SyncHud:691, MenuChoice:723
 
-## BattleScreen.Draw.cs (1236 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:60, Total3DVerts:175, DrawBlobs:177, EaseFacings:219, Spray:235, Effects:248, AtmosphereFx:320, GroundSteps:366, BuildSprites:431, EnsureSkinned:626, DrawUnits3D:634, LensFill:690, SpriteStates:693, DrawSpritesBasic:701, DrawSpritesShaded:711, DrawSoft:722, Line:736, G:737, OrderArrows:746, OrderArrowLines:748, FortressPointRings:764, Ring:775, DashedRing:786, SelectionBox:801, Band:834, BeamQuad:856, BattleTutorialRibbon:881, TorchRow:928, Precipitation:938, Fall:949, Stakes:969, SpellColor:1003, Spells:1009, AuraGlow:1025, ChampionGlow:1035, PlayerGlow:1048, PendingFormsDrawn:1062, RouteDots:1087, PlanHook:1100, DrawLines:1130
+## BattleScreen.Draw.cs (1252 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:60, Total3DVerts:177, Total3DInstances:178, DrawBlobs:180, EaseFacings:222, Spray:238, Effects:251, AtmosphereFx:323, GroundSteps:369, BuildSprites:434, EnsureSkinned:630, DrawUnits3D:638, LensFill:706, SpriteStates:709, DrawSpritesBasic:717, DrawSpritesShaded:727, DrawSoft:738, Line:752, G:753, OrderArrows:762, OrderArrowLines:764, FortressPointRings:780, Ring:791, DashedRing:802, SelectionBox:817, Band:850, BeamQuad:872, BattleTutorialRibbon:897, TorchRow:944, Precipitation:954, Fall:965, Stakes:985, SpellColor:1019, Spells:1025, AuraGlow:1041, ChampionGlow:1051, PlayerGlow:1064, PendingFormsDrawn:1078, RouteDots:1103, PlanHook:1116, DrawLines:1146
 
 ## BattleScreen.Effects.cs (378 lines)
 - **BattleScreen** (class, L7): KickDir:15, UpdateCamKick:21, Feel:34, Kick:81, Shake:84, AddMark:101, LeaveMarks:111, DrawMarks:124, Stamp:149, Trample:158, MenMap:176, TrampleTexture:199, RearOf:216, BannerFalls:238, DrawFallingBanners:249, ResetCombatFx:270, AddSparkFlash:272, TrackSlashes:286, DrawCombatFx:309
@@ -813,8 +813,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Attribute** (struct, L21)
 - **GlslEffect** (class, L31): Technique:33, Create:37
 
-## GpuReport.cs (85 lines)
-- **GpuReport** (class, L9): GpuReport:23, Frame:51, Next:68, Write:78
+## GpuReport.cs (84 lines)
+- **GpuReport** (class, L9): GpuReport:23, Frame:50, Next:67, Write:77
 
 ## GroundPick.cs (27 lines)
 - **GroundPick** (class, L7): March:10
@@ -859,6 +859,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Hud.Posts.cs (120 lines)
 - **Hud** (class, L9): ZonesShown:29, ZoneAt:32, PostZones:51, PostLabel:94, DragGhost:109
+
+## InstancedMesh3D.cs (261 lines)
+- **Instance3D** (struct, L9)
+- **InstanceBatch** (class, L23): Clear:34, PushPalette:37, Add:55
+- **MeshAtlas3D** (class, L70): PartSlice:72, MeshAtlas3D:89, TryGetPart:133, DrawBatches:142, Dispose:254
 
 ## LegendScreen.cs (92 lines)
 - **LegendScreen** (class, L8): Show:15, Close:25, Draw:27
@@ -994,9 +999,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Upgrade.cs (355 lines)
 - **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:187, Leads:343
 
-## Mesh3D.cs (747 lines)
-- **MeshKit3D** (class, L9): ForLod:50, TryLoad:90, Load:103, Get:203, Resolve:205, MapLimb:350, MapHelm:358, MapWeapon:407, MapShield:453, BuildLodLadder:493
-- **UnitMatTable** (struct, L682): Fill:695, FillBeast:733
+## Mesh3D.cs (756 lines)
+- **MeshKit3D** (class, L9): AllPartArrays:50, ForLod:59, TryLoad:99, Load:112, Get:212, Resolve:214, MapLimb:359, MapHelm:367, MapWeapon:416, MapShield:462, BuildLodLadder:502
+- **UnitMatTable** (struct, L691): Fill:704, FillBeast:742
 
 ## MusicDirector.cs (129 lines)
 - **MusicDirector** (class, L12): Cue:17, MusicDirector:28, Pool:36, Reset:51, Adopt:59, Update:68, BackToMap:99, Next:109, Start:121
@@ -1054,8 +1059,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Puppet3D.Beasts.cs (526 lines)
 - **Puppet3D** (class, L7): BeastRearing:9, DrawBeast3D:13, DrawWolfUnit3D:34, DrawWolfRig:52, DrawWarg3D:99, DrawBear3D:107, DrawSpider3D:156, DrawWyvern3D:192, DrawBoar3D:256, DrawHarpy3D:286, DrawGriffon3D:312, DrawBasilisk3D:351, DrawSandWurm3D:382, DrawWerewolf3D:403, DrawBrute3D:441
 
-## Puppet3D.cs (1717 lines)
-- **Puppet3D** (class, L12): BuildPatAlpha:53, Puppet3D:72, BeginCamera:78, Rad:85, Frame:87, WorldFrame:96, Lean:105, W:114, WDir:125, EmitLocal:140, EmitBone:210, EmitDir:226, EmitWeapon:238, RotX:263, RotZ:269, RotY:275, Elbow:281, LegIK:296, Sink:318, TryDraw:327, EmblemOf:954, EmitSlashArc:975, EmitShield:1048, EmitHumanHead:1101, DrawFallen3D:1155, Banner:1267, DrawMissile:1405, HorseScale:1423, Joint:1433, DrawHorse3D:1447, DrawLooseHorse:1600, DrawDeadHorse:1614, Bench:1658
+## Puppet3D.cs (1734 lines)
+- **Puppet3D** (class, L12): BuildPatAlpha:57, Puppet3D:76, BeginCamera:82, Rad:89, Frame:91, WorldFrame:100, Lean:109, W:118, WDir:129, EmitLocal:144, EmitBone:227, EmitDir:243, EmitWeapon:255, RotX:280, RotZ:286, RotY:292, Elbow:298, LegIK:313, Sink:335, TryDraw:344, EmblemOf:971, EmitSlashArc:992, EmitShield:1065, EmitHumanHead:1118, DrawFallen3D:1172, Banner:1284, DrawMissile:1422, HorseScale:1440, Joint:1450, DrawHorse3D:1464, DrawLooseHorse:1617, DrawDeadHorse:1631, Bench:1675
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, SheetRect:133, OtherBeastCorpse:136
@@ -1098,9 +1103,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SettingsScreen.cs (219 lines)
 - **SettingsScreen** (class, L7): readonly:20, SettingsScreen:22, Update:24, Close:42, Draw:50
 
-## Shading.cs (300 lines)
+## Shading.cs (309 lines)
 - **Quality** (enum, L8)
-- **Shading** (class, L12): Source:39, Shading:49, AimSun:128, Setup:172, Blank:204, Scene:211, PostToScreen:226, PixelPostToScreen:264, PixelPostTo:271, Dispose:295
+- **Shading** (class, L12): Source:39, Shading:49, AimSun:137, Setup:181, Blank:213, Scene:220, PostToScreen:235, PixelPostToScreen:273, PixelPostTo:280, Dispose:304
 
 ## SkinnedMesh3D.cs (229 lines)
 - **VertexPNCTBW** (struct, L10)
