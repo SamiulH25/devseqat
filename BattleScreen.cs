@@ -96,10 +96,10 @@ sealed partial class BattleScreen
     readonly Verts<VertexPositionColor> bands = new(); // ground marks as soft ribbons (Band)
 
     bool command, fieldCommand, infoMode, paused, menuOpen, helpOpen, wheelOpen, skipMouse = true, shotNoMouse, attackMoveMode;
-    float yaw, pitch, fieldDist = 3.8f;       // field camera: closer OTS behind the player (CR1)
+    float yaw, pitch, fieldDist = 3.4f;       // field camera: grounded OTS behind the player (Pillar 3 P3.1)
     float camYaw, camPitch, zoom = 45;        // command camera: free orbit around camFocus
-    // CR1 combat camera state: critically damped focus height, dynamic FOV, camera mode (0=OTS, 1=close duel, 2=first-person), soft lock-on.
-    float camFocusY, camFocusYVel, camShoulder = 0.68f, camFov = 62f;
+    // CR1/P3.1 combat camera state: critically damped focus height, speed-reactive pullback, dynamic FOV, camera mode (0=OTS, 1=close duel, 2=first-person).
+    float camFocusY, camFocusYVel, camShoulder = 0.58f, camSpeedPull, camFov = 62f;
     bool camInit;
     int camMode;
 
@@ -125,7 +125,7 @@ sealed partial class BattleScreen
     readonly string? shotDir = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 } sd ? sd : null;
     // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/archive/MELEE.md), =magic at the magic scenes,
     // =spectacle at the spectacle scenes (docs/archive/SPECTACLE.md), skipping the rest.
-    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, "beasts" => 99, "captain" => 106, "hunted" => 108, "arrows" => 110, "named" => 116, "sergeants" => 117, "hud" => 125, _ => 0 }, shotFrames;
+    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, "beasts" => 99, "captain" => 106, "hunted" => 108, "arrows" => 110, "named" => 116, "sergeants" => 117, "hud" => 125, "pillar3" => 310, _ => 0 }, shotFrames;
     string? pendingShot;
     bool shotWheel, hudHidden;
     /// The captain's ring (hold its key in the fight view): open, held since, a choice waiting to go into the next input.

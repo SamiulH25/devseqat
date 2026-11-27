@@ -260,7 +260,7 @@ public partial class Battle
         {
             Stagger(a, 0.55f);
             t.ActionTimer = MathF.Min(t.ActionTimer, 0.06f); // fast counter-windup!
-            if (t.IsPlayer) { RiposteUntil = Time + RiposteTime; Parries++; PlayerHit = ("CHAMBER! COUNTER", Time); }
+            if (t.IsPlayer) { RiposteUntil = Time + RiposteTime; Parries++; AwardBattleSkill("Arms", 0.22f); PlayerHit = ("CHAMBER! COUNTER", Time); }
             else { t.RiposteReady = true; if (a.IsPlayer) PlayerHit = ("CHAMBERED!", Time); }
         }
         else
@@ -315,10 +315,18 @@ public partial class Battle
     /// What your own hands did (P3): arrow and lance hits, ripostes, and kills from the saddle or the bow.
     void CountDeed(Unit t, bool ranged, bool lance)
     {
-        if (ranged) ArrowHits++;
-        if (lance) LanceHits++;
-        if (riposteSwing && !ranged && !lance) Ripostes++;
-        if (t.Dead) { if (ranged) ArrowKills++; else if (Player.Mounted) SaddleKills++; }
+        if (ranged) { ArrowHits++; AwardBattleSkill("Bowcraft", 0.22f); }
+        if (lance) { LanceHits++; AwardBattleSkill("Riding", 0.4f); }
+        if (riposteSwing && !ranged && !lance) { Ripostes++; AwardBattleSkill("Arms", 0.22f); }
+        if (t.Dead)
+        {
+            if (ranged) { ArrowKills++; AwardBattleSkill("Bowcraft", 0.5f); }
+            else
+            {
+                AwardBattleSkill("Arms", 0.55f);
+                if (Player.Mounted) { SaddleKills++; AwardBattleSkill("Riding", 0.55f); }
+            }
+        }
     }
 
     static bool InArc(Unit a, Unit t, float reach, float minDot)
@@ -411,6 +419,7 @@ public partial class Battle
                     t.Stamina = MathF.Max(0, t.Stamina - 2);
                     RiposteUntil = Time + RiposteTime * (Perk("Champion") ? 1.5f : 1); // the opening: a swing started now is quick and hard to stop (P2)
                     Parries++;
+                    AwardBattleSkill("Arms", 0.22f);
                     CounterStrike(t, a);
                     PlayerHit = (Countering ? "PARRY! COUNTER" : "PARRY! RIPOSTE", Time);
                     Sound(Cue.ParrySteel, t.Pos, priority: true);
@@ -550,6 +559,7 @@ public partial class Battle
             Stagger(a, 1.0f);
             RiposteUntil = Time + RiposteTime;
             Parries++;
+            AwardBattleSkill("Arms", 0.22f);
             PlayerHit = ("CHAMBER!", Time);
             Sound(Cue.ParrySteel, t.Pos, priority: true);
             Flash("clash", (a.Pos + t.Pos) * 0.5f, 1.3f, t.Team, "chamber");

@@ -279,12 +279,15 @@ public partial class Battle
     {
         p.Stamina -= 30;
         RallyCooldown = Options.RallyCooldown;
+        int rallied = 0;
         foreach (var u in Units)
             if (u.Active && u.Team == p.Team && !u.IsPlayer && Vector2.DistanceSquared(u.Pos, p.Pos) < RallyRadius * RallyRadius)
             {
                 u.Morale = MathF.Min(100, u.Morale + (u.Routing ? Options.RallyBonus + 20 : Options.RallyBonus));
                 if (u.Routing) u.Routs = Math.Min(u.Routs, 1); // a general's horn gives even a broken company one more chance
+                rallied++;
             }
+        if (rallied > 0) AwardBattleSkill("Leadership", 0.45f);
         Log("Rally! Hold the line!");
         Sound(Cue.Horn, p.Pos);
         if (Options.KingsCharge && !kingsCharged) KingsCharge(p);

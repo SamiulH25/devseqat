@@ -270,6 +270,65 @@ partial class BattleScreen
             case 303 when pendingShot == null && dropIn < 0:
                 pendingShot = "planning-landed"; shotIndex++; break;
             case 304 when pendingShot == null: Exit(); break;
+            // Pillar 3 (combat feel, camera, upright/couched lances, nearby enemy HP bars, mount prompt, skill toast): IRONFIELD_SHOTS_FROM=pillar3
+            case 310 when b.Time > 0.5f:
+            {
+                // Shot 1: Grounded mounted OTS framing with upright lances at trot.
+                var lanceType = b.Player.Type.Clone();
+                lanceType.Look = lanceType.Look with { Weapon = "lance" };
+                b.Player.Type = lanceType;
+                b.Player.Horse ??= Troops.Mount("warhorse");
+                b.Player.HorseHp = b.Player.Horse.Hp;
+                b.Player.Pos = new(0, -28); b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+                b.Player.Speed = 3.5f; b.Player.Couched = false; b.Player.CouchBlend = 0f;
+                foreach (var u in b.Units) if (u.Mounted && u.Team == 0 && !u.IsPlayer) { u.Couched = false; u.CouchBlend = 0f; }
+                var cavA = b.AddSquad(0, UnitType.Lancer, 4, new(2.5f, -21f), 4, Vector2.UnitY);
+                foreach (var u in cavA.Units) { u.Speed = 3f; u.Couched = false; u.CouchBlend = 0f; }
+                yaw = MathHelper.PiOver2; pitch = 0.16f;
+                shotFrames = 0; shotIndex++; break;
+            }
+            case 311 when shotFrames > 4:
+                pendingShot = "p3-mounted-lances"; shotIndex++; break;
+            case 312 when pendingShot == null:
+            {
+                // Shot 2: Couched lance charge at gallop with speed-reactive camera pullback.
+                b.Player.Speed = 11.5f; b.Player.Couched = true; b.Player.CouchBlend = 1f;
+                foreach (var u in b.Units) if (u.Mounted && u.Team == 0 && !u.IsPlayer) { u.Speed = 11f; u.Couched = true; u.CouchBlend = 1f; }
+                yaw = MathHelper.PiOver2; pitch = 0.16f;
+                shotFrames = 0; shotIndex++; break;
+            }
+            case 313 when shotFrames > 4:
+                pendingShot = "p3-couched-charge"; shotIndex++; break;
+            case 314 when pendingShot == null:
+            {
+                // Shot 3: Close melee with nearby enemy HP bars + live skill-up toasts.
+                b.Player.Couched = false; b.Player.CouchBlend = 0f; b.Player.Speed = 0f;
+                b.Player.Pos = new(0, -10); b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+                var foes = b.AddSquad(1, Troops.Get("brevon_fyrd"), 5, new(0, -6.5f), 5, -Vector2.UnitY);
+                foes.Units[0].Hp = foes.Units[0].Type.MaxHp * 0.45f;
+                foes.Units[1].Hp = foes.Units[1].Type.MaxHp * 0.72f;
+                foes.Units[2].Hp = foes.Units[2].Type.MaxHp * 0.25f;
+                b.SkillToasts.Clear();
+                b.SkillToasts.Add(new SkillToast("Arms", 14, b.Time - 0.5f));
+                b.SkillToasts.Add(new SkillToast("Riding", 11, b.Time - 0.35f));
+                yaw = MathHelper.PiOver2; pitch = 0.18f;
+                shotFrames = 0; shotIndex++; break;
+            }
+            case 315 when shotFrames > 4:
+                pendingShot = "p3-melee-bars-toast"; shotIndex++; break;
+            case 316 when pendingShot == null:
+            {
+                // Shot 4: On-foot near loose horse showing [E] MOUNT HORSE prompt + horse HP bar.
+                b.Player.Horse = null; b.Player.Speed = 0f;
+                b.Player.Pos = new(0, -28); b.Player.Facing = MathHelper.PiOver2;
+                b.SkillToasts.Clear();
+                b.LooseHorses.Add(new LooseHorse { Mount = Troops.Mount("warhorse"), Hp = 115f, Pos = new(0.8f, -26.2f), Heading = 0.4f, Team = 0, Coat = 1 });
+                yaw = MathHelper.PiOver2; pitch = 0.20f;
+                shotFrames = 0; shotIndex++; break;
+            }
+            case 317 when shotFrames > 4:
+                pendingShot = "p3-mount-prompt"; shotIndex++; break;
+            case 318 when pendingShot == null: Exit(); break;
             // The two views (docs/archive/PLAYTEST.md PT4, "As rebuilt"; IRONFIELD_SHOTS_FROM=hud): the fight view bare, an arm told to
             // attack, the order ring, the hold-there marker; then the command view, companies sent at a foe, one company's deck.
             case 125 when b.Time > 2f:

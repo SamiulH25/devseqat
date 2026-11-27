@@ -538,14 +538,16 @@ partial class BattleScreen
         bool mounted = battle.Player.Mounted;
         float dt = MathF.Min(MathF.Max(frameDt, 1f / 120f), 0.05f);
 
-        // Critically damped focus height (CR1): eliminates terrain-ripple jitter while keeping 1:1 mouse-look responsiveness.
-        float targetY = t.Height(p) + (camMode == 2 ? (mounted ? 2.55f : 1.68f) : (mounted ? 2.5f : 1.65f));
-        float targetShoulder = camMode == 2 ? 0f : camMode == 1 ? 0.48f : 0.68f;
+        // Critically damped focus height (CR1/P3.1): eliminates terrain-ripple jitter while keeping 1:1 mouse-look responsiveness.
+        float targetY = t.Height(p) + (camMode == 2 ? (mounted ? 2.55f : 1.68f) : (mounted ? 2.35f : 1.65f));
+        float targetShoulder = camMode == 2 ? 0f : camMode == 1 ? 0.45f : 0.58f;
+        float targetSpeedPull = mounted && camMode != 2 ? Math.Clamp((MathF.Abs(battle.Player.Speed) - 4f) / 8f, 0f, 1f) * 0.65f : 0f;
         if (!camInit || shotDir != null)
         {
             camFocusY = targetY;
             camFocusYVel = 0;
             camShoulder = targetShoulder;
+            camSpeedPull = targetSpeedPull;
             camFov = 62f;
             camInit = true;
         }
@@ -556,6 +558,7 @@ partial class BattleScreen
             camFocusYVel += acc * dt;
             camFocusY += camFocusYVel * dt;
             camShoulder = MathHelper.Lerp(camShoulder, targetShoulder, 1f - MathF.Exp(-10f * dt));
+            camSpeedPull = MathHelper.Lerp(camSpeedPull, targetSpeedPull, 1f - MathF.Exp(-6f * dt));
         }
 
         var shoulder = new Vector3(-MathF.Sin(yaw), 0, MathF.Cos(yaw)) * camShoulder; // over the right shoulder
@@ -566,7 +569,7 @@ partial class BattleScreen
         float y = yaw + MathHelper.WrapAngle(camYaw - yaw) * k; // shortest way round
         float pt = MathHelper.Lerp(pitch, camPitch, k);
         float baseDist = camMode == 2 ? 0.05f : camMode == 1 ? 2.7f : fieldDist;
-        float dist = MathHelper.Lerp(baseDist + (mounted && camMode != 2 ? 1.4f : 0), zoom, k);
+        float dist = MathHelper.Lerp(baseDist + (mounted && camMode != 2 ? 0.85f + camSpeedPull : 0), zoom, k);
         if (intro >= 0)
         {
             // The opening: from high over the far side the camera swings round and down to where you deploy.

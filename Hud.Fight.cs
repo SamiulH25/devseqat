@@ -17,6 +17,7 @@ sealed partial class Hud
         : s.Units.Count > 0 && s.Units[0].Type.Class == UnitClass.Archer ? 1 : 0;
 
     readonly List<(Rectangle R, int Arm)> armChips = new();
+    readonly List<(Unit U, float DistSq)> nearbyEnemies = new();
 
     void LayoutFight()
     {
@@ -110,8 +111,11 @@ sealed partial class Hud
         Row("boot", p.Stamina / 100, B.Fevered ? Bad : Ok, U(5));
         if (B.AuraTier > 0) Row("star", B.Aura / Battle.AuraMax, B.Quenched ? Bad : B.Spent ? Dim : Style.Aura, U(5));
         if (p.Mounted) Row("horse", p.HorseHp / p.Horse!.Hp, HorseBright, U(5));
-        string hands = p.Couched ? "LANCE COUCHED" : B.PlayerWeapon.ToUpperInvariant() + (B.HasSecondWeapon ? $" ({Ctl.Name(Act.SwapWeapon)})" : "");
-        ShadowL(hands, bx, y + U(1), p.Couched ? Gold : Color.White * 0.92f, 1);
+        bool lanceReady = Battle.CanCouch(p) && !p.Couched && p.Speed > 6;
+        string hands = p.Couched ? "LANCE COUCHED"
+            : lanceReady ? $"{B.PlayerWeapon.ToUpperInvariant()}  [{Ctl.Name(Act.Couch)} COUCH]"
+            : B.PlayerWeapon.ToUpperInvariant() + (B.HasSecondWeapon ? $" ({Ctl.Name(Act.SwapWeapon)})" : "");
+        ShadowL(hands, bx, y + U(1), p.Couched || lanceReady ? Gold : Color.White * 0.92f, 1);
         if (p.Type.Ammo > 0) ShadowR($"{p.Ammo}", bx + bw, y + U(1), p.Ammo > 0 ? Gold : Bad, 1);
         int rx = bx + bw + U(10), ry = player.Y + U(6);
         bool ready = B.RallyCooldown <= 0;
@@ -202,6 +206,166 @@ sealed partial class Hud
         Rect(new Rectangle(x - U(8), y - U(3), tw + U(16), U(20)), new Color(10, 12, 18) * (0.62f * a));
         Text(s, x + o, y + o, Color.Black * (0.85f * a), 2);
         Text(s, x, y, Color.Lerp(Color.Transparent, Gold, a), 2);
+    }
+
+    /// Contextual nearby-only enemy health bars in Field View (Pillar 3 P3.3):
+    /// slim crimson bars above enemies within 10 m that are wounded or within 4.5 m in the player's aim cone (capped at 6).
+    void DrawNearbyEnemyBars()
+    {
+        var p = B.Player;
+        if (!p.Active || Deploying) return;
+        nearbyEnemies.Clear();
+        var fwd = new Vector2(MathF.Cos(CamYaw), MathF.Sin(CamYaw));
+        const float maxR2 = 10f * 10f;
+        const float coneR2 = 4.5f * 4.5f;
+        foreach (var u in B.Units)
+        {
+            if (u.Team != 1 || !u.Active || u.IsPlayer) continue;
+            var d = u.Pos - p.Pos;
+            float d2 = d.LengthSquared();
+            if (d2 > maxR2) continue;
+            bool damaged = u.Hp < u.Type.MaxHp - 0.5f;
+            bool inCone = d2 <= coneR2 && (d2 < 0.04f || Vector2.Dot(d / MathF.Sqrt(d2), fwd) > 0.65f);
+            if (!damaged && !inCone) continue;
+            nearbyEnemies.Add((u, d2));
+        }
+        if (nearbyEnemies.Count == 0) return;
+        nearbyEnemies.Sort((a, b) => a.DistSq.CompareTo(b.DistSq));
+        int count = Math.Min(6, nearbyEnemies.Count);
+        var vp = new Viewport(0, 0, W, H);
+        for (int i = 0; i < count; i++)
+        {
+            var u = nearbyEnemies[i].U;
+            float headY = (u.Mounted ? 2.6f : 1.95f) * u.Type.Size;
+            var sp = vp.Project(new Vector3(u.Pos.X, B.Terrain.Height(u.Pos) + headY, u.Pos.Y), Proj, View, Matrix.Identity);
+            if (sp.Z is <= 0 or >= 1) continue;
+            int bw = U(u.IsLeader ? 46 : 36), bh = U(u.IsLeader ? 5 : 4);
+            int bx = (int)sp.X - bw / 2, by = (int)sp.Y - bh - U(4);
+            if (bx < U(12) || bx + bw > W - U(12) || by < U(40) || by + bh > H - U(24)) continue;
+            float frac = Math.Clamp(u.Hp / MathF.Max(1f, u.Type.MaxHp), 0f, 1f);
+            var outer = new Rectangle(bx - U(1), by - U(1), bw + U(2), bh + U(2));
+            Rect(outer, new Color(10, 12, 16) * 0.85f);
+            int fillW = (int)MathF.Round(bw * frac);
+            if (fillW > 0) Rect(new Rectangle(bx, by, fillW, bh), new Color(196, 46, 42));
+            Frame(outer, u.IsLeader ? Kit.Gilt * 0.85f : new Color(28, 30, 36) * 0.95f, U(1));
+        }
+    }
+
+    /// Contextual world interaction prompts near bottom-center (Pillar 3 P3.3):
+    /// loose horse mount prompt with horse HP bar, siege engine prompt, couch lance, dismount, and look-orders.
+    void DrawInteractPrompt()
+    {
+        var p = B.Player;
+        if (!p.Active || WheelOpen) return;
+
+        string? key = null, label = null;
+        float? horseHpFrac = null;
+
+        if (B.Manned is { } me)
+        {
+            key = Ctl.Name(Act.Interact);
+            string ready = me.Reload > 0 ? $"WINDING {100 - me.Reload / me.Def.Reload * 100:0}%" : "READY";
+            label = $"LEAVE   [{Ctl.Name(Act.Attack)}] LOOSE   {me.Def.Name.ToUpperInvariant()} {ready}";
+        }
+        else if (!p.Mounted)
+        {
+            LooseHorse? bestHorse = null;
+            float bestD2 = 2.8f * 2.8f;
+            foreach (var lh in B.LooseHorses)
+            {
+                float d2 = Vector2.DistanceSquared(lh.Pos, p.Pos);
+                if (d2 < bestD2) { bestD2 = d2; bestHorse = lh; }
+            }
+            if (bestHorse != null)
+            {
+                key = Ctl.Name(Act.Interact);
+                label = bestHorse.Team == p.Team ? "MOUNT HORSE" : "SEIZE HORSE";
+                horseHpFrac = Math.Clamp(bestHorse.Hp / MathF.Max(1f, bestHorse.Mount.Hp), 0f, 1f);
+            }
+            else if (B.EngineNear(p) is { } near)
+            {
+                key = Ctl.Name(Act.Interact);
+                label = $"MAN {near.Def.Name.ToUpperInvariant()}";
+            }
+        }
+        else if (Battle.CanCouch(p) && !p.Couched && p.Speed > 6)
+        {
+            key = Ctl.Name(Act.Couch);
+            label = "COUCH LANCE";
+        }
+        else if (MathF.Abs(p.Speed) < 1.5f && !CapWheelOpen)
+        {
+            key = Ctl.Name(Act.Interact);
+            label = "DISMOUNT";
+        }
+
+        if (HoldPlace >= 0.25f) { key = null; label = "LET GO: HOLD THAT GROUND"; horseHpFrac = null; }
+        else if (label == null && LookFoe is { Alive: > 0 } lf) { key = Ctl.Name(Act.Charge); label = $"ATTACK {lf.Name.ToUpperInvariant()}"; }
+
+        if (label == null) return;
+
+        int keyW = key != null ? TW(key, 1) + U(10) : 0;
+        int labelW = TW(label, 1);
+        int innerW = keyW + (key != null ? U(6) : 0) + labelW;
+        int pw = Math.Max(U(110), innerW + U(18));
+        int ph = horseHpFrac.HasValue ? U(28) : U(20);
+        int px = (W - pw) / 2, py = H - U(118) - ph;
+        var card = new Rectangle(px, py, pw, ph);
+        var chrome = UiChrome.For(sb.GraphicsDevice);
+        int cb = Math.Max(3, U(5));
+        chrome.Draw9(sb, card, UiChrome.PlateFill, 10, cb, Color.White * 0.9f);
+        chrome.Draw9(sb, card, UiChrome.PlateFrame, 10, cb, Kit.Gilt * 0.8f);
+
+        int tx = px + (pw - innerW) / 2;
+        int ty = py + (horseHpFrac.HasValue ? U(5) : U(6));
+        if (key != null)
+        {
+            var kb = new Rectangle(tx, ty - U(1), keyW, U(11));
+            Rect(kb, Kit.Gilt);
+            TextC(key, kb.Center.X, ty + U(1), Kit.IronDark, 1);
+            tx += keyW + U(6);
+        }
+        ShadowL(label, tx, ty + U(1), Kit.Parchment, 1);
+
+        if (horseHpFrac is float hf)
+        {
+            int gw = pw - U(18), gx = px + U(9), gy = py + U(19);
+            Rect(new Rectangle(gx - U(1), gy - U(1), gw + U(2), U(6)), Color.Black * 0.75f);
+            kit.Gauge(new Rectangle(gx, gy, gw, U(4)), hf, HorseBright);
+        }
+    }
+
+    /// Mid-right forged-brass skill-up toasts emitted live during combat (Pillar 3 P3.4).
+    void DrawSkillToasts()
+    {
+        if (B.SkillToasts.Count == 0) return;
+        const float life = 3.5f;
+        int shown = 0;
+        int baseY = H / 2 - U(74);
+        var chrome = UiChrome.For(sb.GraphicsDevice);
+        int cb = Math.Max(4, U(6));
+        for (int i = B.SkillToasts.Count - 1; i >= 0 && shown < 3; i--)
+        {
+            var toast = B.SkillToasts[i];
+            float age = B.Time - toast.Time;
+            if (age < 0f || age > life) continue;
+            float slideIn = Ease.Out(Math.Clamp(age / 0.25f, 0f, 1f));
+            float alpha = Math.Clamp((life - age) / 0.6f, 0f, 1f) * slideIn;
+            string title = $"{toast.Skill.ToUpperInvariant()} {toast.NewLevel}";
+            string sub = "SKILL INCREASED";
+            int tw = Math.Max(U(156), Math.Max(TW(title, 2), TW(sub, 1)) + U(36));
+            int th = U(34);
+            int slideOff = (int)((1f - slideIn) * U(42));
+            int x = W - U(14) - tw + slideOff;
+            int y = baseY + shown * (th + U(6));
+            var r = new Rectangle(x, y, tw, th);
+            chrome.Draw9(sb, r, UiChrome.PlateFill, 10, cb, Color.White * (0.92f * alpha));
+            chrome.Draw9(sb, r, UiChrome.PlateFrame, 10, cb, Kit.Gilt * (0.95f * alpha));
+            kit.Icon("star", r.X + U(9), r.Y + U(10), Gold * alpha, 2);
+            ShadowL(title, r.X + U(26), r.Y + U(6), Kit.Parchment * alpha, 2);
+            ShadowL(sub, r.X + U(26), r.Y + U(21), Kit.Gilt * (0.9f * alpha), 1);
+            shown++;
+        }
     }
 
     void FightHints()

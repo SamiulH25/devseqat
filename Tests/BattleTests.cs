@@ -2529,5 +2529,72 @@ public static partial class SelfTest
         r.Update(1 / 60f);
         Check(r.Arrows.Count == 1 && r.Arrows[0].Vel.Length() > 45f, $"pre-spanned crossbow fires fast bolt on quick click (spd={r.Arrows[0].Vel.Length():0.0})");
     }
+
+    /// Pillar 3 (P3.2 & P3.4): AI lance cavalry couches smoothly on charge and uncrouches when stalled;
+    /// live in-battle SkillToasts fire deterministically when TrackSkills / WithCaptain is enabled.
+    static void Pillar3CombatFeel()
+    {
+        // 1. AI lance cavalry couches on charge within 20 m, blends CouchBlend -> 1, then uncrouches & blends back when stalled.
+        var b = Battle.Empty(910);
+        var cavSq = b.AddSquad(0, UnitType.Lancer, 1, new(0, -16), 1, Vector2.UnitY);
+        b.AddSquad(1, Troops.Get("brevon_fyrd"), 2, new(0, 0), 2, -Vector2.UnitY);
+        cavSq.Order = Order.Charge;
+        var l = cavSq.Units[0];
+        l.Speed = l.Horse!.Gallop;
+        bool sawCouched = false;
+        float maxBlend = 0f;
+        for (int i = 0; i < 40; i++)
+        {
+            b.Update(1 / 60f);
+            if (l.Couched) sawCouched = true;
+            if (l.CouchBlend > maxBlend) maxBlend = l.CouchBlend;
+            if (maxBlend > 0.7f) break;
+        }
+        Check(sawCouched && maxBlend > 0.5f, $"AI lancer couches on charge and blends smoothly (couched={sawCouched}, maxBlend={maxBlend:0.00})");
+
+        // Stall the lancer: it must uncrouch and blend CouchBlend back toward 0.
+        l.Speed = 1.5f;
+        l.Wish = Vector2.Zero;
+        for (int i = 0; i < 30; i++) { l.Speed = MathF.Min(l.Speed, 2.0f); b.Update(1 / 60f); }
+        Check(!l.Couched && l.CouchBlend < maxBlend * 0.5f, $"stalled lancer uncrouches and lifts lance (couched={l.Couched}, blend={l.CouchBlend:0.00})");
+
+        // 2. Deterministic live SkillToasts when TrackSkills is enabled (and via WithCaptain).
+        static List<SkillToast> RunSkillFight(int seed)
+        {
+            var opts = new BattleOptions { TrackSkills = true, Arms = 5.6f, Riding = 5.6f, Leadership = 5.7f };
+            var f = Battle.Empty(seed, opts);
+            f.Player.Horse = Troops.Mount("warhorse");
+            f.Player.HorseHp = f.Player.Horse.Hp;
+            f.Player.Pos = Vector2.Zero;
+            f.Player.Facing = f.Player.Heading = 0f;
+            var ally = f.AddSquad(0, Troops.Get("brevon_fyrd"), 3, new(-2f, 2f), 3, Vector2.UnitX);
+            ally.Units[0].Morale = 30f;
+            var foeSq = f.AddSquad(1, Troops.Get("commons_bowmen"), 2, new(1.6f, 0f), 1, -Vector2.UnitX);
+            foreach (var u in foeSq.Units) { u.Hp = 1f; u.Pos = new(1.6f, 0f); }
+            // Rally triggers Leadership toast (5.7 + 0.45 * ~0.95 -> 6.13 -> 6)
+            f.Input = new PlayerInput { Facing = 0f, Rally = true };
+            f.Update(1 / 60f);
+            // Mounted melee strike kills unshielded foe -> Arms + Riding toasts
+            f.Input = new PlayerInput { Facing = 0f, Dir = AttackDir.Overhead, Attack = true };
+            for (int i = 0; i < 12; i++) f.Update(1 / 60f);
+            f.Input = new PlayerInput { Facing = 0f, Dir = AttackDir.Overhead, Attack = false };
+            for (int i = 0; i < 45; i++) f.Update(1 / 60f);
+            return f.SkillToasts.ToList();
+        }
+
+        var t1 = RunSkillFight(911);
+        var t2 = RunSkillFight(911);
+        Check(t1.Any(x => x.Skill == "Leadership" && x.NewLevel == 6), "Rally emits live Leadership skill-up toast");
+        Check(t1.Any(x => x.Skill == "Arms" && x.NewLevel == 6), "Melee kill emits live Arms skill-up toast");
+        Check(t1.Any(x => x.Skill == "Riding" && x.NewLevel == 6), "Mounted kill emits live Riding skill-up toast");
+        Check(t1.SequenceEqual(t2), "SkillToasts are deterministic across identical runs");
+
+        // WithCaptain wires TrackSkills and SkillMult automatically.
+        var cap = new CaptainState();
+        Campaign.StartingSkills(cap);
+        cap.Focus["Arms"] = 2;
+        var capOpts = new BattleOptions().WithCaptain(cap);
+        Check(capOpts.TrackSkills && MathF.Abs(capOpts.SkillMult["Arms"] - 2f) < 0.01f, "WithCaptain enables TrackSkills and carries FocusMult");
+    }
 }
 

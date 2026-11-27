@@ -21,6 +21,10 @@ public sealed class BattleOptions
     public float Arms = 15;
     /// Your Riding and Bowcraft skills (P3; a new captain has 5) and the perks you hold that act in battle.
     public float Riding = 5, Bowcraft = 5, Leadership = 5, Tactics = 5;
+    /// Emit live in-battle skill-up toasts when combat deeds cross an integer skill level (Pillar 3 P3.4).
+    public bool TrackSkills;
+    /// Per-skill learning speed multipliers (FocusMult) passed from the campaign captain.
+    public Dictionary<string, float> SkillMult = new();
     public HashSet<string> Perks = new();
     /// The captain's aura tier (docs/archive/KNIGHT_ORDERS.md 5.1): 0 unawakened, 1 kindled, 2 aura blade, 3 aura armour, 4 master, 5 transcendent.
     public int AuraTier;
@@ -139,6 +143,9 @@ public sealed record Weather(float Hour = 13, float Rain = 0, float Fog = 0, boo
     public float Vision => MathF.Min(Night ? 40 : 200, Fog > 0 ? 140 - Fog * 95 : 200);
     public string Describe => (Night ? "night" : Hour < 8 ? "dawn" : Hour > 18 ? "dusk" : "day") + (Rain > 0.3f ? Snow ? ", snow" : ", rain" : "") + (Fog > 0.3f ? ", fog" : "");
 }
+
+/// Live in-battle skill increase notification emitted deterministically by Battle (Pillar 3 P3.4).
+public readonly record struct SkillToast(string Skill, int NewLevel, float Time);
 
 public enum LeaderFate { Unhurt, Wounded, Captured, Slain }
 

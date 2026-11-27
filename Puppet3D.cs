@@ -426,8 +426,9 @@ sealed partial class Puppet3D
         float extraCrouch = !u.Mounted ? MathF.Max(p.ShieldUp ? 0.11f : 0f, stagger * 0.26f) : 0f;
         if (extraCrouch > 0f && p.Crouch < extraCrouch) p = p with { Crouch = extraCrouch };
 
+        float couchK = MathHelper.SmoothStep(0f, 1f, u.CouchBlend);
         float gallopCrouch = u.Mounted && Rear <= 0 && u.Action != UnitAction.Windup
-            ? gallop * (u.Couched ? 17f : 11f) + MathF.Sin(u.Anim * MathF.Tau - 0.6f) * 3.5f * gallop
+            ? gallop * MathHelper.Lerp(11f, 17f, couchK) + MathF.Sin(u.Anim * MathF.Tau - 0.6f) * 3.5f * gallop
             : 0f;
         float stirrupBounce = u.Mounted ? MathF.Sin(u.Anim * MathF.Tau - 0.35f) * 0.036f * gallop : 0f;
         bool idleBreathOn = !u.Mounted && speed < 0.35f && u.Action == UnitAction.None;
@@ -454,7 +455,7 @@ sealed partial class Puppet3D
         // A rider sits on his horse: hips and legs go where the horse goes, and he turns from the waist toward where he
         // looks (the sim keeps that within MountTwist of the horse's heading; a couched lance points along the horse).
         float frameYaw = u.Mounted ? u.ViewHeading : u.ViewFacing;
-        float seatTwist = u.Mounted && !u.Couched ? Math.Clamp(MathHelper.ToDegrees(MathHelper.WrapAngle(u.ViewFacing - u.ViewHeading)), -110f, 110f) : 0f;
+        float seatTwist = u.Mounted ? Math.Clamp(MathHelper.ToDegrees(MathHelper.WrapAngle(u.ViewFacing - u.ViewHeading)), -110f, 110f) * (1f - couchK) : 0f;
         float totalLeanX = p.LeanX + extraLeanX;
         float totalLeanZ = p.LeanZ - leanBack + extraLeanZ;
         // Split lean between grounded lower body and articulated spine from the waist!
@@ -842,15 +843,19 @@ sealed partial class Puppet3D
             }
         }
 
-        // When couched, tuck the weapon hand snugly under the right armpit instead of hanging at the idle side.
-        if (u.Couched)
+        // Upright-to-couched lance rig (P3.2): tall vertical carry at rest/trot, smoothly tucked horizontal into the couch on charge.
+        bool lanceCarry = u.Mounted && p.Armed && (couchK > 0.01f || (grip == Grip.Lance && u.Action == UnitAction.None));
+        if (lanceCarry)
         {
-            wHand = TorsoPoint(new Vector3(0.20f, 1.20f, 0.26f));
-            DrawArm(1, wHand, new Vector3(0.65f, 0.12f, -0.85f));
+            var uprightHand = TorsoPoint(new Vector3(0.24f, 1.14f, 0.22f));
+            var couchedHand = TorsoPoint(new Vector3(0.20f, 1.20f, 0.26f));
+            wHand = Vector3.Lerp(uprightHand, couchedHand, couchK);
+            var elbowPole = Vector3.Lerp(new Vector3(0.45f, -0.35f, -0.25f), new Vector3(0.65f, 0.12f, -0.85f), couchK);
+            DrawArm(1, wHand, elbowPole);
         }
         else DrawArm(1, wHand);
 
-        bool shieldArm = p.Armed && u.Type.HasShield && !ranged && !p.TwoHand && !u.Couched;
+        bool shieldArm = p.Armed && u.Type.HasShield && !ranged && !p.TwoHand && couchK < 0.5f;
         float shieldStrideBob = !u.Mounted ? legNorm * (0.032f + 0.025f * runFactor) : 0f;
         Vector3 offHand = p.TwoHand && p.Armed
             ? offHandTarget
@@ -868,14 +873,17 @@ sealed partial class Puppet3D
 
         if (!p.Armed) return true; // routed man has thrown away his weapon and shield
 
-        // Couched lance (heavy cavalry at gallop): tucked under right arm, angled slightly toward aim within +/-15 deg.
-        if (u.Couched)
+        // Upright-to-couched lance (P3.2): proud vertical carry (~10 deg forward) at idle/trot, sweeping smoothly down into couched horizontal charge.
+        if (lanceCarry)
         {
             float aimRel = u.IsPlayer ? Math.Clamp(MathHelper.WrapAngle(u.ViewFacing - u.ViewHeading), -0.26f, 0.26f) : 0f;
             float rel = MathHelper.WrapAngle(u.ViewHeading + aimRel - frameYaw);
-            var lanceDir = RotY(Vector3.Normalize(new Vector3(0, -0.08f, 1f)), MathHelper.ToDegrees(rel));
+            float sway = MathF.Sin(u.Anim * MathF.Tau) * 0.03f * gallop * (1f - couchK);
+            var uprightDir = Vector3.Normalize(new Vector3(0.03f, 0.985f, 0.17f + sway));
+            var couchedDir = RotY(Vector3.Normalize(new Vector3(0, -0.08f, 1f)), MathHelper.ToDegrees(rel));
+            var lanceDir = Vector3.Normalize(Vector3.Lerp(uprightDir, couchedDir, couchK));
             var lanceMesh = lm.Weapon.Length > 0 ? lm.Weapon : kit.Get("weapon_lance");
-            EmitDir(lanceMesh, wHand - lanceDir * 0.35f, lanceDir);
+            EmitDir(lanceMesh, wHand - lanceDir * MathHelper.Lerp(0.48f, 0.35f, couchK), lanceDir);
             if (u.Type.HasShield && lm.HasShield)
                 EmitShield(lm, palIdx, offHand + new Vector3(-0.07f, 0.02f, 0.06f), -58f, u.StuckArrows, false);
             return true;

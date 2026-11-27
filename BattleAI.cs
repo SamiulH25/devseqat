@@ -182,7 +182,8 @@ public partial class Battle
                 var aim = Via(u, enemy.Pos);
                 var toE = aim - u.Pos;
                 u.Wish = toE.LengthSquared() > 1e-4f ? Vector2.Normalize(toE) * (d > 5 ? h.Gallop : h.Trot) : Vector2.Zero;
-                if (u.Type.Class == UnitClass.Cavalry && u.Speed > 6.5f && d > 4 && u.Cooldown <= 0) u.Couched = true;
+                if (CanCouch(u) && u.Speed > 6.5f && d is > 4 and < 20 && u.Cooldown <= 0) u.Couched = true;
+                else if (u.Couched && (!CanCouch(u) || u.Speed < 4.5f || d >= 22)) u.Couched = false;
                 return;
             }
             Ride(u, Via(u, u.Slot), toSlot > 12 ? h.Gallop * 0.8f : h.Trot, u.Slot);
@@ -258,7 +259,8 @@ public partial class Battle
                 }
                 var aimAt = Via(u, goal);
                 u.Wish = (aimAt - u.Pos).LengthSquared() > 1e-4f ? Vector2.Normalize(aimAt - u.Pos) * h.Gallop : Vector2.Zero;
-                if (u.Type.Class == UnitClass.Cavalry && u.Speed > 6.5f && td < 30 && u.Cooldown <= 0) u.Couched = true;
+                if (CanCouch(u) && u.Speed > 6.5f && td < 20 && u.Cooldown <= 0) u.Couched = true;
+                else if (u.Couched && (!CanCouch(u) || u.Speed < 4.5f || td > 26)) u.Couched = false;
                 if (td < 4) u.Contact = true;
                 float targetR = t.Squad != null ? t.Squad.Radius : 2f;
                 bool cleared = u.Contact && (

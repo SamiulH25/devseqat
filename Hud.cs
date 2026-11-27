@@ -337,6 +337,7 @@ sealed partial class Hud
         }
         else
         {
+            DrawNearbyEnemyBars();
             Vitals();
             if (B.AuraTier > 0) FormBar();
             ArmChips();
@@ -344,11 +345,13 @@ sealed partial class Hud
             OpponentMark();
             MarkedMarks();
             Crosshair();
+            DrawInteractPrompt();
             SwingWords();
             OrderToast();
             ControlHints();
             FightHints();
         }
+        DrawSkillToasts();
     }
 
     /// The fighting strength of a side: men standing, weighted by health and arm (a rider counts for more than a bowman).
@@ -604,27 +607,9 @@ sealed partial class Hud
             if (p.Charging) Bar(new Rectangle(cx - U(24), cy + U(40), U(48), U(4)), p.Charge, Gold);
         }
         // Mid-combat text pop-ups intentionally omitted to keep combat clean and uncluttered.
-
-        // Context prompts.
-        string? prompt = null;
+        // Engine reload bar when manning a siege engine.
         if (B.Manned is { } me)
-        {
-            prompt = $"{Ctl.Name(Act.Interact)}  LEAVE   {Ctl.Name(Act.Attack)}  LOOSE   {me.Def.Name.ToUpperInvariant()} " + (me.Reload > 0 ? $"WINDING {100 - me.Reload / me.Def.Reload * 100:0}%" : "READY");
             Bar(new Rectangle(cx - U(24), cy + U(40), U(48), U(4)), me.Reload > 0 ? 1 - Math.Clamp(me.Reload / me.Def.Reload, 0, 1) : 1, Gold);
-        }
-        else if (!p.Mounted && B.EngineNear(p) is { } near) prompt = $"{Ctl.Name(Act.Interact)}  WORK {near.Def.Name.ToUpperInvariant()}";
-        else if (!p.Mounted && B.LooseHorses.Any(h => Vector2.DistanceSquared(h.Pos, p.Pos) < 2.8f * 2.8f)) prompt = $"{Ctl.Name(Act.Interact)}  MOUNT HORSE";
-        else if (Battle.CanCouch(p) && !p.Couched && p.Speed > 6) prompt = $"{Ctl.Name(Act.Couch)}  COUCH LANCE";
-        else if (p.Mounted && MathF.Abs(p.Speed) < 1.5f && !WheelOpen && !CapWheelOpen) prompt = $"{Ctl.Name(Act.Interact)}  DISMOUNT";
-        // Orders by looking (PT4): hold the hold key to plant the line where you look; charge sends them at the company you look at.
-        if (HoldPlace >= 0.25f) prompt = "LET GO: HOLD THAT GROUND";
-        else if (prompt == null && LookFoe is { Alive: > 0 } lf) prompt = $"{Ctl.Name(Act.Charge)}  ATTACK {lf.Name.ToUpperInvariant()}";
-        if (prompt != null && !WheelOpen)
-        {
-            int pw = TW(prompt, 1) + U(14), py = H / 2 + U(132);
-            Rect(new Rectangle(cx - pw / 2, py - U(5), pw, U(17)), Color.Black * 0.5f);
-            TextC(prompt, cx, py, Color.White, 1);
-        }
     }
 
     Vector2 WheelPos() => WheelCenter is Point p

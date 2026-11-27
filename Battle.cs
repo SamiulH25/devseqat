@@ -63,6 +63,9 @@ public sealed partial class Battle
     public readonly List<Squad> Squads = new();
     public readonly List<Projectile> Arrows = new();
     public readonly List<LooseHorse> LooseHorses = new();
+    /// Live in-battle skill-up toasts emitted when combat deeds cross an integer threshold (Pillar 3 P3.4).
+    public readonly List<SkillToast> SkillToasts = new();
+    readonly Dictionary<string, float> liveSkills = new();
     public readonly List<DeadHorse> DeadHorses = new();
     public readonly ArmySpec?[] Armies = new ArmySpec?[2];
     public readonly List<(string Text, float At)> Events = new();
@@ -283,6 +286,14 @@ public sealed partial class Battle
         Player = Spawn(Options.PlayerType ?? UnitType.Captain, 0, null, new Vector2(0, scripted ? -80 : -34 - Back));
         Player.IsPlayer = Player.IsLeader = true;
         SetupCaptain();
+        if (Options.TrackSkills)
+        {
+            liveSkills["Arms"] = Options.Arms;
+            liveSkills["Riding"] = Options.Riding;
+            liveSkills["Bowcraft"] = Options.Bowcraft;
+            liveSkills["Leadership"] = Options.Leadership;
+            liveSkills["Tactics"] = Options.Tactics;
+        }
         SetupAura();
         SetupForms();
         SetupChampion();
@@ -426,6 +437,8 @@ public sealed partial class Battle
             u.ImpactCd -= dt;
             u.BraceCd -= dt;
             if (u.IsPlayer) UpdatePlayer(u, dt); else if (ThinkNow(u)) Think(u, dt);
+            float couchTarget = u.Couched ? 1f : 0f;
+            if (u.CouchBlend != couchTarget) u.CouchBlend = Approach(u.CouchBlend, couchTarget, (u.Couched ? 1f / 0.28f : 1f / 0.32f) * dt);
             TickAction(u, dt);
             Tire(u, dt);
             if (u.Type.Has("regen")) Regen(u, dt);
@@ -451,6 +464,21 @@ public sealed partial class Battle
         CheckEnd();
         Mark(9);
         Events.RemoveAll(e => Time - e.At > 6);
+    }
+
+    /// Deterministic live skill progress tracker for in-battle toasts (Pillar 3 P3.4).
+    /// Matches Campaign.Skills.Raise diminishing-returns math; campaign SkillsAfterBattle remains authoritative at battle end.
+    internal void AwardBattleSkill(string skill, float rawAmount)
+    {
+        if (!Options.TrackSkills || rawAmount <= 0) return;
+        float mult = Options.SkillMult.GetValueOrDefault(skill, 1f);
+        float now = liveSkills.GetValueOrDefault(skill);
+        int before = (int)now;
+        float gain = rawAmount * mult * MathF.Max(0.25f, 1f - now / 125f);
+        float after = MathF.Min(100f, now + gain);
+        liveSkills[skill] = after;
+        int next = (int)after;
+        if (next > before) SkillToasts.Add(new SkillToast(skill, next, Time));
     }
 
     /// Each squad's bounding circle (Squad.Center, Radius), so distance questions can skip far squads.
@@ -506,7 +534,7 @@ public sealed partial class Battle
         foreach (var u in s.Units) if (u.Active && !u.Routing) n++;
         s.Alive = n;
         UpdateOrders(s); // queued steps and the standing rule (BattleQueue.cs)
-        if (!s.RoutSounded && n > 0 && s.Units.Count(u => u.Active && u.Routing) > n) { s.RoutSounded = true; Sound(Cue.Rout, s.Centroid()); if (s.Team == 1) Sound(Cue.Cheer, s.Centroid()); }
+        if (!s.RoutSounded && n > 0 && s.Units.Count(u => u.Active && u.Routing) > n) { s.RoutSounded = true; Sound(Cue.Rout, s.Centroid()); if (s.Team == 1) { Sound(Cue.Cheer, s.Centroid()); AwardBattleSkill("Tactics", 0.5f); } }
         Tactics(s);     // its own wits: refuse a flank, wrap, re-form (BattleTactics.cs)
         PlaceMen(s, n); // places in the ranks, and slots (BattleRanks.cs)
         Close(s, dt);   // a charging company closes as a body

@@ -306,6 +306,15 @@ public static class Rules
         o.Bowcraft = Skills.Level(c, "Bowcraft");
         o.Leadership = Skills.Level(c, "Leadership");
         o.Tactics = Skills.Level(c, "Tactics");
+        o.TrackSkills = true;
+        o.SkillMult = new Dictionary<string, float>
+        {
+            ["Arms"] = Skills.FocusMult(c, "Arms"),
+            ["Riding"] = Skills.FocusMult(c, "Riding"),
+            ["Bowcraft"] = Skills.FocusMult(c, "Bowcraft"),
+            ["Leadership"] = Skills.FocusMult(c, "Leadership"),
+            ["Tactics"] = Skills.FocusMult(c, "Tactics"),
+        };
         o.Perks = c.Perks.ToHashSet();
         o.Renown = c.Renown;
         o.Wounds = c.Wounds.ToHashSet();

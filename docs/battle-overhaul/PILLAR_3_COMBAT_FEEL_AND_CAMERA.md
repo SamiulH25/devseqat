@@ -99,3 +99,13 @@ Matches video `08:14–08:15` (`Horse [E] Mount`):
     - Upright lances at trot vs. couched lances in charge.
     - Nearby enemy HP bars appear cleanly in melee without clutter.
     - Loose-horse `[E] Mount` prompt and skill toast render with zero overflow.
+
+---
+
+## As built (2026-11-27)
+
+- **P3.1:** Tightened default mounted OTS camera in `BattleScreen.cs` / `BattleScreen.Controls.cs` (`fieldDist` `3.8f -> 3.4f`, mounted focus height `2.5f -> 2.35f`, right-shoulder offset `0.68f -> 0.58f`, `mountedBonus` `1.4f -> 0.85f`) and added smoothly damped `camSpeedPull` (`0..+0.65f` driven by horse speed above walk/trot). `F4` (`Act.CameraView`) continues to cycle OTS / Close Duel / First Person.
+- **P3.2:** Added `Unit.CouchBlend` (`0..1`) updated deterministically each tick in `Battle.Update` (`~0.28s` down, `~0.32s` back up). Updated `BattleAI.ThinkCav` so AI lance cavalry (`CanCouch`) couches within `20 m` at gallop and cleanly uncrouches when stalled (`< 4.5 m/s`) or out of range. Updated `Puppet3D.cs` so mounted lancers carry their lances tall and upright (`~10°` forward) at rest/trot and sweep smoothly down into the horizontal couched tuck as `CouchBlend` rises.
+- **P3.3:** Added `Hud.DrawNearbyEnemyBars()` in `Hud.Fight.cs` (slim dark-bordered crimson HP bars above enemies within `10 m` that are wounded or within `4.5 m` in the player's aim cone, capped at the closest 6). Added `Hud.DrawInteractPrompt()` with Forged Iron & Brass 9-slice styling for loose horses (`[E] MOUNT HORSE` / `SEIZE HORSE` + horse HP bar), siege engines (`[E] MAN ...`), couching, dismounting, and look-orders, removing the old duplicate prompt block from `Hud.Crosshair`.
+- **P3.4:** Added `SkillToast` (`BattleTypes.cs`), `BattleOptions.TrackSkills` / `SkillMult` (wired automatically in `Rules.WithCaptain`), and deterministic `Battle.AwardBattleSkill` / `Battle.SkillToasts` triggered by melee/mounted/bow kills, lance/arrow hits, parries/ripostes, rallying allies (`Leadership`), and routing enemy squads (`Tactics`). `Campaign.SkillsAfterBattle()` remains authoritative at battle end (no double-counting). `Hud.DrawSkillToasts()` renders mid-right Forged Iron & Brass toasts (`★ {SKILL} {LEVEL} / SKILL INCREASED`) with slide-in and 3.5 s fade-out.
+- **Tests & Shots:** `Pillar3CombatFeel` in `Tests/BattleTests.cs` (registered in `SelfTest.cs`), `MovementMountedAndRanged`, and `ReplayExact`. Staged shots via `IRONFIELD_SHOTS_FROM=pillar3` (`p3-mounted-lances.png`, `p3-couched-charge.png`, `p3-melee-bars-toast.png`, `p3-mount-prompt.png`) with empty `overflow.txt`.
