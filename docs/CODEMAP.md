@@ -1024,8 +1024,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Mat** (class, L10): Mat:15, Flat:32
 - **Canvas** (class, L37): Canvas:43, In:50, Has:51, Set:52, Clear:53, Shade:54, Fill:57, Dome:68, Ellipse:71, Body:75, Rect:86, Columns:89, Area:102, Line:104, Border:115, Sq:124, readonly:125, Tone:127, Patterned:129, Render:144
 
-## PixelFont.cs (140 lines)
-- **PixelFont** (class, L8): BuildCharIdx:41, PixelFont:49, Width:96, Lit:99, Draw:105, DrawPlain:111, DrawMixed:115, DrawRun:128
+## PixelFont.cs (292 lines)
+- **PixelFont** (class, L11): BuildCharIdx:49, TryLoadFont:78, PixelFont:98, Width:147, WidthPixel:150, Lit:166, MeasureHud:207, DrawHud:215, MeasureSerif:226, DrawSerif:234, DrawPixel:250, Draw:273, DrawPlain:278, DrawMixed:280
 
 ## Playtest.cs (542 lines)
 - **PlaySession** (class, L12): PlaySession:24, Begin:27, Exec:52, UsageException:81, Usage:82, Dispatch:87, P:144, Dist:145, Realm:146, Look:148, Pending:170, Kind:196, PartyView:198, Near:224, Places:236, PlaceView:244, SafeOffers:260, Realms:262, LogTail:275, EventView:277, Contracts:292, TroopView:296, Do:301, Here:313, Choose:315, Go:330, MoveTo:331, ChaseParty:332, Halt:333, Wait:336, LogSince:353, Fight:364, Retreat:374, Parley:383, Leave:390, Hire:397, Accept:404, Promote:412, Sell:425, Besiege:432, Assault:439, Talk:448, SaveGame:459, ReportText:466, File_:487, Record:498, Split:511, Need:526, I:527, F:528, SettlementArg:531, PartyArg:541
@@ -1289,11 +1289,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## TroopSheet.cs (152 lines)
 - **TroopSheet** (class, L9): TroopSheet:21, Write:32, One:61
 
-## Ui.cs (362 lines)
-- **Ui** (class, L8): Hovered:28, Hovered:36, FrameEnd:46, Ui:50, Anim:69, static:80, Since:93, Count:103, Key:110, Reset:113, Begin:115, End:125, Blocks:128, Block:129, U:130, Rect:132, Clip:142, Frame:158, Panel:167, Dim:170, Text:173, TextPlain:179, Ink:186, InkProse:195, TW:202, TextC:203, TextPlainC:204, TextR:205, Bar:209, Hover:222, Clicked:225, Button:234, Face:263, FaceHead:273, HasSprite:285, Sprite:287, SpriteFit:299, GearSprite:312, GoodsSprite:356, StoreSprite:359, Portrait:361
+## Ui.cs (365 lines)
+- **Ui** (class, L8): Hovered:28, Hovered:36, FrameEnd:46, Ui:50, Anim:69, static:80, Since:93, Count:103, Key:110, Reset:113, Begin:115, End:125, Blocks:128, Block:129, U:130, Rect:132, Clip:142, Frame:158, Panel:167, Dim:170, Text:173, TextPlain:179, Ink:186, InkProse:195, TW:202, TextC:203, TextPlainC:204, TextR:205, Bar:209, Hover:222, Clicked:225, Button:234, Face:266, FaceHead:276, HasSprite:288, Sprite:290, SpriteFit:302, GearSprite:315, GoodsSprite:359, StoreSprite:362, Portrait:364
 
-## UiKit.cs (686 lines)
-- **Kit** (class, L9): Mul:17, N:19, VGrad:24, HGrad:31, Line:38, Disc:45, Vignette:56, Hills:70, HillY:81, Stars:88, Castle:101, Plate:124, PlateBody:135, Fit:157, FitScale:170, TextFit:173, TextFitC:175, Inset:178, Shine:182, Ribbon:195, Divider:214, Shield:225, Banner:262, MiniBanner:315, Icon:403, IconFlat:419, Ring:432, Pips:451, Gauge:465, TugBar:474, Chart:485, WordTabs:508, Chip:525, Gilded:536, Toggle:557, Check:570, Slider:581, Stepper:597, Tabs:611, Toast:633, OrderKey:643, Tooltip:658, Wrap:673
+## UiChrome.cs (252 lines)
+- **UiChrome** (class, L9): For:14, UiChrome:33, Noise:46, Chamfer:54, Set:61, BakePlateFill:64, BakePlateFrame:88, BakeBtnFill:145, BakeBtnFrame:162, BakeTrough:187, BakeGaugeFill:202, Draw9:216
+
+## UiKit.cs (679 lines)
+- **Kit** (class, L9): Mul:17, N:19, VGrad:24, HGrad:31, Line:38, Disc:45, Vignette:56, Hills:70, HillY:81, Stars:88, Castle:101, Plate:124, PlateBody:135, Fit:150, FitScale:163, TextFit:166, TextFitC:168, Inset:171, Shine:175, Ribbon:188, Divider:207, Shield:218, Banner:255, MiniBanner:308, Icon:396, IconFlat:412, Ring:425, Pips:444, Gauge:458, TugBar:467, Chart:478, WordTabs:501, Chip:518, Gilded:529, Toggle:550, Check:563, Slider:574, Stepper:590, Tabs:604, Toast:626, OrderKey:636, Tooltip:651, Wrap:666
 
 ## UiScroll.cs (199 lines)
 - **Kit** (class, L9): Paper:19, Tile:79, Torn:95, Scroll:104, Sheet:120, Roller:162

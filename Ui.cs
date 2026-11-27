@@ -173,13 +173,13 @@ sealed class Ui
     public void Text(string s, float x, float y, Color c, int scale = 2)
     {
         if (Overflow.On) Overflow.Text(s, MathF.Floor(x), MathF.Floor(y), TW(s, scale));
-        font.Draw(Sb, s, new Vector2(MathF.Floor(x), MathF.Floor(y)), c, scale * S);
+        font.DrawSerif(Sb, s, new Vector2(MathF.Floor(x), MathF.Floor(y)), c, scale, S, shadow: true);
     }
     /// Text without the built-in black drop shadow (for dark letters on a bright background, where a shadow smears them).
     public void TextPlain(string s, float x, float y, Color c, int scale = 2)
     {
         if (Overflow.On) Overflow.Text(s, MathF.Floor(x), MathF.Floor(y), TW(s, scale));
-        font.DrawPlain(Sb, s, new Vector2(MathF.Floor(x), MathF.Floor(y)), c, scale * S);
+        font.DrawSerif(Sb, s, new Vector2(MathF.Floor(x), MathF.Floor(y)), c, scale, S, shadow: false);
     }
     /// Writing in ink on paper: no black shadow (it would be the colour of the letters), a pale edge under each stroke
     /// instead, so dark words stand clear of the sheet. `cx` centres the line on x.
@@ -188,18 +188,18 @@ sealed class Ui
         if (cx) x -= TW(s, scale) / 2f;
         if (Overflow.On) Overflow.Text(s, MathF.Floor(x), MathF.Floor(y), TW(s, scale));
         var at = new Vector2(MathF.Floor(x), MathF.Floor(y));
-        font.DrawPlain(Sb, s, at + new Vector2(0, scale * S), new Color(250, 242, 216) * 0.75f, scale * S);
-        font.DrawPlain(Sb, s, at, c, scale * S);
+        font.DrawSerif(Sb, s, at + new Vector2(0, MathF.Max(1f, S)), new Color(250, 242, 216) * 0.72f, scale, S, shadow: false);
+        font.DrawSerif(Sb, s, at, c, scale, S, shadow: false);
     }
     /// Prose in ink on paper, capitals and lowercase as written (the event book): a line wants `U(10)` a scale, not 8.
     public void InkProse(string s, float x, float y, Color c, int scale = 1)
     {
-        if (Overflow.On) Overflow.Text(s, MathF.Floor(x), MathF.Floor(y), TW(s, scale));
+        if (Overflow.On) Overflow.Text(s, MathF.Floor(x), MathF.Floor(y), font.MeasureSerif(s, scale, S, prose: true));
         var at = new Vector2(MathF.Floor(x), MathF.Floor(y));
-        font.DrawMixed(Sb, s, at + new Vector2(0, scale * S), new Color(250, 242, 216) * 0.6f, scale * S, true);
-        font.DrawMixed(Sb, s, at, c, scale * S, true);
+        font.DrawSerif(Sb, s, at + new Vector2(0, MathF.Max(1f, S)), new Color(250, 242, 216) * 0.55f, scale, S, shadow: false, prose: true);
+        font.DrawSerif(Sb, s, at, c, scale, S, shadow: false, prose: true);
     }
-    public int TW(string s, int scale = 2) => PixelFont.Width(s, scale * S);
+    public int TW(string s, int scale = 2) => font.MeasureSerif(s, scale, S);
     public void TextC(string s, float cx, float y, Color c, int scale = 2) => Text(s, cx - TW(s, scale) / 2f, y, c, scale);
     public void TextPlainC(string s, float cx, float y, Color c, int scale = 2) => TextPlain(s, cx - TW(s, scale) / 2f, y, c, scale);
     public void TextR(string s, float rx, float y, Color c, int scale = 2) => Text(s, rx - TW(s, scale), y, c, scale);
@@ -208,15 +208,15 @@ sealed class Ui
     /// The fill slides to a new value; a drop leaves a pale "lost" stretch that drains after it.
     public void Bar(Rectangle r, float frac, Color c)
     {
-        Rect(r, Color.Black * 0.6f);
+        var chrome = UiChrome.For(Sb.GraphicsDevice);
+        chrome.Draw9(Sb, r, UiChrome.Trough, 4, Math.Max(2, U(2)), Color.White);
         var (shown, lag) = AnimLag(Key(r, 0xba2), Math.Clamp(frac, 0, 1));
         var f = new Rectangle(r.X, r.Y, (int)(r.Width * shown), r.Height);
         int lost = (int)(r.Width * lag) - f.Width;
         if (lost > 0) Rect(new Rectangle(f.Right, r.Y, lost, r.Height), Color.Lerp(c, new Color(255, 236, 220), 0.55f) * 0.8f);
         if (f.Width <= 0) return;
         if (r.Height < U(4)) { Rect(f, c); return; }
-        this.VGrad(f, Kit.Mul(c, 1.12f), Kit.Mul(c, 0.7f), 1);
-        Rect(new Rectangle(f.X, f.Y, f.Width, U(1)), Color.White * 0.3f);
+        chrome.Draw9(Sb, f, UiChrome.GaugeFill, 3, Math.Max(2, U(2)), c);
     }
 
     public bool Hover(Rectangle r) => r.Contains(Mouse);
@@ -237,14 +237,17 @@ sealed class Ui
         if (hover) Hovered(r);
         float h = Anim(Key(r, 0xb7), hover ? 1 : 0, 25); // hover brightens over about 80 ms
         Overflow.Box(r);
-        if (r.Height >= U(18)) Rect(new Rectangle(r.X + U(1), r.Y + U(2), r.Width, r.Height), Color.Black * 0.35f);
-        var (top, bottom) = active ? (Kit.Mul(Kit.Gilt, 0.5f), Kit.Mul(Kit.Gilt, 0.22f))
-            : enabled ? (Color.Lerp(new Color(46, 44, 46), Kit.Mul(Kit.Gilt, 0.4f), h), Color.Lerp(new Color(24, 24, 28), Kit.Mul(Kit.Gilt, 0.15f), h))
-            : (new Color(30, 30, 34), new Color(20, 20, 24));
-        this.VGrad(r, top, bottom, 1);
-        Frame(r, active ? Kit.Gilt : enabled ? Color.Lerp(Kit.Mul(Kit.Rivet, 0.85f), Kit.Gilt, h) : Color.White * 0.18f, U(1));
-        Rect(new Rectangle(r.X + U(1), r.Y + U(1), r.Width - U(2), U(1)), Color.White * (active ? 0.3f : enabled ? 0.12f + 0.18f * h : 0.06f));
-        if (r.Height >= U(18)) Rect(new Rectangle(r.X + U(1), r.Bottom - U(2), r.Width - U(2), U(1)), Color.Black * 0.35f);
+        if (r.Height >= U(18)) Rect(new Rectangle(r.X + U(1), r.Y + U(2), r.Width, r.Height), Color.Black * 0.4f);
+        var chrome = UiChrome.For(Sb.GraphicsDevice);
+        var bodyCol = active ? new Color(118, 92, 42)
+            : enabled ? Color.Lerp(new Color(50, 45, 48), new Color(98, 78, 40), h)
+            : new Color(32, 30, 33);
+        var edgeCol = active ? Kit.Gilt
+            : enabled ? Color.Lerp(Kit.Rivet, Kit.Gilt, h)
+            : new Color(72, 68, 66);
+        int b = Math.Max(3, U(6));
+        chrome.Draw9(Sb, r, UiChrome.BtnFill, 8, b, bodyCol);
+        chrome.Draw9(Sb, r, UiChrome.BtnFrame, 8, b, edgeCol);
         var c = enabled ? (hover || active ? new Color(255, 246, 222) : Style.Text) : Style.Dim * 0.78f;
         int scale = r.Height >= U(26) ? 2 : 1;
         // A label too wide for big letters (beside its note, if it has one) drops to small ones.

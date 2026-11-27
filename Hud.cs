@@ -185,9 +185,9 @@ sealed partial class Hud
     void Text(string s, float x, float y, Color c, int scale = 2)
     {
         Overflow.Text(s, x, y, TW(s, scale));
-        font.Draw(sb, s, new Vector2(x, y), c, scale * Ui);
+        font.DrawHud(sb, s, new Vector2(x, y), c, scale, Ui);
     }
-    int TW(string s, int scale = 2) => PixelFont.Width(s, scale * Ui);
+    int TW(string s, int scale = 2) => font.MeasureHud(s, scale, Ui);
     void TextC(string s, float cx, float y, Color c, int scale = 2) => Text(s, cx - TW(s, scale) / 2f, y, c, scale);
     void TextR(string s, float rx, float y, Color c, int scale = 2) => Text(s, rx - TW(s, scale), y, c, scale);
 

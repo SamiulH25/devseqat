@@ -10,8 +10,8 @@ static partial class Kit
 {
     // ---------- colours ----------
 
-    public static readonly Color Iron = new(30, 34, 44), IronDark = new(15, 17, 23), Rivet = new(120, 112, 96),
-        Gilt = new(214, 172, 70), GiltDark = new(120, 88, 34), Parchment = new(226, 210, 172), Ink = new(58, 44, 30), InkDeep = new(34, 22, 14),
+    public static readonly Color Iron = new(33, 30, 34), IronDark = new(15, 14, 17), Rivet = new(146, 126, 88),
+        Gilt = new(218, 176, 82), GiltDark = new(118, 86, 36), Parchment = new(228, 212, 176), Ink = new(56, 42, 28), InkDeep = new(32, 20, 12),
         Night = new(12, 16, 32), Dusk = new(64, 44, 70), Ember = new(236, 120, 48);
 
     public static Color Mul(Color c, float k) => new((int)Math.Min(255, c.R * k), (int)Math.Min(255, c.G * k), (int)Math.Min(255, c.B * k));
@@ -134,22 +134,15 @@ static partial class Kit
     /// an inner hairline and, on plates big enough to carry them, four rivets. `alpha` lets the map show through a little.
     public static void PlateBody(this Ui ui, Rectangle r, Color e, int thick = 1, float alpha = 1)
     {
-        bool big = r.Width >= ui.U(80) && r.Height >= ui.U(48);
+        bool big = r.Width >= ui.U(72) && r.Height >= ui.U(44);
         Overflow.Box(r);
-        if (big) ui.Rect(new Rectangle(r.X + ui.U(3), r.Y + ui.U(4), r.Width, r.Height), Color.Black * 0.3f);
-        ui.VGrad(r, Iron * alpha, IronDark * alpha, 3);
-        ui.Frame(r, Color.Black * 0.7f, ui.U(1));
-        var inner = Inset(r, ui.U(1));
-        ui.Frame(inner, Mul(e, 0.8f), ui.U(thick));
-        ui.Rect(new Rectangle(inner.X + ui.U(thick), inner.Y + ui.U(thick), inner.Width - ui.U(2 * thick), ui.U(1)), Color.White * 0.1f);
-        if (!big) { ui.Block(r); return; }
-        ui.Frame(Inset(r, ui.U(4)), Color.White * 0.05f, ui.U(1));
-        foreach (var p in new[] { new Point(r.X, r.Y), new Point(r.Right, r.Y), new Point(r.X, r.Bottom), new Point(r.Right, r.Bottom) })
-        {
-            int x = p.X == r.X ? r.X + ui.U(6) : r.Right - ui.U(9), y = p.Y == r.Y ? r.Y + ui.U(6) : r.Bottom - ui.U(9);
-            ui.Rect(new Rectangle(x, y, ui.U(3), ui.U(3)), Mul(e, 0.6f));
-            ui.Rect(new Rectangle(x, y, ui.U(2), ui.U(1)), Mul(e, 1.3f));
-        }
+        if (big) ui.Rect(new Rectangle(r.X + ui.U(3), r.Y + ui.U(4), r.Width, r.Height), Color.Black * 0.38f);
+        var chrome = UiChrome.For(ui.Sb.GraphicsDevice);
+        int fillB = Math.Max(4, ui.U(8));
+        int frameB = big ? Math.Max(6, ui.U(12)) : Math.Max(3, ui.U(6));
+        chrome.Draw9(ui.Sb, r, UiChrome.PlateFill, 10, fillB, Color.White * alpha);
+        chrome.Draw9(ui.Sb, r, UiChrome.PlateFrame, 14, frameB, Mul(e, 1.05f));
+        if (thick > 1) ui.Frame(Inset(r, ui.U(2)), Mul(e, 0.85f), ui.U(thick - 1));
         ui.Block(r);
     }
 
@@ -205,8 +198,8 @@ static partial class Kit
         ui.Rect(new Rectangle(x, y + h, ui.U(4), drop), Mul(c, 0.25f));
         ui.Rect(new Rectangle(x + w - ui.U(4), y + h, ui.U(4), drop), Mul(c, 0.25f));
         ui.VGrad(new Rectangle(x, y, w, h), Mul(c, 0.95f), Mul(c, 0.62f));
-        ui.Rect(new Rectangle(x, y + ui.U(2), w, ui.U(1)), Color.White * 0.25f);
-        ui.Rect(new Rectangle(x, y + h - ui.U(3), w, ui.U(1)), Color.Black * 0.3f);
+        ui.Rect(new Rectangle(x, y + ui.U(1), w, ui.U(1)), Gilt * 0.72f);
+        ui.Rect(new Rectangle(x, y + h - ui.U(2), w, ui.U(1)), Gilt * 0.55f);
         ui.TextC(text, cx, y + (h - ui.U(7 * scale)) / 2f, new Color(255, 248, 228), scale);
     }
 

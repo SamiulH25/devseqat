@@ -1,10 +1,13 @@
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// 5x7 bitmap font built at startup, so the HUD needs no SpriteFont content. The interface writes in capitals; a lowercase set
-/// (5x9, two rows below the line for descenders) is used only by `DrawMixed`, for prose such as the event book.
+/// Hybrid typography engine:
+/// - Crisp proportional pixel-art typography (Pixelify Sans Bold/Medium) across menus, headers, prose, and battle HUD
+///   loaded directly from Data/fonts/*.ttf via FontStashSharp (no content pipeline).
+/// - Tight proportional 5x7 bitmap pixel font (tabular numerals) for compact battle HUD counters, tags and fallback.
 public sealed class PixelFont
 {
     const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,:-/()!%+[]=><?'\u00b7";
@@ -32,28 +35,71 @@ public sealed class PixelFont
         "00000F100E011E0000", "08081C080809060000", "0000111111130D0000", "00001111110A040000", "0000111115150A0000", "0000110A040A110000",
         "0000111111110F010E", "00001F0204081F0000",
     };
-    /// Texture rows of the lowercase cells: with their shadow, and plain (ink on paper). Ten rows a cell.
     const int LowShadow = 16, LowPlain = 26;
 
     readonly Texture2D tex;
+    static readonly byte[] GlyphLeft = new byte[Glyphs.Length];
+    static readonly byte[] GlyphW = new byte[Glyphs.Length];
+    static readonly byte[] GlyphAdv = new byte[Glyphs.Length];
     static readonly sbyte[] CharIdx = BuildCharIdx();
+
+    readonly FontSystem? displaySys, bodySys, boldSys;
+    public bool HasSerif => displaySys != null && bodySys != null;
 
     static sbyte[] BuildCharIdx()
     {
         var map = new sbyte[256];
         Array.Fill(map, (sbyte)Chars.IndexOf(' '));
         for (int i = 0; i < Chars.Length; i++) if (Chars[i] < 256) map[Chars[i]] = (sbyte)i;
+        for (int g = 0; g < Glyphs.Length; g++)
+        {
+            char ch = Chars[g];
+            if (ch == ' ') { GlyphLeft[g] = 0; GlyphW[g] = 0; GlyphAdv[g] = 4; continue; }
+            if (ch is >= '0' and <= '9') { GlyphLeft[g] = 0; GlyphW[g] = 6; GlyphAdv[g] = 6; continue; } // tabular numerals for HUD counters
+            int minC = 5, maxC = -1;
+            for (int row = 0; row < 7; row++)
+            {
+                int bits = Convert.ToInt32(Glyphs[g].Substring(row * 2, 2), 16);
+                for (int b = 0; b < 5; b++)
+                    if ((bits >> (4 - b) & 1) != 0) { if (b < minC) minC = b; if (b > maxC) maxC = b; }
+            }
+            if (maxC < minC) { GlyphLeft[g] = 0; GlyphW[g] = 0; GlyphAdv[g] = 4; }
+            else
+            {
+                int w = maxC - minC + 1;
+                GlyphLeft[g] = (byte)minC;
+                GlyphW[g] = (byte)(w + 1); // +1 for the 1px drop shadow
+                GlyphAdv[g] = (byte)Math.Min(6, w + 2);
+            }
+        }
         return map;
+    }
+
+    static FontSystem? TryLoadFont(string file)
+    {
+        foreach (var dir in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
+        {
+            var path = Path.Combine(dir, "Data", "fonts", file);
+            if (!File.Exists(path)) continue;
+            var fs = new FontSystem(new FontSystemSettings
+            {
+                FontResolutionFactor = 1f,
+                KernelWidth = 0,
+                KernelHeight = 0,
+                TextureWidth = 512,
+                TextureHeight = 512,
+            });
+            fs.AddFont(File.ReadAllBytes(path));
+            return fs;
+        }
+        return null;
     }
 
     public PixelFont(GraphicsDevice gd)
     {
         if (Glyphs.Length != Chars.Length) throw new InvalidOperationException("font table out of sync");
-        // One cell a glyph, 6 x 8 texels: the white 5 x 7 glyph and, under it one texel down and right, its drop shadow (premultiplied
-        // black at 200/255, so a tint scales it with the glyph). One sprite a character then draws both. The last cell is solid
-        // white: rectangles are drawn from this texture too, so text and boxes batch together.
         int cells = Chars.Length + 1, stride = cells * 6;
-        var data = new Color[stride * 36]; // rows 8-15: the same glyphs with no shadow, for writing on paper; 16-35: lowercase
+        var data = new Color[stride * 36];
         var shadow = new Color(0, 0, 0, 200);
         for (int g = 0; g < Glyphs.Length; g++)
             for (int row = 0; row < 7; row++)
@@ -86,6 +132,10 @@ public sealed class PixelFont
         for (int row = 0; row < 8; row++) for (int b = 0; b < 6; b++) data[row * stride + Chars.Length * 6 + b] = Color.White;
         tex = new Texture2D(gd, stride, 36);
         tex.SetData(data);
+
+        bodySys = TryLoadFont("PixelifySans-Medium.ttf");
+        boldSys = TryLoadFont("PixelifySans-Bold.ttf") ?? bodySys;
+        displaySys = boldSys;
     }
 
     /// The texture holding the glyphs and a white texel: boxes drawn from it batch with text.
@@ -93,7 +143,24 @@ public sealed class PixelFont
     /// One white texel well inside the white cell (point sampling: no bleed from the neighbours).
     public Rectangle White => new(Chars.Length * 6 + 2, 3, 1, 1);
 
+    /// Legacy fixed-cell width formula (kept for deterministic tests).
     public static int Width(string s, float scale) => (int)MathF.Ceiling(s.Length * 6 * scale);
+
+    /// Tight proportional pixel-font width (tabular digits, narrow I/L/punctuation) for compact battle HUD counters and tags.
+    public static int WidthPixel(string s, float scale)
+    {
+        if (string.IsNullOrEmpty(s)) return 0;
+        int space = CharIdx[' '];
+        int adv = 0;
+        for (int k = 0; k < s.Length; k++)
+        {
+            char ch = s[k];
+            if (ch is >= 'a' and <= 'z') ch = (char)(ch - 32);
+            int i = ch < 256 ? CharIdx[ch] : space;
+            adv += GlyphAdv[i];
+        }
+        return (int)MathF.Ceiling(adv * scale);
+    }
 
     /// Is the font's pixel at (col 0-4, row 0-6) of this character set? For drawing a glyph block by block (the title's name).
     public static bool Lit(char ch, int col, int row)
@@ -102,16 +169,114 @@ public sealed class PixelFont
         return (Convert.ToInt32(Glyphs[CharIdx[ch]].Substring(row * 2, 2), 16) >> (4 - col) & 1) != 0;
     }
 
-    public void Draw(SpriteBatch sb, string s, Vector2 pos, Color c, float scale = 2)
+    // ---------- TTF medieval serif (Cinzel-Bold for display/headers, Alegreya-Medium for body/prose) ----------
+
+    (DynamicSpriteFont Font, float YOffset) ResolveSerif(int scale, float uiScale, bool prose)
     {
-        DrawRun(sb, s, pos, c, scale); // the glyph and its shadow are one cell of the texture
+        if (prose)
+        {
+            int px = Math.Clamp((int)MathF.Round(scale * 11.2f * uiScale), 10, 64);
+            return (bodySys!.GetFont(px), -MathF.Floor(px * 0.20f));
+        }
+        if (scale >= 2)
+        {
+            int px = Math.Clamp((int)MathF.Round(scale * 8.8f * uiScale), 12, 96);
+            return (displaySys!.GetFont(px), -MathF.Floor(px * 0.20f));
+        }
+        else
+        {
+            int px = Math.Clamp((int)MathF.Round(10.8f * uiScale), 9, 48);
+            return (boldSys!.GetFont(px), -MathF.Floor(px * 0.24f));
+        }
     }
 
-    /// The glyphs alone, with no black shadow under them (ink on paper, where a dark shadow would smear dark letters).
-    public void DrawPlain(SpriteBatch sb, string s, Vector2 pos, Color c, float scale = 2) => DrawRun(sb, s, pos, c, scale, 8);
+    (DynamicSpriteFont Font, float YOffset) ResolveHud(int scale, float uiScale)
+    {
+        if (scale >= 2)
+        {
+            int px = Math.Clamp((int)MathF.Round(scale * 8.4f * uiScale), 12, 96);
+            return (boldSys!.GetFont(px), -MathF.Floor(px * 0.20f));
+        }
+        else
+        {
+            int px = Math.Clamp((int)MathF.Round(10.6f * uiScale), 9, 48);
+            return (bodySys!.GetFont(px), -MathF.Floor(px * 0.24f));
+        }
+    }
 
-    /// Capitals and lowercase as written, for prose (the event book). A line takes ten rows, not eight: leave room for the
-    /// descenders. `plain` drops the shadow (ink on paper).
+    public int MeasureHud(string s, int scale, float uiScale)
+    {
+        if (string.IsNullOrEmpty(s)) return 0;
+        if (!HasSerif) return WidthPixel(s, scale * uiScale);
+        var (f, _) = ResolveHud(scale, uiScale);
+        return (int)MathF.Ceiling(f.MeasureString(s).X);
+    }
+
+    public void DrawHud(SpriteBatch sb, string s, Vector2 pos, Color c, int scale, float uiScale)
+    {
+        if (string.IsNullOrEmpty(s)) return;
+        if (!HasSerif) { DrawPixel(sb, s, pos, c, scale * uiScale, false); return; }
+        var (f, yOff) = ResolveHud(scale, uiScale);
+        var p = new Vector2(MathF.Floor(pos.X), MathF.Floor(pos.Y) + yOff);
+        float d = MathF.Max(1f, MathF.Floor(uiScale));
+        f.DrawText(sb, s, p + new Vector2(d, d), new Color(0, 0, 0, (int)(c.A * 0.85f)));
+        f.DrawText(sb, s, p, c);
+    }
+
+    public int MeasureSerif(string s, int scale, float uiScale, bool prose = false)
+    {
+        if (string.IsNullOrEmpty(s)) return 0;
+        if (!HasSerif) return WidthPixel(s, scale * uiScale);
+        var (f, _) = ResolveSerif(scale, uiScale, prose);
+        return (int)MathF.Ceiling(f.MeasureString(s).X);
+    }
+
+    public void DrawSerif(SpriteBatch sb, string s, Vector2 pos, Color c, int scale, float uiScale, bool shadow = true, bool prose = false)
+    {
+        if (string.IsNullOrEmpty(s)) return;
+        if (!HasSerif) { DrawPixel(sb, s, pos, c, scale * uiScale, !shadow); return; }
+        var (f, yOff) = ResolveSerif(scale, uiScale, prose);
+        var p = new Vector2(MathF.Floor(pos.X), MathF.Floor(pos.Y) + yOff);
+        if (shadow)
+        {
+            float d = MathF.Max(1f, MathF.Floor(uiScale));
+            f.DrawText(sb, s, p + new Vector2(d, d), new Color(0, 0, 0, (int)(c.A * 0.82f)));
+        }
+        f.DrawText(sb, s, p, c);
+    }
+
+    // ---------- tight proportional pixel font (for compact battle HUD) ----------
+
+    public void DrawPixel(SpriteBatch sb, string s, Vector2 pos, Color c, float scale = 2, bool plain = false)
+    {
+        if (string.IsNullOrEmpty(s)) return;
+        int space = CharIdx[' '];
+        int top = plain ? 8 : 0;
+        float x = MathF.Floor(pos.X), y = MathF.Floor(pos.Y);
+        for (int k = 0; k < s.Length; k++)
+        {
+            char ch = s[k];
+            if (ch is >= 'a' and <= 'z') ch = (char)(ch - 32);
+            int i = ch < 256 ? CharIdx[ch] : space;
+            int w = GlyphW[i];
+            if (w > 0)
+            {
+                var src = new Rectangle(i * 6 + GlyphLeft[i], top, w, 8);
+                sb.Draw(tex, new Vector2(MathF.Floor(x), y), src, c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+            }
+            x += GlyphAdv[i] * scale;
+        }
+    }
+
+    // ---------- legacy monospace entry points (kept for compatibility) ----------
+
+    public void Draw(SpriteBatch sb, string s, Vector2 pos, Color c, float scale = 2)
+    {
+        DrawPixel(sb, s, pos, c, scale, false);
+    }
+
+    public void DrawPlain(SpriteBatch sb, string s, Vector2 pos, Color c, float scale = 2) => DrawPixel(sb, s, pos, c, scale, true);
+
     public void DrawMixed(SpriteBatch sb, string s, Vector2 pos, Color c, float scale = 2, bool plain = false)
     {
         int space = CharIdx[' '];
@@ -121,19 +286,6 @@ public sealed class PixelFont
             var src = ch is >= 'a' and <= 'z' ? new Rectangle((ch - 'a') * 6, plain ? LowPlain : LowShadow, 6, 10)
                 : new Rectangle((ch < 256 ? CharIdx[ch] : space) * 6, plain ? 8 : 0, 6, 8);
             sb.Draw(tex, new Vector2(MathF.Floor(pos.X), MathF.Floor(pos.Y)), src, c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
-            pos.X += 6 * scale;
-        }
-    }
-
-    void DrawRun(SpriteBatch sb, string s, Vector2 pos, Color c, float scale, int top = 0)
-    {
-        int space = CharIdx[' '];
-        for (int k = 0; k < s.Length; k++)
-        {
-            char ch = s[k];
-            if (ch is >= 'a' and <= 'z') ch = (char)(ch - 32);
-            int i = ch < 256 ? CharIdx[ch] : space;
-            sb.Draw(tex, new Vector2(MathF.Floor(pos.X), MathF.Floor(pos.Y)), new Rectangle(i * 6, top, 6, 8), c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
             pos.X += 6 * scale;
         }
     }
