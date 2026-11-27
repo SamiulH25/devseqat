@@ -32,7 +32,7 @@ public enum Act
     // the captain's own ring (hold; a tap couches the lance when it shares the couch key)
     CaptainWheel,
     // directional combat rework (CR1-CR2): soft lock-on, sidestep dodge, camera view toggle
-    LockTarget, Dodge, CameraView,
+    Dodge, CameraView,
 }
 
 public enum MouseButton { Left, Right, Middle, X1, X2 }
@@ -134,7 +134,7 @@ public sealed class Controls
         [Act.Cast] = new[] { "P" }, [Act.Merge] = new[] { "," }, [Act.Slower] = new[] { "[" }, [Act.Faster] = new[] { "]" },
         [Act.Relieve] = new[] { "." }, [Act.SplitCompany] = new[] { "/" }, [Act.StandingOrder] = new[] { "=" },
         [Act.Horn] = new[] { "TILDE" }, [Act.CaptainWheel] = new[] { "Q" },
-        [Act.LockTarget] = new[] { "MMB" }, [Act.Dodge] = new[] { "Space" }, [Act.CameraView] = new[] { "F4" },
+        [Act.Dodge] = new[] { "Space" }, [Act.CameraView] = new[] { "F4" },
         [Act.LordsScreen] = new[] { "L" }, [Act.SkillsScreen] = new[] { "K" }, [Act.RealmScreen] = new[] { "R" },
         [Act.DivisionsScreen] = new[] { "V" }, [Act.AtlasScreen] = new[] { "M" }, [Act.SiegeScreen] = new[] { "B" },
         [Act.InventoryScreen] = new[] { "I" }, [Act.QuestsScreen] = new[] { "J" }, [Act.CampScreen] = new[] { "C" }, [Act.LegendScreen] = new[] { "G" },
@@ -158,7 +158,7 @@ public sealed class Controls
         [Act.Cast] = "CAST (CASTERS, COMMAND VIEW)", [Act.Merge] = "FOLD SELECTED INTO THE FULLEST",
         [Act.Slower] = "BATTLE SLOWER", [Act.Faster] = "BATTLE FASTER", [Act.Relieve] = "RELIEVE (FRESH TAKES THE TIRED'S PLACE)", [Act.SplitCompany] = "SPLIT A COMPANY IN TWO", [Act.StandingOrder] = "STANDING ORDER (CYCLE)",
         [Act.Horn] = "SOUND THE HORN (OFFICERS' PLANS)", [Act.CaptainWheel] = "CAPTAIN'S RING (HOLD; TAP = COUCH)",
-        [Act.LockTarget] = "SOFT LOCK-ON TARGET (TAP)", [Act.Dodge] = "SIDESTEP / DODGE (ON FOOT)", [Act.CameraView] = "COMBAT CAMERA (OTS / CLOSE / 1ST)",
+        [Act.Dodge] = "SIDESTEP / DODGE (ON FOOT)", [Act.CameraView] = "COMBAT CAMERA (OTS / CLOSE / 1ST)",
         [Act.LordsScreen] = "LORDS AND COMPANIONS (MAP)", [Act.SkillsScreen] = "THE CAPTAIN (MAP)", [Act.RealmScreen] = "THE REALMS (MAP)",
         [Act.DivisionsScreen] = "DIVISIONS (MAP)", [Act.AtlasScreen] = "REALM MAP (MAP)", [Act.SiegeScreen] = "YOUR SIEGE (MAP)", [Act.InventoryScreen] = "KIT AND BAGGAGE (MAP)", [Act.QuestsScreen] = "QUESTS (MAP)", [Act.CampScreen] = "THE CAMP (MAP)", [Act.LegendScreen] = "YOUR LEGEND (MAP)",
     };

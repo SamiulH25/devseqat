@@ -49,7 +49,7 @@ sealed partial class Hud
     Unit? Opponent()
     {
         var p = B.Player;
-        if (LockTarget is { Active: true, Routing: false } locked && locked.Team != p.Team) return locked;
+
         int duelFoes = B.Options.Duel ? B.Units.Count(u => u.Active && u.Team != p.Team) : 0;
         if (B.Options.Duel && duelFoes <= 1 && B.EnemyCaptain.Active) return B.EnemyCaptain;
         for (int i = B.Blows.Count - 1; i >= 0; i--)
@@ -232,9 +232,8 @@ sealed partial class Hud
         var v = vp.Project(new Vector3(u.Pos.X, B.Terrain.Height(u.Pos) + (u.Mounted ? 3.6f : 2.6f), u.Pos.Y), Proj, View, Matrix.Identity);
         if (v.Z is <= 0 or >= 1) return;
         int bw = U(64), x = (int)Math.Clamp(v.X, bw / 2 + U(4), W - bw / 2 - U(4)), y = (int)Math.Clamp(v.Y, U(70), H - U(140));
-        bool isLocked = u == LockTarget;
         string name = Battle.NameOf(u) is { Length: > 0 } n ? n : u.Type.Name;
-        Shadowed(isLocked ? $"[ {name.ToUpperInvariant()} ]" : name.ToUpperInvariant(), x, y - U(12), isLocked || u.IsLeader || u.Hero ? Gold : Color.White, 1, 1);
+        Shadowed(name.ToUpperInvariant(), x, y - U(12), u.IsLeader || u.Hero ? Gold : Color.White, 1, 1);
         var bar = new Rectangle(x - bw / 2, y, bw, U(5));
         Rect(new Rectangle(bar.X - U(1), bar.Y - U(1), bar.Width + U(2), bar.Height + U(2)), Color.Black * 0.75f);
         Bar(bar, Math.Clamp(u.Hp / u.Type.MaxHp, 0, 1), Foe);

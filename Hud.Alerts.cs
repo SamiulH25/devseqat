@@ -17,6 +17,8 @@ partial class Hud
         int y = U(10) + (Command ? U(118) : 0), room = (W - U(604)) / 2 - U(24); // in the command view the cards hold the top
         foreach (var a in B.RecentAlerts(10, most))
         {
+            if (a.Kind is not ("breaking" or "arrows" or "leaderless")) continue;
+            if (!Command && a.Kind != "breaking") continue;
             float alpha = Math.Clamp((10 - (B.Time - a.Time)) / 2f, 0, 1);
             var (c, icon) = a.Kind switch
             {

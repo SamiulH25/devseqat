@@ -102,7 +102,7 @@ sealed partial class BattleScreen
     float camFocusY, camFocusYVel, camShoulder = 0.68f, camFov = 62f;
     bool camInit;
     int camMode;
-    Unit? lockTarget;
+
     bool wheelDown;
     float wheelSince;
     float blend, frameDt, realTime, simAcc, soundscapeAcc, lastCardClick, lastFieldClick;
@@ -397,7 +397,7 @@ sealed partial class BattleScreen
         ResetSpectacle();
         ResetLod();
         markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = simAcc = soundscapeAcc = 0; ending = -1; lastHitAt = lastPlayerHp = -1;
-        camInit = false; lockTarget = null; camKick = camKickVel = Vector3.Zero;
+        camInit = false; camKick = camKickVel = Vector3.Zero;
         Array.Clear(trample); trampleAt = 0; trampleDirty = true;
         world?.Dispose();
         world = new World(GraphicsDevice, battle.Terrain);
@@ -412,7 +412,7 @@ sealed partial class BattleScreen
         holdHeld = -1;
         dragStart = null;
         boxStart = null;
-        if (on) { camFocus = battle.Player.Pos; camYaw = yaw; camPitch = 0.95f; lockTarget = null; }
+        if (on) { camFocus = battle.Player.Pos; camYaw = yaw; camPitch = 0.95f; }
         else skipMouse = true;
     }
 
@@ -477,10 +477,7 @@ sealed partial class BattleScreen
         {
             if ((!alive || deploying) && !command) SetCommand(true);
             else if (alive && !deploying && ctl.Pressed(Act.CommandView))
-            {
-                if (battle.Options.Duel && !command) ToggleOrCycleLock();
-                else SetCommand(!command);
-            }
+                SetCommand(!command);
             if (deploying && (ctl.Pressed(Act.Pause) || (LmbPressed && hud.StartAt(ms.Position))))
             {
                 deploying = false;
@@ -712,7 +709,6 @@ sealed partial class BattleScreen
         hud.MouseGround = mouseGround; hud.Dragging = dragCard is { } dc && dragMoved ? dc : null;
         if (selectedDivision == null) hornMode = false;
         hud.HornMode = hornMode;
-        hud.LockTarget = lockTarget;
         hud.WheelOpen = wheelOpen; hud.CapWheelOpen = capWheel; hud.WheelSector = WheelSector() ?? -1; hud.WheelCenter = command && wheelOpen ? wheelOrigin : null;
         hud.Aim = aimDir; hud.View = view; hud.Proj = proj; hud.Mouse = shotMouse ?? (shotNoMouse ? new Point(-999, -999) : ms.Position);
         hud.Box = boxStart is Point b && command ? BoxOf(b, ms.Position) : null;

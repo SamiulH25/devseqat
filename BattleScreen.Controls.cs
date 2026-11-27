@@ -20,29 +20,9 @@ partial class BattleScreen
             battle.Log(camMode switch { 1 => "Camera: Close Duel", 2 => "Camera: First Person", _ => "Camera: Over-the-Shoulder" });
         }
 
-        // Soft lock-on (CR1): tap MMB (when shared with OrderWheel) toggles lock-on; hold MMB > 0.18s opens OrderWheel.
-        bool wasWheel = wheelOpen, wasWheelDown = wheelDown, lockTap = false;
-        bool shareLock = ctl.Binds.TryGetValue(Act.LockTarget, out var lb) && ctl.Binds.TryGetValue(Act.OrderWheel, out var wb) && lb.Any(wb.Contains);
-        if (shareLock)
-        {
-            wheelDown = ctl.Down(Act.OrderWheel) && !capWheel;
-            if (wheelDown && !wasWheelDown) wheelSince = Ironfield.Ui.Now;
-            // Non-shared key (e.g. Z) opens OrderWheel immediately; shared MMB waits 0.18s so a quick tap toggles lock-on.
-            bool lockKeyDown = ctl.Down(Act.LockTarget);
-            wheelOpen = shotWheel || (wheelDown && (!lockKeyDown || Ironfield.Ui.Now - wheelSince > 0.18f));
-            if (wasWheelDown && !wheelDown && !wasWheel && Ironfield.Ui.Now - wheelSince <= 0.22f) lockTap = true;
-        }
-        else
-        {
-            wheelOpen = ctl.Down(Act.OrderWheel) || shotWheel;
-            lockTap = ctl.Pressed(Act.LockTarget);
-        }
+        bool wasWheel = wheelOpen;
+        wheelOpen = (ctl.Down(Act.OrderWheel) && !capWheel) || shotWheel;
         if (wheelOpen && !wasWheel) wheelVec = Vector2.Zero;
-        if (lockTap) ToggleLockTarget();
-
-        // Validate active soft lock-on target; auto-retarget nearest threat in front when your target falls.
-        if (lockTarget != null && (!lockTarget.Active || lockTarget.Routing || Vector2.DistanceSquared(lockTarget.Pos, battle.Player.Pos) > 24f * 24f))
-            lockTarget = (!lockTarget.Active || lockTarget.Routing) ? PickLockTarget(12f) : null;
 
         // The captain's ring: hold its key a moment and it opens; a tap is the couch (when it shares the couch key).
         bool wasCap = capWheel, wasCapDown = capDown, couchTap = false;
@@ -55,7 +35,7 @@ partial class BattleScreen
         bool attackDown = IsActive && !wheelOpen && !capWheel && ctl.Down(Act.Attack);
         bool blockDown = IsActive && !wheelOpen && !capWheel && ctl.Down(Act.Block);
         // Lock-on-press for attacks only: holding RMB still lets you flick to switch guard direction live.
-        bool dirLocked = !Settings.Current.MoveDirControl && lockTarget == null && attackDown;
+        bool dirLocked = !Settings.Current.MoveDirControl && attackDown;
 
         if (IsActive)
         {
@@ -68,22 +48,6 @@ partial class BattleScreen
                 {
                     wheelVec += d;
                     if (wheelVec.Length() > 120) wheelVec = Vector2.Normalize(wheelVec) * 120;
-                }
-                else if (lockTarget != null)
-                {
-                    // Locked on: mouse movement is dedicated cleanly to 4-way attack/guard direction without fighting camera yaw.
-                    if (!Settings.Current.MoveDirControl)
-                    {
-                        aimAcc *= MathF.Exp(-12f * dt);
-                        if (d.LengthSquared() >= 4f) aimAcc += d;
-                        if (aimAcc.LengthSquared() > 36f)
-                        {
-                            aimDir = MathF.Abs(aimAcc.X) > MathF.Abs(aimAcc.Y)
-                                ? (aimAcc.X > 0 ? AttackDir.Right : AttackDir.Left)
-                                : (aimAcc.Y < 0 ? AttackDir.Overhead : AttackDir.Thrust);
-                            aimAcc = Vector2.Zero;
-                        }
-                    }
                 }
                 else
                 {
@@ -113,19 +77,6 @@ partial class BattleScreen
         }
         else skipMouse = true;
 
-        // Smoothly frame locked-on target.
-        if (lockTarget != null)
-        {
-            var to = lockTarget.Pos - battle.Player.Pos;
-            if (to.LengthSquared() > 1e-4f)
-            {
-                float targetYaw = MathF.Atan2(to.Y, to.X);
-                float alpha = 1f - MathF.Exp(-12f * dt);
-                yaw += MathHelper.WrapAngle(targetYaw - yaw) * alpha;
-                pitch = MathHelper.Lerp(pitch, 0.22f, 1f - MathF.Exp(-8f * dt));
-            }
-        }
-
         if (wasCap && !capWheel && CapSector(wheelVec) is int cs) capPending = Hud.CaptainRing[cs];
         if (wasWheel && !wheelOpen && WheelSector() is int sector)
         {
@@ -135,10 +86,7 @@ partial class BattleScreen
 
         int wheelDelta = ms.ScrollWheelValue - pms.ScrollWheelValue;
         if (wheelDelta != 0)
-        {
-            if (lockTarget != null) CycleLockTarget(wheelDelta > 0 ? 1 : -1);
-            else fieldDist = Math.Clamp(fieldDist - wheelDelta * 0.0035f, 2.4f, 10f);
-        }
+            fieldDist = Math.Clamp(fieldDist - wheelDelta * 0.0035f, 2.4f, 10f);
 
         bool mounted = battle.Player.Mounted;
         if (mounted)
@@ -185,58 +133,6 @@ partial class BattleScreen
             Relic = ctl.Pressed(Act.Relic) || capPending == Hud.CapCmd.Relic,
         };
         capPending = null;
-    }
-
-    void ToggleLockTarget()
-    {
-        if (lockTarget != null) { lockTarget = null; return; }
-        lockTarget = PickLockTarget();
-    }
-
-    void ToggleOrCycleLock()
-    {
-        if (lockTarget == null) { lockTarget = PickLockTarget(); return; }
-        var prev = lockTarget;
-        CycleLockTarget(1);
-        if (lockTarget == prev) lockTarget = null;
-    }
-
-    Unit? PickLockTarget(float maxDist = 18f)
-    {
-        var p = battle.Player;
-        var fwd = Forward(yaw);
-        Unit? best = null;
-        float bestScore = float.MaxValue;
-        foreach (var u in battle.Units)
-        {
-            if (!u.Active || u.Team == p.Team || u.Routing) continue;
-            var to = u.Pos - p.Pos;
-            float d = to.Length();
-            if (d > maxDist || d < 0.01f) continue;
-            float dot = Vector2.Dot(to / d, fwd);
-            if (dot < -0.25f) continue;
-            float score = d * (1.4f - 0.6f * dot);
-            if (score < bestScore) { bestScore = score; best = u; }
-        }
-        return best;
-    }
-
-    void CycleLockTarget(int dir)
-    {
-        var p = battle.Player;
-        var foes = new List<(Unit u, float ang)>();
-        foreach (var u in battle.Units)
-        {
-            if (!u.Active || u.Team == p.Team || u.Routing) continue;
-            var to = u.Pos - p.Pos;
-            if (to.LengthSquared() > 20f * 20f || to.LengthSquared() < 1e-4f) continue;
-            foes.Add((u, MathHelper.WrapAngle(MathF.Atan2(to.Y, to.X) - yaw)));
-        }
-        if (foes.Count <= 1) return;
-        foes.Sort((a, b) => a.ang.CompareTo(b.ang));
-        int idx = foes.FindIndex(f => f.u == lockTarget);
-        if (idx < 0) { lockTarget = foes[0].u; return; }
-        lockTarget = foes[(idx + (dir >= 0 ? 1 : -1) + foes.Count) % foes.Count].u;
     }
 
     int? WheelSector() => wheelOpen ? Sector(wheelVec, Hud.WheelOrder.Length) : capWheel ? CapSector(wheelVec) : null;

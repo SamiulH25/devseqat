@@ -36,9 +36,6 @@ public sealed partial class Battle
             Hunter.HuntCaptain = false;
             Hunter = null;
         }
-        if (Hunter == null && Time >= huntAgain && p.Active && !p.Routing && (PlayerKills >= HarmKills * (HuntsSent + 1) || Forward(p) > ForwardBy))
-            SendHunter();
-        if (Options.EnemyDamage >= 0.9f && !Nature.Honourable) MarkWithBows(); // Easy keeps the notice but not the volleys; an honourable lord will not have you shot
         CloseTheGuard();
         Grudge();
     }
@@ -108,14 +105,7 @@ public sealed partial class Battle
     }
 
     /// A man of a marking company looses at the captain in the volley's window, unless his own side has reached him.
-    bool LoosesAtCaptain(Unit u, Squad s)
-    {
-        if (s.VolleyAt <= 0 || Time < s.VolleyAt || Time > s.VolleyAt + VolleyWindow || u.Ammo <= 0 || u.Cooldown > 0 || !Player.Active) return false;
-        if (OwnMenNear(Player.Pos, u.Team, 6)) { s.VolleyAt = -1; return false; }
-        u.Face(Player.Pos - u.Pos);
-        Shoot(u, Player);
-        return true;
-    }
+    bool LoosesAtCaptain(Unit u, Squad s) => false;
 
     /// The enemy captain's nearest six footmen close round him while you are within 20 m of him.
     void CloseTheGuard()
