@@ -180,7 +180,22 @@ public sealed partial class Campaign
     /// World chatter: lords' skirmishes, brigands, goblins, marriages. Shown only on the full log.
     void LogAll(string text) => Log(text, LogLevel.Everything);
 
-    public Party? PartyById(int id) => S.Parties.FirstOrDefault(p => p.Id == id);
+    readonly Dictionary<int, Party> partyById = new();
+    int partyByIdCount = -1, partyByIdLast = -1;
+
+    public Party? PartyById(int id)
+    {
+        var list = S.Parties;
+        int n = list.Count, last = n > 0 ? list[n - 1].Id : -1;
+        if (n != partyByIdCount || last != partyByIdLast)
+        {
+            partyById.Clear();
+            for (int i = 0; i < n; i++) partyById[list[i].Id] = list[i];
+            partyByIdCount = n; partyByIdLast = last;
+        }
+        if (partyById.TryGetValue(id, out var hit) && hit.Id == id) return hit;
+        return null;
+    }
     public Settlement SettlementById(int id) => id >= 0 && id < S.Settlements.Count ? S.Settlements[id] : null!;
 
     // ---------- relations ----------
@@ -223,15 +238,42 @@ public sealed partial class Campaign
     public float PlayerSight => B.Vision * 1.6f * Map.Spread * (HasCompanion("Scout") ? 1.25f : 1) * (S.Hours < S.FarSightUntil ? 2 : 1);
     public bool InSight(Vector2 p) => Vector2.Distance(p, Player.Pos) < PlayerSight || Fiefs.Any(f => f.Kind != SettlementKind.Village && Vector2.Distance(f.Pos, p) < 30 * Map.Spread);
 
-    public Settlement? SettlementAt(Vector2 p, float r = 6f)
+    Dictionary<long, List<Settlement>>? settGrid;
+    int settGridCount = -1;
+    const float SettCell = 16f;
+
+    Dictionary<long, List<Settlement>> SettGrid()
     {
-        float best = r * r;
-        Settlement? hit = null;
+        if (settGrid != null && settGridCount == S.Settlements.Count) return settGrid;
+        var g = new Dictionary<long, List<Settlement>>(S.Settlements.Count);
         foreach (var s in S.Settlements)
         {
-            float d2 = Vector2.DistanceSquared(s.Pos, p);
-            if (d2 < best) { best = d2; hit = s; }
+            long k = ((long)(int)MathF.Floor(s.Pos.X / SettCell) << 32) | (uint)(int)MathF.Floor(s.Pos.Y / SettCell);
+            if (!g.TryGetValue(k, out var list)) g[k] = list = new List<Settlement>(2);
+            list.Add(s);
         }
+        settGridCount = S.Settlements.Count;
+        return settGrid = g;
+    }
+
+    public Settlement? SettlementAt(Vector2 p, float r = 6f)
+    {
+        var g = SettGrid();
+        float best = r * r;
+        Settlement? hit = null;
+        int x0 = (int)MathF.Floor((p.X - r) / SettCell), x1 = (int)MathF.Floor((p.X + r) / SettCell);
+        int y0 = (int)MathF.Floor((p.Y - r) / SettCell), y1 = (int)MathF.Floor((p.Y + r) / SettCell);
+        for (int gx = x0; gx <= x1; gx++)
+            for (int gy = y0; gy <= y1; gy++)
+            {
+                if (!g.TryGetValue(((long)gx << 32) | (uint)gy, out var list)) continue;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var s = list[i];
+                    float d2 = Vector2.DistanceSquared(s.Pos, p);
+                    if (d2 < best) { best = d2; hit = s; }
+                }
+            }
         return hit;
     }
     public bool InTown(Party p) => SettlementAt(p.Pos) is { Kind: SettlementKind.Town } t && (p.Kind != PartyKind.Player || !Refuses(t));
@@ -278,9 +320,15 @@ public sealed partial class Campaign
     /// A party's own speed, before an army's pace holds it back.
     float BaseSpeed(Party p)
     {
-        bool mounted = p.Breed is "wolf" or "wyvern" || p.Companies.Count > 0 && p.Companies.All(c => c.Men == 0 || c.Type.Mount != null); // wolves run as fast as horses
+        bool mounted = p.Breed is "wolf" or "wyvern";
+        if (!mounted && p.Companies.Count > 0)
+        {
+            mounted = true;
+            for (int i = 0; i < p.Companies.Count; i++)
+                if (p.Companies[i].Men > 0 && p.Companies[i].Type.Mount == null) { mounted = false; break; }
+        }
         float s = (mounted ? B.HorseSpeed : B.FootSpeed) * (Winter ? 0.75f : 1) * PaceOf(p) * (p.Breed == "wyvern" ? 1.25f : 1); // wings outpace any horse
-        if (p.Breed != "spider" && p.Breed != "wyvern" && IsProvinceWebbed(Map.ProvinceAt(p.Pos).Id)) s *= 0.7f; // webbed woods slow travel (WI2)
+        if (p.Breed != "spider" && p.Breed != "wyvern" && AnyProvinceWebbed() && IsProvinceWebbed(Map.ProvinceAt(p.Pos).Id)) s *= 0.7f; // webbed woods slow travel (WI2)
         if (p.Kind == PartyKind.Player) s *= (1 - MathF.Min(0.25f, p.Prisoners.Sum(g => g.Count) / 400f)) * BaggageDrag() * (1 - TrainDrag * p.Train.Count); // an overloaded baggage (C9), engines (SiegeWorks.cs)
         if (p.Kind == PartyKind.Player)
             s *= (1 + Skill("Logistics") / 2000f) * (Has("Horsemaster") ? 1.05f : 1) * (Has("Pathfinder") ? 1.05f : 1) * (Has("ForcedMarch") ? 1.1f : 1) * (Captain.Birth == "marcher" ? 1.08f : 1);
@@ -354,8 +402,10 @@ public sealed partial class Campaign
             while (p.SeaWay.Count > 1 && Vector2.DistanceSquared(p.SeaWay[0], p.Pos) < 0.25f) p.SeaWay.RemoveAt(0);
             if (p.SeaWay.Count > 1) { t = p.SeaWay[0]; return true; }
         }
+        if (p.HasClearGoal && Vector2.DistanceSquared(p.ClearGoal, t) < 1f) return false;
         p.SeaWay.Clear();
-        if (Map.OverLand(p.Pos, t)) return false;
+        if (Map.OverLand(p.Pos, t)) { p.ClearGoal = t; p.HasClearGoal = true; return false; }
+        p.HasClearGoal = false;
         p.SeaWay = Map.PlanAroundSea(p.Pos, t);
         p.SeaGoal = t;
         if (p.SeaWay.Count <= 1) p.SeaWay = new List<Vector2> { t }; // remembered: no way to this goal
@@ -363,31 +413,48 @@ public sealed partial class Campaign
         return false;
     }
 
+    readonly Dictionary<long, List<Party>> encounterCells = new(1024);
+    readonly List<List<Party>> encounterPool = new(512);
+
     void Encounters()
     {
-        // 190 parties and more on the big map: a uniform grid keeps this from being an O(n^2) sweep every tick.
-        // A cell is larger than either clash radius, so checking the 3x3 neighbourhood finds every pair that can meet.
+        // 190+ parties on the big map: a reused uniform grid keeps this O(n) with zero per-tick allocations.
         const float Cell = 16f;
-        var cells = new Dictionary<(int, int), List<Party>>(S.Parties.Count * 2);
-        foreach (var p in S.Parties)
+        int used = 0;
+        encounterCells.Clear();
+        var parties = S.Parties;
+        for (int i = 0; i < parties.Count; i++)
         {
+            var p = parties[i];
             if (p.Down || p.Voyage.Count > 0) continue; // nothing meets a ship at sea
-            var key = ((int)MathF.Floor(p.Pos.X / Cell), (int)MathF.Floor(p.Pos.Y / Cell));
-            if (!cells.TryGetValue(key, out var list)) cells[key] = list = new List<Party>(2);
+            int gx = (int)MathF.Floor(p.Pos.X / Cell), gy = (int)MathF.Floor(p.Pos.Y / Cell);
+            long key = ((long)gx << 32) | (uint)gy;
+            if (!encounterCells.TryGetValue(key, out var list))
+            {
+                if (used < encounterPool.Count) { list = encounterPool[used++]; list.Clear(); }
+                else { list = new List<Party>(4); encounterPool.Add(list); used++; }
+                encounterCells[key] = list;
+            }
             list.Add(p);
         }
-        foreach (var (key, here) in cells)
+        foreach (var (key, here) in encounterCells)
+        {
+            int gx = (int)(key >> 32), gy = (int)key;
             for (int dx = -1; dx <= 1; dx++)
                 for (int dy = -1; dy <= 1; dy++)
                 {
-                    if (!cells.TryGetValue((key.Item1 + dx, key.Item2 + dy), out var there)) continue;
-                    foreach (var a in here)
-                        foreach (var b in there)
+                    if (!encounterCells.TryGetValue(((long)(gx + dx) << 32) | (uint)(gy + dy), out var there)) continue;
+                    for (int ia = 0; ia < here.Count; ia++)
+                    {
+                        var a = here[ia];
+                        for (int ib = 0; ib < there.Count; ib++)
                         {
-                            Clash(a, b);
+                            Clash(a, there[ib]);
                             if (Encounter != null) return;
                         }
+                    }
                 }
+        }
     }
 
     /// Resolve a meeting between two parties (an AI fight happens at once; a fight with you opens the encounter panel).

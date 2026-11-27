@@ -102,13 +102,39 @@ public sealed partial class WorldMap
 
     /// How much a climb off the road slows a party at p (WS3): 1 on the flat (a plateau's top too), down to 0.45 on an
     /// upland's skirt or a scarp's back slope. Only the uplands' and cliffs' slope counts (the old land is priced by its kind).
+    const float ClimbCell = 4f;
+    float[]? climbGrid;
+    float climbOrigin;
+    int climbN;
+
     public float Climb(Vector2 p)
     {
         if (cliffs.Count + uplands.Count == 0) return 1;
-        const float d = 4;
-        float gx = Relief(p.X + d, p.Y) - Relief(p.X - d, p.Y), gz = Relief(p.X, p.Y + d) - Relief(p.X, p.Y - d);
-        float grade = MathF.Sqrt(gx * gx + gz * gz) / (2 * d);
-        return MathF.Max(0.45f, 1 / (1 + 4 * grade));
+        if (climbGrid == null)
+        {
+            climbOrigin = -(GroundHalf + 64);
+            climbN = (int)MathF.Ceiling(2 * (GroundHalf + 64) / ClimbCell) + 1;
+            climbGrid = new float[climbN * climbN];
+        }
+        int cx = (int)MathF.Floor((p.X - climbOrigin) / ClimbCell);
+        int cz = (int)MathF.Floor((p.Y - climbOrigin) / ClimbCell);
+        if ((uint)cx >= (uint)climbN || (uint)cz >= (uint)climbN)
+        {
+            const float d = 4;
+            float gx = Relief(p.X + d, p.Y) - Relief(p.X - d, p.Y), gz = Relief(p.X, p.Y + d) - Relief(p.X, p.Y - d);
+            return MathF.Max(0.45f, 1 / (1 + 4 * MathF.Sqrt(gx * gx + gz * gz) / (2 * d)));
+        }
+        int idx = cz * climbN + cx;
+        float v = climbGrid[idx];
+        if (v == 0f)
+        {
+            const float d = 4;
+            float wx = climbOrigin + (cx + 0.5f) * ClimbCell, wz = climbOrigin + (cz + 0.5f) * ClimbCell;
+            float gx = Relief(wx + d, wz) - Relief(wx - d, wz), gz = Relief(wx, wz + d) - Relief(wx, wz - d);
+            v = MathF.Max(0.45f, 1 / (1 + 4 * MathF.Sqrt(gx * gx + gz * gz) / (2 * d)));
+            climbGrid[idx] = v;
+        }
+        return v;
     }
 
     /// The share of its height at which a cliff bars the way: below it, near the ends, it is a ramp a party walks up.

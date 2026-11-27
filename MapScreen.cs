@@ -62,8 +62,16 @@ sealed partial class MapScreen
     readonly AlphaTestEffect spriteFx;
     readonly BasicEffect lineFx;
     readonly Dictionary<int, Unit> bearers = new();
+    readonly Dictionary<int, float> bearerY = new();
     readonly HashSet<int> bearerSeen = new();
     readonly List<int> bearerDrop = new();
+    int trailPruneTick;
+    // Smart shadow map cache: skip re-rendering the 2048x2048 shadow map when camera, sun and scene haven't changed.
+    bool shadowValid;
+    Vector2 shadowFocus;
+    float shadowZoom, shadowYaw, shadowPitch, shadowAt;
+    Vector3 shadowSun;
+    int shadowSmokeVer = -1, shadowExtraTris = -1;
     /// Birds and beasts round the camera (MapLife.cs, docs/archive/WORLD_LIFE.md WL4); drawing only.
     MapLife? life;
     Quality lifeQuality = Quality.High;
@@ -71,6 +79,21 @@ sealed partial class MapScreen
     World? world;
     /// What the last frame's world cost to draw (render.txt in campaign shots).
     public string? RenderCost => world?.RenderCost;
+
+    /// Drive a repeatable camera/speed scenario for IRONFIELD_MAP_BENCH.
+    public void BenchStep(int stage, float dt)
+    {
+        C.S.Event = null; C.EventOutcome = null; C.Beat = null; C.Encounter = null; C.Arrived = null; C.S.TutorialStep = 99;
+        panel = PanelKind.None;
+        follow = false;
+        switch (stage)
+        {
+            case 0: speed = 0; zoom = 75; break;
+            case 1: speed = 0; zoom = 220; break;
+            case 2: speed = 1; zoom = 110; focus += new Vector2(MathF.Cos(time * 0.4f), MathF.Sin(time * 0.4f)) * 40f * dt; break;
+            default: speed = 8; zoom = 150; break;
+        }
+    }
     Terrain terrain = null!;
     int season;
     readonly Dictionary<int, List<Vector2>> trails = new(); // where each party has been lately (drawn as fading tracks)
@@ -486,14 +509,21 @@ sealed partial class MapScreen
 
     void Trails()
     {
-        foreach (var p in C.S.Parties)
+        var parties = C.S.Parties;
+        for (int i = 0; i < parties.Count; i++)
         {
-            if (!trails.TryGetValue(p.Id, out var t)) trails[p.Id] = t = new List<Vector2> { p.Pos };
-            if (Vector2.Distance(t[^1], p.Pos) > 2.5f) { t.Add(p.Pos); if (t.Count > 14) t.RemoveAt(0); }
+            var p = parties[i];
+            if (!trails.TryGetValue(p.Id, out var t)) trails[p.Id] = t = new List<Vector2>(16) { p.Pos };
+            if (Vector2.DistanceSquared(t[^1], p.Pos) > 6.25f) { t.Add(p.Pos); if (t.Count > 14) t.RemoveAt(0); }
             if (p.Down) t.Clear();
             if (t.Count == 0) t.Add(p.Pos);
         }
-        foreach (int id in trails.Keys.Where(id => C.PartyById(id) == null).ToList()) trails.Remove(id);
+        if (++trailPruneTick % 30 == 0 && trails.Count > parties.Count)
+        {
+            bearerDrop.Clear();
+            foreach (int id in trails.Keys) if (C.PartyById(id) == null) bearerDrop.Add(id);
+            for (int i = 0; i < bearerDrop.Count; i++) trails.Remove(bearerDrop[i]);
+        }
     }
 
     /// What is under the mouse on the map: a party, a town, a ruin or the bare ground (PT1, docs/archive/PLAYTEST.md).
@@ -522,11 +552,12 @@ sealed partial class MapScreen
     {
         var g = Ground(m);
         var mv = new Vector2(m.X, m.Y);
+        float cullR = MathF.Max(160f, zoom * 3.5f), cullR2 = cullR * cullR;
         Party? party = null; Settlement? town = null; Site? site = null;
         float best = 1;
         foreach (var q in C.S.Parties)
         {
-            if (q.Down || !includePlayer && q == C.Player || !OnScreen(q.Pos, out var sp, out var k)) continue;
+            if (q.Down || !includePlayer && q == C.Player || Vector2.DistanceSquared(q.Pos, focus) > cullR2 || !OnScreen(q.Pos, out var sp, out var k)) continue;
             float d = Vector2.Distance(sp, mv) / MathF.Max(22, 3 * k);
             if (d < best) { best = d; party = q; }
         }
@@ -534,7 +565,7 @@ sealed partial class MapScreen
         best = 1;
         foreach (var t in C.S.Settlements)
         {
-            if (!OnScreen(t.Pos, out var sp, out var k)) continue;
+            if (Vector2.DistanceSquared(t.Pos, focus) > cullR2 || !OnScreen(t.Pos, out var sp, out var k)) continue;
             float d = Vector2.Distance(sp, mv) / MathF.Max(28, k * (t.Kind == SettlementKind.Village ? 6 : t.Kind == SettlementKind.Castle ? 8 : 10));
             if (d < best) { best = d; town = t; }
         }
@@ -542,7 +573,7 @@ sealed partial class MapScreen
         best = 1;
         foreach (var st in C.Map.Sites)
         {
-            if (!OnScreen(st.Pos, out var sp, out var k)) continue;
+            if (Vector2.DistanceSquared(st.Pos, focus) > cullR2 || !OnScreen(st.Pos, out var sp, out var k)) continue;
             float d = Vector2.Distance(sp, mv) / MathF.Max(22, 3 * k);
             if (d < best) { best = d; site = st; }
         }
@@ -624,36 +655,50 @@ sealed partial class MapScreen
             sh.Fog = new Vector2(fogStart, fogEnd);
             if (shadows)
             {
-                FrameProf.Begin("worldShadow");
-                sh.AimSun(f3, Math.Clamp(zoom * 2.4f, 80, 420));
-                gd.Textures[1] = null;
-                gd.SetRenderTarget(sh.ShadowMap);
-                gd.Clear(Color.White);
-                gd.DepthStencilState = DepthStencilState.Default;
-                gd.RasterizerState = RasterizerState.CullNone;
-                world!.DrawShadowCasters(sh, time);
-                FrameProf.End("worldShadow");
-                if (do3D)
+                bool camMoved = !shadowValid || Ui.Instant
+                    || Vector2.DistanceSquared(focus, shadowFocus) > 0.16f
+                    || MathF.Abs(zoom - shadowZoom) > zoom * 0.005f
+                    || MathF.Abs(yaw - shadowYaw) > 0.002f
+                    || MathF.Abs(pitch - shadowPitch) > 0.002f
+                    || Vector3.Dot(World.SunDir, shadowSun) < 0.99998f
+                    || world!.SmokeVersion != shadowSmokeVer
+                    || world.ExtraTris != shadowExtraTris
+                    || (speed > 0 && time - shadowAt >= 0.033f);
+                if (camMoved)
                 {
-                    FrameProf.Begin("u3dShadowBuild");
-                    BuildUnits3D(sh.LightView, sh.LightViewProj, forSun: true);
-                    FrameProf.End("u3dShadowBuild");
-                    if (units3D.N > 0)
+                    shadowValid = true; shadowFocus = focus; shadowZoom = zoom; shadowYaw = yaw; shadowPitch = pitch;
+                    shadowSun = World.SunDir; shadowSmokeVer = world!.SmokeVersion; shadowExtraTris = world.ExtraTris; shadowAt = time;
+                    FrameProf.Begin("worldShadow");
+                    sh.AimSun(f3, Math.Clamp(zoom * 2.4f, 80, 420));
+                    gd.Textures[1] = null;
+                    gd.SetRenderTarget(sh.ShadowMap);
+                    gd.Clear(Color.White);
+                    gd.DepthStencilState = DepthStencilState.Default;
+                    gd.RasterizerState = RasterizerState.CullNone;
+                    world!.DrawShadowCasters(sh, time);
+                    FrameProf.End("worldShadow");
+                    if (do3D)
                     {
-                        FrameProf.Begin("u3dShadowDraw");
-                        sh.Setup(sh.Unit3D, Matrix.Identity, sh.LightEye, time, false, 0);
-                        sh.Unit3D.Parameters["ShadowMap"].SetValue((Texture2D?)null);
-                        sh.Unit3D.Parameters["View"].SetValue(sh.LightView);
-                        DrawUnits3D(sh.Unit3D, "Unit3DShadow");
-                        FrameProf.End("u3dShadowDraw");
+                        FrameProf.Begin("u3dShadowBuild");
+                        BuildUnits3D(sh.LightView, sh.LightViewProj, forSun: true);
+                        FrameProf.End("u3dShadowBuild");
+                        if (units3D.N > 0)
+                        {
+                            FrameProf.Begin("u3dShadowDraw");
+                            sh.Setup(sh.Unit3D, Matrix.Identity, sh.LightEye, time, false, 0);
+                            sh.Unit3D.Parameters["ShadowMap"].SetValue((Texture2D?)null);
+                            sh.Unit3D.Parameters["View"].SetValue(sh.LightView);
+                            DrawUnits3D(sh.Unit3D, "Unit3DShadow");
+                            FrameProf.End("u3dShadowDraw");
+                        }
                     }
-                }
-                else
-                {
-                    BuildSprites(sh.LightView);
-                    sh.Setup(sh.Sprite, Matrix.Identity, sh.LightEye, time, false, 0);
-                    sh.Sprite.Parameters["ShadowMap"].SetValue((Texture2D?)null);
-                    DrawSprites(sh.Sprite, "SpriteShadow");
+                    else
+                    {
+                        BuildSprites(sh.LightView);
+                        sh.Setup(sh.Sprite, Matrix.Identity, sh.LightEye, time, false, 0);
+                        sh.Sprite.Parameters["ShadowMap"].SetValue((Texture2D?)null);
+                        DrawSprites(sh.Sprite, "SpriteShadow");
+                    }
                 }
             }
             gd.Textures[1] = null;
@@ -771,7 +816,9 @@ sealed partial class MapScreen
             if (!p.Moving && C.SettlementAt(p.Pos, 3) is { } s) at = C.Map.Plans.TryGetValue(s.Id, out var plan) ? plan.Doorstep : s.Pos + new Vector2(0, s.Kind == SettlementKind.Village ? -5.5f : -9.5f);
             var moved = at - u.Pos;
             bool moving = moved.LengthSquared() > 1e-6f && moved.LengthSquared() < 4;
+            bool needY = moved.LengthSquared() > 1e-6f || !bearerY.ContainsKey(p.Id);
             u.Pos = at;
+            if (needY) bearerY[p.Id] = terrain.Height(at);
             u.Facing = u.Heading = p.Facing;
             u.ViewFacing += MathHelper.WrapAngle(u.Facing - u.ViewFacing) * 0.2f;
             u.ViewHeading = u.ViewFacing;
@@ -783,7 +830,7 @@ sealed partial class MapScreen
         }
         bearerDrop.Clear();
         foreach (int id in bearers.Keys) if (!bearerSeen.Contains(id)) bearerDrop.Add(id);
-        foreach (int id in bearerDrop) bearers.Remove(id);
+        foreach (int id in bearerDrop) { bearers.Remove(id); bearerY.Remove(id); }
     }
 
     /// The map's birds and beasts move on (they flee the parties near them; crows find the dead). Their step and their mesh
@@ -860,11 +907,12 @@ sealed partial class MapScreen
         puppet3D!.Now = time;
         puppet3D.BeginCamera(viewer);
         float near2 = 120f * 120f, mid2 = 260f * 260f;
+        float cullR = MathF.Max(160f, zoom * 3.8f), cullR2 = cullR * cullR;
         int drawn = 0;
-        foreach (var u in bearers.Values)
+        foreach (var (id, u) in bearers)
         {
-            if (u.Fled) continue;
-            float y = terrain.Height(u.Pos);
+            if (u.Fled || Vector2.DistanceSquared(u.Pos, focus) > cullR2) continue;
+            float y = bearerY.TryGetValue(id, out var cy) ? cy : terrain.Height(u.Pos);
             var center = new Vector3(u.Pos.X, y + 2.5f, u.Pos.Y);
             if (unitFrustum.Contains(new BoundingSphere(center, 8f)) == ContainmentType.Disjoint) continue;
             float d2 = Vector3.DistanceSquared(center, eye);
@@ -1023,9 +1071,11 @@ sealed partial class MapScreen
         }
         // The town or ruin the next click would go to gets a ring, so a click that is not on its centre still reads as aimed.
         if (hover.Party == null && (hover.Town?.Pos ?? hover.Site?.Pos) is Vector2 ringAt) Ring(ringAt, hover.Town is { Kind: SettlementKind.Village } ? 7 : hover.Town != null ? 13 : 4.5f, Style.Accent);
-        // Tracks: dotted lines behind every party, toward its current position.
+        // Tracks: dotted lines behind visible parties, toward their current position.
+        float trailCullR = MathF.Max(160f, zoom * 3.5f), trailCullR2 = trailCullR * trailCullR;
         foreach (var (id, track) in trails)
         {
+            if (track.Count < 2 || Vector2.DistanceSquared(track[^1], focus) > trailCullR2) continue;
             if (C.PartyById(id) is not Party p || p.Down) continue;
             var col = PartyColor(p) * 0.55f;
             for (int i = 0; i + 1 < track.Count; i++)

@@ -433,9 +433,36 @@ public sealed partial class WorldMap
     }
 
     /// Map travel speed factor at a point (terrain kind, roads).
-    public float SpeedFactor(Vector2 p, float roadBonus) =>
-        NearRoad(p, 2.5f) ? roadBonus : RiverDist(p) < 1.6f || InLake(p) ? 0.35f : OnRidge(p) ? 0.45f
-        : Lands.Of(ProvinceAt(p).Kind).Speed * Climb(p);
+    const float SpeedCell = 3f;
+    float[]? speedGrid;
+    float speedOrigin;
+    int speedN;
+
+    public float SpeedFactor(Vector2 p, float roadBonus)
+    {
+        if (speedGrid == null)
+        {
+            speedOrigin = -(GroundHalf + 64);
+            speedN = (int)MathF.Ceiling(2 * (GroundHalf + 64) / SpeedCell) + 1;
+            speedGrid = new float[speedN * speedN];
+        }
+        int cx = (int)MathF.Floor((p.X - speedOrigin) / SpeedCell);
+        int cz = (int)MathF.Floor((p.Y - speedOrigin) / SpeedCell);
+        if ((uint)cx >= (uint)speedN || (uint)cz >= (uint)speedN)
+            return NearRoad(p, 2.5f) ? roadBonus : RiverDist(p) < 1.6f || InLake(p) ? 0.35f : OnRidge(p) ? 0.45f : Lands.Of(ProvinceAt(p).Kind).Speed * Climb(p);
+        int idx = cz * speedN + cx;
+        float v = speedGrid[idx];
+        if (v == 0f)
+        {
+            var q = new Vector2(speedOrigin + (cx + 0.5f) * SpeedCell, speedOrigin + (cz + 0.5f) * SpeedCell);
+            v = NearRoad(q, 2.5f) ? -1f
+                : RiverDist(q) < 1.6f || InLake(q) ? 0.35f
+                : OnRidge(q) ? 0.45f
+                : Lands.Of(ProvinceAt(q).Kind).Speed * Climb(q);
+            speedGrid[idx] = v;
+        }
+        return v < 0 ? roadBonus : v;
+    }
 
     /// Battle ground for a fight at p: the province's kind, with a road if one runs close.
     public TerrainParams BattleGround(Vector2 p, float wet = 0, int season = -1)

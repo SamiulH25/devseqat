@@ -60,8 +60,8 @@ public sealed class CompanyRecord
     /// The named man who became its sergeant (L4), null for a sergeant from elsewhere.
     public Soldier? OfficerMan;
 
-    [JsonIgnore] public int Men => Stacks.Sum(s => s.Men);
-    [JsonIgnore] public int Wounded => Stacks.Sum(s => s.Wounded);
+    [JsonIgnore] public int Men { get { int n = 0; for (int i = 0; i < Stacks.Count; i++) n += Stacks[i].Men; return n; } }
+    [JsonIgnore] public int Wounded { get { int n = 0; for (int i = 0; i < Stacks.Count; i++) n += Stacks[i].Wounded; return n; } }
     /// The largest stack (ties go to the higher tier): the company's portrait and battle name.
     [JsonIgnore] public TroopStack? Main => Stacks.Count == 0 ? null : Stacks.OrderByDescending(s => s.Men + s.Wounded).ThenByDescending(s => s.Type.Tier).First();
     [JsonIgnore] public string Troop => Main?.Troop ?? "brevon_fyrd";
@@ -312,8 +312,12 @@ public sealed class Party
     /// Named regional apex monster (WI7) and world crisis seat/host (WI8).
     public bool Legendary, Crisis;
 
-    public int Men => Companies.Sum(c => c.Men);
-    public int Wounded => Companies.Sum(c => c.Wounded);
+    /// Runtime cache: last goal verified OverLand from this party's straight line (avoids re-raycasting every 0.25h tick).
+    [JsonIgnore] internal Vector2 ClearGoal;
+    [JsonIgnore] internal bool HasClearGoal;
+
+    public int Men { get { int n = 0; for (int i = 0; i < Companies.Count; i++) n += Companies[i].Men; return n; } }
+    public int Wounded { get { int n = 0; for (int i = 0; i < Companies.Count; i++) n += Companies[i].Wounded; return n; } }
 }
 
 public sealed class MapSkirmish

@@ -36,6 +36,8 @@ sealed class ScreenHost : Game
 
     // Debug: IRONFIELD_CAMPAIGN_SHOTS=/dir walks through the campaign screens, saving a PNG of each, then quits.
     readonly string? campaignShots = Environment.GetEnvironmentVariable("IRONFIELD_CAMPAIGN_SHOTS") is { Length: > 0 } cs ? cs : null;
+    static readonly bool mapBench = Environment.GetEnvironmentVariable("IRONFIELD_MAP_BENCH") == "1";
+    int mapBenchStage, mapBenchFrames;
     long lastAllocBytes;
     int cStage, shotFrames;
     bool shotInventory; bool shotMarket; bool shotQuests; bool shotQuestMap;
@@ -176,6 +178,7 @@ sealed class ScreenHost : Game
         title = new TitleScreen(this);
         if (battle.HasShots) mode = Mode.Battle;
         if (campaignShots != null) StartCampaign(3);
+        if (mapBench) { InactiveSleepTime = TimeSpan.Zero; gdm.SynchronizeWithVerticalRetrace = false; gdm.ApplyChanges(); StartCampaign(3); }
         if (Environment.GetEnvironmentVariable("IRONFIELD_DUEL") is { Length: > 0 } duelSpec)
         {
             if (QuickBattleConfig.ParseDuelEnv(duelSpec) is { } dcfg) QuickBattle(dcfg);
@@ -344,7 +347,12 @@ sealed class ScreenHost : Game
                 }
                 Audio?.Beds(title.InCreator ? 0.25f : 0.6f, 0, 0);
                 break;
-            case Mode.Map: IsMouseVisible = true; map.Update(dt, IsActive); map.Soundscape(Audio, dt); break;
+            case Mode.Map:
+                IsMouseVisible = true;
+                if (mapBench) map.BenchStep(mapBenchStage, dt);
+                map.Update(dt, IsActive);
+                map.Soundscape(Audio, dt);
+                break;
             case Mode.Loading:
                 IsMouseVisible = true;
                 Audio?.Beds(0.4f, 0, 0);
@@ -433,7 +441,21 @@ sealed class ScreenHost : Game
             if (lastAllocBytes > 0) FrameProf.Count("allocKB", (allocNow - lastAllocBytes) / 1024);
             lastAllocBytes = allocNow;
         }
-        FrameProf.Frame(mode.ToString());
+        if (mapBench && mode == Mode.Map)
+        {
+            FrameProf.Tick();
+            mapBenchFrames++;
+            if (mapBenchFrames == 30) FrameProf.Reset(); // skip warmup
+            else if (mapBenchFrames >= 180)
+            {
+                string[] names = { "map-paused-near", "map-paused-far", "map-speed1-pan", "map-speed8-fast" };
+                FrameProf.Flush(names[mapBenchStage]);
+                Console.WriteLine($"  render: {map.RenderCost} | GC gen0={GC.CollectionCount(0)} gen1={GC.CollectionCount(1)} gen2={GC.CollectionCount(2)}");
+                mapBenchFrames = 0;
+                if (++mapBenchStage >= names.Length) Exit();
+            }
+        }
+        else FrameProf.Frame(mode.ToString());
     }
 
     protected override void EndDraw()

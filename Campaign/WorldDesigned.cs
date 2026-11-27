@@ -307,6 +307,9 @@ public sealed partial class WorldMap
     List<Vector2> PlanBySea(Vector2 from, Vector2 to, float reach) => PlanOver(ref waterOpen, true, from, to, reach / SeaCell);
     bool[]? waterOpen;
     bool[]? cliffNear;
+    byte[]? cliffBlocked; // bitmask of the 8 neighbor directions blocked by a cliff face
+    int[]? seaComp, waterComp;
+    readonly PriorityQueue<int, float> seaQueue = new(1024);
 
     List<Vector2> PlanOver(ref bool[]? grid, bool water, Vector2 from, Vector2 to, float limit = float.MaxValue)
     {
@@ -320,11 +323,34 @@ public sealed partial class WorldMap
             }
             if (!water && cliffs.Count > 0 && cliffNear == null)
             {
-                // Cells by a cliff's face, where a step to a neighbour is checked against the face itself.
+                // Cells by a cliff's face, and an 8-bit neighbor mask of blocked steps so A* never runs CrossesCliff in its inner loop.
                 cliffNear = new bool[seaN * seaN];
                 for (int z = 0; z < seaN; z++)
                     for (int x = 0; x < seaN; x++)
                         cliffNear[z * seaN + x] = OnCliff(new Vector2(seaOrigin + x * SeaCell, seaOrigin + z * SeaCell), SeaCell * 1.5f);
+                cliffBlocked = new byte[seaN * seaN];
+                for (int z = 0; z < seaN; z++)
+                    for (int x = 0; x < seaN; x++)
+                    {
+                        int c = z * seaN + x;
+                        var pc = new Vector2(seaOrigin + x * SeaCell, seaOrigin + z * SeaCell);
+                        byte mask = 0;
+                        int bit = 0;
+                        for (int dz = -1; dz <= 1; dz++)
+                            for (int dx = -1; dx <= 1; dx++)
+                            {
+                                if ((dx | dz) == 0) continue;
+                                int nx = x + dx, nz = z + dz;
+                                if (nx >= 0 && nz >= 0 && nx < seaN && nz < seaN)
+                                {
+                                    int id = nz * seaN + nx;
+                                    if ((cliffNear[c] || cliffNear[id]) && CrossesCliff(pc, new Vector2(seaOrigin + nx * SeaCell, seaOrigin + nz * SeaCell)))
+                                        mask |= (byte)(1 << bit);
+                                }
+                                bit++;
+                            }
+                        cliffBlocked[c] = mask;
+                    }
             }
             if (grid == null)
             {
@@ -340,10 +366,40 @@ public sealed partial class WorldMap
             int n = seaN;
             int Of(Vector2 p) => Math.Clamp((int)MathF.Round((p.Y - seaOrigin) / SeaCell), 0, n - 1) * n + Math.Clamp((int)MathF.Round((p.X - seaOrigin) / SeaCell), 0, n - 1);
             Vector2 At(int c) => new(seaOrigin + c % n * SeaCell, seaOrigin + c / n * SeaCell);
+            // Connected components built once per grid so unreachable cross-sea/cross-cliff goals reject in O(1) instead of flooding the whole map.
+            ref var comp = ref (water ? ref waterComp : ref seaComp);
+            if (comp == null)
+            {
+                comp = new int[n * n];
+                var q = new Queue<int>(1024);
+                int cid = 0;
+                for (int i = 0; i < n * n; i++)
+                {
+                    if (!seaOpen[i] || comp[i] != 0) continue;
+                    comp[i] = ++cid;
+                    q.Enqueue(i);
+                    while (q.TryDequeue(out int c))
+                    {
+                        int cx = c % n, cz = c / n;
+                        for (int dz = -1; dz <= 1; dz++)
+                            for (int dx = -1; dx <= 1; dx++)
+                            {
+                                int x = cx + dx, z = cz + dz, id = z * n + x;
+                                if ((dx | dz) == 0 || x < 0 || z < 0 || x >= n || z >= n || !seaOpen[id] || comp[id] != 0) continue;
+                                if (dx != 0 && dz != 0 && !seaOpen[cz * n + x] && !seaOpen[z * n + cx]) continue;
+                                if (!water && cliffBlocked != null && (cliffBlocked[c] & (1 << ((dz + 1) * 3 + (dx + 1) - ((dz > 0 || (dz == 0 && dx > 0)) ? 1 : 0)))) != 0) continue;
+                                comp[id] = cid;
+                                q.Enqueue(id);
+                            }
+                    }
+                }
+            }
             int start = Of(from), end = Of(to);
             if (!seaOpen[end] && !water && cliffs.Count > 0) end = OpenNear(end, to);
+            if (seaOpen[start] && seaOpen[end] && comp[start] != comp[end]) return new List<Vector2> { to };
             if (++seaStamp == int.MaxValue) { Array.Clear(seaSeen); seaStamp = 1; }
-            var open = new PriorityQueue<int, float>();
+            var open = seaQueue;
+            open.Clear();
             seaSeen[start] = seaStamp; seaCostOf[start] = 0; seaPrev[start] = -1;
             open.Enqueue(start, 0);
             var goal = At(end);
@@ -359,7 +415,7 @@ public sealed partial class WorldMap
                         int x = cx + dx, z = cz + dz, id = z * n + x;
                         if ((dx | dz) == 0 || x < 0 || z < 0 || x >= n || z >= n || !seaOpen[id] && id != end) continue;
                         if (dx != 0 && dz != 0 && !seaOpen[cz * n + x] && !seaOpen[z * n + cx]) continue; // no slipping between two sea cells
-                        if (!water && cliffs.Count > 0 && (cliffNear![c] || cliffNear[id]) && CrossesCliff(At(c), At(id))) continue; // nor past a cliff's end (WS3)
+                        if (!water && cliffBlocked != null && (cliffBlocked[c] & (1 << ((dz + 1) * 3 + (dx + 1) - ((dz > 0 || (dz == 0 && dx > 0)) ? 1 : 0)))) != 0) continue; // nor past a cliff's end (WS3)
                         float nc = cc + (dx != 0 && dz != 0 ? 1.4142f : 1);
                         if (seaSeen[id] == seaStamp && nc >= seaCostOf[id]) continue;
                         float est = nc + Vector2.Distance(At(id), goal) / SeaCell;

@@ -114,18 +114,28 @@ partial class MapScreen
         public Action<Label> Draw = null!;
     }
 
+    readonly List<Label> flagAll = new(64), flagPlaced = new(64);
+    readonly List<Rectangle> hudZones = new(8);
+
     void Flags()
     {
-        var all = new List<Label>();
+        flagAll.Clear();
+        var all = flagAll;
         var pl = C.Player;
         int target = pl.ChaseId >= 0 ? pl.ChaseId : -1, goalTown = pl.GoalSettlement;
-        foreach (var s in C.S.Settlements)
+        float cullR = MathF.Max(160f, zoom * 3.5f), cullR2 = cullR * cullR;
+        var settlements = C.S.Settlements;
+        for (int si = 0; si < settlements.Count; si++)
         {
+            var s = settlements[si];
+            if (s.Id != goalTown)
+            {
+                if (s.Kind == SettlementKind.Village && zoom > 150) continue;
+                if (s.Size == 1 && zoom > 300) continue;
+                if (Vector2.DistanceSquared(s.Pos, focus) > cullR2) continue;
+            }
             if (Screen(G(s.Pos, s.Kind == SettlementKind.Village ? 6 : s.Size == 3 ? 15 : 11)) is not Vector2 sp) continue;
-            // A hierarchy (docs/archive/HOLDS.md HD5): towns large, castles small, villages only close in. Pulled back, villages drop out
-            // first, then tower houses, and towns shrink last.
-            if (s.Kind == SettlementKind.Village && zoom > 150 && s.Id != goalTown) continue;
-            if (s.Size == 1 && zoom > 300 && s.Id != goalTown) continue;
+            if (sp.X < -220 || sp.X > ui.W + 220 || sp.Y < -40 || sp.Y > ui.H + 40) continue;
             var col = SideColor(s.Faction);
             string label = s.Name.ToUpperInvariant() + (s.Besieged ? " (BESIEGED)" : "") + (s.Owner == C.Player.Id ? " *" : "");
             int scale = s.Kind == SettlementKind.Town && zoom <= 450 ? 2 : 1;
@@ -146,7 +156,9 @@ partial class MapScreen
         if (zoom <= 200)
             foreach (var site in C.Sites)
             {
+                if (site.Id != C.S.GoalSite && Vector2.DistanceSquared(site.Pos, focus) > cullR2) continue;
                 if (Screen(G(site.Pos, 5)) is not Vector2 sp) continue;
+                if (sp.X < -220 || sp.X > ui.W + 220 || sp.Y < -40 || sp.Y > ui.H + 40) continue;
                 bool ready = C.SiteReady(site);
                 string label = site.Name.ToUpperInvariant() + (C.SiteSeen(site) ? "" : " ?");
                 int w = ui.TW(label, 1) + ui.U(8);
@@ -157,7 +169,10 @@ partial class MapScreen
                 });
             }
         // Smoke rises over villages that were threatened or stripped.
-        foreach (var v in C.S.Settlements.Where(v => v.ThreatUntil > C.S.Hours))
+        for (int si = 0; si < settlements.Count; si++)
+        {
+            var v = settlements[si];
+            if (v.ThreatUntil <= C.S.Hours || Vector2.DistanceSquared(v.Pos, focus) > cullR2) continue;
             for (int i = 0; i < 6; i++)
             {
                 float ph = (time * 0.25f + i / 6f) % 1;
@@ -165,6 +180,7 @@ partial class MapScreen
                 int r = ui.U(4 + ph * 10 * 110 / MathF.Max(40, zoom));
                 ui.Rect(new Rectangle((int)sp.X - r / 2, (int)sp.Y - r / 2, r, r), new Color(70, 66, 62) * (0.75f * (1 - ph)));
             }
+        }
         if (zoom < 240) Life();
         foreach (var sk in C.S.Skirmishes)
         {
@@ -193,12 +209,17 @@ partial class MapScreen
                 },
             });
         }
-        foreach (var p in C.S.Parties)
+        var parties = C.S.Parties;
+        for (int pi = 0; pi < parties.Count; pi++)
         {
-            if (p.Down || p.BattleId >= 0 || Screen(G(bearers.TryGetValue(p.Id, out var bu) ? bu.Pos : p.Pos, 9)) is not Vector2 sp) continue;
+            var p = parties[pi];
+            if (p.Down || p.BattleId >= 0) continue;
             bool mine = p == pl || p.Id == target || p == C.Encounter;
-            // Far out, travellers' labels drop out unless they are your business.
             if (!mine && zoom > 260 && p.Kind == PartyKind.Caravan) continue;
+            var pos = bearers.TryGetValue(p.Id, out var bu) ? bu.Pos : p.Pos;
+            if (!mine && Vector2.DistanceSquared(pos, focus) > cullR2) continue;
+            if (Screen(G(pos, 9)) is not Vector2 sp) continue;
+            if (sp.X < -220 || sp.X > ui.W + 220 || sp.Y < -40 || sp.Y > ui.H + 40) continue;
             // Beyond your sight you see banners on the move, not whose (S7).
             bool seen = mine || C.InSight(p.Pos);
             if (!seen && zoom > 200) continue; // far out, unknown banners are only clutter
@@ -218,30 +239,48 @@ partial class MapScreen
                 },
             });
         }
-        // Place by priority (stable within one, so labels do not flicker), then draw.
-        var placed = new List<Label>();
-        var zones = HudZones().ToList();
-        foreach (var l in all.OrderBy(l => l.Pri))
+        // Place by priority (stable bucket pass 0..6, zero sort allocation), then draw.
+        flagPlaced.Clear();
+        var placed = flagPlaced;
+        hudZones.Clear();
+        foreach (var z in HudZones()) hudZones.Add(z);
+        for (int pri = 0; pri <= 6; pri++)
         {
-            // A label cut by the edge slides in to stay whole on the screen; one wholly off it is not drawn.
-            if (l.R.Right <= 0 || l.R.X >= ui.W) continue;
-            if (l.Pri > 0 && zones.Any(z => z.Intersects(l.R))) continue; // under the HUD: your own goal and party stay
-            l.R.X = Math.Clamp(l.R.X, ui.U(4), Math.Max(ui.U(4), ui.W - ui.U(4) - l.R.Width));
-            var pad = new Rectangle(l.R.X - ui.U(2), l.R.Y - ui.U(1), l.R.Width + ui.U(4), l.R.Height + ui.U(2));
-            var hit = l.Pri == 0 ? null : placed.FirstOrDefault(o => o.R.Intersects(pad));
-            if (hit == null) placed.Add(l);
-            else if (l.Party && hit.Party && hit.Pri > 0) hit.More++;
+            for (int i = 0; i < all.Count; i++)
+            {
+                var l = all[i];
+                if (l.Pri != pri) continue;
+                // A label cut by the edge slides in to stay whole on the screen; one wholly off it is not drawn.
+                if (l.R.Right <= 0 || l.R.X >= ui.W || l.R.Bottom <= 0 || l.R.Y >= ui.H) continue;
+                if (pri > 0)
+                {
+                    bool blocked = false;
+                    for (int zi = 0; zi < hudZones.Count; zi++) if (hudZones[zi].Intersects(l.R)) { blocked = true; break; }
+                    if (blocked) continue;
+                }
+                l.R.X = Math.Clamp(l.R.X, ui.U(4), Math.Max(ui.U(4), ui.W - ui.U(4) - l.R.Width));
+                var pad = new Rectangle(l.R.X - ui.U(2), l.R.Y - ui.U(1), l.R.Width + ui.U(4), l.R.Height + ui.U(2));
+                Label? hit = null;
+                if (pri > 0)
+                    for (int pi = 0; pi < placed.Count; pi++)
+                        if (placed[pi].R.Intersects(pad)) { hit = placed[pi]; break; }
+                if (hit == null) placed.Add(l);
+                else if (l.Party && hit.Party && hit.Pri > 0) hit.More++;
+            }
         }
-        foreach (var l in placed.AsEnumerable().Reverse()) l.Draw(l);
+        for (int i = placed.Count - 1; i >= 0; i--) placed[i].Draw(placed[i]);
     }
 
     /// The land lives: dust kicked up behind parties on the move (docs/archive/VISUALS.md V4; chimney smoke is 3D soft puffs).
     void Life()
     {
         float fade = Math.Clamp((240 - zoom) / 80, 0, 1);
-        foreach (var p in C.S.Parties)
+        float cullR = MathF.Max(140f, zoom * 3.2f), cullR2 = cullR * cullR;
+        var parties = C.S.Parties;
+        for (int pi = 0; pi < parties.Count; pi++)
         {
-            if (p.Down || !bearers.TryGetValue(p.Id, out var u) || u.Speed <= 0) continue;
+            var p = parties[pi];
+            if (p.Down || Vector2.DistanceSquared(p.Pos, focus) > cullR2 || !bearers.TryGetValue(p.Id, out var u) || u.Speed <= 0) continue;
             var back = -new Vector2(MathF.Cos(p.Facing), MathF.Sin(p.Facing));
             for (int i = 0; i < 4; i++)
             {
@@ -311,13 +350,19 @@ partial class MapScreen
         ui.Panel(new Rectangle(r.X - ui.U(3), r.Y - ui.U(3), r.Width + ui.U(6), r.Height + ui.U(6)));
         ui.Sb.Draw(world!.Minimap, r, Color.White);
         Vector2 M(Vector2 w) { var m = World.WorldToMinimap(w, terrain.MinimapRange); return new Vector2(r.X + m.X * r.Width, r.Y + m.Y * r.Height); }
-        foreach (var s in C.S.Settlements.Where(s => s.Kind != SettlementKind.Village))
+        var settlements = C.S.Settlements;
+        for (int i = 0; i < settlements.Count; i++)
         {
+            var s = settlements[i];
+            if (s.Kind == SettlementKind.Village) continue;
             var p = M(s.Pos);
             ui.Rect(new Rectangle((int)p.X - ui.U(2), (int)p.Y - ui.U(2), ui.U(5), ui.U(5)), SideColor(s.Faction));
         }
-        foreach (var p in C.S.Parties.Where(p => !p.Down))
+        var parties = C.S.Parties;
+        for (int i = 0; i < parties.Count; i++)
         {
+            var p = parties[i];
+            if (p.Down) continue;
             var q = M(p.Pos);
             int d = ui.U(p.Kind == PartyKind.Player ? 5 : 3);
             ui.Rect(new Rectangle((int)q.X - d / 2, (int)q.Y - d / 2, d, d), PartyColor(p));
@@ -389,10 +434,15 @@ partial class MapScreen
         }
     }
 
+    string nextChipText = "";
+    (double H, float Gold, int Men, int Wounded, int Contracts, float Renown, int Faction) nextChipKey;
+
     /// The one thing to do next (`Campaign.NextStep`), as a single chip under the clock.
     void NextChip()
     {
-        string t = "NEXT: " + C.NextStep().Text.ToUpperInvariant();
+        var key = (C.S.Hours, C.S.Gold, C.Player.Men, C.Player.Wounded, C.S.Contracts.Count, C.Captain.Renown, C.Captain.Contract);
+        if (nextChipText == "" || key != nextChipKey) { nextChipKey = key; nextChipText = "NEXT: " + C.NextStep().Text.ToUpperInvariant(); }
+        string t = nextChipText;
         int maxW = ui.U(480);
         t = ui.Fit(t, maxW - ui.U(24));
         int w = ui.TW(t, 1) + ui.U(24), x = (ui.W - w) / 2, y = ui.U(63);

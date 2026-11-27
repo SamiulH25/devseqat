@@ -13,18 +13,26 @@ public partial class Campaign
 
     public static string WildnessWord(float w) => w >= 75 ? "OVERRUN" : w >= 50 ? "WILD" : w >= 25 ? "UNQUIET" : "TAMED";
 
-    /// True when a stage-2 spider brood has webbed this province's roads (WI2: slows travel and stops caravans).
-    public bool IsProvinceWebbed(int provinceId)
+    /// True when any province on the map is webbed (lets BaseSpeed skip ProvinceAt when none are).
+    public bool AnyProvinceWebbed()
     {
-        // Asked for every party's speed every step: the webbed provinces are found once an hour of game time, not by a sweep
-        // of every party each time (that was 27% of a day on the 4x map, WS7).
         if (webbed == null || webbedAt != S.Hours)
         {
-            webbed = S.Parties.Where(p => !p.Down && p.Lair && p.Breed == "spider" && p.Stage >= 2).Select(p => Map.ProvinceAt(p.Pos).Id).ToHashSet();
+            webbed ??= new HashSet<int>();
+            webbed.Clear();
+            var parties = S.Parties;
+            for (int i = 0; i < parties.Count; i++)
+            {
+                var p = parties[i];
+                if (!p.Down && p.Lair && p.Breed == "spider" && p.Stage >= 2) webbed.Add(Map.ProvinceAt(p.Pos).Id);
+            }
             webbedAt = S.Hours;
         }
-        return webbed.Contains(provinceId);
+        return webbed.Count > 0;
     }
+
+    /// True when a stage-2 spider brood has webbed this province's roads (WI2: slows travel and stops caravans).
+    public bool IsProvinceWebbed(int provinceId) => AnyProvinceWebbed() && webbed!.Contains(provinceId);
     HashSet<int>? webbed;
     double webbedAt = -1;
 
