@@ -902,14 +902,37 @@ public partial class Battle
     /// Braced spears catch a horse that rides onto their points (their reach beats a couched lance).
     void Braces()
     {
-        if (!anyMounted0 && !anyMounted1) return;
         var units = Units;
+        if (!anyMounted0 && !anyMounted1)
+        {
+            for (int ui = 0; ui < units.Count; ui++) units[ui].Braced = false;
+            return;
+        }
+        // Precompute enemy mounted threat presence (O(squads) + player) for visual braced posture (P4.3).
         for (int ui = 0; ui < units.Count; ui++)
         {
             var b = units[ui];
-            if (!b.Active || b.BraceCd > 0) continue;
+            b.Braced = false;
+            if (!b.Active) continue;
             if (b.Team == 0 ? !anyMounted1 : !anyMounted0) continue;
             if (!Braced(b)) continue;
+            if (Look.GripOf(b.Type.Look.Weapon) is Grip.Pole or Grip.Lance)
+            {
+                // Visually brace when an enemy mounted unit/squad is within 32 m (or holding ShieldWall/Square).
+                bool threat = b.Squad is { Formation: Formation.ShieldWall or Formation.Square };
+                if (!threat && b.Team == 1 && Player.Active && Player.Mounted && Vector2.DistanceSquared(Player.Pos, b.Pos) < 32f * 32f)
+                    threat = true;
+                if (!threat)
+                {
+                    foreach (var sq in Squads)
+                    {
+                        if (sq.Team == b.Team || sq.Alive == 0 || !sq.Cavalry) continue;
+                        if (Vector2.DistanceSquared(sq.Center, b.Pos) < (sq.Radius + 30f) * (sq.Radius + 30f)) { threat = true; break; }
+                    }
+                }
+                b.Braced = threat;
+            }
+            if (b.BraceCd > 0) continue;
             float reach = ReachOf(b) + BraceExtra * (1 + b.Mods.Brace); // set spears reach further
             float sr = reach + 0.5f;
             var bp = b.Pos;

@@ -255,7 +255,7 @@ public sealed class Unit
     public float HorseHp, Heading, ViewHeading, Speed;
     /// Till when a horse is caught in a formed company's press (Battle.Impact): it cannot get back above a walk.
     public float BoggedUntil;
-    public bool Couched, Contact;          // lance lowered; this charge has reached the enemy
+    public bool Couched, Contact, Braced;  // lance lowered; charge contact; braced spear vs horse (P4.3)
     public float CouchBlend;               // 0 = upright lance carry, 1 = fully couched horizontal (P3.2)
     public CavState Cav;
     public float CavTimer, Bogged, ImpactCd, BraceCd;

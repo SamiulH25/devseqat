@@ -423,7 +423,9 @@ sealed partial class Puppet3D
             : Math.Clamp(turnDelta * (8f + 15f * runFactor), -13f, 13f);
         float hitRecoil = u.HitFlash > 0 ? Math.Clamp(u.HitFlash / 0.15f, 0f, 1f) : 0f;
         float stagger = u.Action == UnitAction.Stagger ? 1f : 0f;
-        float extraCrouch = !u.Mounted ? MathF.Max(p.ShieldUp ? 0.11f : 0f, stagger * 0.26f) : 0f;
+        bool bracedSpear = u.Braced && !u.Mounted && p.Armed && u.Action == UnitAction.None && Look.GripOf(u.Type.Look.Weapon) is Grip.Pole or Grip.Lance;
+        if (bracedSpear && u.Type.HasShield) p = p with { ShieldUp = true };
+        float extraCrouch = !u.Mounted ? MathF.Max(bracedSpear ? 0.34f : p.ShieldUp ? 0.11f : 0f, stagger * 0.26f) : 0f;
         if (extraCrouch > 0f && p.Crouch < extraCrouch) p = p with { Crouch = extraCrouch };
 
         float couchK = MathHelper.SmoothStep(0f, 1f, u.CouchBlend);
@@ -450,7 +452,7 @@ sealed partial class Puppet3D
             : 0f;
         float saddleSwingLeanZ = u.Mounted && u.Action == UnitAction.Active ? 9f : 0f;
         float horseRockDeg = u.Mounted && Rear <= 0 ? MathF.Sin(u.Anim * MathF.Tau - 0.55f) * 3.8f * gallop : 0f;
-        float extraLeanZ = gallopCrouch + saddleSwingLeanZ + horseRockDeg - hitRecoil * 4f - stagger * 4f + (p.ShieldUp ? 5f : 0f);
+        float extraLeanZ = gallopCrouch + saddleSwingLeanZ + horseRockDeg - hitRecoil * 4f - stagger * 4f + (bracedSpear ? 28f : p.ShieldUp ? 5f : 0f);
         float extraLeanX = bankX + saddleSwingLeanX + stagger * (phase > 0.5f ? 5f : -5f);
         // A rider sits on his horse: hips and legs go where the horse goes, and he turns from the waist toward where he
         // looks (the sim keeps that within MountTwist of the horse's heading; a couched lance points along the horse).
@@ -460,7 +462,7 @@ sealed partial class Puppet3D
         float totalLeanZ = p.LeanZ - leanBack + extraLeanZ;
         // Split lean between grounded lower body and articulated spine from the waist!
         // On foot, keep the feet planted flat (only tiny base lean while running/staggered) and bend through the waist.
-        float baseLeanFrac = u.Mounted ? 0.55f : (u.Action == UnitAction.Stagger ? 0.30f : walkFactor * 0.22f);
+        float baseLeanFrac = u.Mounted ? 0.55f : bracedSpear ? 0.35f : (u.Action == UnitAction.Stagger ? 0.30f : walkFactor * 0.22f);
         float spineRoll = Math.Clamp(totalLeanX * (1f - baseLeanFrac), -28f, 28f);
         float spinePitch = Math.Clamp(totalLeanZ * (1f - baseLeanFrac), -26f, 34f);
         Frame(at, frameYaw, lift + (p.Bob + stirrupBounce - (u.Mounted ? 0 : Sink(p))) * size, size);
@@ -558,14 +560,16 @@ sealed partial class Puppet3D
                 else if (!p.Kneel && u.Action != UnitAction.Stagger && p.Crouch < 0.35f)
                 {
                     // Grounded athletic stance (contrapposto idle, combat lunge, or shield brace) solved via LegIK so feet stay flat!
-                    float lungeZ = isStriking
-                        ? (side < 0 ? 0.15f : -0.12f) * MathF.Sin(activeProg * MathF.PI * 0.85f + 0.15f)
-                        : u.Action == UnitAction.Windup
-                            ? (side < 0 ? 0.04f : -0.11f)
-                            : u.Action == UnitAction.Block || p.ShieldUp
-                                ? (side < 0 ? 0.12f : -0.10f)
-                                : (side < 0 ? 0.075f : -0.065f);
-                    float stanceX = side * (HipHalfX + (isStriking || u.Action == UnitAction.Block ? 0.034f : 0.016f));
+                    float lungeZ = bracedSpear
+                        ? (side < 0 ? 0.26f : -0.24f)
+                        : isStriking
+                            ? (side < 0 ? 0.15f : -0.12f) * MathF.Sin(activeProg * MathF.PI * 0.85f + 0.15f)
+                            : u.Action == UnitAction.Windup
+                                ? (side < 0 ? 0.04f : -0.11f)
+                                : u.Action == UnitAction.Block || p.ShieldUp
+                                    ? (side < 0 ? 0.12f : -0.10f)
+                                    : (side < 0 ? 0.075f : -0.065f);
+                    float stanceX = side * (HipHalfX + (bracedSpear ? 0.055f : isStriking || u.Action == UnitAction.Block ? 0.034f : 0.016f));
                     foot = new Vector3(stanceX, groundY, lungeZ);
                     var kneePole = RotY(new Vector3(side * 0.28f, 0.06f, 1f), pelvisYaw * 0.65f);
                     knee = LegIK(hip, ref foot, kneePole);
@@ -823,6 +827,12 @@ sealed partial class Puppet3D
         var wDir = RotY(new Vector3(0, MathF.Sin(Rad(p.WeapB)), MathF.Cos(Rad(p.WeapB))), p.Yaw);
         if (wDir.LengthSquared() < 1e-4f) wDir = Vector3.UnitY;
         wDir.Normalize();
+        // Pillar 4 P4.3: braced anti-cavalry spear stance — right hand forward past shield rim, long spear angled ~30 deg straight forward at horse chest height.
+        if (bracedSpear)
+        {
+            wHand = TorsoPoint(new Vector3(0.34f, 0.94f, 0.40f));
+            wDir = Vector3.Normalize(new Vector3(0.14f, 0.48f, 0.865f));
+        }
 
         // Tighter two-handed grip alignment: pull overly wide windup hands slightly toward torso center so both arms stay solidly on the hilt/shaft.
         bool poleForwardGrip = p.TwoHand && p.Armed && lm.OffHandForward && p.WeapB <= 85f;
@@ -930,7 +940,7 @@ sealed partial class Puppet3D
                     _ => RotY(new Vector3(0f, -MathF.Cos(Rad(p.WeapB)), MathF.Sin(Rad(p.WeapB))), p.Yaw), // Overhead chop edge forward/down
                 }
                 : RotY(new Vector3(0.62f, -0.22f, 0.75f), p.Yaw);
-            EmitWeapon(lm.Weapon, wHand, wDir, edgeHint, lm.WeaponEdgeZ);
+            EmitWeapon(lm.Weapon, bracedSpear ? wHand - wDir * 0.22f : wHand, wDir, edgeHint, lm.WeaponEdgeZ, 1f, bracedSpear ? 1.15f : 1f, 1f);
 
             // Crisp 3D steel slash-arc ribbons (CR6: driven directly by UnitAction.Active SwingProgress 0..1).
             if (Detail == 0 && grip is Grip.One or Grip.Two or Grip.Pole)
@@ -1292,7 +1302,7 @@ sealed partial class Puppet3D
     /// The gold of a company's battle honours: streamers and the fringe (C6).
     static readonly Vector3 HonourGold = new(1f, 0.8f, 0.3f), FringeSeam = new(0.3f, 0.2f, 0.08f);
 
-    public void Banner(Vector2 pos, float ground, int palette, float wave, int charge = -1, float stream = 0, float lean = 0, Vector2 fallDir = default, int streamers = 0, bool fringe = false)
+    public void Banner(Vector2 pos, float ground, int palette, float wave, int charge = -1, float stream = 0, float lean = 0, Vector2 fallDir = default, int streamers = 0, bool fringe = false, float scale = 1f, bool swallowtail = false)
     {
         int palIdx = Math.Clamp(palette, 0, Style.Sides.Length - 1);
         UnitMatTable.Fill(palIdx, -1, 0, false, Color.White, palCols); palDirty = true;
@@ -1310,31 +1320,36 @@ sealed partial class Puppet3D
         side = side.LengthSquared() > 1e-4f ? Vector3.Normalize(side) : Vector3.UnitX;
         Vector3 faceN = Vector3.Normalize(Vector3.Cross(side, up));
 
-        // 1. 3D Wooden pole + brass finial & crossbar.
-        if (kit.BannerPole.Length > 0)
-            EmitLocal(kit.BannerPole, Vector3.Zero, side, up, faceN);
+        // 1. Pure 3D wooden pole + brass finial (Pillar 4 P4.1: no baked static curtain — only the dynamic waving cloth below).
+        float poleH = 1.55f * scale;
+        float poleTop = 3.22f * poleH;
+        float pr = 0.044f * scale;
 
-        // 2. Rippling 3-strip 3D cloth flag with bottom trim border + true wavy normals.
-        const int strips = 3;
-        const float w = 0.82f, h = 0.56f, trimH = 0.085f;
-        float amp = 0.045f + 0.075f * stream;
-        Vector3 tl = up * 3.16f + side * 0.02f;
+        // 2. Rippling 5-strip 3D cloth standard with bottom trim border + lively ambient valley breeze & multi-frequency wind wave.
+        const int strips = 5;
+        float wind = MathF.Max(0.55f, stream);
+        float w = (swallowtail ? 1.96f : 1.56f) * scale;
+        float h = (swallowtail ? 0.62f : 1.02f) * scale;
+        float trimH = (swallowtail ? 0.10f : 0.14f) * scale;
+        float amp = (0.11f + 0.11f * wind) * scale;
+        Vector3 tl = up * (3.16f * poleH) + side * (0.02f * scale);
 
         Vector3 Edge(int i, out float rippleZ)
         {
             float f = i / (float)strips;
-            float ph = wave * (1.6f + stream) - f * 3.2f;
-            float dy = MathF.Sin(ph) * amp * f * 1.7f - 0.11f * f * (1f - stream) * (lean != 0 ? 0f : 1f);
-            rippleZ = MathF.Cos(ph) * (0.04f + 0.06f * stream) * f;
+            float ph = wave * (1.9f + wind * 1.1f) - f * 4.2f;
+            float dy = (MathF.Sin(ph) + 0.35f * MathF.Sin(ph * 2.1f + 0.7f)) * amp * f * 1.55f - 0.05f * scale * f * (1f - wind) * (lean != 0 ? 0f : 1f);
+            rippleZ = MathF.Cos(ph) * (0.10f + 0.09f * wind) * scale * f;
             return tl + side * (w * f) + up * dy + faceN * rippleZ;
         }
 
-        var clothCol = palCols[1];
-        var trimCol = palCols[3];
+        // Boost cloth & trim luminance slightly so standards pop cleanly against dark distant trees/tunics at 70+ m.
+        var clothCol = Vector3.Clamp(palCols[1] * 1.18f + new Vector3(0.05f), Vector3.Zero, Vector3.One);
+        var trimCol = Vector3.Clamp(Vector3.Lerp(palCols[3], HonourGold, 0.35f) * 1.15f, Vector3.Zero, Vector3.One);
         byte clothAlpha = (byte)(MeshKit3D.PatQuilt << 4);
         byte trimAlpha = 0;
 
-        verts.Reserve(strips * 36 + 3 * 4 * 12);
+        verts.Reserve(48 + strips * 48 + 3 * 4 * 12);
         var dst = verts.A;
         int n = verts.N;
 
@@ -1352,6 +1367,21 @@ sealed partial class Puppet3D
             dst[n++] = new VertexPNCT(origin + a1, nrm, c, new Vector2(u0, v1));
         }
 
+        // Emit 4-sided 3D wooden pole + brass finial spearhead (zero static cloth)
+        var woodCol = new Vector3(0.38f, 0.25f, 0.14f);
+        var p00 = -side * pr - faceN * pr; var p10 = side * pr - faceN * pr;
+        var p11 = side * pr + faceN * pr; var p01 = -side * pr + faceN * pr;
+        var pt = up * poleTop;
+        AddQuad(p01 + pt, p11 + pt, p01, p11, faceN, woodCol, 1.0f, trimAlpha, 0, 1, 0, 1);
+        AddQuad(p10 + pt, p00 + pt, p10, p00, -faceN, woodCol, 0.85f, trimAlpha, 0, 1, 0, 1);
+        AddQuad(p11 + pt, p10 + pt, p11, p10, side, woodCol, 0.92f, trimAlpha, 0, 1, 0, 1);
+        AddQuad(p00 + pt, p01 + pt, p00, p01, -side, woodCol, 0.88f, trimAlpha, 0, 1, 0, 1);
+        // Brass finial tip above poleTop
+        var finTop = up * (poleTop + 0.34f * scale);
+        float fr = pr * 1.65f;
+        AddQuad(finTop, finTop, pt - side * fr + faceN * pr, pt + side * fr + faceN * pr, faceN, HonourGold, 1.1f, trimAlpha, 0, 1, 0, 1);
+        AddQuad(finTop, finTop, pt + side * fr - faceN * pr, pt - side * fr - faceN * pr, -faceN, HonourGold, 0.95f, trimAlpha, 0, 1, 0, 1);
+
         var prev = Edge(0, out _);
         Vector3 midCenter = Vector3.Zero;
         Vector3 midSide = side, midNorm = faceN;
@@ -1364,9 +1394,13 @@ sealed partial class Puppet3D
             float shade = 1.0f - 0.06f * (i - 1);
 
             // Main cloth strip (front & back face with slight thickness so both sides cel-shade cleanly)
-            var tA = prev; var tB = next;
-            var mA = prev - up * (h - trimH); var mB = next - up * (h - trimH);
-            var bA = prev - up * h; var bB = next - up * h;
+            float taperA = swallowtail ? MathHelper.Lerp(1f, 0.56f, (i - 1) / (float)strips) : 1f;
+            float taperB = swallowtail ? MathHelper.Lerp(1f, 0.56f, i / (float)strips) : 1f;
+            float hA = h * taperA, hB = h * taperB;
+            float dropA = (h - hA) * 0.5f, dropB = (h - hB) * 0.5f;
+            var tA = prev - up * dropA; var tB = next - up * dropB;
+            var mA = tA - up * MathF.Max(0.05f, hA - trimH); var mB = tB - up * MathF.Max(0.05f, hB - trimH);
+            var bA = tA - up * hA; var bB = tB - up * hB;
 
             AddQuad(tA + segNorm * 0.012f, tB + segNorm * 0.012f, mA + segNorm * 0.012f, mB + segNorm * 0.012f, segNorm, clothCol, shade, clothAlpha, u0, u1, 0f, h - trimH);
             AddQuad(tB - segNorm * 0.012f, tA - segNorm * 0.012f, mB - segNorm * 0.012f, mA - segNorm * 0.012f, -segNorm, clothCol, shade * 0.94f, clothAlpha, u1, u0, 0f, h - trimH);
@@ -1386,7 +1420,7 @@ sealed partial class Puppet3D
                 AddQuad(sA + segNorm * 0.014f, sB + segNorm * 0.014f, fA + segNorm * 0.014f, fB + segNorm * 0.014f, segNorm, HonourGold, shade, trimAlpha, u0, u1, h - trimH, h);
                 AddQuad(sB - segNorm * 0.014f, sA - segNorm * 0.014f, fB - segNorm * 0.014f, fA - segNorm * 0.014f, -segNorm, HonourGold, shade * 0.94f, trimAlpha, u1, u0, h - trimH, h);
             }
-            if (i == 2)
+            if (i == 3)
             {
                 midCenter = (tA + tB + mA + mB) * 0.25f;
                 midSide = segDir;
@@ -1405,7 +1439,7 @@ sealed partial class Puppet3D
             {
                 float f = k / (float)segs, ph = wave * (1.6f + stream) - f * 3.4f - j * 0.9f;
                 float outward = (0.03f + 0.5f * stream) * f;
-                return up * 3.12f - side * (0.05f + j * 0.15f + outward) - up * (len * f * (1 - 0.6f * stream)) + faceN * MathF.Sin(ph) * 0.06f * f;
+                return up * (3.12f * poleH) - side * ((0.05f + j * 0.15f + outward) * scale) - up * (len * scale * f * (1 - 0.6f * stream)) + faceN * MathF.Sin(ph) * 0.06f * scale * f;
             }
             var p0 = At(0);
             for (int k = 1; k <= segs; k++)
@@ -1424,8 +1458,9 @@ sealed partial class Puppet3D
         var emb = EmblemOf(palIdx, charge);
         if (emb.Length > 0)
         {
-            EmitLocal(emb, midCenter + midNorm * 0.016f, midSide, up, midNorm, 0.85f, 0.82f, 0.85f);
-            EmitLocal(emb, midCenter - midNorm * 0.016f, -midSide, up, -midNorm, 0.85f, 0.82f, 0.85f);
+            float es = (swallowtail ? 0.96f : 1.32f) * scale;
+            EmitLocal(emb, midCenter + midNorm * 0.018f, midSide, up, midNorm, es, es * 0.96f, es);
+            EmitLocal(emb, midCenter - midNorm * 0.018f, -midSide, up, -midNorm, es, es * 0.96f, es);
         }
     }
 

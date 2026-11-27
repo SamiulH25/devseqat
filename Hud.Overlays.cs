@@ -46,6 +46,42 @@ sealed partial class Hud
     /// Where the result panel sits (Layout puts its buttons along the bottom).
     Rectangle ResultBox => new(W / 2 - U(400), H / 2 - U(176), U(800), U(352));
 
+    /// Clean non-blocking VICTORY banner + bottom pursuit prompt during ride-down (Pillar 4 P4.4).
+    void DrawVictoryBanner()
+    {
+        float fade = Math.Clamp(VictorySince < 0 ? 1f : VictorySince / 0.45f, 0f, 1f);
+        int fleeing = 0;
+        for (int i = 0; i < B.Units.Count; i++)
+            if (B.Units[i].Team == 1 && B.Units[i].Active && B.Units[i].Routing) fleeing++;
+
+        // Top-center atmospheric VICTORY banner below the tally bar.
+        int bw = U(380), bh = U(58);
+        int bx = (W - bw) / 2, by = U(46);
+        var banner = new Rectangle(bx, by, bw, bh);
+        var chrome = UiChrome.For(sb.GraphicsDevice);
+        int cb = Math.Max(4, U(6));
+        chrome.Draw9(sb, banner, UiChrome.PlateFill, 10, cb, Color.White * (0.93f * fade));
+        chrome.Draw9(sb, banner, UiChrome.PlateFrame, 10, cb, Kit.Gilt * (0.96f * fade));
+        // Gilded rules optically centered on the spaced "V I C T O R Y" headline
+        string title = "V I C T O R Y";
+        int titleW = TW(title, 3);
+        int ry = by + U(20);
+        int ruleW = Math.Max(U(24), (bw - titleW) / 2 - U(28));
+        Rect(new Rectangle(bx + U(16), ry, ruleW, U(2)), Kit.Gilt * (0.78f * fade));
+        Rect(new Rectangle(banner.Right - U(16) - ruleW, ry, ruleW, U(2)), Kit.Gilt * (0.78f * fade));
+        TextC(title, W / 2f, by + U(10), Gold * fade, 3);
+        string sub = fleeing > 0 ? $"THE ENEMY FLEES   -   {fleeing} ROUTING" : "THE FIELD IS YOURS";
+        TextC(sub, W / 2f, by + U(38), Kit.Parchment * (0.96f * fade), 1);
+
+        // Quiet bottom-center pursuit prompt in the open bottom strip between vitals and arm chips.
+        string prompt = $"[{Ctl.First(Act.CommandView)}] / [ENTER] LEAVE FIELD   -   OR RIDE DOWN THE ROUTING FOE";
+        int pw = Math.Max(U(380), TW(prompt, 1) + U(30)), ph = U(22);
+        var card = new Rectangle((W - pw) / 2, H - U(16) - ph, pw, ph);
+        chrome.Draw9(sb, card, UiChrome.PlateFill, 10, Math.Max(3, U(5)), Color.White * (0.86f * fade));
+        chrome.Draw9(sb, card, UiChrome.PlateFrame, 10, Math.Max(3, U(5)), Kit.Gilt * (0.78f * fade));
+        TextC(prompt, W / 2f, card.Y + U(7), Kit.Parchment * (0.94f * fade), 1);
+    }
+
     /// The after-action report: the tally side against side, the strength of both over the battle, and how it went.
     void Result()
     {

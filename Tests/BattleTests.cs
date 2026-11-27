@@ -2596,5 +2596,39 @@ public static partial class SelfTest
         var capOpts = new BattleOptions().WithCaptain(cap);
         Check(capOpts.TrackSkills && MathF.Abs(capOpts.SkillMult["Arms"] - 2f) < 0.01f, "WithCaptain enables TrackSkills and carries FocusMult");
     }
+
+    /// Pillar 4 (P4.3 & P4.4): Unit.Braced sets on spear infantry facing cavalry and clears when moving/routing;
+    /// routing enemies slain after Winner == 0 (ride-down pursuit) count as Fallen rather than Fled in Battle.Result().
+    static void Pillar4BattlefieldPresence()
+    {
+        // 1. Braced spear state: sets when standing spear infantry faces nearby cavalry, clears when moving or routing.
+        var b = Battle.Empty(920);
+        var spears = b.AddSquad(1, Troops.Get("shire_billmen"), 6, new(0, 0), 6, -Vector2.UnitY);
+        spears.Order = Order.Hold;
+        var cav = b.AddSquad(0, UnitType.Lancer, 4, new(0, -18), 4, Vector2.UnitY);
+        cav.Order = Order.Charge;
+        b.Update(1 / 60f);
+        Check(spears.Units.Any(u => u.Braced), "standing spear infantry sets Unit.Braced when cavalry approaches");
+
+        // Moving or routing clears Unit.Braced.
+        foreach (var u in spears.Units) { u.Vel = new Vector2(3f, 0f); u.Routing = true; }
+        b.Update(1 / 60f);
+        Check(spears.Units.All(u => !u.Braced), "moving/routing spearmen clear Unit.Braced");
+
+        // 2. Ride-down pursuit after Winner == 0: killing a routing enemy updates Fallen vs Fled cleanly in Battle.Result().
+        var p = Battle.Empty(921);
+        var foes = p.AddSquad(1, Troops.Get("brevon_fyrd"), 4, new(0, 0), 4, -Vector2.UnitY);
+        foes.Company = new Company("brevon_fyrd", 4, "infantry", 42);
+        foreach (var u in p.Units) if (u.Team == 1) { u.Routing = true; u.Morale = 0f; }
+        p.Update(1 / 60f);
+        Check(p.Winner == 0, "battle declares victory when all enemies are routing");
+        var rBefore = p.Result().Companies.Single(c => c.Id == 42);
+        Check(rBefore.Fallen == 0 && rBefore.Fled == 4, $"before ride-down: 0 fallen, 4 fled (got {rBefore.Fallen}/{rBefore.Fled})");
+
+        p.KillForTest(foes.Units[0], p.Player);
+        p.KillForTest(foes.Units[1], p.Player);
+        var rAfter = p.Result().Companies.Single(c => c.Id == 42);
+        Check(rAfter.Fallen == 2 && rAfter.Fled == 2, $"after riding down 2 routers: 2 fallen, 2 fled (got {rAfter.Fallen}/{rAfter.Fled})");
+    }
 }
 

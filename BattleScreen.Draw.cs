@@ -379,6 +379,8 @@ partial class BattleScreen
         float range2 = range * range;
         Span<int> heard = stackalloc int[6]; // splash, squelch, rustle, hollow, snow, gravel
         Span<Vector2> where = stackalloc Vector2[6];
+        int dustBudget = quality == Quality.Low ? 24 : quality == Quality.Medium ? 64 : 128;
+        var eye2 = new Vector2(eye.X, eye.Z);
         var units = battle.Units;
         for (int ui = 0; ui < units.Count; ui++)
         {
@@ -413,8 +415,21 @@ partial class BattleScreen
             else if (kind == GroundKind.Bridge) cue = 3;
             else if (battle.Weather.Snow) cue = 4;
             else if (kind is GroundKind.Road or GroundKind.Street or GroundKind.Stony) cue = 5;
-            else if (u.Mounted && fast && fx.NextSingle() < dt * 9)
-                Spray(u.Pos - u.HeadingDir * 0.8f, 0.1f, 1, battle.Weather.Rain > 0.3f ? new Color(96, 82, 60) : new Color(176, 160, 124), 0.6f, 1.2f, 0.3f, false, 0.7f);
+            // Pillar 4 P4.2: pooled cavalry hoof dust wakes on dry ground (grass, road, stony) above trot speed.
+            if (u.Mounted && (fast || u.Vel.LengthSquared() > 22f) && !wet && kind != GroundKind.Mud && !battle.Weather.Snow && dustBudget > 0 && motes.Count < 760
+                && Vector2.DistanceSquared(u.Pos, eye2) < 140f * 140f)
+            {
+                dustBudget--;
+                var dustCol = battle.Weather.Rain > 0.3f ? new Color(124, 106, 78)
+                    : kind is GroundKind.Road or GroundKind.Street or GroundKind.Stony ? new Color(224, 206, 164)
+                    : new Color(214, 196, 150);
+                var hoof1 = u.Pos - u.HeadingDir * (0.95f + fx.NextSingle() * 0.55f) + new Vector2(fx.NextSingle() - 0.5f, fx.NextSingle() - 0.5f) * 0.65f;
+                var hoof2 = u.Pos - u.HeadingDir * (1.85f + fx.NextSingle() * 0.75f) + new Vector2(fx.NextSingle() - 0.5f, fx.NextSingle() - 0.5f) * 0.85f;
+                Spray(hoof1, 0.24f, 1, dustCol, 1.25f, 2.2f, 1.08f, false, 1.75f);
+                Spray(hoof2, 0.34f, 1, dustCol, 1.15f, 2.3f, 1.15f, false, 1.85f);
+                if (speed > 7.5f && fx.NextSingle() < 0.6f)
+                    Spray(hoof1, 0.16f, 1, new Color(74, 84, 40), 3.0f, 0.7f, 0.11f, true, 0f); // kicked turf clod
+            }
             if (cue >= 0 && Vector2.DistanceSquared(u.Pos, ear) < range2) { heard[cue] += u.Mounted ? 3 : 1; where[cue] = u.Pos; }
         }
         var audio = host.Audio;
@@ -485,8 +500,54 @@ partial class BattleScreen
             float by = t.Height(at) + (bearer.Mounted ? 1.1f : 0);
             if (spriteFrustum.Contains(new BoundingSphere(new Vector3(at.X, by + 2f, at.Y), 3.5f)) == ContainmentType.Disjoint) continue;
             float stream = Math.Clamp((bearer.Mounted ? MathF.Abs(bearer.Speed) : bearer.Vel.Length()) / 6, 0, 1);
-            if (do3D) puppet3D!.Banner(at, by, bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream, streamers: s.Company.Streamers, fringe: s.Company.Fringe);
+            if (do3D) puppet3D!.Banner(at, by, bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream, streamers: s.Company.Streamers, fringe: s.Company.Fringe, swallowtail: s.Cavalry);
             else puppet.Banner(at, by, bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream, streamers: s.Company.Streamers, fringe: s.Company.Fringe);
+            // Pillar 4 P4.1: secondary flank pennon on large companies (>= 40 standing men), placed on the true opposite lateral flank.
+            if (do3D && s.Alive >= 40)
+            {
+                var right = new Vector2(-s.Front.Y, s.Front.X);
+                Unit? flanker = null;
+                float bestLat = 2f;
+                for (int fi = 0; fi < s.Units.Count; fi++)
+                {
+                    var fu = s.Units[fi];
+                    if (!fu.Active || fu.Routing || fu == bearer) continue;
+                    float lat = MathF.Abs(Vector2.Dot(fu.Pos - bearer.Pos, right));
+                    if (lat > bestLat) { bestLat = lat; flanker = fu; }
+                }
+                if (flanker != null)
+                {
+                    var fat = flanker.Pos - flanker.Dir * 0.35f - new Vector2(-flanker.Dir.Y, flanker.Dir.X) * 0.25f;
+                    float fby = t.Height(fat) + (flanker.Mounted ? 1.1f : 0);
+                    if (spriteFrustum.Contains(new BoundingSphere(new Vector3(fat.X, fby + 2.5f, fat.Y), 3.5f)) != ContainmentType.Disjoint)
+                    {
+                        float fstream = Math.Clamp((flanker.Mounted ? MathF.Abs(flanker.Speed) : flanker.Vel.Length()) / 6, 0, 1);
+                        puppet3D!.Banner(fat, fby, flanker.Palette, battle.Time * 3.2f + s.Units.Count + 1.7f, s.Company.Banner, fstream, scale: 0.82f, swallowtail: true);
+                    }
+                }
+            }
+        }
+        // Pillar 4 P4.1: captain's personal retinue pennon carried by the closest standing friendly soldier within 16 m.
+        if (do3D && battle.Player.Active && !battle.Options.Duel)
+        {
+            Unit? retinue = null;
+            float bestD2 = 16f * 16f;
+            foreach (var u in battle.Units)
+            {
+                if (u.Team != 0 || !u.Active || u.Routing || u.IsPlayer) continue;
+                float d2 = Vector2.DistanceSquared(u.Pos, battle.Player.Pos);
+                if (d2 > 4.5f * 4.5f && d2 < bestD2) { bestD2 = d2; retinue = u; }
+            }
+            if (retinue != null)
+            {
+                var rat = retinue.Pos - retinue.Dir * 0.35f + new Vector2(-retinue.Dir.Y, retinue.Dir.X) * 0.25f;
+                float rby = t.Height(rat) + (retinue.Mounted ? 1.1f : 0);
+                if (spriteFrustum.Contains(new BoundingSphere(new Vector3(rat.X, rby + 2.5f, rat.Y), 3.5f)) != ContainmentType.Disjoint)
+                {
+                    float rstream = Math.Clamp((retinue.Mounted ? MathF.Abs(retinue.Speed) : retinue.Vel.Length()) / 6, 0, 1);
+                    puppet3D!.Banner(rat, rby, battle.Player.Palette, battle.Time * 3.4f + 0.9f, -1, rstream, scale: 0.78f, swallowtail: true);
+                }
+            }
         }
         DrawFallingBanners(do3D);
         if (!forSun)
@@ -495,8 +556,8 @@ partial class BattleScreen
             DrawScars();
             soft.N = 0;
             foreach (var m in motes)
-                if (!m.Heavy && (m.Size >= 0.15f || m.Grow >= 0.3f)) // dust and smoke: a soft puff that swells and thins away
-                    puppet.Haze(m.Pos, m.Size * 1.15f, m.Col, (m.Size > 1.5f ? 0.24f : 0.55f) * MathF.Min(1, m.Life / m.Max * 1.6f), m.Max * 37 + m.Grow * 11 + m.Pos.X);
+                if (!m.Heavy && (m.Size >= 0.15f || m.Grow >= 0.3f)) // dust and smoke: a soft puff that swells and thins away smoothly
+                    puppet.Haze(m.Pos, m.Size * 1.15f, m.Col, MathHelper.Lerp(0.58f, 0.34f, Math.Clamp((m.Size - 0.9f) / 1.8f, 0f, 1f)) * MathF.Min(1, m.Life / m.Max * 1.6f), m.Max * 37 + m.Grow * 11 + m.Pos.X);
                 else puppet.Particle(m.Pos, m.Size * (m.Heavy ? 1 : MathF.Min(1, m.Life / m.Max * 2)), m.Col);
         }
         foreach (int idx in corpseTouched) corpseGrid[idx] = 0;

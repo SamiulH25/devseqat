@@ -577,7 +577,7 @@ partial class BattleScreen
             focus = Vector3.Lerp(new Vector3(0, t.Height(Vector2.Zero), 0), focus, e);
             y += 2.2f * o; pt = MathHelper.Lerp(pt, 0.85f, 0.5f * o); dist *= 1 + 0.9f * o;
         }
-        if (ending >= 0 && shotDir == null)
+        if (ending >= 0 && !pursuing && shotDir == null)
         {
             // The fight is decided: the camera draws up and back to show the field.
             float r = Ease.InOut(Math.Clamp(ending / 2.5f, 0, 1)) * (1 - k);

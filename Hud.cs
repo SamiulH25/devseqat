@@ -50,7 +50,8 @@ sealed partial class Hud
     public float Speed = 1;
     public int SpeedIdx = 1;
     public bool CapWheelOpen;
-    public bool Command, FieldCommand, InfoMode, Paused, MenuOpen, HelpOpen, WheelOpen, ShowResult, InCampaign, Deploying, AttackMoveMode;
+    public bool Command, FieldCommand, InfoMode, Paused, MenuOpen, HelpOpen, WheelOpen, ShowResult, Pursuing, InCampaign, Deploying, AttackMoveMode;
+    public float VictorySince;
     public string? CombatPrompt;
     public float CombatPromptAt = -99;
     /// Fight view: how long the hold key has been down (under 0 = not held), and the enemy company you look at.
@@ -288,6 +289,7 @@ sealed partial class Hud
             TextC($"GIVE YOUR ORDERS. {Ctl.Name(Act.Pause)} SENDS THEM OFF", W / 2f, r.Y + U(24), Dim, 1);
             if (riding > 0) TextC($"{riding} ORDER{(riding == 1 ? "" : "S")} WAITING", W / 2f, r.Y + U(36), Dim, 1);
         }
+        if (Pursuing && !ShowResult && !HelpOpen && !MenuOpen) DrawVictoryBanner();
         if (ShowResult) Result();
         else if (HelpOpen) Help();
         else if (MenuOpen) Menu();

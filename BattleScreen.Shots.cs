@@ -333,6 +333,66 @@ partial class BattleScreen
             case 317 when shotFrames > 4:
                 pendingShot = "p3-mount-prompt"; shotIndex++; break;
             case 318 when pendingShot == null: Exit(); break;
+            // Pillar 4 (taller waving standards + flank pennons, cavalry dust plumes, braced spears, ride-down victory): IRONFIELD_SHOTS_FROM=pillar4
+            case 320 when b.Time > 0.8f:
+            {
+                // Shot 1: Prominent waving heraldic standards & secondary flank pennons (friendly line foreground + enemy across valley).
+                b.Player.Pos = new(-6f, -78f); b.Player.Facing = b.Player.Heading = b.Player.ViewFacing = b.Player.ViewHeading = MathHelper.PiOver2;
+                b.Player.Speed = 0f;
+                yaw = MathHelper.PiOver2; pitch = 0.14f;
+                shotFrames = 0; shotIndex++; break;
+            }
+            case 321 when shotFrames > 6:
+                pendingShot = "p4-standards-valley"; shotIndex++; break;
+            case 322 when pendingShot == null:
+            {
+                // Shot 2: Galloping cavalry kicking up sustained warm hoof dust wakes across the field.
+                var cavSq = b.AddSquad(0, UnitType.Lancer, 10, new(0, -34f), 5, Vector2.UnitY);
+                cavSq.Order = Order.Charge;
+                b.Player.Pos = new(-8f, -36f); b.Player.Facing = b.Player.Heading = b.Player.ViewFacing = b.Player.ViewHeading = 1.05f;
+                b.Player.Speed = 11f;
+                foreach (var u in cavSq.Units) { u.Speed = 11.5f; u.Heading = u.Facing = u.ViewHeading = u.ViewFacing = MathHelper.PiOver2; u.Vel = new Vector2(0, 11.5f); }
+                yaw = 1.05f; pitch = 0.16f;
+                shotFrames = 0; shotIndex++; break;
+            }
+            case 323 when shotFrames > 22:
+                pendingShot = "p4-cavalry-dust"; shotIndex++; break;
+            case 324 when pendingShot == null:
+            {
+                // Shot 3: Shield-bearing spear wall in unmistakable braced anti-cavalry posture (3/4 oblique angle shows lean + angled spears).
+                b.Player.Hp = b.Player.Type.MaxHp; b.Player.Dead = false;
+                b.Player.Pos = new(64.5f, -14.2f);
+                var toSpears = new Vector2(60f, -8.5f) - b.Player.Pos;
+                float ang = MathF.Atan2(toSpears.Y, toSpears.X);
+                b.Player.Facing = b.Player.Heading = b.Player.ViewFacing = b.Player.ViewHeading = ang;
+                b.Player.Speed = 0f;
+                var spearSq = b.AddSquad(1, Troops.Get("pikemen"), 8, new(60f, -8.5f), 8, -Vector2.UnitY);
+                spearSq.Order = Order.Hold; spearSq.Formation = Formation.ShieldWall;
+                foreach (var u in spearSq.Units) { u.Facing = u.ViewFacing = -MathHelper.PiOver2; u.Vel = Vector2.Zero; u.Braced = true; }
+                yaw = ang; pitch = 0.15f;
+                shotFrames = 0; shotIndex++; break;
+            }
+            case 325 when shotFrames > 5:
+                pendingShot = "p4-braced-spears"; shotIndex++; break;
+            case 326 when pendingShot == null:
+            {
+                // Shot 4: Live horseback Field View riding down turned, fleeing enemies under the clean VICTORY banner.
+                b.Player.Hp = b.Player.Type.MaxHp; b.Player.Dead = false;
+                b.Player.Horse ??= Troops.Mount("warhorse"); b.Player.HorseHp = b.Player.Horse.Hp;
+                SetCommand(false); blend = 0; paused = false;
+                b.Winner = 0;
+                pursuing = true;
+                ending = 1.2f;
+                b.Player.Pos = new(60f, -20f); b.Player.Facing = b.Player.Heading = b.Player.ViewFacing = b.Player.ViewHeading = MathHelper.PiOver2;
+                b.Player.Speed = 9.5f;
+                foreach (var u in b.Units) if (u.Team == 1 && u.Active) { u.Routing = true; u.Morale = 0f; u.Facing = u.ViewFacing = MathHelper.PiOver2; }
+                yaw = MathHelper.PiOver2; pitch = 0.15f;
+                shotFrames = 0; shotIndex++; break;
+            }
+            case 327 when shotFrames > 20:
+                b.Player.Hp = b.Player.Type.MaxHp;
+                pendingShot = "p4-victory-pursuit"; shotIndex++; break;
+            case 328 when pendingShot == null: Exit(); break;
             // The two views (docs/archive/PLAYTEST.md PT4, "As rebuilt"; IRONFIELD_SHOTS_FROM=hud): the fight view bare, an arm told to
             // attack, the order ring, the hold-there marker; then the command view, companies sent at a foe, one company's deck.
             case 125 when b.Time > 2f:

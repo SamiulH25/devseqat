@@ -125,7 +125,7 @@ sealed partial class BattleScreen
     readonly string? shotDir = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 } sd ? sd : null;
     // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/archive/MELEE.md), =magic at the magic scenes,
     // =spectacle at the spectacle scenes (docs/archive/SPECTACLE.md), skipping the rest.
-    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, "beasts" => 99, "captain" => 106, "hunted" => 108, "arrows" => 110, "named" => 116, "sergeants" => 117, "hud" => 125, "pillar3" => 310, _ => 0 }, shotFrames;
+    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, "beasts" => 99, "captain" => 106, "hunted" => 108, "arrows" => 110, "named" => 116, "sergeants" => 117, "hud" => 125, "pillar3" => 310, "pillar4" => 320, _ => 0 }, shotFrames;
     string? pendingShot;
     bool shotWheel, hudHidden;
     /// The captain's ring (hold its key in the fight view): open, held since, a choice waiting to go into the next input.
@@ -240,6 +240,7 @@ sealed partial class BattleScreen
 
     // The opening sweep over the field (seconds into it; -1 = done) and the closing beat (seconds since the winner was known).
     float intro = -1, ending = -1;
+    bool pursuing, pursuitEnded;
     const float IntroTime = 4.5f, EndBeat = 1.6f;
     /// The battle is decided but the result is not up yet: the field plays on at half speed and the camera rises.
     bool Ending => ending >= 0 && ending < EndBeat && shotDir == null;
@@ -400,7 +401,7 @@ sealed partial class BattleScreen
         ResetArrows();
         ResetSpectacle();
         ResetLod();
-        markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = simAcc = soundscapeAcc = 0; ending = -1; lastHitAt = lastPlayerHp = -1;
+        markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = simAcc = soundscapeAcc = 0; ending = -1; pursuing = pursuitEnded = false; lastHitAt = lastPlayerHp = -1;
         camInit = false; camKick = camKickVel = Vector3.Zero;
         Array.Clear(trample); trampleAt = 0; trampleDirty = true;
         world?.Dispose();
@@ -423,7 +424,7 @@ sealed partial class BattleScreen
     }
 
     bool Pressed(Keys k) => kb.IsKeyDown(k) && !pkb.IsKeyDown(k);
-    bool Overlay => menuOpen || helpOpen || battle.Winner >= 0;
+    bool Overlay => menuOpen || helpOpen || (battle.Winner >= 0 && !pursuing);
     /// Tips wait while the menu, the controls or the result is up, so they never cover its buttons.
     bool TipsHeld => Overlay;
     bool LmbPressed => ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released;
@@ -468,8 +469,23 @@ sealed partial class BattleScreen
         if (deploying) GroundTips();
         else MagicTips();
 
-        if (ctl.Pressed(Act.Menu)) { if (helpOpen) helpOpen = false; else if (battle.Winner < 0) menuOpen = !menuOpen; skipMouse = true; }
+        if (ctl.Pressed(Act.Menu)) { if (helpOpen) helpOpen = false; else if (battle.Winner < 0 || pursuing) menuOpen = !menuOpen; skipMouse = true; }
         if (ctl.Pressed(Act.Help)) { helpOpen = !helpOpen; skipMouse = true; }
+        // Pillar 4 P4.4: Victory ride-down pursuit state while routing enemies remain on the field.
+        if (battle.Winner == 0 && !pursuitEnded && !battle.Options.Duel && battle.Player.Active && shotDir == null)
+        {
+            bool foesFleeing = false;
+            for (int i = 0; i < battle.Units.Count; i++)
+                if (battle.Units[i].Team == 1 && battle.Units[i].Active && battle.Units[i].Routing) { foesFleeing = true; break; }
+            pursuing = foesFleeing;
+            if (!foesFleeing) pursuitEnded = true;
+            else if (!menuOpen && !helpOpen && (Pressed(Keys.Enter) || ctl.Pressed(Act.CommandView)))
+            {
+                pursuing = false;
+                pursuitEnded = true;
+            }
+        }
+        else if (battle.Winner != 0) pursuing = false;
         SyncHud();
 
         bool alive = battle.Player.Active;
@@ -527,7 +543,7 @@ sealed partial class BattleScreen
         if (battle.Winner >= 0) ending = ending < 0 ? 0 : ending + dt;
         float scale = paused || menuOpen || helpOpen || deploying ? 0 : wheelOpen || capWheel ? RingTimeScale : 1; // the rings slow the field while you choose
         scale *= Speeds[speed];
-        if (Ending) scale = 0.5f; // the last moments of the fight, slowed, before the result
+        if (Ending && !pursuing) scale = 0.5f; // the last moments of the fight, slowed, before the result
         if (hitPause > 0) { hitPause -= dt; scale = 0; } // your blow lands: the moment holds (the sim simply waits; replays are unchanged)
         scale *= BeatScale; // the battle's cinematic beat slows the view (docs/archive/SPECTACLE.md S1); each tick's step is recorded
         if (scale > 0 && Settings.Current.PauseOnAlerts && battle.Alerts.Count > alertsSeen
@@ -725,7 +741,9 @@ sealed partial class BattleScreen
         hud.CastBy = castBy; hud.CastPick = castPick;
         hud.HoldPlace = tac ? -1 : holdHeld; hud.LookFoe = !tac && !deploying && !Overlay && Targets().Count > 0 ? LookFoe() : null;
         hud.Command = command; hud.FieldCommand = fieldCommand; hud.InfoMode = infoMode; hud.Paused = paused; hud.Speed = Speeds[speed]; hud.SpeedIdx = speed; hud.AttackMoveMode = attackMoveMode; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
-        hud.ShowResult = battle.Winner >= 0 && !helpOpen && !Ending;
+        hud.Pursuing = pursuing;
+        hud.VictorySince = ending;
+        hud.ShowResult = battle.Winner >= 0 && !pursuing && !helpOpen && !Ending;
         hud.InCampaign = campaignBattle != null;
         hud.Deploying = deploying;
         hud.DeployLast = memory is { LastDeploy.Count: > 0 } && !battle.Options.Siege && !battle.Options.Tournament ? memory.DeployAsLast : null;

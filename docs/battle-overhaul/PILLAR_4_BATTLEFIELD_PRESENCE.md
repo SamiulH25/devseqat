@@ -84,3 +84,15 @@ Matches video `04:56–05:07`, `08:35–08:46`:
     - Visible cavalry dust plumes behind charging horse without frame drops (`--gpu-report` stays well above 150 fps on GTX 1080 Ti).
     - Braced spearmen visibly leaning with forward-angled spears.
     - Clean `VICTORY` banner with unobstructed pursuit view and zero text overflow in `overflow.txt`.
+
+---
+
+## As built (2026-11-27)
+
+- **P4.1 — Towering Waving Heraldic Standards & Pennons:** Replaced `kit.BannerPole`'s static vertical curtain in `Puppet3D.Banner()` with a pure procedural 3D wooden pole + brass finial (`poleH = 1.55f * scale`) and a 5-strip sinusoidal waving cloth standard (`w 1.56f / 1.96f`, `h 1.02f / 0.62f`, baseline valley breeze `wind >= 0.55f`, boosted heraldic contrast). Added opposite-flank swallowtail pennons (`scale 0.82f`) on companies with `>= 40` standing men and a personal captain's retinue pennon in `BattleScreen.Draw.cs`.
+- **P4.2 — Pooled Cavalry Hoof Dust Plumes & Charge Impact:** Upgraded `BattleScreen.Draw.cs` `GroundSteps()` with quality-scaled dust budgets (`24/64/128`, cap `760` motes) emitting staggered warm sunlit ochre hoof dust wakes + kicked turf clods behind galloping horses on dry ground, smooth alpha falloff in `BuildSprites`, and wider dust + grass-clod bursts on heavy cavalry impacts in `BattleScreen.Effects.cs` `LeaveMarks()`.
+- **P4.3 — Unmistakable Braced-Spear Posture:** Added headless deterministic `Unit.Braced` (`Units.cs`, set in `BattleCombat.Braces()` when standing polearm/spear infantry face enemy mounted threats or hold `ShieldWall`/`Square`). Added dedicated `bracedSpear` posture in `Puppet3D.cs`: deep split-stance LegIK crouch (`extraCrouch 0.34f`, `lungeZ ±0.25f`), forward torso lean (`extraLeanZ 28f`), raised shield if equipped, and forward-angled spear/pike (`~30°` at horse chest height).
+- **P4.4 — Clean Victory Banner & Optional Ride-Down Pursuit:** Added `pursuing` / `pursuitEnded` state in `BattleScreen.cs` / `BattleScreen.Controls.cs` so winning a field battle while routing enemies remain keeps the player in unobstructed live horseback control (suppressing forced camera pull-back and slow-mo until `Enter` / `Tab` is pressed or all routers exit/fall). Added `Hud.DrawVictoryBanner()` in `Hud.Overlays.cs` rendering the top-center Forged Iron & Brass `V I C T O R Y` banner with live routing count and a clean bottom-center pursuit prompt.
+- **Tests, Shots & Hydrogen Audit (4.4 → 5.4 → 5.8 → 5.9 → 8.3 / 10):**
+  - Added `Pillar4BattlefieldPresence` in `Tests/BattleTests.cs` (registered in `SelfTest.cs`); `Pillar4BattlefieldPresence`, `ReplayExact`, and `tools/check.sh --quick` all pass.
+  - Staged shots via `IRONFIELD_SHOTS_FROM=pillar4` (`p4-standards-valley.png`, `p4-cavalry-dust.png`, `p4-braced-spears.png`, `p4-victory-pursuit.png`, `overflow.txt` = 0 bytes) audited by Hydrogen (`gemini-4-hydrogen`): A **8.5**, B **8.0**, C **7.5**, D **9.0** (**8.3 / 10** overall, all blockers resolved).

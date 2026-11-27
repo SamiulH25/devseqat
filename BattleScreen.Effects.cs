@@ -117,7 +117,8 @@ partial class BattleScreen
             else if (Synth.HeavyImpact(cue))
             {
                 AddMark(at, 1.4f + fx.NextSingle() * 0.8f, wet ? new Color(70, 56, 40) : new Color(118, 98, 70), false);
-                Spray(at, 0.1f, 8, wet ? new Color(96, 82, 60) : new Color(176, 160, 124), 4.5f, 1.6f, 0.35f, false, 1.1f); // the dust wave
+                Spray(at, 0.12f, 10, wet ? new Color(96, 82, 60) : new Color(192, 176, 138), 5.0f, 1.8f, 0.52f, false, 1.25f); // wide impact dust wave (P4.2)
+                Spray(at, 0.18f, 4, wet ? new Color(64, 52, 34) : new Color(92, 106, 54), 3.6f, 0.75f, 0.08f, true, 0f); // kicked grass & earth clods
             }
     }
 
