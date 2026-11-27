@@ -248,7 +248,28 @@ partial class BattleScreen
                 shotFrames = 0; shotIndex++; break;
             case 123 when shotFrames > 20:
                 pendingShot = "sergeants-field"; shotIndex++; break;
-            case 124 when pendingShot == null: Exit(); break;
+            case 124 when pendingShot == null:
+                // Battle planning (Pillar 2): back to deployment, a company pushed against the line, then the drop onto the captain.
+                deploying = true; SetCommand(true); blend = 1; shotNoMouse = true; groundView = false;
+                camFocus = new Vector2(b.Centroid(0).X, Battle.DeployFront - 10); camYaw = MathHelper.PiOver2 + 0.5f; camPitch = 0.62f; zoom = 80;
+                selected.Clear();
+                if (b.Commanded.FirstOrDefault() is { } ps)
+                {
+                    selected.Add(ps);
+                    var (pa, pb) = LineEnds(ps.Anchor + new Vector2(0, 40), b.Centroid(1));
+                    Distribute(pa, pb, b.Centroid(1)); // pushed past the line: held on it, the line glowing
+                    camFocus = new Vector2(ps.Anchor.X, Battle.DeployFront - 4); camYaw = MathHelper.PiOver2 + 0.35f; camPitch = 0.7f; zoom = 55;
+                }
+                shotFrames = 0; shotIndex = 300; break;
+            case 300 when shotFrames > 10:
+                pendingShot = "planning-line"; shotIndex++; break;
+            case 301 when pendingShot == null:
+                selected.Clear(); BeginFight(); shotFrames = 0; shotIndex++; break;
+            case 302 when shotFrames > 30:
+                pendingShot = "planning-drop"; shotIndex++; break;
+            case 303 when pendingShot == null && dropIn < 0:
+                pendingShot = "planning-landed"; shotIndex++; break;
+            case 304 when pendingShot == null: Exit(); break;
             // The two views (docs/archive/PLAYTEST.md PT4, "As rebuilt"; IRONFIELD_SHOTS_FROM=hud): the fight view bare, an arm told to
             // attack, the order ring, the hold-there marker; then the command view, companies sent at a foe, one company's deck.
             case 125 when b.Time > 2f:

@@ -419,7 +419,7 @@ partial class BattleScreen
     /// Split the segment a-b between target squads, proportional to their size.
     void Distribute(Vector2 a, Vector2 b, Vector2 toward)
     {
-        if (deploying) { a.Y = MathF.Min(a.Y, -12); b.Y = MathF.Min(b.Y, -12); } // your third of the field
+        if (deploying) ClampToZone(ref a, ref b); // behind the deployment line (BattleScreen.Planning.cs)
         foreach (var (s, a1, b1) in Split(a, b).ToList()) Move(s, q => q.SetLine(a1, b1, toward));
     }
 

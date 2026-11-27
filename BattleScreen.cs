@@ -441,7 +441,8 @@ sealed partial class BattleScreen
             replaySaved = true;
             try { battle.FinishRecording()?.Save("last-battle"); } catch (Exception e) { Console.WriteLine("replay not saved: " + e.Message); }
         }
-        if (!TipsHeld && Pressed(Keys.Enter) && Tips.Active) Tips.Dismiss();
+        bool enterTaken = !TipsHeld && Pressed(Keys.Enter) && Tips.Active; // Enter answers a tip before it starts the battle
+        if (enterTaken) Tips.Dismiss();
         if (Pressed(Keys.F9)) { Settings.Current.PixelScale = Settings.Current.PixelScale == 2 ? 3 : Settings.Current.PixelScale == 3 ? 1 : 2; Settings.Current.Save(); battle.Log($"3D pixel scale: {pixelScale}x"); }
         if (Pressed(Keys.F10)) { Settings.Current.PixelArt = !Settings.Current.PixelArt; Settings.Current.Save(); battle.Log(use3DPixel ? $"3D Pixel Art ON ({pixelScale}x)" : "Classic 2D Sprites"); }
         else if (!TipsHeld && LmbPressed && Tips.Active && command && tipUi.Blocks(ms.Position)) Tips.Dismiss();
@@ -452,7 +453,7 @@ sealed partial class BattleScreen
                     Tips.Show("rescue", "One of your named men is down (the gold mark). Stand over him while the fight goes on\nand you carry him out alive, if you are quick.");
                     break;
                 }
-        if (deploying) Tips.Show("deploy", $"Deployment. Select a company (click its card or press 1-9), then hold RMB and drag to draw its line.\nYou can only deploy in your third of the field. Press {ctl.First(Act.Pause)} (or START BATTLE) to begin.");
+        if (deploying) Tips.Show("deploy", $"Deployment. Select a company (click its card or press 1-9), then hold RMB and drag to draw its line.\nDrag chosen companies to move them, {ctl.First(Act.RotateLeft)}/{ctl.First(Act.RotateRight)} to turn them. They stand behind the blue line. Press ENTER (or START BATTLE) to begin.");
         else if (!command && battle.Player.Active)
         {
             Tips.Show("field", $"Field view: you fight. On horseback {ctl.First(Act.Forward)}/{ctl.First(Act.Back)} rein, {ctl.First(Act.Left)}/{ctl.First(Act.Right)} turn, {ctl.First(Act.Sprint)} gallops.\nMove the mouse to choose a swing direction, {ctl.First(Act.Attack)} to attack, {ctl.First(Act.Block)} to block (match the red mark to parry).\n{ctl.First(Act.CommandView)}: command the whole field. {ctl.First(Act.Help)}: all the keys.");
@@ -502,11 +503,10 @@ sealed partial class BattleScreen
                     else skipMouse = true;
                 }
             }
-            if (deploying && (ctl.Pressed(Act.Pause) || (LmbPressed && hud.StartAt(ms.Position))))
+            if (deploying && (ctl.Pressed(Act.Pause) || (Pressed(Keys.Enter) && !enterTaken) || (LmbPressed && hud.StartAt(ms.Position))))
             {
-                deploying = false;
-                deployed = battle.DeploymentOf(); // how you drew them up, for the next battle (Q6)
-                battle.Log("The battle begins!");
+                BeginFight(); // the horn, and the drop onto the captain (BattleScreen.Planning.cs)
+                return;
             }
             else if (ctl.Pressed(Act.Pause))
             {
@@ -553,7 +553,7 @@ sealed partial class BattleScreen
         FieldLife(dt * scale);
         soundscapeAcc += dt;
         if (soundscapeAcc >= 0.1f || battle.Winner >= 0) { soundscapeAcc = 0; Soundscape(); }
-        blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
+        blend = PlanningFrame(dt) ?? Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1); // the drop onto the captain runs its own time
         frameDt = dt;
         if (shotDir != null) { shotFrames++; if (PressSeed != null) PressScript(); else ShotScript(); hudSynced = false; }
         UpdateCamera();

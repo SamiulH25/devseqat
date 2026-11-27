@@ -1953,7 +1953,13 @@ public static partial class SelfTest
         // An enemy-side spot is kept out of the enemy's part of the field.
         var c = new Battle(93, Mine(1), theirs, new BattleOptions());
         c.ApplyDeployment(new[] { new DeploySpot { Company = 1, X = 0, Y = 50, FX = 0, FY = 1, Columns = 6 } });
-        Check(Of(c, 1).Anchor.Y <= -12, "a remembered line never stands in the enemy's third");
+        Check(Of(c, 1).Anchor.Y <= Battle.DeployFront, "a remembered line never stands in the enemy's third");
+        // The deployment line (Pillar 2 P2.1): one rule for the clamps, the screen and the line drawn on the ground.
+        var (x0, x1, y0, y1) = c.DeployBounds();
+        Check(y1 == Battle.DeployFront && x0 < 0 && x1 > 0 && y0 < y1, "the deployment bounds face your way");
+        var held = c.ClampDeployPos(new Vector2(x1 + 40, 60));
+        Check(held == new Vector2(x1, Battle.DeployFront) && c.InDeployZone(held), "a spot past the line or the edge is held on it");
+        Check(c.ClampDeployPos(new Vector2(5, -30)) == new Vector2(5, -30) && !c.InDeployZone(new Vector2(0, 0)), "a spot behind the line stays; the middle is out");
         // The save keeps both.
         var st = new CampaignState { LastDeploy = spots, DeployAsLast = false };
         st.ControlGroups[2] = new List<int> { 1, 3 };

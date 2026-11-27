@@ -47,7 +47,7 @@ public sealed partial class PlaySession
                 var sq = SquadArg(a, 0);
                 var p1 = new Vector2(F(Need(a, 1, "x1")), F(Need(a, 2, "y1")));
                 var p2 = new Vector2(F(Need(a, 3, "x2")), F(Need(a, 4, "y2")));
-                if (deploying) { p1.Y = MathF.Min(p1.Y, -12); p2.Y = MathF.Min(p2.Y, -12); } // your third of the field, as the screen keeps it
+                if (deploying) { p1 = b.ClampDeployPos(p1); p2 = b.ClampDeployPos(p2); } // your third of the field, as the screen keeps it
                 foreach (var s in sq) Send(s, q => { q.Queue.Clear(); q.StepTarget = null; q.SetLine(p1, p2, b.Centroid(1)); });
                 return $"{Names(sq)}: form a line {P(p1)}-{P(p2)}";
             }

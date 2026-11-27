@@ -294,7 +294,7 @@ partial class BattleScreen
         camFocus += pan * zoom * 0.9f * dt;
         if (!float.IsFinite(camFocus.X) || !float.IsFinite(camFocus.Y)) camFocus = battle.Player.Pos;
         if (camFocus.Length() > battle.Terrain.Half - 20) camFocus = Vector2.Normalize(camFocus) * (battle.Terrain.Half - 20);
-        camYaw += ctl.Axis(Act.RotateRight, Act.RotateLeft) * 1.6f * dt;
+        if (!TurnDeployed(dt)) camYaw += ctl.Axis(Act.RotateRight, Act.RotateLeft) * 1.6f * dt; // in deployment Q/E turn the chosen companies
         if (IsActive && ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Pressed)
         {
             // Middle-drag orbits: horizontal turns, vertical tilts.
@@ -403,8 +403,9 @@ partial class BattleScreen
                 else { selected.Clear(); selected.Add(card); }
             }
             else if (hud.MinimapAt(ms.Position) is Vector2 w) camFocus = w;
-            else if (!hud.Over(ms.Position)) boxStart = ms.Position;
+            else if (!hud.Over(ms.Position)) { GrabDeployed(); boxStart = ms.Position; } // on a chosen company in deployment: drag it
         }
+        DragDeployed();
         if (dragCard != null && ms.LeftButton == ButtonState.Pressed && hud.CardAt(ms.Position) != dragCard) dragMoved = true;
         if (LmbReleased && dragCard is Squad dragged)
         {

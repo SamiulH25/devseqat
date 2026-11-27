@@ -1154,6 +1154,7 @@ partial class BattleScreen
         Spells();
         if (!hudHidden)
         {
+            DeployBoundary(); // the deployment line (BattleScreen.Planning.cs)
             RouteDots();
             foreach (var s in selected) PlanHook(s);
             foreach (var s in selected)
@@ -1227,6 +1228,7 @@ partial class BattleScreen
                     var enemy = battle.Centroid(1);
                     bool click = Vector2.Distance(d, cursorPos) < 2;
                     var (a, b) = click ? LineEnds(cursorPos, enemy) : (d, cursorPos);
+                    if (deploying) ClampToZone(ref a, ref b);
                     DrawFormationFootprints(a, b, enemy);
                     DrawCommandBanner(click ? cursorPos : (a + b) * 0.5f, hostile: false);
                 }
@@ -1244,6 +1246,7 @@ partial class BattleScreen
                         {
                             var enemy = battle.Centroid(1);
                             var (a, b) = LineEnds(cursorPos, enemy);
+                            if (deploying) ClampToZone(ref a, ref b);
                             DrawFormationFootprints(a, b, enemy);
                         }
                         DrawCommandBanner(cursorPos, hostile: false);

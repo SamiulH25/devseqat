@@ -73,3 +73,12 @@
     - Glowing terrain-hugging deployment line clearly visible across hills.
     - Clean `BATTLE PLANNING` header + `START BATTLE` button, zero text overflow in `overflow.txt`.
     - Left roster + world badges + formation footprints readable at 1280×720.
+
+---
+
+## As built (2026-11-27)
+
+- **P2.1:** `Battle.DeployFront`, `DeployBounds()`, `ClampDeployPos()`, `InDeployZone()` (BattleDeploy.cs) are the one rule; `ApplyDeployment`, the screen's `Distribute` and the playtest harness's `line` all clamp through it. `BattleScreen.Planning.cs` `DeployBoundary()` draws the line every 2 m on the terrain: a core, a halo, a wash spilling onto your side, dashes on the enemy's side, light running along it, faded at the field's edges; it flares for 0.6 s when a company is held back (drag preview too) and fades over 0.45 s once the battle begins. Side and rear limits are clamped but not drawn.
+- **P2.2:** `Hud.Planning.cs`: BATTLE PLANNING header with a gilded START BATTLE (ENTER) and a LAST LAYOUT / DEFAULT pill (campaign battles with a remembered layout only); a bottom-centre key strip that drops keys when narrow. The roster, selected card and order deck are Pillar 1's. Enter starts the battle (Space still does; Enter first answers an open tip). Q/E turn the chosen companies about their common middle (no selection: the camera, as before); LMB drag on a chosen company moves the chosen companies as one body, held behind the line. Enemy badges were already shown for seen companies (Pillar 1).
+- **P2.3:** `BeginFight()` sounds the charge horn, faces the camera at the enemy's centre and drops from the planning view to behind the captain over 1.1 s (`PlanningFrame` drives the blend; Tab mid-drop hands back to the usual blend).
+- Test: `DeploymentMemory` checks the bounds and the clamp. Shots: `planning-line.png`, `planning-drop.png`, `planning-landed.png`.

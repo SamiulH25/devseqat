@@ -16,6 +16,24 @@ public sealed class DeploySpot
 /// again at the next deployment. Your side always deploys toward -Y, so places carry from field to field.
 public sealed partial class Battle
 {
+    /// How far toward the foe your companies may be drawn up (Pillar 2 P2.1): your side deploys toward -Y, up to this line.
+    public const float DeployFront = -12;
+    /// How close to the field's edges a company may be drawn up.
+    public float DeployEdge => Terrain.Half - 20;
+
+    /// Where your companies may stand in deployment: the one rule the clamps, the screen and the line on the ground share.
+    public (float MinX, float MaxX, float MinY, float MaxY) DeployBounds() => (-DeployEdge, DeployEdge, -DeployEdge, DeployFront);
+
+    /// `p` brought onto your side of the deployment line and inside the field.
+    public Vector2 ClampDeployPos(Vector2 p)
+    {
+        var (x0, x1, y0, y1) = DeployBounds();
+        return new Vector2(Math.Clamp(p.X, x0, x1), Math.Clamp(p.Y, y0, y1));
+    }
+
+    /// Whether `p` lies where your companies may be drawn up.
+    public bool InDeployZone(Vector2 p) => ClampDeployPos(p) == p;
+
     /// Your companies' lines now, by campaign company (allies', split halves' and one-off squads' left out).
     public List<DeploySpot> DeploymentOf() => Squads
         .Where(s => s.Team == 0 && !s.AiControlled && s.SplitFrom == null && s.FoldedInto == null && s.Company is { Id: > 0 })
@@ -28,12 +46,11 @@ public sealed partial class Battle
     {
         if (Options.Siege || Options.Tournament || Options.Duel) return 0;
         var by = spots.GroupBy(p => p.Company).ToDictionary(g => g.Key, g => g.First());
-        float edge = Terrain.Half - 20;
         int n = 0;
         foreach (var s in Squads)
         {
             if (s.Team != 0 || s.AiControlled || s.Company is not { Id: > 0 } c || !by.TryGetValue(c.Id, out var p)) continue;
-            s.Anchor = new Vector2(Math.Clamp(p.X, -edge, edge), Math.Clamp(p.Y, -edge, -12));
+            s.Anchor = ClampDeployPos(new Vector2(p.X, p.Y));
             var f = new Vector2(p.FX, p.FY);
             if (f.LengthSquared() > 0.01f) s.Front = Vector2.Normalize(f);
             s.Columns = Math.Max(1, p.Columns);

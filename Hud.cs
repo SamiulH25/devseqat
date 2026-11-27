@@ -135,8 +135,7 @@ sealed partial class Hud
         var items = ShowResult ? (InCampaign ? new[] { MenuItem.Continue } : new[] { MenuItem.NewBattle, MenuItem.BattleSetup, MenuItem.Title })
             : MenuOpen ? (InCampaign ? new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Settings, MenuItem.Withdraw } : new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Settings, MenuItem.BattleSetup, MenuItem.NewBattle, MenuItem.Title })
             : Array.Empty<MenuItem>();
-        start = Deploying ? new Rectangle(W / 2 - U(130), U(96) + Drop, U(260), U(30)) : Rectangle.Empty;
-        deployToggle = Deploying && DeployLast != null ? new Rectangle(W / 2 - U(130), U(138) + Drop, U(260), U(20)) : Rectangle.Empty;
+        LayoutPlanning(); // the BATTLE PLANNING header (Hud.Planning.cs)
         LayoutCommand(); // the tray, ADD on the cards, a sergeant's question (Hud.Command.cs)
         int mw = U(220), mh = U(30), top = H / 2 - items.Length * (mh + U(8)) / 2 + U(10);
         if (ShowResult) // side by side along the bottom of the result
@@ -278,22 +277,7 @@ sealed partial class Hud
             TextC($"YOU ARE DOWN: {Ctl.Name(Act.Rally)} TO FIGHT ON ({MathF.Max(0, Battle.LastStandWindow - (B.Time - B.DownSince)):0})", W / 2f, r.Y + U(12), Color.White, 1);
         }
         if (Box is Rectangle box) { Rect(box, Gold * 0.12f); Frame(box, Gold, 1); }
-        if (Deploying)
-        {
-            var banner = new Rectangle(W / 2 - U(230), U(60) + Drop, U(460), U(72));
-            Panel(banner, Gold);
-            TextC("DEPLOYMENT: PLACE YOUR COMPANIES IN YOUR THIRD OF THE FIELD", W / 2f, banner.Y + U(10), Gold, 1);
-            bool hover = start.Contains(Mouse);
-            Rect(start, hover ? Gold * 0.45f : Gold * 0.2f);
-            Frame(start, Gold, U(1));
-            TextC($"START BATTLE ({Ctl.Name(Act.Pause)})", start.X + start.Width / 2f, start.Y + U(8), Color.White);
-            if (DeployLast is bool last)
-            {
-                bool th = deployToggle.Contains(Mouse);
-                Panel(deployToggle, th ? Gold : Dim);
-                TextC(last ? "DEPLOYED AS LAST TIME (CLICK: DEFAULT)" : "DEFAULT DEPLOYMENT (CLICK: AS LAST TIME)", W / 2f, deployToggle.Y + U(6), th ? Gold : Dim, 1);
-            }
-        }
+        if (Deploying) DrawPlanning(); // the header, the layout pill and the planning keys (Hud.Planning.cs)
         else if (Paused && !MenuOpen && !HelpOpen && !ShowResult)
         {
             // A planning pause (docs/archive/COMBAT_QOL.md Q4): orders given now go out together when the battle runs on.
@@ -395,7 +379,7 @@ sealed partial class Hud
     /// Your personal goals for this battle (P6), under the balance bar: open in white, met in gold, lost struck grey.
     void GoalLines()
     {
-        int y = Deploying ? (DeployLast != null ? U(186) : U(158)) + Drop : Paused ? PauseBox.Bottom + U(6) : (B.Wall != null && !Command ? U(80) : U(60)) + Drop;
+        int y = Deploying ? PlanningBottom : Paused ? PauseBox.Bottom + U(6) : (B.Wall != null && !Command ? U(80) : U(60)) + Drop;
         foreach (var g in B.Goals)
         {
             int st = B.GoalState(g);
