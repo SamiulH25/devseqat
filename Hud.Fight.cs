@@ -236,18 +236,18 @@ sealed partial class Hud
         for (int i = 0; i < count; i++)
         {
             var u = nearbyEnemies[i].U;
-            float headY = (u.Mounted ? 2.6f : 1.95f) * u.Type.Size;
+            float headY = (u.Mounted ? 2.78f : 2.12f) * u.Type.Size;
             var sp = vp.Project(new Vector3(u.Pos.X, B.Terrain.Height(u.Pos) + headY, u.Pos.Y), Proj, View, Matrix.Identity);
             if (sp.Z is <= 0 or >= 1) continue;
-            int bw = U(u.IsLeader ? 46 : 36), bh = U(u.IsLeader ? 5 : 4);
+            int bw = U(u.IsLeader ? 48 : 38), bh = U(u.IsLeader ? 6 : 5);
             int bx = (int)sp.X - bw / 2, by = (int)sp.Y - bh - U(4);
             if (bx < U(12) || bx + bw > W - U(12) || by < U(40) || by + bh > H - U(24)) continue;
             float frac = Math.Clamp(u.Hp / MathF.Max(1f, u.Type.MaxHp), 0f, 1f);
             var outer = new Rectangle(bx - U(1), by - U(1), bw + U(2), bh + U(2));
-            Rect(outer, new Color(10, 12, 16) * 0.85f);
+            Rect(outer, new Color(14, 15, 19) * 0.94f);
             int fillW = (int)MathF.Round(bw * frac);
-            if (fillW > 0) Rect(new Rectangle(bx, by, fillW, bh), new Color(196, 46, 42));
-            Frame(outer, u.IsLeader ? Kit.Gilt * 0.85f : new Color(28, 30, 36) * 0.95f, U(1));
+            if (fillW > 0) Rect(new Rectangle(bx, by, fillW, bh), new Color(204, 48, 44));
+            Frame(outer, u.IsLeader ? Kit.Gilt * 0.9f : new Color(102, 108, 122) * 0.95f, U(1));
         }
     }
 
@@ -293,45 +293,46 @@ sealed partial class Hud
             key = Ctl.Name(Act.Couch);
             label = "COUCH LANCE";
         }
-        else if (MathF.Abs(p.Speed) < 1.5f && !CapWheelOpen)
-        {
-            key = Ctl.Name(Act.Interact);
-            label = "DISMOUNT";
-        }
 
         if (HoldPlace >= 0.25f) { key = null; label = "LET GO: HOLD THAT GROUND"; horseHpFrac = null; }
         else if (label == null && LookFoe is { Alive: > 0 } lf) { key = Ctl.Name(Act.Charge); label = $"ATTACK {lf.Name.ToUpperInvariant()}"; }
 
         if (label == null) return;
 
-        int keyW = key != null ? TW(key, 1) + U(10) : 0;
+        int keyW = key != null ? Math.Max(U(18), TW(key, 1) + U(10)) : 0;
         int labelW = TW(label, 1);
-        int innerW = keyW + (key != null ? U(6) : 0) + labelW;
-        int pw = Math.Max(U(110), innerW + U(18));
-        int ph = horseHpFrac.HasValue ? U(28) : U(20);
-        int px = (W - pw) / 2, py = H - U(118) - ph;
+        int innerW = keyW + (key != null ? U(8) : 0) + labelW;
+        int pw = Math.Max(U(148), innerW + U(24));
+        int ph = horseHpFrac.HasValue ? U(36) : U(24);
+        int px = (W - pw) / 2, py = H - U(156) - ph;
         var card = new Rectangle(px, py, pw, ph);
         var chrome = UiChrome.For(sb.GraphicsDevice);
-        int cb = Math.Max(3, U(5));
-        chrome.Draw9(sb, card, UiChrome.PlateFill, 10, cb, Color.White * 0.9f);
-        chrome.Draw9(sb, card, UiChrome.PlateFrame, 10, cb, Kit.Gilt * 0.8f);
+        int cb = Math.Max(4, U(6));
+        chrome.Draw9(sb, card, UiChrome.PlateFill, 10, cb, Color.White * 0.94f);
+        chrome.Draw9(sb, card, UiChrome.PlateFrame, 10, cb, Kit.Gilt * 0.88f);
 
         int tx = px + (pw - innerW) / 2;
-        int ty = py + (horseHpFrac.HasValue ? U(5) : U(6));
+        int ty = py + (horseHpFrac.HasValue ? U(5) : U(5));
         if (key != null)
         {
-            var kb = new Rectangle(tx, ty - U(1), keyW, U(11));
+            var kb = new Rectangle(tx, ty, keyW, U(14));
             Rect(kb, Kit.Gilt);
-            TextC(key, kb.Center.X, ty + U(1), Kit.IronDark, 1);
-            tx += keyW + U(6);
+            Frame(kb, Kit.IronDark, U(1));
+            TextC(key, kb.Center.X, kb.Y + U(4), Kit.IronDark, 1);
+            tx += keyW + U(8);
         }
-        ShadowL(label, tx, ty + U(1), Kit.Parchment, 1);
+        ShadowL(label, tx, ty + U(4), Kit.Parchment, 1);
 
         if (horseHpFrac is float hf)
         {
-            int gw = pw - U(18), gx = px + U(9), gy = py + U(19);
-            Rect(new Rectangle(gx - U(1), gy - U(1), gw + U(2), U(6)), Color.Black * 0.75f);
-            kit.Gauge(new Rectangle(gx, gy, gw, U(4)), hf, HorseBright);
+            int ix = px + U(10), gy = py + U(23);
+            Color hpCol = hf > 0.6f ? Ok : hf > 0.3f ? Warn : Bad;
+            kit.Icon("horse", ix, gy - U(1), Kit.Parchment, 1);
+            int gx = ix + U(13), gw = pw - U(24) - U(13);
+            var trough = new Rectangle(gx - U(1), gy - U(1), gw + U(2), U(8));
+            Rect(trough, new Color(22, 24, 30) * 0.92f);
+            kit.Gauge(new Rectangle(gx, gy, gw, U(6)), hf, hpCol);
+            Frame(trough, new Color(96, 102, 114) * 0.9f, U(1));
         }
     }
 
@@ -341,7 +342,7 @@ sealed partial class Hud
         if (B.SkillToasts.Count == 0) return;
         const float life = 3.5f;
         int shown = 0;
-        int baseY = H / 2 - U(74);
+        int baseY = U(46);
         var chrome = UiChrome.For(sb.GraphicsDevice);
         int cb = Math.Max(4, U(6));
         for (int i = B.SkillToasts.Count - 1; i >= 0 && shown < 3; i--)
@@ -353,17 +354,17 @@ sealed partial class Hud
             float alpha = Math.Clamp((life - age) / 0.6f, 0f, 1f) * slideIn;
             string title = $"{toast.Skill.ToUpperInvariant()} {toast.NewLevel}";
             string sub = "SKILL INCREASED";
-            int tw = Math.Max(U(156), Math.Max(TW(title, 2), TW(sub, 1)) + U(36));
-            int th = U(34);
+            int tw = Math.Max(U(186), Math.Max(TW(title, 2), TW(sub, 1)) + U(46));
+            int th = U(38);
             int slideOff = (int)((1f - slideIn) * U(42));
             int x = W - U(14) - tw + slideOff;
             int y = baseY + shown * (th + U(6));
             var r = new Rectangle(x, y, tw, th);
-            chrome.Draw9(sb, r, UiChrome.PlateFill, 10, cb, Color.White * (0.92f * alpha));
-            chrome.Draw9(sb, r, UiChrome.PlateFrame, 10, cb, Kit.Gilt * (0.95f * alpha));
-            kit.Icon("star", r.X + U(9), r.Y + U(10), Gold * alpha, 2);
-            ShadowL(title, r.X + U(26), r.Y + U(6), Kit.Parchment * alpha, 2);
-            ShadowL(sub, r.X + U(26), r.Y + U(21), Kit.Gilt * (0.9f * alpha), 1);
+            chrome.Draw9(sb, r, UiChrome.PlateFill, 10, cb, Color.White * (0.95f * alpha));
+            chrome.Draw9(sb, r, UiChrome.PlateFrame, 10, cb, Kit.Gilt * (0.96f * alpha));
+            kit.Icon("star", r.X + U(9), r.Y + U(11), Gold * alpha, 3);
+            ShadowL(title, r.X + U(34), r.Y + U(7), Gold * alpha, 2);
+            ShadowL(sub, r.X + U(34), r.Y + U(24), Kit.Parchment * (0.88f * alpha), 1);
             shown++;
         }
     }

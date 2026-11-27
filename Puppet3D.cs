@@ -847,10 +847,10 @@ sealed partial class Puppet3D
         bool lanceCarry = u.Mounted && p.Armed && (couchK > 0.01f || (grip == Grip.Lance && u.Action == UnitAction.None));
         if (lanceCarry)
         {
-            var uprightHand = TorsoPoint(new Vector3(0.24f, 1.14f, 0.22f));
-            var couchedHand = TorsoPoint(new Vector3(0.20f, 1.20f, 0.26f));
+            var uprightHand = TorsoPoint(new Vector3(0.27f, 1.16f, 0.24f));
+            var couchedHand = TorsoPoint(new Vector3(0.38f, 1.20f, 0.38f));
             wHand = Vector3.Lerp(uprightHand, couchedHand, couchK);
-            var elbowPole = Vector3.Lerp(new Vector3(0.45f, -0.35f, -0.25f), new Vector3(0.65f, 0.12f, -0.85f), couchK);
+            var elbowPole = Vector3.Lerp(new Vector3(0.48f, -0.32f, -0.22f), new Vector3(0.68f, 0.10f, -0.82f), couchK);
             DrawArm(1, wHand, elbowPole);
         }
         else DrawArm(1, wHand);
@@ -873,17 +873,20 @@ sealed partial class Puppet3D
 
         if (!p.Armed) return true; // routed man has thrown away his weapon and shield
 
-        // Upright-to-couched lance (P3.2): proud vertical carry (~10 deg forward) at idle/trot, sweeping smoothly down into couched horizontal charge.
+        // Upright-to-couched lance (P3.2): proud vertical carry (~10 deg forward, slight outward cant to clear sightline) at idle/trot,
+        // sweeping smoothly down into a visible couched horizontal charge with an upward-trailing pennant (no inverted keel).
         if (lanceCarry)
         {
             float aimRel = u.IsPlayer ? Math.Clamp(MathHelper.WrapAngle(u.ViewFacing - u.ViewHeading), -0.26f, 0.26f) : 0f;
             float rel = MathHelper.WrapAngle(u.ViewHeading + aimRel - frameYaw);
             float sway = MathF.Sin(u.Anim * MathF.Tau) * 0.03f * gallop * (1f - couchK);
-            var uprightDir = Vector3.Normalize(new Vector3(0.03f, 0.985f, 0.17f + sway));
-            var couchedDir = RotY(Vector3.Normalize(new Vector3(0, -0.08f, 1f)), MathHelper.ToDegrees(rel));
+            var uprightDir = Vector3.Normalize(new Vector3(0.11f, 0.98f, 0.16f + sway));
+            var couchedDir = RotY(Vector3.Normalize(new Vector3(0.06f, 0.04f, 1f)), MathHelper.ToDegrees(rel));
             var lanceDir = Vector3.Normalize(Vector3.Lerp(uprightDir, couchedDir, couchK));
+            float flutter = MathF.Sin(Now * 9f + phase * MathF.Tau) * 0.12f;
+            var pennantHint = Vector3.Normalize(Vector3.Lerp(new Vector3(0.12f + flutter, 0.05f, -1f), new Vector3(0.32f + flutter, 0.94f, -0.10f), couchK));
             var lanceMesh = lm.Weapon.Length > 0 ? lm.Weapon : kit.Get("weapon_lance");
-            EmitDir(lanceMesh, wHand - lanceDir * MathHelper.Lerp(0.48f, 0.35f, couchK), lanceDir);
+            EmitWeapon(lanceMesh, wHand - lanceDir * MathHelper.Lerp(0.42f, 0.04f, couchK), lanceDir, pennantHint, edgeAlongZ: true);
             if (u.Type.HasShield && lm.HasShield)
                 EmitShield(lm, palIdx, offHand + new Vector3(-0.07f, 0.02f, 0.06f), -58f, u.StuckArrows, false);
             return true;

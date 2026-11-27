@@ -279,11 +279,11 @@ partial class BattleScreen
                 b.Player.Type = lanceType;
                 b.Player.Horse ??= Troops.Mount("warhorse");
                 b.Player.HorseHp = b.Player.Horse.Hp;
-                b.Player.Pos = new(0, -28); b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+                b.Player.Pos = new(0, -28); b.Player.Facing = b.Player.Heading = b.Player.ViewFacing = b.Player.ViewHeading = MathHelper.PiOver2;
                 b.Player.Speed = 3.5f; b.Player.Couched = false; b.Player.CouchBlend = 0f;
                 foreach (var u in b.Units) if (u.Mounted && u.Team == 0 && !u.IsPlayer) { u.Couched = false; u.CouchBlend = 0f; }
                 var cavA = b.AddSquad(0, UnitType.Lancer, 4, new(2.5f, -21f), 4, Vector2.UnitY);
-                foreach (var u in cavA.Units) { u.Speed = 3f; u.Couched = false; u.CouchBlend = 0f; }
+                foreach (var u in cavA.Units) { u.Facing = u.Heading = u.ViewFacing = u.ViewHeading = MathHelper.PiOver2; u.Speed = 3f; u.Couched = false; u.CouchBlend = 0f; }
                 yaw = MathHelper.PiOver2; pitch = 0.16f;
                 shotFrames = 0; shotIndex++; break;
             }
@@ -292,8 +292,11 @@ partial class BattleScreen
             case 312 when pendingShot == null:
             {
                 // Shot 2: Couched lance charge at gallop with speed-reactive camera pullback.
+                b.Player.Facing = b.Player.Heading = b.Player.ViewFacing = b.Player.ViewHeading = MathHelper.PiOver2;
                 b.Player.Speed = 11.5f; b.Player.Couched = true; b.Player.CouchBlend = 1f;
-                foreach (var u in b.Units) if (u.Mounted && u.Team == 0 && !u.IsPlayer) { u.Speed = 11f; u.Couched = true; u.CouchBlend = 1f; }
+                var targetLine = b.AddSquad(1, Troops.Get("brevon_fyrd"), 6, new(2.5f, -6f), 6, -Vector2.UnitY);
+                foreach (var q in b.SquadsOf(0)) if (q.Cavalry) { q.Order = Order.Charge; q.Target = targetLine; }
+                foreach (var u in b.Units) if (u.Mounted && u.Team == 0 && !u.IsPlayer) { u.Facing = u.Heading = u.ViewFacing = u.ViewHeading = MathHelper.PiOver2; u.Speed = 11f; u.Couched = true; u.CouchBlend = 1f; }
                 yaw = MathHelper.PiOver2; pitch = 0.16f;
                 shotFrames = 0; shotIndex++; break;
             }
@@ -303,7 +306,7 @@ partial class BattleScreen
             {
                 // Shot 3: Close melee with nearby enemy HP bars + live skill-up toasts.
                 b.Player.Couched = false; b.Player.CouchBlend = 0f; b.Player.Speed = 0f;
-                b.Player.Pos = new(0, -10); b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+                b.Player.Pos = new(0, -10); b.Player.Facing = b.Player.Heading = b.Player.ViewFacing = b.Player.ViewHeading = MathHelper.PiOver2;
                 var foes = b.AddSquad(1, Troops.Get("brevon_fyrd"), 5, new(0, -6.5f), 5, -Vector2.UnitY);
                 foes.Units[0].Hp = foes.Units[0].Type.MaxHp * 0.45f;
                 foes.Units[1].Hp = foes.Units[1].Type.MaxHp * 0.72f;
@@ -319,8 +322,9 @@ partial class BattleScreen
             case 316 when pendingShot == null:
             {
                 // Shot 4: On-foot near loose horse showing [E] MOUNT HORSE prompt + horse HP bar.
+                b.Player.Type = UnitType.Captain;
                 b.Player.Horse = null; b.Player.Speed = 0f;
-                b.Player.Pos = new(0, -28); b.Player.Facing = MathHelper.PiOver2;
+                b.Player.Pos = new(0, -28); b.Player.Facing = b.Player.ViewFacing = MathHelper.PiOver2;
                 b.SkillToasts.Clear();
                 b.LooseHorses.Add(new LooseHorse { Mount = Troops.Mount("warhorse"), Hp = 115f, Pos = new(0.8f, -26.2f), Heading = 0.4f, Team = 0, Coat = 1 });
                 yaw = MathHelper.PiOver2; pitch = 0.20f;

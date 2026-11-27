@@ -276,8 +276,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Press.cs (194 lines)
 - **BattleScreen** (class, L8): PressShot:16, PressList:21, PressScript:49, MagicShot:78, Aim:102, Blocked:116, Behind:137, Over:145, Captain:152, Horse:163, Volley:174, Hot:184
 
-## BattleScreen.Shots.cs (969 lines)
-- **BattleScreen** (class, L8): ShotScript:12, BeastScene:408, readonly:427, readonly:435, PoseSheet:445, GripSheet:519, ShooterSheet:543, StanceSheet:575, LifeSheet:596, Clash:629, MarkedScene:656, NamedScene:683, HuntedScene:717, ArrowScene:744, MagicScene:780, SpectacleScene:831, WorkScene:881, StageCast:937, Gallery:945
+## BattleScreen.Shots.cs (973 lines)
+- **BattleScreen** (class, L8): ShotScript:12, BeastScene:412, readonly:431, readonly:439, PoseSheet:449, GripSheet:523, ShooterSheet:547, StanceSheet:579, LifeSheet:600, Clash:633, MarkedScene:660, NamedScene:687, HuntedScene:721, ArrowScene:748, MagicScene:784, SpectacleScene:835, WorkScene:885, StageCast:941, Gallery:949
 
 ## BattleScreen.Spectacle.cs (208 lines)
 - **BattleScreen** (class, L9): ResetSpectacle:32, Beat:44, BeatCaption:53, AddGlow:67, AddAwe:70, AddScar:73, SpectacleFrame:84, Omen:112, Brighten:114, Drain:117, Shimmer:118, Flash:119, SetGlows:123, Weight:139, ScarColour:156, DrawScars:165, LightsFx:184
@@ -843,8 +843,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Hud.Divisions.cs (395 lines)
 - **Hud** (class, L8): WheelGoals:17, LayoutDivisions:20, LayoutGoals:34, DivisionAt:51, GoalAt:52, GoalCloseAt:53, DivisionTag:57, GoalTag:65, DivisionCards:67, StanceExplain:109, PostExplain:124, GoalPanel:133, DivisionTooltip:177, SergeantFieldBadge:197, GoalWheel:207, SergeantPennants:230, NamedMarks:248, BannerMark:303, DivisionMarkers:326
 
-## Hud.Fight.cs (487 lines)
-- **Hud** (class, L10): ArmOf:16, LayoutFight:22, ShadowL:35, ShadowR:41, ListenWord:44, FightTop:60, Vitals:98, ControlHints:131, SwingWords:149, ArmChips:160, OrderToast:197, DrawNearbyEnemyBars:213, DrawInteractPrompt:256, DrawSkillToasts:339, FightHints:371, Wheel:380, CaptainWheel:452
+## Hud.Fight.cs (488 lines)
+- **Hud** (class, L10): ArmOf:16, LayoutFight:22, ShadowL:35, ShadowR:41, ListenWord:44, FightTop:60, Vitals:98, ControlHints:131, SwingWords:149, ArmChips:160, OrderToast:197, DrawNearbyEnemyBars:213, DrawInteractPrompt:256, DrawSkillToasts:340, FightHints:372, Wheel:381, CaptainWheel:453
 
 ## Hud.Fights.cs (134 lines)
 - **Hud** (class, L11): SampleFights:22, Lost:45, FightLine:61, FightMarks:69, Swords:106, Dashed:127
@@ -1069,8 +1069,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Puppet3D.Beasts.cs (526 lines)
 - **Puppet3D** (class, L7): BeastRearing:9, DrawBeast3D:13, DrawWolfUnit3D:34, DrawWolfRig:52, DrawWarg3D:99, DrawBear3D:107, DrawSpider3D:156, DrawWyvern3D:192, DrawBoar3D:256, DrawHarpy3D:286, DrawGriffon3D:312, DrawBasilisk3D:351, DrawSandWurm3D:382, DrawWerewolf3D:403, DrawBrute3D:441
 
-## Puppet3D.cs (1742 lines)
-- **Puppet3D** (class, L12): BuildPatAlpha:57, Puppet3D:76, BeginCamera:82, Rad:89, Frame:91, WorldFrame:100, Lean:109, W:118, WDir:129, EmitLocal:144, EmitBone:227, EmitDir:243, EmitWeapon:255, RotX:280, RotZ:286, RotY:292, Elbow:298, LegIK:313, Sink:335, TryDraw:344, EmblemOf:979, EmitSlashArc:1000, EmitShield:1073, EmitHumanHead:1126, DrawFallen3D:1180, Banner:1292, DrawMissile:1430, HorseScale:1448, Joint:1458, DrawHorse3D:1472, DrawLooseHorse:1625, DrawDeadHorse:1639, Bench:1683
+## Puppet3D.cs (1745 lines)
+- **Puppet3D** (class, L12): BuildPatAlpha:57, Puppet3D:76, BeginCamera:82, Rad:89, Frame:91, WorldFrame:100, Lean:109, W:118, WDir:129, EmitLocal:144, EmitBone:227, EmitDir:243, EmitWeapon:255, RotX:280, RotZ:286, RotY:292, Elbow:298, LegIK:313, Sink:335, TryDraw:344, EmblemOf:982, EmitSlashArc:1003, EmitShield:1076, EmitHumanHead:1129, DrawFallen3D:1183, Banner:1295, DrawMissile:1433, HorseScale:1451, Joint:1461, DrawHorse3D:1475, DrawLooseHorse:1628, DrawDeadHorse:1642, Bench:1686
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, SheetRect:133, OtherBeastCorpse:136

@@ -99,7 +99,7 @@ sealed partial class BattleScreen
     float yaw, pitch, fieldDist = 3.4f;       // field camera: grounded OTS behind the player (Pillar 3 P3.1)
     float camYaw, camPitch, zoom = 45;        // command camera: free orbit around camFocus
     // CR1/P3.1 combat camera state: critically damped focus height, speed-reactive pullback, dynamic FOV, camera mode (0=OTS, 1=close duel, 2=first-person).
-    float camFocusY, camFocusYVel, camShoulder = 0.58f, camSpeedPull, camFov = 62f;
+    float camFocusY, camFocusYVel, camShoulder = 0.68f, camSpeedPull, camFov = 62f;
     bool camInit;
     int camMode;
 
