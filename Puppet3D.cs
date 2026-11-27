@@ -365,8 +365,8 @@ sealed partial class Puppet3D
 
         float size = (u.Type.Class == UnitClass.Captain ? 1.12f : 1f) * u.Type.Size * Scale * Variety.Stature(u);
 
-        // Ultra-far silhouette proxy (Lod < 0.14): ~68 tris with cheap stride bob & lean so distant armies stay alive!
-        if (Lod < 0.14f && !u.Dead)
+        // Shadow-map silhouette proxy (ShadowOnly && Lod < 0.14): ~68 tris keeps sun shadow passes fast while visible units always show their real gear.
+        if (ShadowOnly && Lod < 0.14f && !u.Dead)
         {
             float spd = u.Mounted ? u.Speed : u.Vel.Length();
             float stride = spd > 0.3f ? MathF.Sin(u.Anim * MathF.PI) : 0f;
@@ -1208,7 +1208,7 @@ sealed partial class Puppet3D
         float a = 85f * (fall == Fall.Flung ? Ease.Out(k) : crumple ? Ease.In(MathF.Max(0f, k * 1.4f - 0.4f)) : Ease.In(k));
         Lean(Vector2.Dot(dir, right2) * a, Vector2.Dot(dir, fwd2) * a);
 
-        if (Detail >= 2)
+        if (ShadowOnly && Detail >= 2)
         {
             EmitLocal(kit.LodFoot, Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
             return;
@@ -1619,7 +1619,7 @@ sealed partial class Puppet3D
         if (h.Mount.Barding == "wolf") return;
         UnitMatTable.Fill(h.Team, -1, h.Coat, h.Mount.Barding == "camel", Color.White, palCols); palDirty = true;
         unitIdHash = Ease.Hash((int)(h.Pos.X * 13 + h.Pos.Y * 29));
-        if (Detail >= 2)
+        if (ShadowOnly && Detail >= 2)
         {
             Frame(h.Pos, h.Heading, ground, Scale * HorseScale(h.Mount.Barding));
             EmitLocal(kit.LodHorse, Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);

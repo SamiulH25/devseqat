@@ -40,7 +40,7 @@ sealed partial class BattleScreen
         float userDetail = Math.Clamp(Settings.Current.ModelDetail, 0.20f, 1f);
         if (isPlayer) return MathF.Max(0.85f, userDetail);
         if (PinnedLod is { } pin) return pin;
-        float zoomScale = MathHelper.Lerp(1f, 0.62f, blend);
+        float zoomScale = MathHelper.Lerp(1f, 0.80f, blend);
         float govLevel = Settings.Current.DynamicLod ? lod.Level : 1f;
         return LodGovernor.LodFor(dist3D, govLevel, zoomScale, userDetail);
     }
@@ -111,11 +111,11 @@ public sealed class LodGovernor
     {
         float scale = Math.Clamp(zoomScale, 0.35f, 1.25f) * Math.Clamp(userDetail, 0.20f, 1f);
         float near = MathHelper.Lerp(NearMin * 0.45f, NearMax * 0.45f, level) * scale;
-        float far = MathHelper.Lerp(MidMin * 0.95f, MidMax * 0.60f, level) * scale;
+        float far = MathHelper.Lerp(MidMin * 0.95f, MidMax * 0.85f, level) * scale;
         if (dist <= near) return Math.Clamp(userDetail, 0.20f, 1f);
-        if (dist >= far) return 0.08f;
+        if (dist >= far) return 0.18f;
         float t = (dist - near) / MathF.Max(1f, far - near);
         float s = 1f - t * t * (3f - 2f * t);
-        return Math.Clamp(0.08f + s * (userDetail - 0.08f), 0.08f, 1f);
+        return Math.Clamp(0.18f + s * (userDetail - 0.18f), 0.18f, 1f);
     }
 }
