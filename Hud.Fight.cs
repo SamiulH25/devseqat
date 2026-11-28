@@ -4,17 +4,33 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Ironfield;
 
 /// Hud, the fight view (docs/archive/PLAYTEST.md PT4, "As rebuilt"): you are the captain, with a reticle and no cursor. Bottom left
-/// your vitals as bare bars; bottom right the arms that listen to you (1 foot, 2 bows, 3 horse, 4 mages, 0 all); a thin
+/// your vitals as bare bars; bottom right the groups that listen to you (1-3 the foot's left, centre and right as they stand,
+/// 4 bows, 5 horse, 6 mages, 0 all; BattleListen.cs); a thin
 /// balance bar and the battle's speed at the top (the command view has them at the bottom); the order ring while its key is
 /// held. No cards, no map, no buttons: those are the command view's.
 sealed partial class Hud
 {
-    public static readonly string[] ArmNames = { "FOOT", "BOWS", "HORSE", "MAGES" };
-    static readonly string[] ArmIcons = { "shield", "arrow", "horse", "star" };
+    /// The groups that listen in the fight view, keys 1-6: the foot by wing (left, centre, right), then bows, horse, mages.
+    public static readonly string[] ArmNames = { "LEFT", "CENTRE", "RIGHT", "BOWS", "HORSE", "MAGES" };
+    static readonly string[] ArmIcons = { "shield", "shield", "shield", "arrow", "horse", "star" };
+    public const int Groups = 6, FootGroups = 3;
 
-    /// The arm a company answers with in the fight view: 0 foot (spears too), 1 bows and other shot, 2 horse, 3 mages.
+    /// The arm a company answers with: 0 foot (spears too), 1 bows and other shot, 2 horse, 3 mages.
     public static int ArmOf(Squad s) => Battle.CasterCompany(s) ? 3 : s.Cavalry ? 2
         : s.Units.Count > 0 && s.Units[0].Type.Class == UnitClass.Archer ? 1 : 0;
+
+    /// The group each live company you lead listens in: foot by the wing it stands on now (Battle.FootWings), the rest by arm.
+    public static Dictionary<Squad, int> GroupsOf(Battle b)
+    {
+        var live = b.Commanded.Where(s => s.Alive > 0 && s.Works == null).ToList();
+        var groups = b.FootWings(live.Where(s => ArmOf(s) == 0));
+        foreach (var s in live) if (ArmOf(s) != 0) groups[s] = ArmOf(s) + FootGroups - 1;
+        return groups;
+    }
+
+    /// This frame's groups (set in LayoutFight).
+    Dictionary<Squad, int> groupOf = new();
+    int GroupOf(Squad s) => groupOf.TryGetValue(s, out var g) ? g : -1;
 
     readonly List<(Rectangle R, int Arm)> armChips = new();
     readonly List<(Unit U, float DistSq)> nearbyEnemies = new();
@@ -22,10 +38,12 @@ sealed partial class Hud
     void LayoutFight()
     {
         player = new Rectangle(U(12), H - U(62), U(300), U(52));
-        int cw = U(86), ch = U(38), x = W - U(12);
-        for (int arm = 3; arm >= 0; arm--)
+        groupOf = GroupsOf(B);
+        int shown = groupOf.Values.Distinct().Count();
+        int cw = U(shown > 4 ? 74 : 86), ch = U(38), x = W - U(12);
+        for (int arm = Groups - 1; arm >= 0; arm--)
         {
-            if (!B.Commanded.Any(s => s.Alive > 0 && s.Works == null && ArmOf(s) == arm)) continue;
+            if (!groupOf.ContainsValue(arm)) continue;
             x -= cw;
             armChips.Add((new Rectangle(x, H - ch - U(12), cw, ch), arm));
             x -= U(4);
@@ -44,14 +62,21 @@ sealed partial class Hud
     public string ListenWord()
     {
         if (Selected.Count == 0) return "ALL COMPANIES";
+        groupOf = GroupsOf(B); // the command view lays no chips, so read the groups here too
         var arms = new List<string>();
         int inArms = 0;
-        for (int arm = 0; arm < 4; arm++)
+        bool[] whole = new bool[Groups];
+        for (int arm = 0; arm < Groups; arm++)
         {
             int n = 0, picked = 0;
-            foreach (var s in B.Commanded) if (s.Alive > 0 && s.Works == null && ArmOf(s) == arm) { n++; if (Selected.Contains(s)) picked++; }
-            if (n > 0 && picked == n) { arms.Add(ArmNames[arm]); inArms += n; }
+            foreach (var (s, g) in groupOf) if (g == arm) { n++; if (Selected.Contains(s)) picked++; }
+            if (n > 0 && picked == n) { whole[arm] = true; inArms += n; }
+            else if (n == 0 && arm < FootGroups) whole[arm] = true; // an empty wing does not spoil "all the foot"
         }
+        bool allFoot = whole[0] && whole[1] && whole[2] && groupOf.Values.Any(g => g < FootGroups);
+        for (int arm = 0; arm < Groups; arm++)
+            if (arm < FootGroups ? !allFoot && whole[arm] && groupOf.ContainsValue(arm) : whole[arm]) arms.Add(ArmNames[arm]);
+        if (allFoot) arms.Insert(0, "FOOT");
         int live = Selected.Count(s => s.Alive > 0);
         return arms.Count > 0 && inArms == live ? string.Join(" + ", arms) : live == 1 ? Selected.First(s => s.Alive > 0).Name.ToUpperInvariant() : $"{live} COMPANIES";
     }
@@ -168,7 +193,7 @@ sealed partial class Hud
             Squad? first = null;
             foreach (var s in B.Commanded)
             {
-                if (s.Alive == 0 || s.Works != null || ArmOf(s) != arm) continue;
+                if (s.Alive == 0 || s.Works != null || GroupOf(s) != arm) continue;
                 n++; men += s.Alive; began += s.StartCount; first ??= s;
                 if (Selected.Contains(s)) picked++;
             }

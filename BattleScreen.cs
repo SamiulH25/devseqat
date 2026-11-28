@@ -458,7 +458,7 @@ sealed partial class BattleScreen
         else if (!command && battle.Player.Active)
         {
             Tips.Show("field", $"Field view: you fight. On horseback {ctl.First(Act.Forward)}/{ctl.First(Act.Back)} rein, {ctl.First(Act.Left)}/{ctl.First(Act.Right)} turn, {ctl.First(Act.Sprint)} gallops.\nMove the mouse to choose a swing direction, {ctl.First(Act.Attack)} to attack, {ctl.First(Act.Block)} to block (match the red mark to parry).\n{ctl.First(Act.CommandView)}: command the whole field. {ctl.First(Act.Help)}: all the keys.");
-            if (battle.Time > 6) Tips.Show("listen", $"Your men listen by arm: 1 foot, 2 bows, 3 horse, 0 all. {ctl.First(Act.Charge)} sends them at the company you look at.\nHold {ctl.First(Act.HoldPosition)} and let go: they draw up on the ground you look at. Hold {ctl.Name(Act.OrderWheel)}: the order ring.");
+            if (battle.Time > 6) Tips.Show("listen", $"Your men listen in groups: 1 left, 2 centre, 3 right of the foot, 4 bows, 5 horse, 0 all. {ctl.First(Act.Charge)} sends them at the company you look at.\nHold {ctl.First(Act.HoldPosition)} and let go: they draw up on the ground you look at. Hold {ctl.Name(Act.OrderWheel)}: the order ring.");
         }
         if (command && !deploying)
         {

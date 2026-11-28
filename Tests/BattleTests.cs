@@ -124,6 +124,29 @@ public static partial class SelfTest
     /// a few get through, so the bows are not ridden down. Loose or broken foot lets them through.
     /// Every action has a key and a label for the controls screen; the captain's ring holds each of its things once,
     /// and its key shares the couch key by default (a tap couches, a hold opens the ring).
+    /// The fight view's groups and a spread engage (BattleListen.cs): foot listens by the wing it stands on, facing the
+    /// enemy; an engage on one company sends enough to beat it and the rest at the foes in front of them.
+    static void WingsAndSpread()
+    {
+        var b = Battle.Empty(7);
+        var t = Troops.Get("men_at_arms");
+        float[] xs = { -30, -10, 10, 30 };
+        var mine = xs.Select(x => b.AddSquad(0, t, 30, new(x, 0), 10, Vector2.UnitY)).ToList();
+        var foes = xs.Select(x => b.AddSquad(1, t, 30, new(x, 40), 10, -Vector2.UnitY)).ToList();
+        foreach (var s in b.Squads) s.Order = Order.Hold;
+        b.Update(1 / 60f);
+        var wings = b.FootWings(mine);
+        // Facing +Y the screen's right is -X (BattleScreen.RightOf), so the company at +30 is the left wing.
+        Check(wings[mine[3]] == Battle.WingLeft && wings[mine[0]] == Battle.WingRight, "the wings are as you see them facing the foe");
+        Check(wings[mine[1]] == Battle.WingCentre && wings[mine[2]] == Battle.WingCentre, "the middle companies are the centre");
+        Check(b.FootWings(mine.Take(1)).Values.Single() == Battle.WingCentre, "one company is the centre");
+        var at = b.SpreadAttack(mine, foes[2]);
+        int onFoe = at.Values.Count(e => e == foes[2]);
+        Check(onFoe == 2, $"enough to beat it take the target ({onFoe})");
+        Check(at[mine[0]] == foes[0], "the far company takes the foe in front of it");
+        Check(at.Values.GroupBy(e => e).Max(g => g.Count()) <= 2, "no foe is piled on");
+    }
+
     static void KeysLabelled()
     {
         foreach (var a in Enum.GetValues<Act>())

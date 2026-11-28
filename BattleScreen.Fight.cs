@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// BattleScreen, the fight view's own way to command (docs/archive/PLAYTEST.md PT4, "As rebuilt"). You have no cursor there, so:
-/// number keys pick the arm that listens (1 foot, 2 bows, 3 horse, 4 mages, 0 all), and orders go where you look: charge
+/// number keys pick the group that listens (1-3 the foot's left, centre, right as it stands, 4 bows, 5 horse, 6 mages, 0 all), and orders go where you look: charge
 /// sends them at the company under the reticle, the hold key held down plants their line on the ground under it.
 partial class BattleScreen
 {
@@ -50,8 +50,8 @@ partial class BattleScreen
         selectedDivision = null;
         if (digit == 0) { selected.Clear(); Prompt("ALL COMPANIES LISTEN"); host.Audio?.Play(Cue.Order, 0.4f); return; }
         int arm = digit - 1;
-        if (arm > 3) return;
-        var who = battle.Commanded.Where(s => s.Alive > 0 && s.Works == null && Hud.ArmOf(s) == arm).ToList();
+        if (arm >= Hud.Groups) return;
+        var who = Hud.GroupsOf(battle).Where(p => p.Value == arm).Select(p => p.Key).ToList();
         if (who.Count == 0) { Prompt($"YOU LEAD NO {Hud.ArmNames[arm]}"); return; }
         bool had = who.All(selected.Contains) && selected.Count(s => s.Alive > 0) == who.Count;
         bool drop = add ? who.All(selected.Contains) : had;

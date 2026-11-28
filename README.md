@@ -293,7 +293,7 @@ Keys are MonoGame `Keys` names (`W`, `LeftShift`, `F1`...) or `LMB`/`RMB`/`MMB`/
 - **Hold Q for the captain's ring** (tap Q still couches the lance): swap weapon, your three forms and the great form, the
   relic, mount or dismount, couch. Each slot says why it is greyed (no form set, cooling down, aura cost, slow first).
   N, U, I, O, L and Backspace still do them directly.
-- **Who listens:** 1 foot, 2 bows, 3 horse, 4 mages, 0 everyone (Shift adds an arm). The chips at the bottom right show them; a chosen arm's chip glows gold.
+- **Who listens:** the foot by where it stands facing the enemy: 1 left, 2 centre, 3 right (each a third of your foot companies, ranked across the field; worked out again each time you press). 4 bows, 5 horse, 6 mages, 0 everyone (Shift adds a group). The chips at the bottom right show them; a chosen arm's chip glows gold.
 - **Orders go where you look:** C sends them at the enemy company under the reticle (else at the nearest); tap H to hold in
   place, or hold H and let go to draw them up on the ground you look at (a gold marker and each man's place show first).
 
@@ -573,6 +573,8 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   enough to (rabble still go in as a crowd). FULL CHARGE (**;**, or **Shift** with ENGAGE or the click) does not keep the line:
   every man runs at the foe on his own, no dressing the ranks and no re-forming on the way. It lands sooner but ragged,
   and ends when you give the company another order. Both sit on the order deck, the field bar and the order ring.
+  An ENGAGE aimed at one company by several of yours spreads out: the nearest take it until they outnumber it, and the
+  rest each take the enemy company in front of them, so your line meets theirs. FULL CHARGE sends them all at the one.
 - **Queued and standing orders:** hold **Shift** while giving a move order and it waits until the company's last
   order is done (it stands formed where it was sent, or the company it attacked broke); the card shows **+N** orders queued.
   **=** cycles a standing order on the selected companies, kept until you change it: *charge when they close* (hold, then

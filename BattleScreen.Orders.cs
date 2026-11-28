@@ -77,7 +77,10 @@ partial class BattleScreen
         bool held = queueing, reckless = full || queueing;
         queueing = false; // read again from the keys next frame
         string what = reckless ? (foe != null ? "full charge at " + foe.Name + "!" : "full charge!") : foe != null ? "engage " + foe.Name + "!" : "engage!";
-        Issue(what, s => { s.Order = Order.Charge; s.Target = foe; s.Reckless = reckless; }, move: true, horn, reckless ? "order_reckless" : "order_charge");
+        // An engage on one company spreads along their line (BattleListen.cs); a full charge sends everyone at it.
+        var at = !reckless && foe != null && Targets().Count > 1 ? battle.SpreadAttack(Targets(), foe) : null;
+        if (at != null && at.Values.Distinct().Count() > 1) what = "engage " + foe!.Name + " and the line beside it!";
+        Issue(what, s => { s.Order = Order.Charge; s.Target = at?.GetValueOrDefault(s, foe) ?? foe; s.Reckless = reckless; }, move: true, horn, reckless ? "order_reckless" : "order_charge");
         queueing = held;
     }
 

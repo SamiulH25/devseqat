@@ -170,6 +170,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleHunt.cs (189 lines)
 - **Battle** (class, L10): HuntGeneral:31, Forward:44, SendHunterNow:53, SendHunter:56, MarkWithBows:77, OwnMenNear:100, LoosesAtCaptain:108, CloseTheGuard:111, GuardSpot:123, Grudge:134, HuntThink:144, UpdateHunt:168, StandState:179, HuntersState:182
 
+## BattleListen.cs (65 lines)
+- **Battle** (class, L9): FootWings:18, SpreadAttack:40, Mean:63, Mean:64
+
 ## BattleMerge.cs (82 lines)
 - **Battle** (class, L7): Movers:16, CannotMerge:19, Merge:40, Fold:48, ReplayMerge:81
 
@@ -267,8 +270,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Magic.cs (446 lines)
 - **BattleScreen** (class, L8): OrderColour:31, FlashColour:40, ResetMagicFx:54, AddRipple:56, Rise:60, MagicFx:70, FlashFx:83, FieldFx:179, BuffFx:236, AuraFx:251, MagicLines:296
 
-## BattleScreen.Orders.cs (461 lines)
-- **BattleScreen** (class, L8): Targets:12, SelectedCrews:16, EngineOrder:19, Issue:29, Send:43, Move:62, Charge:75, NextRule:85, GiveGoal:104, OrderDivisionCompanies:119, Command:126, MergeSelected:202, RelieveSelected:223, SplitSelected:238, GroupKey:253, Group:256, OrderKeys:277, NextSpell:320, CastAt:333, PlantStakes:347, CommandClick:362, MoveTo:387, SoundHorn:397, NextDivision:404, LineAt:414, Distribute:431, PreviewSlots:452
+## BattleScreen.Orders.cs (464 lines)
+- **BattleScreen** (class, L8): Targets:12, SelectedCrews:16, EngineOrder:19, Issue:29, Send:43, Move:62, Charge:75, NextRule:88, GiveGoal:107, OrderDivisionCompanies:122, Command:129, MergeSelected:205, RelieveSelected:226, SplitSelected:241, GroupKey:256, Group:259, OrderKeys:280, NextSpell:323, CastAt:336, PlantStakes:350, CommandClick:365, MoveTo:390, SoundHorn:400, NextDivision:407, LineAt:417, Distribute:434, PreviewSlots:455
 
 ## BattleScreen.Planning.cs (157 lines)
 - **BattleScreen** (class, L9): ClampToZone:23, BeginFight:32, PlanningFrame:49, TurnDeployed:61, GrabDeployed:87, DragDeployed:99, DeployBoundary:129
@@ -843,8 +846,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Hud.Divisions.cs (395 lines)
 - **Hud** (class, L8): WheelGoals:17, LayoutDivisions:20, LayoutGoals:34, DivisionAt:51, GoalAt:52, GoalCloseAt:53, DivisionTag:57, GoalTag:65, DivisionCards:67, StanceExplain:109, PostExplain:124, GoalPanel:133, DivisionTooltip:177, SergeantFieldBadge:197, GoalWheel:207, SergeantPennants:230, NamedMarks:248, BannerMark:303, DivisionMarkers:326
 
-## Hud.Fight.cs (489 lines)
-- **Hud** (class, L10): ArmOf:16, LayoutFight:22, ShadowL:35, ShadowR:41, ListenWord:44, FightTop:60, Vitals:98, ControlHints:131, SwingWords:149, ArmChips:160, OrderToast:197, DrawNearbyEnemyBars:213, DrawInteractPrompt:256, DrawSkillToasts:340, FightHints:372, Wheel:381, CaptainWheel:454
+## Hud.Fight.cs (514 lines)
+- **Hud** (class, L11): ArmOf:19, GroupsOf:23, GroupOf:33, LayoutFight:38, ShadowL:53, ShadowR:59, ListenWord:62, FightTop:85, Vitals:123, ControlHints:156, SwingWords:174, ArmChips:185, OrderToast:222, DrawNearbyEnemyBars:238, DrawInteractPrompt:281, DrawSkillToasts:365, FightHints:397, Wheel:406, CaptainWheel:479
 
 ## Hud.Fights.cs (134 lines)
 - **Hud** (class, L11): SampleFights:22, Lost:45, FightLine:61, FightMarks:69, Swords:106, Dashed:127
@@ -1196,8 +1199,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/AudioTests.cs (256 lines)
 - **SelfTest** (class, L5): MapMusicSteady:17, SoundsMade:79, CombatCuesEmitted:192, CreatureAndMagicCues:216, BedFollows:239
 
-## Tests/BattleTests.cs (2634 lines)
-- **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, KeysLabelled:127, LineScreensBows:139, KeepsDeployedFormation:170, HorseByWeight:193, UiScaling:223, CavalryCycleCharge:247, CavalryBalance:285, Flanks:345, Parry:361, BlowsShown:389, FightsRead:411, Formations:427, HorseFollowsRider:459, CaptainCombat:481, CaptainKit:507, SkillBouts:565, Bout:615, Fight:629, BattleGoals:663, BannerAndLastStand:685, DuelFight:722, RangedRoles:743, FatigueAndSupply:763, GroundLayer:781, GroundMoves:806, GroundFights:837, Layouts:874, HedgesAndBridges:905, EveryLayoutResolves:953, SightAndCover:974, Rivers:1016, HoldsTheCrest:1044, HorseAvoidsBadGround:1070, TakesTheFord:1087, GroundForThePlayer:1109, Stakes:1128, Pathfinder:1183, GoesToFord:1203, FilesThroughGap:1232, RoundTheNearFence:1257, OutOfTheYard:1271, ChargeFindsCaptain:1289, FlowCacheBound:1304, Generals:1319, HorseDown:1336, Ground:1345, HoldFire:1369, Power:1384, TroopTree:1387, SpritesBaked:1415, Sprites:1436, TroopVariety:1473, BigBattle:1509, StackBattle:1539, NamedMenFight:1574, AutoResolveNamedMen:1616, PullBack:1642, NamedInTheFight:1674, ReplayExact:1705, FoldCompanies:1739, AdvanceSteps:1783, RelieveAndSplit:1798, QueuedAndStanding:1835, AlertsRaise:1894, DeploymentMemory:1932, SpearsStopHorse:1971, CommandCap:1982, ScaleBattle:2001, DivisionGoals:2038, LodFollowsFrameRate:2190, ChargeAroundBuilding:2230, BattleLabPresets:2268, SelectableDuels:2283, CombatReworkCR2:2305, CombatReworkCR3CR4:2374, DuelAISpacing:2418, MovementMountedAndRanged:2440, Pillar3CombatFeel:2535, Pillar4BattlefieldPresence:2602
+## Tests/BattleTests.cs (2657 lines)
+- **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, WingsAndSpread:129, KeysLabelled:150, LineScreensBows:162, KeepsDeployedFormation:193, HorseByWeight:216, UiScaling:246, CavalryCycleCharge:270, CavalryBalance:308, Flanks:368, Parry:384, BlowsShown:412, FightsRead:434, Formations:450, HorseFollowsRider:482, CaptainCombat:504, CaptainKit:530, SkillBouts:588, Bout:638, Fight:652, BattleGoals:686, BannerAndLastStand:708, DuelFight:745, RangedRoles:766, FatigueAndSupply:786, GroundLayer:804, GroundMoves:829, GroundFights:860, Layouts:897, HedgesAndBridges:928, EveryLayoutResolves:976, SightAndCover:997, Rivers:1039, HoldsTheCrest:1067, HorseAvoidsBadGround:1093, TakesTheFord:1110, GroundForThePlayer:1132, Stakes:1151, Pathfinder:1206, GoesToFord:1226, FilesThroughGap:1255, RoundTheNearFence:1280, OutOfTheYard:1294, ChargeFindsCaptain:1312, FlowCacheBound:1327, Generals:1342, HorseDown:1359, Ground:1368, HoldFire:1392, Power:1407, TroopTree:1410, SpritesBaked:1438, Sprites:1459, TroopVariety:1496, BigBattle:1532, StackBattle:1562, NamedMenFight:1597, AutoResolveNamedMen:1639, PullBack:1665, NamedInTheFight:1697, ReplayExact:1728, FoldCompanies:1762, AdvanceSteps:1806, RelieveAndSplit:1821, QueuedAndStanding:1858, AlertsRaise:1917, DeploymentMemory:1955, SpearsStopHorse:1994, CommandCap:2005, ScaleBattle:2024, DivisionGoals:2061, LodFollowsFrameRate:2213, ChargeAroundBuilding:2253, BattleLabPresets:2291, SelectableDuels:2306, CombatReworkCR2:2328, CombatReworkCR3CR4:2397, DuelAISpacing:2441, MovementMountedAndRanged:2463, Pillar3CombatFeel:2558, Pillar4BattlefieldPresence:2625
 
 ## Tests/CampaignTests.cs (2177 lines)
 - **SelfTest** (class, L6): CampaignMap:8, BanditsNearPlayer:42, CampaignPersistence:51, CampaignRun:62, Progression:104, CampPromotion:131, CastleMuster:152, VillagesFeedCastle:186, CaravansTownToTown:220, Economy:237, Bridge:253, Calibration:275, LordsFightAsTheyAre:300, RiverRoadGivesBridge:329, RainMakesMud:355, DefenderChoosesGround:382, AutoResolveGroundEdge:398, EncounterForecast:410, SiegeBattle:427, CampaignWar:465, RefuseOldSave:529, SaveFolders:555, RollEarnsNames:624, FallenRemembered:694, RisesFromRanks:739, BannerHonours:778, FameDraws:817, RetireAndSucceed:843, BuryNamed:873, Stacks:901, UpgradeTreeVisibility:946, Cultures:960, Characters:1042, CampaignDivisions:1147, Armoury:1202, Duels:1271, RidingAndBowcraft:1304, PerkTiers:1354, SkillRises:1381, LastingWounds:1434, CaptainTraits:1457, HouseholdGuard:1496, RankRewards:1524, StartingRoad:1552, SkillTree:1572, BalanceMatchesData:1663, HousesAndKin:1677, PortraitsVary:1712, TalkBondsWants:1733, LordArmies:1792, HorsesCostGold:1839, GoodsSell:1849, SaveMidRun:1867, Drive:1890, CheckSound:1903, ReportMatchesRecord:1918, StableMix:1961, LogLevels:1969, NobleBirth:1986, NobleRecruits:2011, PlaytestHarness:2074, FirstCampaignTutorial:2105, LiveSkirmishes:2151
