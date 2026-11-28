@@ -110,6 +110,7 @@ partial class MapScreen
             float lv = C.Skill(sk.Id);
             int open = Skills.Picks(cap, sk.Id);
             bool on = sk.Id == skillPick, over = ui.Hover(box);
+            if (over) Ui.Hovered(box); // a clickable tile: the hand cursor, not the pointer blade over the ring
             if (on || over) ui.Rect(Kit.Inset(box, ui.U(2)), Color.White * (on ? 0.07f : 0.04f));
             if (on) ui.Frame(Kit.Inset(box, ui.U(2)), Kit.Gilt, ui.U(2));
             float rr = ui.U(16);
@@ -153,6 +154,7 @@ partial class MapScreen
             int state = has ? 2 : locked == null ? 1 : 0;
             var row = new Rectangle(c.X, y, c.Width, rh - ui.U(4));
             bool over = ui.Hover(row);
+            if (over && state != 0) Ui.Hovered(row); // a perk you can take or forget: the hand cursor
             ui.Rect(row, state == 2 ? Kit.Gilt * 0.14f : Color.White * (over && state != 0 ? 0.08f : 0.035f));
             ui.Frame(row, state == 2 ? Kit.Gilt * 0.7f : state == 1 ? Kit.Gilt : Color.Black * 0.5f, ui.U(state == 1 ? 2 : 1)); // every perk you can take is framed gold
             string icon = cap4 ? "crown" : SkillIcons.TryGetValue(pick.Id, out var si) ? si : "star";
