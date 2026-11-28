@@ -79,7 +79,7 @@ public partial class Battle
         {
             s.Fought = null;
             if (g == Grade.Elite && NextVictim(s, sight) is { } next) { s.Target = next; SetPlan(s, Plan.RollUp); }
-            else if (EnemySquadNear(s.Center, 15, 1 - s.Team) == null) { s.HoldInPlace(); s.Bend = 0; SetPlan(s, Plan.Regroup); return; }
+            else if (EnemySquadNear(s.Center, 15, 1 - s.Team) == null) { s.HoldInPlace(); s.Anchor = DryAnchor(s.Anchor); s.Bend = 0; SetPlan(s, Plan.Regroup); return; } // not in the river
         }
         if (g == Grade.Elite && s.Target == null && Choose(s, sight) is { } pick) s.Target = pick; // the decisive target
         var foe = s.Target is { Alive: > 0 } t ? t : s.Foe;

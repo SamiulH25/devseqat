@@ -18,6 +18,40 @@ public static partial class SelfTest
         return (b, a, e);
     }
 
+    /// A company ordered 60 m away and turned a quarter keeps its ranks on the way (BattleMarch.cs): the men stay near
+    /// their marching places, the block is about as wide as it stood, and it arrives facing the new front.
+    static void MarchesInFormation()
+    {
+        var b = Battle.Empty(45);
+        var s = b.AddSquad(0, Troops.Get("ironguard"), 40, new(0, -40), 10, Vector2.UnitY);
+        for (int i = 0; i < 60; i++) b.Update(1 / 60f);
+        var to = new Vector2(60, -40);
+        s.Order = Order.Hold;
+        s.Anchor = to;
+        s.Front = Vector2.UnitX;
+        float worst = 0, widest = 0;
+        bool between = false;
+        for (int i = 0; i < 60 * 40; i++)
+        {
+            b.Update(1 / 60f);
+            if (i > 120) worst = MathF.Max(worst, Battle.RankError(s));
+            var c = s.Centroid();
+            if (c.X is > 20 and < 40)
+            {
+                between = true;
+                float lo = float.MaxValue, hi = float.MinValue;
+                var rt = new Vector2(-s.FrameFront.Y, s.FrameFront.X);
+                foreach (var u in s.Units) if (u.Active) { float x = Vector2.Dot(u.Pos - c, rt); lo = MathF.Min(lo, x); hi = MathF.Max(hi, x); }
+                widest = MathF.Max(widest, hi - lo);
+            }
+        }
+        Console.WriteLine($"  march: worst rank error {worst:0.00} m, widest {widest:0.0} m mid-way, arrived {Vector2.Distance(s.Centroid(), to):0.0} m off");
+        Check(between, "the company should have marched through the middle of the way");
+        Check(worst < 2.5f, $"the ranks should hold on the march (worst mean error {worst:0.00} m)");
+        Check(widest < 9 * s.Spacing + 4, $"the block should keep its width on the way ({widest:0.0} m)");
+        Check(!s.Marching && Vector2.Dot(s.FrameFront, Vector2.UnitX) > 0.99f, "it should arrive facing its new front");
+    }
+
     /// M1: two companies meet as two lines and fight front to front, not as one blob.
     static void HoldsRanks()
     {

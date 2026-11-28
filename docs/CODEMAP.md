@@ -76,10 +76,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BannerPicker.cs (263 lines)
 - **BannerPicker** (class, L8): Draw:13, SwatchRow:236
 
-## Battle.cs (685 lines)
+## Battle.cs (686 lines)
 - **PlayerInput** (struct, L5)
 - **Projectile** (class, L20)
-- **Battle** (class, L30): ProjectileSpeed:35, Sound:50, Flash:59, Battle:103, Battle:106, SetupDuel:141, Role:172, Deploy:176, Leads:228, OpenSlots:231, Ranks:248, ColumnsFor:249, Empty:269, Empty:270, FieldScale:273, Battle:279, SquadsOf:308, Centroid:309, Log:310, AddSquad:314, Spawn:369, Mark:385, Advance:389, Update:396, AwardBattleSkill:472, Bounds:486, ThinkNow:501, UpdateCentroids:504, UpdateSquad:516, CanBrace:551, Braced:556, InOrder:560, ReachOf:563, RandomSwing:569, StartSwing:573, Reinforce:588, Result:609, GapTo:648, Withdraw:663, CheckEnd:672
+- **Battle** (class, L30): ProjectileSpeed:35, Sound:50, Flash:59, Battle:103, Battle:106, SetupDuel:141, Role:172, Deploy:176, Leads:228, OpenSlots:231, Ranks:248, ColumnsFor:249, Empty:269, Empty:270, FieldScale:273, Battle:279, SquadsOf:308, Centroid:309, Log:310, AddSquad:314, Spawn:369, Mark:385, Advance:389, Update:396, AwardBattleSkill:472, Bounds:486, ThinkNow:501, UpdateCentroids:504, UpdateSquad:516, CanBrace:552, Braced:557, InOrder:561, ReachOf:564, RandomSwing:570, StartSwing:574, Reinforce:589, Result:610, GapTo:649, Withdraw:664, CheckEnd:673
 
 ## BattleAbilities.cs (501 lines)
 - **Cast** (class, L7)
@@ -121,9 +121,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **BattleGoal** (record, L4)
 - **Battle** (class, L8): Goal:30, DrawGoals:33, GoalState:58, GoalsMet:83
 
-## BattleDeploy.cs (157 lines)
+## BattleDeploy.cs (158 lines)
 - **DeploySpot** (class, L7)
-- **Battle** (class, L17): ClampDeployPos:28, InDeployZone:35, DeploymentOf:38, ApplyDeployment:45, SnapSquad:70, PlaceDivisions:108
+- **Battle** (class, L17): ClampDeployPos:28, InDeployZone:35, DeploymentOf:38, ApplyDeployment:45, SnapSquad:70, PlaceDivisions:109
 
 ## BattleDivision.cs (416 lines)
 - **Post** (enum, L7)
@@ -172,6 +172,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## BattleListen.cs (74 lines)
 - **Battle** (class, L9): FootWings:24, SpreadAttack:49, Mean:72, Mean:73
+
+## BattleMarch.cs (72 lines)
+- **Battle** (class, L9): March:12, Snap:41, MarchPace:51, Turn:61, TurnToward:64
 
 ## BattleMerge.cs (82 lines)
 - **Battle** (class, L7): Movers:16, CannotMerge:19, Merge:40, Fold:48, ReplayMerge:81
@@ -270,8 +273,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Magic.cs (446 lines)
 - **BattleScreen** (class, L8): OrderColour:31, FlashColour:40, ResetMagicFx:54, AddRipple:56, Rise:60, MagicFx:70, FlashFx:83, FieldFx:179, BuffFx:236, AuraFx:251, MagicLines:296
 
-## BattleScreen.Orders.cs (464 lines)
-- **BattleScreen** (class, L8): Targets:12, SelectedCrews:16, EngineOrder:19, Issue:29, Send:43, Move:62, Charge:75, NextRule:88, GiveGoal:107, OrderDivisionCompanies:122, Command:129, MergeSelected:205, RelieveSelected:226, SplitSelected:241, GroupKey:256, Group:259, OrderKeys:280, NextSpell:323, CastAt:336, PlantStakes:350, CommandClick:365, MoveTo:390, SoundHorn:400, NextDivision:407, LineAt:417, Distribute:434, PreviewSlots:455
+## BattleScreen.Orders.cs (488 lines)
+- **BattleScreen** (class, L8): Targets:12, SelectedCrews:16, EngineOrder:19, Issue:29, Send:43, Move:62, Charge:75, NextRule:88, GiveGoal:107, OrderDivisionCompanies:122, Command:129, MergeSelected:205, RelieveSelected:226, SplitSelected:241, GroupKey:256, Group:259, OrderKeys:280, NextSpell:323, CastAt:336, PlantStakes:350, CommandClick:365, MoveTo:390, SoundHorn:400, NextDivision:407, LineAt:417, GroupAt:425, Distribute:458, PreviewSlots:479
 
 ## BattleScreen.Planning.cs (157 lines)
 - **BattleScreen** (class, L9): ClampToZone:23, BeginFight:32, PlanningFrame:49, TurnDeployed:61, GrabDeployed:87, DragDeployed:99, DeployBoundary:129
@@ -1155,10 +1158,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SpriteSheet.Peoples.cs (581 lines)
 - **SpriteSheet** (class, L7): HelmBase:21, PeopleHelm:37, SunCrest:308, PeopleTorso:322, PeopleSleeve:412, PeopleBarding:430, Full:500, Crinet:552, Chanfron:565
 
-## Squad.cs (298 lines)
+## Squad.cs (308 lines)
 - **Order** (enum, L5)
 - **Formation** (enum, L10)
-- **Squad** (class, L13): Squad:103, Shapes:179, Choices:185, FormationTier:201, CannotForm:204, FaceAt:208, Slot:215, Centroid:253, SetLine:262, Shift:282, HoldInPlace:290
+- **Squad** (class, L13): Squad:103, Shapes:187, Choices:193, FormationTier:209, CannotForm:212, FaceAt:216, Slot:223, Centroid:263, SetLine:272, Shift:292, HoldInPlace:300
 
 ## Style.cs (334 lines)
 - **Emblem** (enum, L5)
@@ -1251,8 +1254,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/MapTests.cs (877 lines)
 - **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:280, ReliefRaised:308, MarchTakesMinutes:362, RoadsideStops:390, CliffsBar:416, SegmentGap:464, NewLands:475, FieldsApart:514, MapDressed:534, ShipTravel:572, DesignedMap:620, PlacesPlanned:688, TownsLaidOut:718, PlanSvg:741, VillagesLaidOut:766, FieldsStyled:791, PlacesShowState:822
 
-## Tests/MeleeTests.cs (455 lines)
-- **SelfTest** (class, L7): HoldsRanks:22, RecklessCharge:41, RearRanksWait:68, StepsUp:89, FightsItsTarget:105, LeviesLoseRanks:143, TierWins:157, PartsByCompany:180, UrgeLunges:201, RefusesFlank:231, VeteransWrap:270, ElitePincer:286, Reforms:318, HorseRegroup:348, BowsFallBack:392, MusterGrade:431, MightWeighsDrill:446
+## Tests/MeleeTests.cs (489 lines)
+- **SelfTest** (class, L7): MarchesInFormation:23, HoldsRanks:56, RecklessCharge:75, RearRanksWait:102, StepsUp:123, FightsItsTarget:139, LeviesLoseRanks:177, TierWins:191, PartsByCompany:214, UrgeLunges:235, RefusesFlank:265, VeteransWrap:304, ElitePincer:320, Reforms:352, HorseRegroup:382, BowsFallBack:426, MusterGrade:465, MightWeighsDrill:480
 
 ## Tests/MonsterTests.cs (249 lines)
 - **SelfTest** (class, L7): MonsterLeaders:11, SpiderVenom:43, BearRage:108, WyvernFlight:123, MonstersAbroad:175, BeastTrace:237

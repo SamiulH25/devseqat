@@ -70,6 +70,7 @@ public sealed partial class Battle
     public void SnapSquad(Squad s)
     {
         s.Loosen = 1 + (1 - Terrain.GroundDefAt(s.Anchor).Order) * 0.5f;
+        Snap(s); // nothing to march: the men stand where the order puts them
         var men = new List<Unit>(s.Units.Count);
         foreach (var u in s.Units) if (u.Active && !u.Routing) men.Add(u);
         int n = men.Count;

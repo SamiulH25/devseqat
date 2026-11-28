@@ -188,7 +188,7 @@ partial class BattleScreen
                 if (PickSquad(mouseGround, 1) is Squad foe) { OrderArrows(foe.Centroid()); Charge(foe, Cue.Order); }
                 else
                 {
-                    OrderArrows(mouseGround); LineAt(mouseGround, battle.Centroid(1));
+                    OrderArrows(mouseGround); GroupAt(mouseGround, battle.Centroid(1));
                     foreach (var s in Targets().Where(s => Battle.RulesFor(s).Contains(StandingRule.ChargeWhenClose)))
                         Send(s, q => { q.Rule = StandingRule.ChargeWhenClose; q.RuleFired = false; });
                     battle.Log((selected.Count == 0 ? "All troops: " : "Squads: ") + "march there, and charge what comes near");
@@ -262,7 +262,7 @@ partial class BattleScreen
                 return;
             }
             OrderArrows(click ? mouseGround : (a + mouseGround) / 2);
-            if (click) LineAt(mouseGround, enemy);
+            if (click) GroupAt(mouseGround, enemy);
             else Distribute(a, mouseGround, enemy);
             battle.Log((selected.Count == 0 ? "All troops: " : "Squads: ") + (queueing ? "then move there" : "move"));
         }
@@ -331,7 +331,7 @@ partial class BattleScreen
                     else
                     {
                         // March there, and charge whoever comes near on the way: the move plus the standing rule for it.
-                        OrderArrows(pt); LineAt(pt, battle.Centroid(1));
+                        OrderArrows(pt); GroupAt(pt, battle.Centroid(1));
                         foreach (var s in Targets().Where(s => Battle.RulesFor(s).Contains(StandingRule.ChargeWhenClose)))
                             Send(s, q => { q.Rule = StandingRule.ChargeWhenClose; q.RuleFired = false; });
                         battle.Log((selected.Count == 0 ? "All troops: " : "Squads: ") + "march there, and charge what comes near");
@@ -343,7 +343,7 @@ partial class BattleScreen
         if (ms.RightButton == ButtonState.Pressed && pms.RightButton == ButtonState.Released && hud.MinimapAt(ms.Position) is Vector2 rmw)
         {
             if (selectedDivision is { } dv && !deploying) OrderDivisionCompanies(dv);
-            OrderArrows(rmw); LineAt(rmw, battle.Centroid(1));
+            OrderArrows(rmw); GroupAt(rmw, battle.Centroid(1));
             return;
         }
         // The turn buttons under the minimap turn the view while held.
@@ -467,7 +467,7 @@ partial class BattleScreen
                 return;
             }
             OrderArrows(click ? mouseGround : (a + mouseGround) / 2);
-            if (click) LineAt(mouseGround, enemy);    // click: move, keep width
+            if (click) GroupAt(mouseGround, enemy);   // click: move as they stand, keep width
             else Distribute(a, mouseGround, enemy);   // drag: draw the line
             battle.Log((selected.Count == 0 ? "All troops: " : "Squads: ") + (queueing ? "then move there" : "move"));
         }

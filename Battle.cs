@@ -537,6 +537,7 @@ public sealed partial class Battle
         UpdateOrders(s); // queued steps and the standing rule (BattleQueue.cs)
         if (!s.RoutSounded && n > 0 && s.Units.Count(u => u.Active && u.Routing) > n) { s.RoutSounded = true; Sound(Cue.Rout, s.Centroid()); if (s.Team == 1) { Sound(Cue.Cheer, s.Centroid()); AwardBattleSkill("Tactics", 0.5f); } }
         Tactics(s);     // its own wits: refuse a flank, wrap, re-form (BattleTactics.cs)
+        March(s, dt);   // the formation marches to its orders as a block (BattleMarch.cs)
         PlaceMen(s, n); // places in the ranks, and slots (BattleRanks.cs)
         Close(s, dt);   // a charging company closes as a body
         UpdateFormed(s, dt); // its order: lost and won back (BattleDrill.cs)

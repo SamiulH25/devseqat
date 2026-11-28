@@ -1296,7 +1296,7 @@ public static partial class SelfTest
         var s = b.AddSquad(0, UnitType.Shieldman, 8, new(0, -2), 8, Vector2.UnitY);
         s.Order = Order.Hold; s.Anchor = new(0, 4); s.Front = Vector2.UnitY;
         float time = 0;
-        while (s.Units.Any(u => Vector2.Distance(u.Pos, u.Slot) > 1.5f) && time < 40) { b.Update(1 / 60f); time += 1 / 60f; }
+        while ((s.Marching || time == 0 || s.Units.Any(u => Vector2.Distance(u.Pos, u.Slot) > 1.5f)) && time < 40) { b.Update(1 / 60f); time += 1 / 60f; } // slots march with the company (BattleMarch.cs): wait till it is there
         Console.WriteLine($"fence: a company 6 m off its places, past a fence, settles in {time:0.0}s");
         Check(s.Units.All(u => u.Pos.Y > 0.5f && Vector2.Distance(u.Pos, u.Slot) <= 1.5f), "it walks round the near fence and settles in its places");
     }

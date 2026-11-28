@@ -102,6 +102,14 @@ public sealed class Squad
 
     public Squad(string name, int team) { Name = name; Team = team; }
 
+    /// The formation as it marches (BattleMarch.cs): where its front-rank centre and its front are now on the way to
+    /// Anchor and Front. Slots are laid from it, so the men keep their ranks on the move instead of each walking to his
+    /// end place. Unset (a stand-in for previews, a company not yet ticked) it is the Anchor and Front.
+    public Vector2 FramePos, FrameFront = Vector2.UnitY;
+    public bool Framed, Marching;
+    Vector2 FAnchor => Framed ? FramePos : Anchor;
+    Vector2 FFront => Framed ? FrameFront : Front;
+
     /// When each side last saw this company (Battle.UpdateSight), where the enemy last saw it, and when it last loosed arrows.
     public readonly float[] SeenAt = { -99, -99 };
     public Vector2 LastSeen; // set where it deploys
@@ -207,13 +215,15 @@ public sealed class Squad
     /// Which way a man in slot `slot` faces: out from the centre in a square, else the company's front.
     public Vector2 FaceAt(Vector2 slot)
     {
-        if (Formation != Formation.Square) return Front;
-        var d = slot - Anchor;
-        return d.LengthSquared() > 0.01f ? Vector2.Normalize(d) : Front;
+        if (Formation != Formation.Square) return FFront;
+        var d = slot - FAnchor;
+        return d.LengthSquared() > 0.01f ? Vector2.Normalize(d) : FFront;
     }
 
     public Vector2 Slot(int i, int count)
     {
+        var Front = FFront;
+        var Anchor = FAnchor;
         var rt = new Vector2(-Front.Y, Front.X);
         if (Formation == Formation.Square && count >= 4)
         {

@@ -308,8 +308,10 @@ when blows come at him; FIGHT on it (or Tab) steps back into him, a click on his
   there and charge whoever comes near.
 - MMB drag turns and tilts the camera; the wheel zooms toward the cursor.
 - LMB select a squad, drag a box to select several (Shift adds). Click a unit card to select it, double-click to jump the camera to it.
-- RMB click moves (keeps the current width), RMB drag draws the formation line (it faces the enemy) with a preview of every man's spot,
-  RMB on an enemy squad attacks it (red line; hovered enemies are ringed).
+- RMB click moves (keeps the current width; several companies keep the order they stand in, turned as one to face the enemy), RMB drag draws the formation line (it faces the enemy) with a preview of every man's spot,
+  RMB on an enemy squad attacks it (red line; hovered enemies are ringed). Companies march to a new place as a block, at their
+  slowest man's pace, wheeling no faster than the outer file can walk and waiting for men who fall behind; a turn of more than
+  a third about-faces on the spot. Charges, broken ranks, mobs, companies in contact and those pathing round water or hedges go as before.
 - WASD or the screen edges pan, Q/E, the TURN buttons under the minimap (hold) or middle-drag orbit (middle-drag also tilts),
   wheel zoom, click the minimap to jump there. GROUND under the minimap shows the ground map (M).
 - With companies chosen, the order deck's title (`< NAME`) is a button back to all companies (0 or ~).

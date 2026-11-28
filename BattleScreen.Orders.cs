@@ -420,6 +420,30 @@ partial class BattleScreen
         Distribute(a, b, toward, bark);
     }
 
+    /// A click with several companies: they keep the order they stand in, moved as one onto the spot and turned as one
+    /// to face `toward` (one company keeps its width; drag a line to draw them up abreast instead).
+    void GroupAt(Vector2 center, Vector2 toward, string bark = "order_move")
+    {
+        var list = Targets();
+        bool queued = queueing && !deploying;
+        Vector2 From(Squad s) => queued && s.Queue.Count > 0 ? s.Queue[^1].Anchor : s.Anchor;
+        Vector2 FrontOf(Squad s) => queued && s.Queue.Count > 0 ? s.Queue[^1].Front : s.Front;
+        var face = list.Aggregate(Vector2.Zero, (a, s) => a + FrontOf(s));
+        var to = toward - center;
+        if (list.Count < 2 || face.LengthSquared() < 1e-3f || to.LengthSquared() < 1e-3f) { LineAt(center, toward, bark); return; }
+        var mid = list.Aggregate(Vector2.Zero, (a, s) => a + From(s)) / list.Count;
+        float turn = MathF.Atan2(to.Y, to.X) - MathF.Atan2(face.Y, face.X), c = MathF.Cos(turn), sn = MathF.Sin(turn);
+        Vector2 Rot(Vector2 v) => new(v.X * c - v.Y * sn, v.X * sn + v.Y * c);
+        foreach (var s in list)
+        {
+            var at = center + Rot(From(s) - mid);
+            if (deploying) at = battle.ClampDeployPos(at); // behind the deployment line (BattleScreen.Planning.cs)
+            var f = Vector2.Normalize(Rot(FrontOf(s)));
+            Move(s, q => { q.Order = Order.Hold; q.Target = null; q.Anchor = at; q.Front = f; });
+        }
+        if (!deploying) battle.SpeakSquadOrder(list, bark);
+    }
+
     (Vector2, Vector2) LineEnds(Vector2 center, Vector2 toward)
     {
         float w = Targets().Sum(s => Math.Min(s.Columns, s.Alive) * s.Spacing);
