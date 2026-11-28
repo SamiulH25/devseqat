@@ -293,7 +293,7 @@ Keys are MonoGame `Keys` names (`W`, `LeftShift`, `F1`...) or `LMB`/`RMB`/`MMB`/
 - **Hold Q for the captain's ring** (tap Q still couches the lance): swap weapon, your three forms and the great form, the
   relic, mount or dismount, couch. Each slot says why it is greyed (no form set, cooling down, aura cost, slow first).
   N, U, I, O, L and Backspace still do them directly.
-- **Who listens:** the foot by where it stands facing the enemy: 1 left, 2 centre, 3 right (each a third of your foot companies, ranked across the field; worked out again each time you press). 4 bows, 5 horse, 6 mages, 0 everyone (Shift adds a group). The chips at the bottom right show them; a chosen arm's chip glows gold.
+- **Who listens:** the foot by where it stands facing the enemy: 1 left, 2 centre, 3 right (each a third of your foot companies, ranked across the field; a company near the edge of two wings keeps the one it had until it has clearly crossed). 4 bows, 5 horse, 6 mages, 0 everyone (Shift adds a group). The chips at the bottom right show them; a chosen arm's chip glows gold.
 - **Orders go where you look:** C sends them at the enemy company under the reticle (else at the nearest); tap H to hold in
   place, or hold H and let go to draw them up on the ground you look at (a gold marker and each man's place show first).
 

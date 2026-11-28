@@ -140,6 +140,18 @@ public static partial class SelfTest
         Check(wings[mine[3]] == Battle.WingLeft && wings[mine[0]] == Battle.WingRight, "the wings are as you see them facing the foe");
         Check(wings[mine[1]] == Battle.WingCentre && wings[mine[2]] == Battle.WingCentre, "the middle companies are the centre");
         Check(b.FootWings(mine.Take(1)).Values.Single() == Battle.WingCentre, "one company is the centre");
+        // A big army: the companies either side of a wing's edge trade places, and each keeps its wing; one sent across does not.
+        var big = Enumerable.Range(0, 12).Select(i => b.AddSquad(0, t, 30, new(-55 + i * 10, -20), 10, Vector2.UnitY)).ToList();
+        b.Update(1 / 60f);
+        var before = b.FootWings(big);
+        var (l, c) = (big[^4], big[^5]); // ranked 4th and 5th from the left (screen left is +X): left wing, then centre
+        Check(before[l] == Battle.WingLeft && before[c] == Battle.WingCentre, "the edge between left and centre");
+        foreach (var u in l.Units) u.Pos.X -= 11;
+        foreach (var u in c.Units) u.Pos.X += 11;
+        var after = b.FootWings(big);
+        Check(after[l] == Battle.WingLeft && after[c] == Battle.WingCentre, "neighbours trading places keep their wings");
+        foreach (var u in l.Units) u.Pos.X -= 60;
+        Check(b.FootWings(big)[l] != Battle.WingLeft, "a company sent well across changes wing");
         var at = b.SpreadAttack(mine, foes[2]);
         int onFoe = at.Values.Count(e => e == foes[2]);
         Check(onFoe == 2, $"enough to beat it take the target ({onFoe})");

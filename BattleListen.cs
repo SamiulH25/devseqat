@@ -12,9 +12,15 @@ public sealed partial class Battle
     public const int WingLeft = 0, WingCentre = 1, WingRight = 2;
     /// Men sent onto one foe, as a share of its men, before the next company looks for a foe of its own.
     public const float EngageOdds = 1.3f;
+    /// How far past a wing's edge (as a share of the line) a company may drift and still keep the wing it had.
+    public const float WingSlack = 0.1f;
+    /// The wing each foot company last had: a company near the edge between two wings keeps its own until it is clearly
+    /// over, so a big army's wings do not trade companies as the line shuffles. Screen memory only, never read by the sim.
+    readonly Dictionary<Squad, int> wingMemory = new();
 
     /// The wing each of these foot companies stands on, seen facing the enemy: ranked left to right, the first third
-    /// left, the middle centre, the last third right (one company is centre, two are left and right).
+    /// left, the middle centre, the last third right (one company is centre, two are left and right). A company keeps the
+    /// wing it last had while it stands within WingSlack of that wing's third.
     public Dictionary<Squad, int> FootWings(IEnumerable<Squad> foot, int team = 0)
     {
         var list = foot.Where(s => s.Alive > 0).ToList();
@@ -29,7 +35,10 @@ public sealed partial class Battle
         for (int i = 0; i < ranked.Count; i++)
         {
             float at = (i + 0.5f) / ranked.Count;
-            wings[ranked[i].s] = at < 1 / 3f ? WingLeft : at < 2 / 3f ? WingCentre : WingRight;
+            int w = at < 1 / 3f ? WingLeft : at < 2 / 3f ? WingCentre : WingRight;
+            var s = ranked[i].s;
+            if (wingMemory.TryGetValue(s, out var old) && old != w && at >= old / 3f - WingSlack && at <= (old + 1) / 3f + WingSlack) w = old;
+            wings[s] = wingMemory[s] = w;
         }
         return wings;
     }
