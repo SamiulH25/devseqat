@@ -455,6 +455,11 @@ the player rides a courser.
   **upgrades to**, campaign cost and upgrade XP, its horse, and its **look** (head, body, legs, feet, hands, shield, weapon,
   tabard, plume, cape). The self-test checks the tree: links exist, every upgrade raises the tier and is a better soldier,
   and every troop can be reached from Levies or Clansmen.
+- **Armour by kind:** a man's body armour is cloth, padded, leather, mail, scale or plate, and a blow cuts, pierces or
+  strikes blunt (swords and axes cut, a sword's thrust and spears pierce, maces and hammers are blunt). Plate turns most
+  cuts and many points but rings under a mace; mail stops a cut better than a point; a padded coat softens a blunt blow.
+- **Pace of the fight:** a soldier takes a breath between blows, shorter the better his Arms (about 1.7 s for a raw man,
+  1 s for the best), and keeps his guard up meanwhile. An equal melee lasts a minute or more.
 - **A higher tier is always better.** An upgrade that keeps its weapon never loses health, damage, armour or block and gains in
   at least two; every upgrade beats the troop it came from in a fight, and a tier VI company beats twice as many tier III men.
 - **Attack styles (tiers IV-VI):** the best troops land their blows in their own way, on their own (nothing to press). Dane axes

@@ -180,13 +180,16 @@ public static class Troops
         int rose = stats.Count(s => s.now > s.was * 1.001f);
         if (t.Ammo > 0) stats.AddRange(new[] { ("range", t.Range, next.Range), ("pierce", t.Pierce, next.Pierce) });
         var fell = stats.Where(s => s.now < s.was * 0.999f).Select(s => s.name).ToList();
+        if (next.Coat < t.Coat && next.Speed > t.Speed * 1.001f) fell.Remove("toughness"); // a lighter coat for a quicker man is a trade, not a loss (Armour.cs)
         return fell.Count > 0 ? string.Join(", ", fell) + " fall" : rose < 1 ? "neither toughness nor offence rises" : null;
     }
 
-    /// Plain blows (30 damage) a man takes to fall, his armour and half his block counted (as `Battle.Damage`).
-    public static float Toughness(UnitType t) => t.MaxHp / MathF.Max(7.5f, 30 - t.Armor) / (1 - 0.5f * t.BlockChance);
-    /// Damage a man deals a second against a coat of 8 armour (as `Battle.Damage`), from his blow and his swing.
-    public static float Offence(UnitType t) => MathF.Max(t.Damage * 0.25f, t.Damage - 8 * (1 - t.Pierce)) / (t.Windup + t.Recover + 1.2f) * (t.Ammo > 0 ? 1 / t.Reload : 1);
+    /// Plain blows (30 damage, cut, pierce and blunt alike) a man takes to fall, his coat, armour and half his block counted
+    /// (as `Battle.Damage` for a weapon's blow; men without kit as the flat armour alone).
+    public static float Toughness(UnitType t) => t.MaxHp / (1 - 0.5f * t.BlockChance) / (t.Coat == CoatKind.None ? MathF.Max(7.5f, 30 - t.Armor)
+        : (Battle.CoatSoak(t.Coat, BlowKind.Cut, 30, t.Armor, 0) + Battle.CoatSoak(t.Coat, BlowKind.Pierce, 30, t.Armor, 0) + Battle.CoatSoak(t.Coat, BlowKind.Blunt, 30, t.Armor, 0)) / 3);
+    /// Damage a man deals a second against a mail coat of 8 armour (as `Battle.Damage`), from his blow and his swing.
+    public static float Offence(UnitType t) => Battle.CoatSoak(CoatKind.Mail, t.Hits, t.Damage, 8, t.Pierce) / (t.Windup + t.Recover + 1.2f) * (t.Ammo > 0 ? 1 / t.Reload : 1);
 
     /// Every troop reachable from `id` by upgrading (including itself).
     public static IEnumerable<UnitType> Tree(string id)

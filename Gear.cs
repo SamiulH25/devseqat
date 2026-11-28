@@ -11,6 +11,8 @@ public sealed class GearDef
     public string Skill = "Arms";
     public int Cost, Needs, Rank, Ammo;
     public float Damage, Reach, Windup, Recover, Pierce, Range, Reload = 1, Block, Armor, Speed, VsMounted = 1;
+    /// What a weapon's blow does (`BlowKind`: cut, pierce, blunt) and what a body piece is made of (`CoatKind`); see Armour.cs.
+    public string Hits = "", Kind = "";
     /// How well a weapon parries without a shield (the bare block times this): a bow is no blade.
     public float Parry = 1;
     /// A soldier's piece: no armourer sells it to the captain.
@@ -87,6 +89,7 @@ public static class Gear
                     if (Ironfield.Look.Missile(g.Look) != g.Ranged) yield return $"{g.Id}: a bow, sling or javelins need ammo, and only they have it";
                     if (g.Ranged && g.Range <= 0 || Ironfield.Look.Ranged(g.Look) && !g.TwoHanded) yield return $"{g.Id}: a missile needs range, a bow both hands";
                     if (g.Damage <= 0 || g.Reach <= 0 || g.Windup <= 0 || g.Recover <= 0) yield return $"{g.Id}: a weapon needs damage, reach, windup and recover";
+                    if (!Armour.TryBlow(g.Hits, out _)) yield return $"{g.Id}: hits must be cut, pierce or blunt";
                     break;
                 case "shield":
                     if (!Ironfield.Look.Shields.Contains(g.Look)) yield return $"{g.Id}: unknown shield look {g.Look}";
@@ -95,6 +98,7 @@ public static class Gear
                 case "body":
                     if (!Ironfield.Look.Bodies.Contains(g.Look) || !Ironfield.Look.LegsKinds.Contains(g.Legs) || !Ironfield.Look.FeetKinds.Contains(g.Feet))
                         yield return $"{g.Id}: unknown body, legs or feet look";
+                    if (!Armour.TryCoat(g.Kind, out _)) yield return $"{g.Id}: kind must be cloth, padded, leather, mail, scale or plate";
                     break;
                 case "helm":
                     if (!Ironfield.Look.Heads.Contains(g.Look)) yield return $"{g.Id}: unknown head look {g.Look}";

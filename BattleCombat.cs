@@ -110,7 +110,7 @@ public partial class Battle
             case UnitAction.Recover:
                 u.Action = UnitAction.None;
                 if (u.IsPlayer) lastRecovered = Time;
-                if (!u.IsPlayer) u.Cooldown = MathF.Max(u.Cooldown, rng.NextSingle() * 0.45f); // desync the line
+                if (!u.IsPlayer) u.Cooldown = MathF.Max(u.Cooldown, SwingPause(u)); // his breath between blows, by his Arms
                 break;
             default:
                 u.Action = UnitAction.None;
@@ -118,6 +118,17 @@ public partial class Battle
                 u.GuardBroken = false;
                 break;
         }
+    }
+
+    /// The pause a man takes between blows, set by his Arms: a levy (Arms 14) about 1.9 s, a tier IV man (55) about 1.5 s, a
+    /// tier VI veteran (85) about 1.2 s; each man a little quicker or slower than his fellows (his grit), a named veteran quicker.
+    /// The random part keeps a line from swinging as one. Creatures, riders, heroes and men fighting a creature keep the old short beat.
+    public const float PauseBase = 1.8f, PausePerArms = 0.01f, PauseMin = 0.8f, PauseSpread = 0.4f;
+    internal float SwingPause(Unit u)
+    {
+        if (u.Type.Wild || u.Mounted || u.Hero || u.Target is { Type.Wild: true }) return rng.NextSingle() * 0.45f; // no man holds back against a beast
+        float arms = u.Type.Skills.Arms * (0.85f + 0.3f * GritOf(u.Index)) * (1 + u.VeteranBonus * 2);
+        return Math.Clamp(PauseBase - arms * PausePerArms, PauseMin, PauseBase) + rng.NextSingle() * PauseSpread;
     }
 
     void TickActive(Unit a, float prevProg, float curProg)
@@ -443,7 +454,7 @@ public partial class Battle
                 return true;
             }
         }
-        else if (facing && t.Action is UnitAction.None or UnitAction.Block)
+        else if (facing && (t.Action is UnitAction.None or UnitAction.Block || t.Action == UnitAction.Recover && !ranged))
         {
             if (ranged)
             {
@@ -492,8 +503,11 @@ public partial class Battle
                     // Active Block always engages stamina/guard-break; idle (UnitAction.None) defenders only catch blows on
                     // a skill/shield reflex roll (so low-tier shields & unguarded flanks don't turtle-stalemate).
                     float styleBypass = StyleGuard(a, t, false, false);
-                    bool passiveCatch = t.Action == UnitAction.None && t.Stamina > 12f && !lance && !a.Type.Huge
-                        && rng.NextSingle() < MathF.Min(0.82f, t.Type.BlockChance * styleBypass * (wallLock ? 1.45f : 1f) * (matched ? 1.15f : 0.72f) * (1f + t.Mods.Block));
+                    // A man between blows has his guard up; one recovering from his own swing brings it back in time half as often.
+                    // Friends at his shoulders cover him (RankGuard, docs/archive/MELEE.md D3.7).
+                    bool passiveCatch = t.Action is UnitAction.None or UnitAction.Recover && t.Stamina > 12f && !lance && !a.Type.Huge
+                        && rng.NextSingle() < MathF.Min(PassiveCap, t.Type.BlockChance * styleBypass * (wallLock ? 1.45f : 1f) * (matched ? 1.25f : 0.95f) * (1f + t.Mods.Block)
+                            * RankGuard(t) * (t.Action == UnitAction.Recover ? RecoverGuard : 1));
 
                     // Shielded defender: active guard covers front cone at stamina cost; idle defenders rely on reflex roll.
                     if (t.Type.HasShield && (t.Action == UnitAction.Block || passiveCatch))
@@ -619,7 +633,7 @@ public partial class Battle
         float crushPierce = !ranged && IsCrushWeapon(a) ? 0.15f : 0f;
         bool foeBlade = FoeBlade(a, ranged);
         float pierce = MathF.Min(0.9f, a.Type.Pierce + crushPierce + (a.IsPlayer && AuraBlade && !ranged || foeBlade ? BladePierce : 0) + (a.IsPlayer && edgeLeft > 0 && !ranged ? 0.9f : 0));
-        float real = Damage(a, t, dmg * mult * poleMult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, pierce, ranged); // maces, axes, bolts and the aura blade bite through armour
+        float real = Damage(a, t, dmg * mult * poleMult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, pierce, ranged, BlowOf(a, ranged, lance)); // maces, axes, bolts and the aura blade bite through armour
         if (a.IsPlayer && !ranged && AuraBlade) BladeMarks(t); // breaks a working, leaves craft marks (MA5)
         if (a.IsPlayer && !ranged) BladeLanded();
         if (foeBlade) FoeAura = MathF.Max(0, FoeAura - BladeHitCost);
@@ -644,6 +658,29 @@ public partial class Battle
         return false;
     }
 
+    /// Of a weapon's blow on a man in kit, the share his coat stops by kind (Armour.cs: plate turns an edge, not a mace),
+    /// then a part of his flat armour; armour-piercing weapons (`Pierce`) halve the first and cut the second as before.
+    public const float FlatArmour = 0.5f, BlowFloor = 0.15f;
+    internal static float CoatSoak(CoatKind coat, BlowKind blow, float dmg, float armour, float pierce)
+    {
+        float stop = Armour.Stop(coat, blow) * (1 - pierce * 0.5f);
+        return MathF.Max(dmg * BlowFloor, dmg * (1 - stop) - armour * FlatArmour * (1 - pierce));
+    }
+
+    /// What a man's blow does: his missile's kind for a shot, a point for a couched lance or any thrust of a blade or spear,
+    /// a knife's cut or thrust for a shooter's sidearm, else his weapon's kind. Null for creatures (flat armour as before).
+    internal static BlowKind? BlowOf(Unit a, bool ranged, bool lance)
+    {
+        if (a.Type.Wild) return null;
+        if (ranged) return a.Type.Hits;
+        if (lance) return BlowKind.Pierce;
+        if (a.Type.SidearmDamage > 0) return a.Swing == AttackDir.Thrust ? BlowKind.Pierce : BlowKind.Cut;
+        return a.Type.Hits == BlowKind.Cut && a.Swing == AttackDir.Thrust && !IsCrushWeapon(a) ? BlowKind.Pierce : a.Type.Hits;
+    }
+
+    /// The most often an idle man's guard catches a blow, and how much of it he has while recovering from his own swing.
+    public const float PassiveCap = 0.88f, RecoverGuard = 0.5f;
+
     /// Keeps a blow by or on the player for the numbers drawn over the man hit (drawing only).
     void NoteBlow(Unit t, float real, bool onPlayer)
     {
@@ -652,10 +689,12 @@ public partial class Battle
     }
 
     /// Armour, then hp, morale shock and interrupts. Returns the damage dealt.
-    float Damage(Unit a, Unit t, float dmg, float extraShock, float pierce = 0, bool ranged = false)
+    float Damage(Unit a, Unit t, float dmg, float extraShock, float pierce = 0, bool ranged = false, BlowKind? blow = null)
     {
         float armour = t.Type.Armor + t.Mods.Armour + (t.Armed ? 4 : 0) + (ranged ? t.Mods.ArrowArmour : 0); // iron skin, armed veteran, a pavise (BattleEffects.cs)
-        float real = MathF.Max(dmg * 0.25f, dmg - armour * (1 - pierce)); // bolts punch through part of the armour
+        float real = blow is { } kind && t.Type.Coat != CoatKind.None
+            ? CoatSoak(t.Type.Coat, kind, dmg, armour, pierce)
+            : MathF.Max(dmg * 0.25f, dmg - armour * (1 - pierce)); // bolts punch through part of the armour
         real *= WildCombatMult(a, t, ranged); // WI5-WI6: spectral, silver_weak, damp, seize, burrow, trample
         if (a.IsPlayer || t.IsPlayer) real = AuraSoak(a, t, real, ranged); // aura armour (K1)
         if (FoeTier > 0 && (a == EnemyCaptain || t == EnemyCaptain)) real = FoeSoak(a, t, real, ranged); // a champion's (K6)

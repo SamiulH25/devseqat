@@ -99,6 +99,9 @@ public sealed class UnitType
     /// A shooter's blow hand to hand, with his sidearm (`Fighter.Build`); 0 = his weapon's `Damage` (men who do not shoot,
     /// creatures). Once a shooter's knife hit as hard as his arrows: a longbowman as hard as a man-at-arms with a sword.
     public float SidearmDamage;
+    /// What his blow does and what his coat is made of (Armour.cs, from his kit in `Fighter.Build`; creatures: Cut and None).
+    public BlowKind Hits;
+    public CoatKind Coat;
     /// What a blow hand to hand does: the sidearm's damage for a shooter, else the weapon's.
     public float MeleeDamage => SidearmDamage > 0 ? SidearmDamage : Damage;
     /// A man's Arms, Riding and Bowcraft (docs/pre-demo/KIT.md); his numbers above are built from them and his kit. Zero for creatures.

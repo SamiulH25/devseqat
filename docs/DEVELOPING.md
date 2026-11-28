@@ -273,12 +273,22 @@ Otherwise:
    about 40 degrees; not for beasts). A square has no flank. Loose ranks let 30% of arrows through.
 4. **You, blocking:** a block in the mirrored direction within `ParryWindow` (0.35 s) is a parry (attacker staggers). Without a
    shield, a block from the wrong side halves the blow. With a shield, any block works at a stamina cost; at 0 stamina the guard breaks.
-5. **AI, facing:** a block roll on `BlockChance`, adjusted for shield, swing direction, lance, arrows, shield wall, the ranks
-   (`RankGuard` x `RankEdge`) and a drilled man's raised guard.
+5. **AI, facing:** a man with his guard up (blocking, or between blows) or recovering from his own swing (at `RecoverGuard`,
+   half) catches a blow on a roll of `BlockChance` x shield wall x guard side x `RankGuard` (friends at his shoulders), capped at
+   `PassiveCap`; a caught blow costs stamina and at 0 the guard breaks.
 6. **Chambering:** you striking into the enemy blow from the mirrored side turns it aside.
 7. Multipliers: speed bonus (charges), high ground (+-15%), fatigue, officer traits, square vs arrows (+25%), wedge on charge
    (+15%), rear (x1.5) / flank (x1.2), `VsMounted` against riders. Flank and rear hits add `Squad.Pressure`.
-8. `Damage` applies armour, then hp, morale shock and interrupts; at 0 hp, `Kill`.
+8. `Damage` applies armour, then hp, morale shock and interrupts; at 0 hp, `Kill`. A weapon's blow on a man in kit goes
+   through `CoatSoak`: his coat (`UnitType.Coat`: cloth, padded, leather, mail, scale, plate, from his body piece's `kind`)
+   stops a share by the blow's kind (`BlowOf`: the weapon's `hits` (cut, pierce, blunt), a blade's or spear's thrust a point,
+   a couched lance a point; table in `Armour.cs`; plate stops 65% of a cut, 15% of a blunt blow), the weapon's `Pierce` halving
+   that share, then half his flat armour (`FlatArmour`), never under `BlowFloor` (15%) of the blow. Creatures, spells, charges,
+   engines and oil keep the flat armour alone.
+
+Pace: after his recovery an AI foot soldier waits `SwingPause` before his next blow: 1.8 s less 0.01 s a point of Arms (his
+troop's, times his own grit 0.85-1.15, more for a named veteran), at least 0.8 s, plus up to 0.4 s at random. Riders, heroes,
+creatures and men fighting a creature keep the old 0-0.45 s. Equal companies of 60 now fight for 1.5-3 minutes (`MeleeLasts`).
 
 ### 4.7 Morale (`BattleMorale.cs`)
 

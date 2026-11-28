@@ -18,6 +18,56 @@ public static partial class SelfTest
         return (b, a, e);
     }
 
+    /// Armour by kind (Armour.cs): plate turns a cut and most of a thrust but not a mace; mail stops a cut better than a
+    /// point; a thrust of a blade is a point; creatures keep flat armour.
+    static void ArmourByKind()
+    {
+        float Soak(CoatKind c, BlowKind k) => Battle.CoatSoak(c, k, 34, 16, 0);
+        Check(Soak(CoatKind.Plate, BlowKind.Cut) < Soak(CoatKind.Plate, BlowKind.Pierce) && Soak(CoatKind.Plate, BlowKind.Pierce) < Soak(CoatKind.Plate, BlowKind.Blunt), "plate stops a cut best, then a point, a blow least");
+        Check(Soak(CoatKind.Mail, BlowKind.Cut) < Soak(CoatKind.Mail, BlowKind.Pierce), "mail stops a cut better than a point");
+        Check(Soak(CoatKind.Padded, BlowKind.Blunt) < Soak(CoatKind.Mail, BlowKind.Blunt), "a padded coat softens a blow better than mail");
+        Check(Soak(CoatKind.Plate, BlowKind.Cut) < Soak(CoatKind.Cloth, BlowKind.Cut) * 0.5f, "an edge does less than half on plate than on cloth");
+        var b = Battle.Empty(46);
+        var sword = b.AddSquad(0, Troops.Get("ironguard"), 1, new(0, 0), 1, Vector2.UnitY).Units[0];
+        var mace = Troops.All.First(t => !t.Wild && t.Hits == BlowKind.Blunt && t.Ammo == 0);
+        Check(sword.Type.Coat == CoatKind.Plate && sword.Type.Hits == BlowKind.Cut, "ironguard wear plate and cut");
+        sword.Swing = AttackDir.Thrust;
+        Check(Battle.BlowOf(sword, false, false) == BlowKind.Pierce, "a sword's thrust is a point");
+        sword.Swing = AttackDir.Left;
+        Check(Battle.BlowOf(sword, false, false) == BlowKind.Cut && Battle.BlowOf(sword, false, true) == BlowKind.Pierce, "a sword's swing cuts, a couched lance pierces");
+        Console.WriteLine($"  armour: 34 dmg on 16 armour: plate cut {Soak(CoatKind.Plate, BlowKind.Cut):0.0} pierce {Soak(CoatKind.Plate, BlowKind.Pierce):0.0} blunt {Soak(CoatKind.Plate, BlowKind.Blunt):0.0}; mail cut {Soak(CoatKind.Mail, BlowKind.Cut):0.0}; cloth cut {Soak(CoatKind.Cloth, BlowKind.Cut):0.0} ({mace.Id} hits blunt)");
+    }
+
+    /// Swings are paced by a man's Arms (BattleCombat.SwingPause): a levy waits longer between blows than a tier VI man.
+    static void SwingPace()
+    {
+        var b = Battle.Empty(47);
+        Unit One(string id) => b.AddSquad(0, Troops.Get(id), 1, new(0, 0), 1, Vector2.UnitY).Units[0];
+        var low = One("manor_foot"); var high = One("citadel_sentinels");
+        float Mean(Unit u) => Enumerable.Range(0, 400).Average(_ => b.SwingPause(u));
+        float l = Mean(low), h = Mean(high);
+        Console.WriteLine($"  pace: pause between blows, {low.Type.Id} (Arms {low.Type.Skills.Arms:0}) {l:0.00} s, {high.Type.Id} (Arms {high.Type.Skills.Arms:0}) {h:0.00} s");
+        Check(l > h + 0.3f && h >= Battle.PauseMin, "a man with more Arms swings sooner, but never without a breath");
+    }
+
+    /// Equal companies of men-at-arms fight for minutes, not seconds (paced swings, guards up, mail by kind).
+    static void MeleeLasts()
+    {
+        var b = Battle.Empty(101);
+        var a = b.AddSquad(0, Troops.Get("men_at_arms"), 60, new(0, -15), 15, Vector2.UnitY);
+        var e = b.AddSquad(1, Troops.Get("men_at_arms"), 60, new(0, 15), 15, -Vector2.UnitY);
+        a.Order = e.Order = Order.Charge; a.Target = e; e.Target = a;
+        float contact = -1, half = -1;
+        while (b.Time < 400 && a.Alive > 0 && e.Alive > 0)
+        {
+            b.Update(1 / 60f);
+            if (contact < 0 && (a.InContact || e.InContact)) contact = b.Time;
+            if (half < 0 && (a.Units.Count(u => !u.Active) >= 30 || e.Units.Count(u => !u.Active) >= 30)) half = b.Time - contact;
+        }
+        Console.WriteLine($"  melee: 60 men-at-arms a side fight {b.Time - contact:0} s, 30 down at {half:0} s");
+        Check(half > 30 && b.Time - contact > 60, "an equal melee lasts more than a minute");
+    }
+
     /// A company ordered 60 m away and turned a quarter keeps its ranks on the way (BattleMarch.cs): the men stay near
     /// their marching places, the block is about as wide as it stood, and it arrives facing the new front.
     static void MarchesInFormation()
@@ -165,7 +215,7 @@ public static partial class SelfTest
         var (b, a, e) = Clash(seed, troop, troop);
         float err = 0, mix = 0;
         int n = 0;
-        for (int i = 0; i < 60 * 25; i++)
+        for (int i = 0; i < 60 * 60; i++) // a melee runs for minutes (paced swings, BattleCombat.SwingPause)
         {
             b.Update(1 / 60f);
             if (i >= 60 * 8 && i % 30 == 0) { err += Battle.RankError(a) + Battle.RankError(e); mix += Battle.Intermix(a, e) + Battle.Intermix(e, a); n += 2; }
@@ -295,7 +345,7 @@ public static partial class SelfTest
         a.Order = Order.Charge;
         a.Target = e;
         float bend = 0;
-        for (int i = 0; i < 60 * 25; i++) { b.Update(1 / 60f); bend = MathF.Max(bend, a.Bend); }
+        for (int i = 0; i < 60 * 60; i++) { b.Update(1 / 60f); bend = MathF.Max(bend, a.Bend); } // a melee runs for minutes now
         return (a.FlankHits, a.Alive, e.Alive, bend);
     }
 

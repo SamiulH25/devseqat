@@ -21,6 +21,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **PlaceStyle** (record, L38): building:40
 - **Architecture** (class, L67): Of:123, Styled:127
 
+## Armour.cs (33 lines)
+- **BlowKind** (enum, L4)
+- **CoatKind** (enum, L7)
+- **Armour** (class, L12): Stop:26, MeanStop:29, TryCoat:31, TryBlow:32
+
 ## Art.cs (58 lines)
 - **Art** (class, L8): Has:14, TryGet:16, Art:18, Mipped:38
 
@@ -108,8 +113,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleChampion.cs (92 lines)
 - **Battle** (class, L8): SetupChampion:18, FoeBlade:22, UpdateChampion:24, FoeSoak:39, ChampionForms:49, ChampionWants:71
 
-## BattleCombat.cs (1074 lines)
-- **Battle** (class, L6): ActiveTimeOf:9, HighFidelity:21, IsCrushWeapon:24, IsPoleWeapon:27, IsTwoHandSword:29, IsSwordAndShield:32, GuardSkill:36, UpdateGuardDir:39, HeavyCleaver:68, CleaveCap:70, TickAction:77, TickActive:123, SweepActive:139, TriggerClash:248, Strike:278, CountDeed:316, InArc:332, HighGround:342, SpeedBonus:345, SideOf:368, Hit:380, NoteBlow:648, Damage:655, HitHorse:678, Stagger:698, BossFalls:710, Kill:719, Shoot:776, LooseAimed:786, Loose:809, Gauss:838, UpdateArrows:843, Covered:895, Braces:903, Lances:981, DistToSegment:1024, DistToSegmentK:1026, ShieldCue:1034, HitCue:1039, DeathCue:1052, LooseCue:1067
+## BattleCombat.cs (1113 lines)
+- **Battle** (class, L6): ActiveTimeOf:9, HighFidelity:21, IsCrushWeapon:24, IsPoleWeapon:27, IsTwoHandSword:29, IsSwordAndShield:32, GuardSkill:36, UpdateGuardDir:39, HeavyCleaver:68, CleaveCap:70, TickAction:77, SwingPause:127, TickActive:134, SweepActive:150, TriggerClash:259, Strike:289, CountDeed:327, InArc:343, HighGround:353, SpeedBonus:356, SideOf:379, Hit:391, CoatSoak:664, BlowOf:672, NoteBlow:685, Damage:692, HitHorse:717, Stagger:737, BossFalls:749, Kill:758, Shoot:815, LooseAimed:825, Loose:848, Gauss:877, UpdateArrows:882, Covered:934, Braces:942, Lances:1020, DistToSegment:1063, DistToSegmentK:1065, ShieldCue:1073, HitCue:1078, DeathCue:1091, LooseCue:1106
 
 ## BattleCommand.cs (261 lines)
 - **Battle** (class, L7): LedCount:17, FreeSlots:19, Under:25, CannotCallUp:28, CallUp:38, UpdateCallUps:57, MarchOn:71, CannotAssign:91, Assign:102, SetHornPlan:131, SoundHorn:140, Report:161, Situation:184, Suits:199, AutoFill:209, CountLosses:226, SergeantGrade:238, WitsGrade:241, GeneralPos:246, SergeantName:255
@@ -789,11 +794,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **FactionDef** (class, L29)
 - **Factions** (class, L48): IndexOf:67, Get:68, Bind:91, Culture:92, CultureOf:93, PeopleOf:98, Open:105, Root:108, NobleFoot:111, NobleHorse:121, MageRoot:131, Line:141, Path:144, Load:154, Validate:170
 
-## Fighter.cs (145 lines)
+## Fighter.cs (147 lines)
 - **FighterBase** (class, L6)
 - **FighterSkills** (struct, L14)
 - **FighterKit** (record, L17): Of:22
-- **Fighter** (class, L30): SkillsFor:35, Build:50, PieceEffect:71, KitLine:95, SkillsLine:103
+- **Fighter** (class, L30): SkillsFor:35, Build:50, PieceEffect:73, KitLine:97, SkillsLine:105
 
 ## Forms.cs (114 lines)
 - **FormDef** (class, L8): Clone:18
@@ -816,9 +821,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## FrameProf.cs (60 lines)
 - **FrameProf** (class, L7): Count:16, Begin:18, End:20, Reset:27, Tick:30, Flush:40, Frame:49
 
-## Gear.cs (120 lines)
-- **GearDef** (class, L7): ToString:23
-- **Gear** (class, L28): Get:44, Find:45, InSlot:46, PieceOf:48, Piece:49, Base:50, HasBase:51, Load:55, Validate:72
+## Gear.cs (124 lines)
+- **GearDef** (class, L7): ToString:25
+- **Gear** (class, L30): Get:46, Find:47, InSlot:48, PieceOf:50, Piece:51, Base:52, HasBase:53, Load:57, Validate:74
 
 ## GlslEffect.cs (178 lines)
 - **Uniform** (struct, L7): Float:9, Vec2:10, Vec3:11, Vec4:12, Mat4:13
@@ -1254,8 +1259,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/MapTests.cs (877 lines)
 - **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:280, ReliefRaised:308, MarchTakesMinutes:362, RoadsideStops:390, CliffsBar:416, SegmentGap:464, NewLands:475, FieldsApart:514, MapDressed:534, ShipTravel:572, DesignedMap:620, PlacesPlanned:688, TownsLaidOut:718, PlanSvg:741, VillagesLaidOut:766, FieldsStyled:791, PlacesShowState:822
 
-## Tests/MeleeTests.cs (489 lines)
-- **SelfTest** (class, L7): MarchesInFormation:23, HoldsRanks:56, RecklessCharge:75, RearRanksWait:102, StepsUp:123, FightsItsTarget:139, LeviesLoseRanks:177, TierWins:191, PartsByCompany:214, UrgeLunges:235, RefusesFlank:265, VeteransWrap:304, ElitePincer:320, Reforms:352, HorseRegroup:382, BowsFallBack:426, MusterGrade:465, MightWeighsDrill:480
+## Tests/MeleeTests.cs (539 lines)
+- **SelfTest** (class, L7): ArmourByKind:23, SwingPace:42, MeleeLasts:54, MarchesInFormation:73, HoldsRanks:106, RecklessCharge:125, RearRanksWait:152, StepsUp:173, FightsItsTarget:189, LeviesLoseRanks:227, TierWins:241, PartsByCompany:264, UrgeLunges:285, RefusesFlank:315, VeteransWrap:354, ElitePincer:370, Reforms:402, HorseRegroup:432, BowsFallBack:476, MusterGrade:515, MightWeighsDrill:530
 
 ## Tests/MonsterTests.cs (249 lines)
 - **SelfTest** (class, L7): MonsterLeaders:11, SpiderVenom:43, BearRage:108, WyvernFlight:123, MonstersAbroad:175, BeastTrace:237
@@ -1296,14 +1301,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## TitleScreen.Scene.cs (849 lines)
 - **TitleScreen** (class, L8): readonly:11, readonly:16, readonly:21, readonly:26, TimeLabel:64, ResolveSceneState:72, EnsureMarch:154, Q:238, Tri:239, R:240, Scene:243, SampleStops:284, SkyAt:291, PaintSky:309, CelestialBody:317, Streak:360, Clouds:371, ShootingStar:401, Flock:413, FarY:430, CragY:445, MidY:454, NearY:461, FrontY:467, SeaExpanse:474, Foreground:497, Layer:513, Haze:524, Castle:531, OnFlagCharge:577, Flag:579, BiomeFlora:599, Hamlet:627, Column:655, Man:676, Horse:748, Rider:768, Wagon:796, Grass:805, Embers:816, Snowfall:827, Rainfall:838
 
-## Troops.cs (382 lines)
-- **Troops** (class, L7): Has:15, Get:16, HasMount:17, Mount:18, Path:58, Load:71, BuildMan:102, Validate:125, WorseUpgrade:176, Toughness:187, Offence:189, Tree:192
-- **NamedSpec** (record, L210)
-- **Company** (record, L212): Has:217
-- **StackSpec** (record, L223)
-- **ArmySpec** (record, L225)
-- **DivisionSpec** (record, L232)
-- **Armies** (class, L237): LineTroop:240, readonly:242, Count:250, Standard:258, Random:261, Large:268, FullCount:279, Divide:289, OfficerSkill:297, Split:310, Make:362, MageTroop:366, LineTroop:375, RoleOf:377
+## Troops.cs (385 lines)
+- **Troops** (class, L7): Has:15, Get:16, HasMount:17, Mount:18, Path:58, Load:71, BuildMan:102, Validate:125, WorseUpgrade:176, Toughness:189, Offence:192, Tree:195
+- **NamedSpec** (record, L213)
+- **Company** (record, L215): Has:220
+- **StackSpec** (record, L226)
+- **ArmySpec** (record, L228)
+- **DivisionSpec** (record, L235)
+- **Armies** (class, L240): LineTroop:243, readonly:245, Count:253, Standard:261, Random:264, Large:271, FullCount:282, Divide:292, OfficerSkill:300, Split:313, Make:365, MageTroop:369, LineTroop:378, RoleOf:380
 
 ## TroopSheet.cs (152 lines)
 - **TroopSheet** (class, L9): TroopSheet:21, Write:32, One:61
@@ -1320,7 +1325,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## UiScroll.cs (199 lines)
 - **Kit** (class, L9): Paper:19, Tile:79, Torn:95, Scroll:104, Sheet:120, Roller:162
 
-## Units.cs (306 lines)
+## Units.cs (309 lines)
 - **UnitClass** (enum, L6)
 - **UnitAction** (enum, L7)
 - **AttackDir** (enum, L11)
@@ -1330,10 +1335,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Dirs** (class, L23): Mirror:25
 - **Mount** (record, L32)
 - **Look** (record, L41): Ranged:64, Missile:66, GripOf:67
-- **UnitType** (class, L82): Has:131, Clone:155, ToString:156
-- **Unit** (class, L167): ClearHits:217, AlreadyHit:218, RecordHit:219, Face:294
-- **LooseHorse** (class, L298)
-- **DeadHorse** (struct, L307)
+- **UnitType** (class, L82): Has:134, Clone:158, ToString:159
+- **Unit** (class, L170): ClearHits:220, AlreadyHit:221, RecordHit:222, Face:297
+- **LooseHorse** (class, L301)
+- **DeadHorse** (struct, L310)
 
 ## Variety.cs (188 lines)
 - **Variety** (class, L9): static:16, Seed:72, Of:75, Of:83, Stature:111, Kin:113, Pick:116, Visage:125, Weighted:142, FaceFeatures:150, PackFeatures:153, PackFeatures:163, UnpackFeatures:165, DeriveFeatures:177

@@ -63,6 +63,8 @@ public static class Fighter
         float guard = k.Shield.Look == "none" ? k.Shield.Block * w.Parry : k.Shield.Block * Q(k.Shield); // no shield: the weapon parries
         t.BlockChance = MathF.Min(0.95f, guard * (b.Block + s.Arms * b.BlockPerArms));
         t.Armor = k.Armour.Sum(g => g.Armor * Q(g));
+        t.Hits = Armour.TryBlow(w.Hits, out var hits) ? hits : BlowKind.Cut;
+        t.Coat = Armour.TryCoat(k.Body.Kind, out var coat) ? coat : CoatKind.Cloth;
         t.Speed = b.Speed + k.Body.Speed + k.Helm.Speed + k.Shield.Speed;
         if (t.Mount != null) t.Mount = t.Mount with { Hp = t.Mount.Hp * (1 + s.Riding * b.HorsePerRiding) };
     }
