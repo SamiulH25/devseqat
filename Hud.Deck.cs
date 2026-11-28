@@ -15,7 +15,8 @@ sealed partial class Hud
 
     public static readonly Dictionary<Cmd, OrderInfo> Info = new()
     {
-        [Cmd.Charge] = new("CHARGE", "CHARGE", "sword", Act.Charge, "RUN AT THE NEAREST ENEMY AND FIGHT"),
+        [Cmd.Charge] = new("FULL CHARGE", "CHARGE", "fire", Act.FullCharge, "EVERY MAN RUNS IN: NO LINE KEPT"),
+        [Cmd.Engage] = new("ENGAGE", "ENGAGE", "sword", Act.Charge, "ATTACK THE NEAREST ENEMY, KEEPING RANKS IF DRILLED"),
         [Cmd.AttackMove] = new("ATTACK MOVE", "A-MOVE", "up", null, "CLICK: MARCH THERE, CHARGE WHAT COMES NEAR"),
         [Cmd.Advance] = new("ADVANCE", "ADVANCE", "step", Act.Advance, "STEP 15 M TOWARD THE ENEMY"),
         [Cmd.Hold] = new("HOLD", "HOLD", "shield", Act.HoldPosition, "STAND HERE AND KEEP YOUR RANKS"),
@@ -39,7 +40,7 @@ sealed partial class Hud
     };
 
     /// The deck's first row: where to go and whom to fight.
-    static readonly Cmd[] MoveRow = { Cmd.Charge, Cmd.AttackMove, Cmd.Advance, Cmd.Hold, Cmd.Follow, Cmd.FallBack };
+    static readonly Cmd[] MoveRow = { Cmd.Charge, Cmd.Engage, Cmd.AttackMove, Cmd.Advance, Cmd.Hold, Cmd.Follow, Cmd.FallBack };
     static readonly Cmd[] ShapeRow = { Cmd.ShapeLine, Cmd.ShapeWall, Cmd.ShapeSquare, Cmd.ShapeWedge, Cmd.ShapeLoose };
 
     public static Formation? ShapeOf(Cmd c) => c switch
@@ -149,7 +150,7 @@ sealed partial class Hud
         if (Selected.Count >= 2) layoutMore.Add(Cmd.Merge);
         if (Selected.Count == 2) layoutMore.Add(Cmd.Relieve);
 
-        const int cols = 6;
+        int cols = MoveRow.Length;
         int rowCount = 1 + (layoutShapes.Count > 0 ? 1 : 0) + (layoutMore.Count + cols - 1) / cols;
         int bs = U(50), bh = U(42), gap = U(3), gw = cols * bs + (cols - 1) * gap;
         int x0 = W - gw - U(18), y0 = H - U(18) - rowCount * (bh + gap) + gap;
@@ -319,7 +320,8 @@ sealed partial class Hud
 
     bool Lit(Cmd c, List<Squad> who) => who.Count > 0 && c switch
     {
-        Cmd.Charge => who.All(s => s.Order == Order.Charge),
+        Cmd.Charge => who.All(s => s.Order == Order.Charge && s.Reckless),
+        Cmd.Engage => who.All(s => s.Order == Order.Charge && !s.Reckless),
         Cmd.Hold => who.All(s => s.Order == Order.Hold),
         Cmd.Follow => who.All(s => s.Order == Order.Follow),
         Cmd.AttackMove => AttackMoveMode,

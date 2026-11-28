@@ -13,6 +13,8 @@ public enum Act
     RotateLeft, RotateRight, AddToSelection,
     // orders (both views)
     Charge, Follow, FormHere, HoldPosition, Advance, FallBack, Spacing, FireAtWill, SelectAll,
+    // full charge (Charge is the engage that keeps the ranks; the name stays for old controls.json files)
+    FullCharge,
     // general
     CommandView, Pause, Menu, Help, Graphics,
     // campaign map
@@ -123,7 +125,7 @@ public sealed class Controls
         [Act.Couch] = new[] { "Q" }, [Act.Interact] = new[] { "E" }, [Act.Rally] = new[] { "R" },
         [Act.OrderWheel] = new[] { "MMB", "Z" },
         [Act.RotateLeft] = new[] { "Q" }, [Act.RotateRight] = new[] { "E" }, [Act.AddToSelection] = new[] { "SHIFT" },
-        [Act.Charge] = new[] { "C" }, [Act.Follow] = new[] { "F" }, [Act.FormHere] = new[] { "G" }, [Act.HoldPosition] = new[] { "H" },
+        [Act.Charge] = new[] { "C" }, [Act.FullCharge] = new[] { ";" }, [Act.Follow] = new[] { "F" }, [Act.FormHere] = new[] { "G" }, [Act.HoldPosition] = new[] { "H" },
         [Act.Advance] = new[] { "T" }, [Act.FallBack] = new[] { "B" }, [Act.Spacing] = new[] { "V" }, [Act.FireAtWill] = new[] { "X" },
         [Act.SelectAll] = new[] { "0", "TILDE" },
         [Act.CommandView] = new[] { "Tab" }, [Act.Pause] = new[] { "Space" }, [Act.Menu] = new[] { "ESC" }, [Act.Help] = new[] { "F1" },
@@ -149,7 +151,7 @@ public sealed class Controls
         [Act.Sprint] = "SPRINT / GALLOP", [Act.Attack] = "ATTACK (HOLD = POWER)", [Act.Block] = "BLOCK (MATCH = PARRY)",
         [Act.Couch] = "COUCH LANCE", [Act.Interact] = "MOUNT / DISMOUNT", [Act.Rally] = "RALLY / FIGHT ON WHEN DOWN", [Act.OrderWheel] = "ORDER WHEEL (HOLD)",
         [Act.RotateLeft] = "ROTATE CAMERA LEFT", [Act.RotateRight] = "ROTATE CAMERA RIGHT", [Act.AddToSelection] = "ADD TO SELECTION",
-        [Act.Charge] = "CHARGE (SHIFT = RECKLESS)", [Act.Follow] = "FOLLOW ME", [Act.FormHere] = "FORM LINE ON ME", [Act.HoldPosition] = "HOLD POSITION",
+        [Act.Charge] = "ENGAGE (KEEP FORMATION; SHIFT = FULL CHARGE)", [Act.FullCharge] = "FULL CHARGE (NO FORMATION)", [Act.Follow] = "FOLLOW ME", [Act.FormHere] = "FORM LINE ON ME", [Act.HoldPosition] = "HOLD POSITION",
         [Act.Advance] = "ADVANCE", [Act.FallBack] = "FALL BACK", [Act.Spacing] = "LOOSE / TIGHT", [Act.FireAtWill] = "FIRE AT WILL / HOLD",
         [Act.SelectAll] = "SELECT ALL",
         [Act.CommandView] = "COMMAND VIEW", [Act.Pause] = "PAUSE", [Act.Menu] = "MENU", [Act.Help] = "CONTROLS", [Act.Graphics] = "GRAPHICS QUALITY",

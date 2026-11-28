@@ -569,9 +569,10 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   the fresh company marches onto the tired one's line, and when it is close behind, the tired men break off and walk back
   to where the fresh ones stood (foot only). **/** (SPLIT) turns a company of ten or more into two halves side by side;
   FOLD IN joins them again, and after the battle both halves count as the one company.
-- **Reckless charge:** hold **Shift** with CHARGE (**C**) or a click on an enemy and the company does not keep its line:
+- **Two attack orders:** ENGAGE (**C**, or a click on an enemy) attacks and keeps the formation if the men are drilled
+  enough to (rabble still go in as a crowd). FULL CHARGE (**;**, or **Shift** with ENGAGE or the click) does not keep the line:
   every man runs at the foe on his own, no dressing the ranks and no re-forming on the way. It lands sooner but ragged,
-  and ends when you give the company another order.
+  and ends when you give the company another order. Both sit on the order deck, the field bar and the order ring.
 - **Queued and standing orders:** hold **Shift** while giving a move order and it waits until the company's last
   order is done (it stands formed where it was sent, or the company it attacked broke); the card shows **+N** orders queued.
   **=** cycles a standing order on the selected companies, kept until you change it: *charge when they close* (hold, then

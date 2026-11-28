@@ -295,7 +295,7 @@ sealed partial class Hud
         }
 
         if (HoldPlace >= 0.25f) { key = null; label = "LET GO: HOLD THAT GROUND"; horseHpFrac = null; }
-        else if (label == null && LookFoe is { Alive: > 0 } lf) { key = Ctl.Name(Act.Charge); label = $"ATTACK {lf.Name.ToUpperInvariant()}"; }
+        else if (label == null && LookFoe is { Alive: > 0 } lf) { key = Ctl.Name(Act.Charge); label = $"ENGAGE {lf.Name.ToUpperInvariant()}"; }
 
         if (label == null) return;
 
@@ -407,8 +407,9 @@ sealed partial class Hud
         if (WheelSector >= 0 && WheelSector < order.Length)
         {
             var info = Info[order[WheelSector]];
-            string title = order[WheelSector] == Cmd.Charge && LookFoe != null ? $"CHARGE {LookFoe.Name.ToUpperInvariant()}" : info.Name;
-            Shadowed(title, c.X, c.Y - U(24), order[WheelSector] == Cmd.Charge && LookFoe != null ? Foe : Gold, title.Length > 14 ? 1 : 2, 1);
+            bool atFoe = order[WheelSector] is Cmd.Charge or Cmd.Engage && LookFoe != null;
+            string title = atFoe ? $"{(order[WheelSector] == Cmd.Charge ? "CHARGE" : "ENGAGE")} {LookFoe!.Name.ToUpperInvariant()}" : info.Name;
+            Shadowed(title, c.X, c.Y - U(24), atFoe ? Foe : Gold, title.Length > 14 ? 1 : 2, 1);
         }
         else Shadowed("ORDERS", c.X, c.Y - U(24), Color.White, 2, 1);
         Shadowed("TO " + ListenWord(), c.X, c.Y - U(2), Style.Text, 1, 1);

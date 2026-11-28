@@ -6,7 +6,7 @@ namespace Ironfield;
 /// Orders the player can give, from hotkeys, the order wheel or the command-view buttons.
 public enum Cmd
 {
-    Charge, AttackMove, Advance, FormHere, Spacing, FallBack, FireAtWill, Hold, Follow, Formation, Merge, Relieve, Split, Rule,
+    Charge, Engage, AttackMove, Advance, FormHere, Spacing, FallBack, FireAtWill, Hold, Follow, Formation, Merge, Relieve, Split, Rule,
     // the order deck only (command view): stakes, a cast, and a formation picked outright
     Stakes, Cast, ShapeLine, ShapeWall, ShapeSquare, ShapeWedge, ShapeLoose,
 }
@@ -26,7 +26,7 @@ sealed partial class Hud
 
     public static readonly Dictionary<Cmd, (string Label, Act? Key)> Orders = new()
     {
-        [Cmd.Charge] = ("CHARGE", Act.Charge), [Cmd.AttackMove] = ("ATTACK MOVE", null), [Cmd.Advance] = ("ADVANCE", Act.Advance),
+        [Cmd.Charge] = ("FULL CHARGE", Act.FullCharge), [Cmd.Engage] = ("ENGAGE", Act.Charge), [Cmd.AttackMove] = ("ATTACK MOVE", null), [Cmd.Advance] = ("ADVANCE", Act.Advance),
         [Cmd.FormHere] = ("FORM ON ME", Act.FormHere), [Cmd.Spacing] = ("SPACING", Act.Spacing), [Cmd.FallBack] = ("FALL BACK", Act.FallBack),
         [Cmd.FireAtWill] = ("FIRE / HOLD", Act.FireAtWill), [Cmd.Hold] = ("HOLD", Act.HoldPosition), [Cmd.Follow] = ("FOLLOW ME", Act.Follow),
         [Cmd.Formation] = ("FORMATION", Act.Formation), [Cmd.Merge] = ("FOLD IN", Act.Merge), [Cmd.Relieve] = ("RELIEVE", Act.Relieve),
@@ -619,7 +619,7 @@ sealed partial class Hud
         : new Vector2(W / 2f, H / 2f - U(Div == null ? 96 : 0)); // the order ring sits over the captain's head, not on him
 
     /// Wheel sectors clockwise from the top.
-    public static readonly Cmd[] WheelOrder = { Cmd.Charge, Cmd.Advance, Cmd.FormHere, Cmd.Spacing, Cmd.FallBack, Cmd.FireAtWill, Cmd.Hold, Cmd.Follow };
+    public static readonly Cmd[] WheelOrder = { Cmd.Charge, Cmd.Engage, Cmd.Advance, Cmd.FormHere, Cmd.Spacing, Cmd.FallBack, Cmd.FireAtWill, Cmd.Hold, Cmd.Follow };
 
     void Banners()
     {
@@ -783,7 +783,7 @@ sealed partial class Hud
         {
             ((s.Company?.Name is { Length: > 0 } n ? n + ": " : "") + t.Name.ToUpperInvariant(), s.Team == 0 ? Friendly : Foe),
             ($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]} {t.Class.ToString().ToUpperInvariant()}   {s.Alive}/{s.StartCount} MEN", Color.White),
-            ((s.Alive == 0 || s.Units.Count(u => u.Active && u.Routing) > s.Alive ? StateOf(s) + "   " : "") + $"{FormationName(s.Formation)}   " + s.Order switch { Order.Follow => "FOLLOWING YOU", Order.Charge => s.Target != null ? "ATTACKING" : "CHARGING", _ => "HOLDING" }
+            ((s.Alive == 0 || s.Units.Count(u => u.Active && u.Routing) > s.Alive ? StateOf(s) + "   " : "") + $"{FormationName(s.Formation)}   " + s.Order switch { Order.Follow => "FOLLOWING YOU", Order.Charge => s.Reckless ? "FULL CHARGE" : s.Target != null ? "ENGAGING" : "ENGAGED", _ => "HOLDING" }
                 + (!s.FireAtWill ? "   HOLDING FIRE" : "") + (s.Rule != StandingRule.None ? "   RULE " + Battle.RuleTag(s.Rule) : "") + (s.Queue.Count > 0 ? $"   +{s.Queue.Count} QUEUED" : ""), Dim),
             ((s.Swarm ? "A MOB" : Battle.GradeName(s.Grade).ToUpperInvariant() + (RanksOf(s) is { Length: > 0 } rk ? "   " + rk : "")) + (PlanOf(s) is { Length: > 0 } pl ? "   " + pl : ""), s.Swarm ? Dim : GradeColor(s.Grade)),
             ($"MORALE {morale}   STAMINA {stamina}" + (t.Ammo > 0 ? $"   ARROWS {act.Sum(u => u.Ammo)}" : ""), morale < 30 ? Bad : Dim),

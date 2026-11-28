@@ -745,11 +745,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## CampStage.cs (160 lines)
 - **CampStage** (class, L10): CampStage:32, Frame:47, Project:55, GroundAt:62, PerMetre:78, HalfWidth:81, Render:85
 
-## Controls.cs (276 lines)
+## Controls.cs (278 lines)
 - **Act** (enum, L8)
-- **MouseButton** (enum, L40)
-- **Bind** (struct, L43): ToString:45, Parse:71
-- **Controls** (class, L104): Controls:170, SaveUser:178, ResetDefaults:187, AnyPressed:195, FindFile:203, Load:213, WriteDefaults:240, Update:249, IsDown:255, Down:265, WasDown:266, Pressed:267, Released:268, Axis:269, First:272, Name:275
+- **MouseButton** (enum, L42)
+- **Bind** (struct, L45): ToString:47, Parse:73
+- **Controls** (class, L106): Controls:172, SaveUser:180, ResetDefaults:189, AnyPressed:197, FindFile:205, Load:215, WriteDefaults:242, Update:251, IsDown:257, Down:267, WasDown:268, Pressed:269, Released:270, Axis:271, First:274, Name:277
 
 ## CreatorScreen.cs (895 lines)
 - **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:68, Show:76, U:87, RandomName:91, RandomCompany:99, Randomise:102, RandomFace:121, Go:130, Refresh:142, Keys:161, Begin:186, Draw:195, DrawScreen:203, Likeness:247, Ledger:321, Tip:330, Card:345, LedgerBody:369, Homeland:472, Choices:577, Detail:620, RoadKit:675, InTheField:703, BoonCard:720, Face:744, BannerStep:794, Stepper:802, Unroll:817, Field:820, Swatches:834, Oath:850, Footer:887
@@ -837,14 +837,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **MenuItem** (enum, L14)
 - **Hud** (class, L20): StartAt:61, DeployToggleAt:65, Hud:91, U:93, Layout:107, CardAt:147, MapButtonAt:150, DeckTitleAt:152, ButtonAt:153, MenuAt:154, PauseAt:155, SpeedAt:156, ModeAt:158, CaptainAt:159, MinimapAt:160, BannerAt:162, Over:170, Rect:177, Panel:180, Frame:182, Line:190, Bar:196, Text:199, TW:204, TextC:205, TextR:206, MoraleColor:208, GradeColor:234, RanksOf:235, PlanOf:236, AvgMorale:243, AvgMorale:250, Draw:259, DrawCommand:303, DrawFight:327, Strength:360, SideArms:371, CompanyArms:375, GoalLines:385, MapButtons:398, MinimapPanel:411, FormBar:458, RelicSlot:485, SpellFan:497, OrderFlash:526, EffectMarks:537, Icon:555, Portrait:559, Crosshair:600, WheelPos:617, Banners:624, Banner:668, StateOf:769, FormationName:772, SquadTooltip:775, EnemyGlass:807
 
-## Hud.Deck.cs (515 lines)
-- **Hud** (class, L11): OrderInfo:14, ShapeOf:45, Shoots:51, Listening:63, ButtonCentre:75, LayoutDeck:82, LayoutOrders:119, TopBar:190, CaptainPlate:274, Unlearned:316, Lit:320, EngineDeck:334, OrderDeck:371, Cards:435
+## Hud.Deck.cs (517 lines)
+- **Hud** (class, L11): OrderInfo:14, ShapeOf:46, Shoots:52, Listening:64, ButtonCentre:76, LayoutDeck:83, LayoutOrders:120, TopBar:191, CaptainPlate:275, Unlearned:317, Lit:321, EngineDeck:336, OrderDeck:373, Cards:437
 
 ## Hud.Divisions.cs (395 lines)
 - **Hud** (class, L8): WheelGoals:17, LayoutDivisions:20, LayoutGoals:34, DivisionAt:51, GoalAt:52, GoalCloseAt:53, DivisionTag:57, GoalTag:65, DivisionCards:67, StanceExplain:109, PostExplain:124, GoalPanel:133, DivisionTooltip:177, SergeantFieldBadge:197, GoalWheel:207, SergeantPennants:230, NamedMarks:248, BannerMark:303, DivisionMarkers:326
 
-## Hud.Fight.cs (488 lines)
-- **Hud** (class, L10): ArmOf:16, LayoutFight:22, ShadowL:35, ShadowR:41, ListenWord:44, FightTop:60, Vitals:98, ControlHints:131, SwingWords:149, ArmChips:160, OrderToast:197, DrawNearbyEnemyBars:213, DrawInteractPrompt:256, DrawSkillToasts:340, FightHints:372, Wheel:381, CaptainWheel:453
+## Hud.Fight.cs (489 lines)
+- **Hud** (class, L10): ArmOf:16, LayoutFight:22, ShadowL:35, ShadowR:41, ListenWord:44, FightTop:60, Vitals:98, ControlHints:131, SwingWords:149, ArmChips:160, OrderToast:197, DrawNearbyEnemyBars:213, DrawInteractPrompt:256, DrawSkillToasts:340, FightHints:372, Wheel:381, CaptainWheel:454
 
 ## Hud.Fights.cs (134 lines)
 - **Hud** (class, L11): SampleFights:22, Lost:45, FightLine:61, FightMarks:69, Swords:106, Dashed:127

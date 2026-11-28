@@ -70,15 +70,15 @@ partial class BattleScreen
         Send(s, q => q.Queue.Add(step));
     }
 
-    /// A charge, or an attack on one company: with Shift held it is a reckless charge (every man runs in, no line kept)
-    /// instead of a queued step.
-    void Charge(Squad? foe, Cue horn = Cue.HornCharge)
+    /// An attack, on one company or the nearest. Engage (the default) keeps the line if the men are drilled enough to; a full
+    /// charge (the FULL CHARGE order, or Shift held with engage instead of a queued step) sends every man in, no line kept.
+    void Charge(Squad? foe, Cue horn = Cue.HornCharge, bool full = false)
     {
-        bool reckless = queueing;
+        bool held = queueing, reckless = full || queueing;
         queueing = false; // read again from the keys next frame
-        string what = reckless ? (foe != null ? "reckless charge at " + foe.Name + "!" : "reckless charge!") : foe != null ? "attack " + foe.Name + "!" : "charge!";
+        string what = reckless ? (foe != null ? "full charge at " + foe.Name + "!" : "full charge!") : foe != null ? "engage " + foe.Name + "!" : "engage!";
         Issue(what, s => { s.Order = Order.Charge; s.Target = foe; s.Reckless = reckless; }, move: true, horn, reckless ? "order_reckless" : "order_charge");
-        queueing = reckless;
+        queueing = held;
     }
 
     /// Cycle the standing rule of the selected companies (docs/archive/COMBAT_QOL.md Q3); each takes the next rule it can keep.
@@ -128,10 +128,10 @@ partial class BattleScreen
         var enemy = battle.Centroid(1);
         switch (c)
         {
-            case Cmd.Charge:
-                // In the fight view the charge goes at the company you look at (BattleScreen.Fight.cs); else at the nearest.
-                if (!command && !fieldCommand && LookFoe() is Squad lf) { OrderArrows(lf.Centroid()); Charge(lf); }
-                else Charge(null);
+            case Cmd.Charge or Cmd.Engage:
+                // In the fight view the attack goes at the company you look at (BattleScreen.Fight.cs); else at the nearest.
+                if (!command && !fieldCommand && LookFoe() is Squad lf) { OrderArrows(lf.Centroid()); Charge(lf, full: c == Cmd.Charge); }
+                else Charge(null, full: c == Cmd.Charge);
                 break;
             case Cmd.Stakes: PlantStakes(); break;
             case Cmd.Cast: NextSpell(); break;

@@ -99,7 +99,7 @@ sealed partial class Hud
         }
     }
 
-    static readonly Cmd[] CompactOrders = { Cmd.Charge, Cmd.AttackMove, Cmd.Advance, Cmd.Hold, Cmd.Follow, Cmd.FallBack };
+    static readonly Cmd[] CompactOrders = { Cmd.Charge, Cmd.Engage, Cmd.AttackMove, Cmd.Advance, Cmd.Hold, Cmd.Follow, Cmd.FallBack };
 
     void LayoutFieldCommand()
     {
