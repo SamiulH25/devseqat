@@ -13,7 +13,7 @@ partial class MapScreen
     /// Who a party is, in the tooltip and the encounter panel.
     string Allegiance(Party p) => p.Kind switch
     {
-        PartyKind.Bandit => "BRIGANDS",
+        PartyKind.Bandit => C.OutlawAllegiance(p),
         PartyKind.Player => "YOU",
         PartyKind.Caravan => p.Breed == "pilgrims" ? "PILGRIMS" : $"MERCHANTS {OfRealm(p.Faction)}",
         PartyKind.Monster => p.Crisis ? $"CRISIS — {(p.Lair ? "SEAT" : "HOST")}"
@@ -22,7 +22,37 @@ partial class MapScreen
         _ when C.OrderOf(p) is OrderDef o => $"{o.Name.ToUpperInvariant()}, FOR THE {C.FactionNames[p.Faction].ToUpperInvariant()}",
         _ => C.FactionNames[p.Faction].ToUpperInvariant(),
     };
-    Color PartyColor(Party p) => p.Kind == PartyKind.Player ? Style.Accent : SideColor(C.SideOf(p));
+    Color PartyColor(Party p) => p.Kind == PartyKind.Player ? Style.Accent : p.Kind == PartyKind.Bandit ? OutlawColor(p) : SideColor(C.SideOf(p));
+
+    Color OutlawColor(Party p)
+    {
+        if (p.CharId >= 0) return new Color(230, 68, 68);
+        if (p.HomeId >= 0) return new Color(224, 108, 62);
+        return p.Breed switch
+        {
+            "poachers" => new Color(108, 186, 104),
+            "deserters" => p.PatrolProvince >= 0 && p.PatrolProvince < C.S.Provinces.Count && C.S.Provinces[p.PatrolProvince].Faction >= 0
+                ? Color.Lerp(SideColor(C.S.Provinces[p.PatrolProvince].Faction), new Color(148, 162, 178), 0.35f)
+                : new Color(138, 166, 196),
+            "reivers" => new Color(224, 168, 68),
+            "corsairs" => new Color(84, 182, 194),
+            "robbers" => new Color(214, 72, 72),
+            _ => new Color(212, 134, 68),
+        };
+    }
+
+    static string OutlawIcon(Party p) => p.CharId >= 0 ? "crown"
+        : p.Lair ? "fire"
+        : p.HomeId >= 0 ? "flag"
+        : p.Breed switch
+        {
+            "poachers" => "arrow",
+            "deserters" => "shield",
+            "reivers" => "horse",
+            "corsairs" => "anchor",
+            "robbers" => "helm",
+            _ => "sword",
+        };
 
     PanelKind lastPanel;
     float panelSince;
@@ -224,18 +254,32 @@ partial class MapScreen
             bool seen = mine || C.InSight(p.Pos);
             if (!seen && zoom > 200) continue; // far out, unknown banners are only clutter
             string label = seen ? $"{p.Name.ToUpperInvariant()} {p.Men}" : "?";
-            int w = ui.TW(label, 1) + ui.U(8);
+            bool outlaw = seen && p.Kind == PartyKind.Bandit;
+            int padW = outlaw ? ui.U(20) : ui.U(8);
+            int w = ui.TW(label, 1) + padW;
             all.Add(new Label
             {
-                Pri = mine ? 0 : !seen ? 6 : p.Kind is PartyKind.Lord ? 2 : 4, Party = true, R = new Rectangle((int)sp.X - w / 2, (int)sp.Y - ui.U(12), w, ui.U(12)),
+                Pri = mine ? 0 : !seen ? 6 : p.Kind is PartyKind.Lord ? 2 : p.Lair ? 3 : 4, Party = true, R = new Rectangle((int)sp.X - w / 2, (int)sp.Y - ui.U(12), w, ui.U(12)),
                 Draw = l =>
                 {
                     string text = l.More > 0 ? $"{label} +{l.More}" : label;
-                    var r = l.More > 0 ? new Rectangle(l.R.X, l.R.Y, ui.TW(text, 1) + ui.U(8), l.R.Height) : l.R;
+                    var r = l.More > 0 ? new Rectangle(l.R.X, l.R.Y, ui.TW(text, 1) + padW, l.R.Height) : l.R;
                     r.X = Math.Min(r.X, Math.Max(ui.U(4), ui.W - ui.U(4) - r.Width));
-                    ui.Rect(r, seen ? PartyColor(p) * 0.85f : Color.Black * 0.5f);
-                    if (seen) ui.TextPlainC(text, r.Center.X, r.Y + ui.U(3), Color.Black, 1);
-                    else ui.TextC(text, r.Center.X, r.Y + ui.U(3), Style.Dim, 1);
+                    if (outlaw)
+                    {
+                        var accent = OutlawColor(p);
+                        ui.Rect(r, new Color(24, 22, 20) * 0.90f);
+                        ui.Rect(new Rectangle(r.X, r.Y, ui.U(3), r.Height), accent);
+                        if (p.Lair || p.CharId >= 0) ui.Frame(r, accent * 0.92f, ui.U(1));
+                        ui.Icon(OutlawIcon(p), r.X + ui.U(5), r.Y + ui.U(2), accent, 1);
+                        ui.TextPlain(text, r.X + ui.U(15), r.Y + ui.U(3), new Color(238, 232, 220), 1);
+                    }
+                    else
+                    {
+                        ui.Rect(r, seen ? PartyColor(p) * 0.85f : Color.Black * 0.5f);
+                        if (seen) ui.TextPlainC(text, r.Center.X, r.Y + ui.U(3), Color.Black, 1);
+                        else ui.TextC(text, r.Center.X, r.Y + ui.U(3), Style.Dim, 1);
+                    }
                 },
             });
         }

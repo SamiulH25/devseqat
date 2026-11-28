@@ -42,8 +42,8 @@ public partial class Campaign
     /// Spider nests the world keeps: a share of its forest and fen provinces.
     public int NestsWanted => Math.Max(1, (int)MathF.Round(S.Provinces.Count(p => p.Kind is "Forest" or "Marsh" or "Taiga") * B.NestsPerWood));
     public IEnumerable<Party> Nests => S.Parties.Where(p => p.Lair && !p.Down && p.Breed == "spider");
-    /// Every lair: goblin holdouts and spider nests.
-    public IEnumerable<Party> Lairs => S.Parties.Where(p => p.Lair && !p.Down);
+    /// Every monster lair: goblin holdouts and spider nests.
+    public IEnumerable<Party> Lairs => S.Parties.Where(p => p.Kind == PartyKind.Monster && p.Lair && !p.Down);
 
     /// Spin a nest deep in a wood or fen, away from settlements, other lairs and you.
     internal bool SpawnNest()

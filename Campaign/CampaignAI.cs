@@ -74,37 +74,6 @@ public partial class Campaign
         return out_.Count > 0 ? out_.MinBy(v => Vector2.Distance(v.Pos, Player.Pos))! : rng.Pick(villages);
     }
 
-    void SpawnBandits(bool near = false)
-    {
-        var at = BanditVillage(near);
-        var n = Names.Get();
-        // Bands grow as the campaign does, so brigandry stays a threat instead of becoming free loot for a growing company.
-        int tier = Math.Clamp(1 + Day / (int)MathF.Max(1, B.BanditTierPerDays), 1, 5);
-        int men = Scaled(B.BanditBandMin + rng.Next(Math.Max(1, B.BanditBandMax - B.BanditBandMin)) + Day / (int)MathF.Max(1, B.BanditGrowPerDays));
-        string foot = Armies.LineTroop("infantry", tier, rng.Next(3));
-        var band = new Party
-        {
-            Id = S.NextId++, Kind = PartyKind.Bandit, Name = BandName(), Tier = tier,
-        };
-        band.Pos = at.Pos + new Vector2(rng.Range(-14, 14), rng.Range(-14, 14)) * Map.Spread;
-        band.Goal = band.Pos;
-        if (tier >= 3 && rng.Chance(RobberKnightChance))
-        {
-            // Robber knights: trained men gone bad, all on horse, fewer and quicker than any rabble.
-            band.Breed = "robbers";
-            band.Name = $"Robber Knights of {at.Name}";
-            band.Companies.Add(NewCompany(Armies.LineTroop("horse", tier, rng.Next(3)), "horse", Math.Max(Scaled(4), men / 2), 0));
-            S.Parties.Add(band);
-            return;
-        }
-        band.Companies.Add(NewCompany(foot, "infantry", men, 0));
-        if (rng.Chance(0.6f))
-            band.Companies.Add(NewCompany(Armies.LineTroop(rng.Chance(0.6f) ? "archers" : "horse", tier, rng.Next(3)), rng.Chance(0.6f) ? "archers" : "horse", Scaled(rng.Next(5, 10) + Day / 20), 0));
-        foreach (var c in band.Companies) c.Role = Rules.TroopRole(c.Troop) is "horse" or "archers" ? Rules.TroopRole(c.Troop) : c.Role;
-        CunningFolk(band); // a few hedge witches with the bigger bands (CourtMages.cs)
-        S.Parties.Add(band);
-    }
-
     internal void RefreshMercenaries(Settlement t)
     {
         t.Mercenaries.Clear();
@@ -314,30 +283,6 @@ public partial class Campaign
     /// How much bigger brigands think a party is: an Aura Master's name goes before him (MA8), so they flee one up to half again their weight.
     public const float AuraDread = 1.5f;
     internal float Dread(Party q) => q.Kind == PartyKind.Player && Captain.AuraTier >= 4 ? AuraDread : 1;
-
-    void BanditThink(Party p)
-    {
-        float me = Rules.Strength(p);
-        var near = Visible(p, B.Vision * 0.85f).Where(q => Hostile(p, q)).ToList();
-        // Brigands are opportunists, not soldiers: they run from anything near their own weight and only fall on a
-        // clearly weaker party. With many more bands on the big map they would otherwise grind the lords to nothing.
-        if (near.FirstOrDefault(q => !q.Lair && Rules.Strength(q) * Dread(q) > me * 1.05f) is Party threat)
-        {
-            var away = p.Pos - threat.Pos;
-            p.Goal = p.Pos + (away.LengthSquared() > 0.01f ? Vector2.Normalize(away) : Vector2.UnitX) * 20 * Map.Spread;
-            p.ChaseId = -1; p.Moving = true; p.TaskUntil = (float)S.Hours + 2;
-        }
-        else if (near.Where(q => !q.Lair && q.Breed is not ("troll" or "undead" or "wyvern" or "bear") && Rules.Strength(q) * Dread(q) < me * 0.9f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
-        {
-            p.ChaseId = prey.Id; p.Moving = true; p.TaskUntil = (float)S.Hours + 4;
-        }
-        else
-        {
-            p.ChaseId = -1;
-            p.Goal = p.Pos + new Vector2(rng.Range(-25, 25), rng.Range(-25, 25)) * Map.Spread;
-            p.Moving = true; p.TaskUntil = (float)S.Hours + 2;
-        }
-    }
 
     /// A faction lives while it holds a town or castle.
     public bool Alive(int f) => S.Settlements.Any(s => s.Faction == f && s.Kind != SettlementKind.Village);

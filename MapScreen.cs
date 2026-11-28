@@ -790,7 +790,7 @@ sealed partial class MapScreen
         bearerSeen.Clear();
         foreach (var p in C.S.Parties)
         {
-            if (p.Lair && p.Breed == "goblin") { bearers.Remove(p.Id); continue; }
+            if (p.Lair && (p.Breed == "goblin" || p.Kind == PartyKind.Bandit)) { bearers.Remove(p.Id); continue; }
             bearerSeen.Add(p.Id);
             if (!bearers.TryGetValue(p.Id, out var u))
             {
@@ -867,6 +867,7 @@ sealed partial class MapScreen
         var caravans = C.S.Parties.Where(p => p.Kind == PartyKind.Caravan && !p.Down).Select(p => (p.Id, p.Pos, p.Facing, p.Breed == "pilgrims")).ToList();
         (Vector2, float, Color)? ship = C.Sailing ? (C.Player.Pos, C.Player.Facing, Style.Sides[Style.PaletteOf(C.SideOf(C.Player))].Cloth) : null;
         var holdouts = C.S.Parties.Where(p => p.Lair && !p.Down && p.Breed == "goblin").Select(p => (p.Id, p.Pos, p.Men, p.Tier)).ToList();
+        var banditCamps = C.BanditCamps.Select(p => (p.Id, p.Pos, p.Men, p.Tier, OutlawColor(p))).ToList();
         var cloth = Style.Sides[Style.PaletteOf(C.SideOf(C.Player))].Cloth;
         var cairns = C.S.Cairns.Select(c => (c.Id, c.Pos, cloth)).ToList();
         var (step, at, zm, hour, quality, shaded) = (lifeDt, focus, zoom, (float)(C.S.Hours % 24), lifeQuality, shading != null && lifeQuality != Quality.Low);
@@ -876,6 +877,7 @@ sealed partial class MapScreen
         {
             mapLife.SetCaravans(caravans);
             mapLife.SetHoldouts(holdouts);
+            mapLife.SetBanditCamps(banditCamps);
             mapLife.SetCairns(cairns);
             mapLife.Ship = ship;
             mapLife.Update(step, at, zm, spots, carrion, hour, quality);

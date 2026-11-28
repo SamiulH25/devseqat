@@ -130,7 +130,7 @@ public partial class Campaign
                 continue;
             }
             if (p.Kind == PartyKind.Caravan) { p.Down = true; CaravanLost(p); var robber = winners.FirstOrDefault(w => w != Player); if (robber != null) robber.Gold += p.Gold; continue; }
-            if (p.Kind == PartyKind.Bandit) { p.Down = true; if (p.HomeId >= 0) RebelsBeaten(p); if (p.CharId >= 0) ThreatFalls(p, playerIn && won); continue; }
+            if (p.Kind == PartyKind.Bandit) { p.Down = true; if (p.HomeId >= 0) RebelsBeaten(p); if (p.CharId >= 0) ThreatFalls(p, playerIn && won); if (p.Lair) { var taker = winners.FirstOrDefault(w => w.Kind is PartyKind.Player or PartyKind.Lord); if (taker != null && taker != Player) taker.Gold += p.Gold; BanditCampCleared(p, taker); } continue; }
             if (p.Kind == PartyKind.Lord && (p.Men < before[p] * 0.25f || p.Men == 0))
             {
                 p.Down = true;

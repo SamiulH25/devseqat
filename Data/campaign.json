@@ -12,7 +12,7 @@
   "CompanySlotsBase": 10, "MenBase": 40, "MenRenownDivisor": 5,
   "ArmyScale": 3, "DrillWeight": 5, "TraitWeight": 0.1, "AuraWeight": 0.03, "TideWeight": 0.75,
   "FeastPerMan": 8, "RollSize": 6, "VeteranSurvival": 0.6, "FallenCohesion": 1.5, "VillageRecruitsMax": 8, "NobleRecruitsMax": 4, "NobleRefillDays": 3, "NobleMarkup": 1.6, "NobleRenown": 140, "HealField": 0.08, "HealTown": 0.25, "DrillCamp": 0.6, "DrillTown": 1.2, "CampTier": 2, "CastleYardTier": 4, "MusterMarkup": 1.15, "GranaryReserve": 10, "GranaryMouths": 60, "CastleHorsesMax": 15, "CastleHorsesWeek": 4, "GranaryPrice": 0.8, "VillageFood": 2.5, "SallyReach": 14, "SallyOdds": 1.5,
-  "LordsPerFaction": 8, "BanditsMax": 80, "BanditSpawnChance": 0.95, "BanditSpawnsPerDay": 5, "BanditNearPlayer": 0.5, "BanditNearMin": 3, "BanditNearRange": 2.5, "BanditBandMin": 10, "BanditBandMax": 20,
+  "LordsPerFaction": 8, "BanditsMax": 28, "BanditSpawnChance": 0.85, "BanditSpawnsPerDay": 2, "BanditNearPlayer": 0.15, "BanditNearMin": 2, "BanditNearMax": 4, "BanditNearRange": 2.5, "BanditBandMin": 10, "BanditBandMax": 20,
   "BanditGrowPerDays": 9, "BanditTierPerDays": 45, "LordAggression": 0.35, "TownIncome": 150, "CastleIncome": 90, "VillageIncome": 40, "LordWage": 1.3,
   "TruceDays": 30, "BountyBandits": 50, "BountyLord": 120,
   "HoldoutsPerWildProvince": 0.7, "HoldoutSpawnChance": 0.45, "HoldoutClearance": 12,

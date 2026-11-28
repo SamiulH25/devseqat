@@ -994,19 +994,20 @@ public sealed class Balance
     public float VeteranSurvival = 0.6f;
     /// Cohesion a company loses with each named man killed or lost (L3).
     public float FallenCohesion = 1.5f;
-    public int VillageRecruitsMax = 8, LordsPerFaction = 8, BanditsMax = 80;
+    public int VillageRecruitsMax = 8, LordsPerFaction = 8, BanditsMax = 28;
     /// Noble recruits (docs/pre-demo/NOBILITY.md N2): a castle's pool of esquires (times ArmyScale), the days between each new batch, the price against a levy's, the renown a house wants of you.
     public int NobleRecruitsMax = 4, NobleRefillDays = 3;
     public float NobleMarkup = 1.6f, NobleRenown = 140;
     /// A bandit band appears this many times a day while below BanditsMax (0-1) — the roll for each attempt.
-    public float BanditSpawnChance = 0.95f;
+    public float BanditSpawnChance = 0.85f;
     /// How many bands the world tries to raise each day (while under BanditsMax), so a big map fills up quickly.
     /// It scales with the map's area, so a bigger world stays populated: Campaign.BanditSpawnsWanted.
-    public int BanditSpawnsPerDay = 5;
-    /// Brigands near the player: the share of each day's bands raised near him, the bands his country is kept to each
-    /// day (even past BanditsMax), and how far "near" reaches in player sights (Campaign.BanditReach).
-    public float BanditNearPlayer = 0.5f;
-    public int BanditNearMin = 3;
+    public int BanditSpawnsPerDay = 2;
+    /// Brigands near the player: the share of each day's bands raised near him, the min/max bands kept in his
+    /// region, and how far "near" reaches in player sights (Campaign.BanditReach).
+    public float BanditNearPlayer = 0.15f;
+    public int BanditNearMin = 2;
+    public int BanditNearMax = 4;
     public float BanditNearRange = 2.5f;
     /// Lords per faction and bandit bands are quoted per the original 26-province map and multiply by how much world there
     /// is (Campaign.LordsWanted, Campaign.BanditsWanted), so a realm has as many parties as its ground needs.

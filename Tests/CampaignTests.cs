@@ -58,6 +58,25 @@ public static partial class SelfTest
         Check(CampaignState.Deserialize(json).Serialize() == json, "save, load, save gives the same file");
     }
 
+    /// Outlaw overhaul: camps spawn across provinces, roaming bands use distinct archetypes & regional names,
+    /// and local bandit density near the player stays bounded instead of flooding the starting screen.
+    static void BanditOverhaul()
+    {
+        var c = Campaign.New(seed: 19);
+        var camps = c.BanditCamps.ToList();
+        Check(camps.Count >= 2, $"world starts with bandit camps ({camps.Count})");
+        Check(camps.All(p => p.Kind == PartyKind.Bandit && p.Lair && p.Gold > 0 && p.Men > 0), "bandit camps are stationary lairs with hoards");
+        Check(c.Lairs.All(p => p.Kind == PartyKind.Monster), "monster Lairs collection excludes bandit camps");
+
+        for (int d = 0; d < 14; d++) c.Tick(24);
+        var roaming = c.S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Lair && !p.Down).ToList();
+        var breeds = roaming.Select(p => p.Breed).Distinct().ToList();
+        Check(breeds.Count >= 2, $"multiple outlaw archetypes active ({string.Join(", ", breeds)})");
+        Check(c.BanditsNearPlayer <= Balance.Get().BanditNearMax + 2, $"near-player bandits stay bounded ({c.BanditsNearPlayer} vs max {Balance.Get().BanditNearMax})");
+        foreach (var b in roaming.Where(p => p.Name != "Ditch Wolves" && p.CharId < 0 && p.HomeId < 0))
+            Check(c.OutlawAllegiance(b).Length > 0, $"archetype allegiance present for {b.Name}");
+    }
+
     /// 120 days with nobody playing: lords fight, bandits come and go, money moves; nothing breaks.
     static void CampaignRun()
     {

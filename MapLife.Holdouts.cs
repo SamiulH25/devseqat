@@ -7,6 +7,7 @@ namespace Ironfield;
 sealed partial class MapLife
 {
     readonly List<(int Id, Vector2 Pos, int Men, int Tier)> holdouts = new();
+    readonly List<(int Id, Vector2 Pos, int Men, int Tier, Color Accent)> banditCamps = new();
 
     static readonly Color
         GoblinEarth = new(82, 68, 50),
@@ -27,9 +28,75 @@ sealed partial class MapLife
         holdouts.AddRange(list);
     }
 
+    /// Active outlaw camps on the map this frame.
+    public void SetBanditCamps(IEnumerable<(int Id, Vector2 Pos, int Men, int Tier, Color Accent)> list)
+    {
+        banditCamps.Clear();
+        banditCamps.AddRange(list);
+    }
+
     void BuildHoldouts()
     {
         foreach (var h in holdouts) DrawHoldout(h.Id, h.Pos, h.Men, h.Tier);
+        foreach (var c in banditCamps) DrawBanditCamp(c.Id, c.Pos, c.Men, c.Tier, c.Accent);
+    }
+
+    void DrawBanditCamp(int id, Vector2 pos, int men, int tier, Color accent)
+    {
+        var r = new Random(id * 131 + 29);
+        float s = 0.95f + Math.Clamp((men - 15) / 50f, 0f, 0.35f);
+        float rad = 2.9f * s;
+        float gate = r.NextSingle() * MathF.Tau;
+        var gf = new Vector2(MathF.Cos(gate), MathF.Sin(gate));
+        var gs = new Vector2(-gf.Y, gf.X);
+        var b = new Vector3(pos.X, t.Height(pos), pos.Y);
+        mesh.Tag = Vector2.Zero;
+
+        // Trampled dirt clearing.
+        mesh.Blob(b - Vector3.Up * 0.05f, new Vector3(rad * 1.1f, 0.16f, rad * 1.1f), GoblinMud, r, 0.12f);
+
+        // Low log breastwork / stakes around the rear arc.
+        int logs = 10;
+        for (int i = 0; i < logs; i++)
+        {
+            float a = gate + MathF.PI * (0.35f + 1.3f * i / (logs - 1));
+            var lp = pos + new Vector2(MathF.Cos(a), MathF.Sin(a)) * rad;
+            var lb = new Vector3(lp.X, t.Height(lp) - 0.1f, lp.Y);
+            mesh.Box(lb, 0.95f * s, 0.24f * s, 0.65f * s, a + MathF.PI / 2, Jitter(GoblinTimber, r));
+        }
+
+        // Weathered canvas tents pitched around the campfire.
+        int tents = 2 + Math.Clamp(men / 22, 0, 3);
+        var canvas = new Color(172, 158, 134);
+        var canvasDark = new Color(128, 114, 94);
+        for (int i = 0; i < tents; i++)
+        {
+            float ta = gate + MathF.PI * (0.45f + 1.1f * i / Math.Max(1, tents - 1)) + (r.NextSingle() - 0.5f) * 0.2f;
+            float td = rad * 0.58f;
+            var tp = pos + new Vector2(MathF.Cos(ta), MathF.Sin(ta)) * td;
+            var tb = new Vector3(tp.X, t.Height(tp) - 0.08f, tp.Y);
+            float ts = (0.78f + r.NextSingle() * 0.22f) * s;
+            var col = i % 2 == 0 ? Jitter(canvas, r) : Jitter(canvasDark, r);
+            mesh.Frustum(tb, tb + Vector3.Up * (1.15f * ts), 0.72f * ts, 0.06f * ts, 4, col, r, capBottom: true);
+        }
+
+        // Archetype-colored outlaw pennant pole.
+        var bp = pos + gf * (rad * 0.45f) - gs * (0.95f * s);
+        var bb = new Vector3(bp.X, t.Height(bp) - 0.1f, bp.Y);
+        float bh = (tier >= 4 ? 2.5f : 2.1f) * s;
+        mesh.Box(bb, 0.09f * s, 0.09f * s, bh, gate, GoblinTimber);
+        mesh.Box(bb + Vector3.Up * (bh - 0.55f * s), 0.78f * s, 0.06f * s, 0.48f * s, gate + 0.35f, accent);
+
+        // Glowing central campfire.
+        var fp = pos + gf * (0.35f * s);
+        var fb = new Vector3(fp.X, t.Height(fp), fp.Y);
+        mesh.Box(fb, 0.48f * s, 0.48f * s, 0.14f * s, 0, GoblinEmber);
+
+        // Two camp sentries.
+        var sentry = new Person { Shirt = new Color(62, 54, 46), Hose = new Color(46, 42, 38), Hat = true };
+        DrawPerson(pos + gf * (rad * 0.75f) + gs * (0.45f * s), gate, clock * 1.1f + id, false, 0, sentry, 0.85f * s);
+        if (men >= 20)
+            DrawPerson(fp - gs * (0.7f * s), gate - 1.2f, clock + id + 3, false, 0.4f, sentry, 0.82f * s);
     }
 
     void DrawHoldout(int id, Vector2 pos, int men, int tier)

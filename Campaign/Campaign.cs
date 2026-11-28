@@ -135,8 +135,9 @@ public sealed partial class Campaign
         }
         for (int f = 0; f < factions; f++)
             for (int i = 0; i < c.LordsWantedOf(f); i++) c.SpawnLord(f);
-        // Open with a map's worth of brigands, not three: the roads are dangerous from the first day.
-        for (int i = 0; i < c.BanditsWanted / 3; i++) c.SpawnBandits();
+        // Open with outlaw camps tucked into the provinces plus a light scatter of roaming bands.
+        for (int i = 0; i < c.BanditCampsWanted; i++) c.SpawnBanditCamp();
+        for (int i = 0; i < Math.Max(3, c.BanditsWanted / 5); i++) c.SpawnBandits();
         // The wilds already have their goblins, some of them well dug in.
         for (int i = 0; i < c.HoldoutsWanted; i++)
             if (c.SpawnHoldout()) for (int d = c.rng.Next(40); d > 0; d--) c.Grow(c.S.Parties[^1]);
@@ -152,7 +153,7 @@ public sealed partial class Campaign
         c.SyncOrders();
         if (making != null) c.ApplyMaking(making, capital);
         // The guided first fight: a weak band close by, scaled to your starting band when created without default levies.
-        var first = new Party { Id = s.NextId++, Kind = PartyKind.Bandit, Name = "Ditch Wolves", Pos = player.Pos + new Vector2(0, 16), Tier = 1, ChaseId = player.Id, Moving = true, TaskUntil = 72 };
+        var first = new Party { Id = s.NextId++, Kind = PartyKind.Bandit, Breed = "highwaymen", Name = "Ditch Wolves", Pos = player.Pos + new Vector2(0, 16), Tier = 1, ChaseId = player.Id, Moving = true, TaskUntil = 72 };
         int wolfMen = making == null ? c.Scaled(9) : Math.Clamp(Math.Max(6, player.Men), 6, c.Scaled(9));
         first.Companies.Add(c.NewCompany("brevon_fyrd", "infantry", wolfMen, 0));
         s.Parties.Add(first);
@@ -314,7 +315,7 @@ public sealed partial class Campaign
 
     /// Rabble is slow (brigand bands of tier II and below, goblins); trained brigands (tier IV and up) and robber knights are quick.
     public const float RabblePace = 0.8f, TrainedPace = 1.1f, RobberPace = 1.15f, RobberKnightChance = 0.15f;
-    public static float PaceOf(Party p) => p.Kind == PartyKind.Bandit ? (p.Breed == "robbers" ? RobberPace : p.Tier >= 4 ? TrainedPace : p.Tier <= 2 ? RabblePace : 0.9f)
+    public static float PaceOf(Party p) => p.Kind == PartyKind.Bandit ? (p.Breed is "robbers" or "reivers" ? RobberPace : p.Tier >= 4 ? TrainedPace : p.Tier <= 2 ? RabblePace : 0.9f)
         : p.Kind == PartyKind.Monster && p.Breed == "goblin" ? RabblePace : 1;
 
     /// A party's own speed, before an army's pace holds it back.
@@ -599,13 +600,7 @@ public sealed partial class Campaign
         SyncLegendVerses();
         BrigandKingsDaily();
         DayFellDaily(); // the year's day of a costly battle (C7)
-        // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous;
-        // a share of them come up near the player, and his country is kept to BanditNearMin bands even past the cap,
-        // so he is never short of a fight.
-        for (int n = 0; n < BanditSpawnsWanted; n++)
-            if (S.Parties.Count(p => p.Kind == PartyKind.Bandit && !p.Down) >= BanditsWanted || !rng.Chance(B.BanditSpawnChance)) break;
-            else SpawnBandits(rng.Chance(B.BanditNearPlayer));
-        for (int n = BanditsNearPlayer; n < B.BanditNearMin; n++) SpawnBandits(near: true);
+        BanditsDaily();
         MonstersDaily();
         RoadsDaily();
         // A realm that holds too many of the seats (LeaderShare: close to half of three realms', less with more) unites the others

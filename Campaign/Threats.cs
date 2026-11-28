@@ -55,12 +55,12 @@ public sealed partial class Campaign
         var king = S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Bandit && !p.Down && p.CharId >= 0 && CharacterById(p.CharId) is { Kind: "brigand" });
         if (king == null && Day >= 30)
         {
-            var big = S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down && p.HomeId < 0 && p.CharId < 0 && p.Men >= Scaled(BrigandKingMen)).OrderByDescending(p => p.Men).FirstOrDefault();
+            var big = S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Lair && !p.Down && p.HomeId < 0 && p.CharId < 0 && p.Men >= Scaled(BrigandKingMen)).OrderByDescending(p => p.Men).FirstOrDefault();
             if (big != null) Crown(big);
         }
         else if (king != null)
         {
-            if (king.Men < Scaled(150) && king.Companies.Count > 0) { var st = king.Companies[0].Stacks[0]; if (Rules.Room(king.Companies[0], st.Troop) > 0) st.Men += Math.Min(Rules.Room(king.Companies[0], st.Troop), Scaled(1)); else if (king.Companies.Count < 5) king.Companies.Add(NewCompany(st.Troop, "infantry", Scaled(6), 0)); }
+            if (king.Men < Scaled(150) && king.Companies.Count > 0) { var st = king.Companies[0].Stacks[0]; if (Rules.Room(king.Companies[0], st.Troop) > 0) st.Men += Math.Min(Rules.Room(king.Companies[0], st.Troop), Scaled(1)); else if (king.Companies.Count < 5) king.Companies.Add(NewCompany(st.Troop, Rules.TroopRole(st.Troop), Scaled(6), 0)); }
             foreach (var v in S.Settlements.Where(v => v.Kind == SettlementKind.Village && v.ThreatUntil < S.Hours && Vector2.Distance(v.Pos, king.Pos) < 15 * Map.Spread))
             {
                 v.ThreatUntil = (float)S.Hours + 7 * 24;
@@ -79,7 +79,7 @@ public sealed partial class Campaign
         band.CharId = ch.Id;
         band.Name = $"{ch.Name.Split(' ')[0]}'s Host";
         string troop = band.Companies.FirstOrDefault()?.Troop ?? "brevon_fyrd";
-        band.Companies.Add(NewCompany(troop, "infantry", Scaled(16), 0));
+        band.Companies.Add(NewCompany(troop, Rules.TroopRole(troop), Scaled(16), 0));
         Log($"{ch.Name} gathers the brigands of the land and calls himself their king.");
         Force("brigand_king", new PendingEvent { Party = band.Id, Lord = ch.Id });
     }
