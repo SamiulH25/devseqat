@@ -369,6 +369,46 @@ public sealed partial class SpriteSheet
                 else if (v == "s") { c.Rect(10, 7, 16, 9, Mat.Flat(Color.Black)); }
                 return c;
             }
+            case "arsenal_pot":
+            {
+                // Light open-faced iron pot helm with a modest brim.
+                var c = new Canvas(18, 12);
+                c.Fill((x, y) => InEl(x, y, 9, 8f, 6.4f, 6.2f) && y < 8.5f, (x, y) => new Vector3((x - 9) / 7, (y - 7.5f) / 7, 0.6f), iron);
+                c.Rect(2, 8f, 16, 9.8f, iron, -0.05f);
+                return c;
+            }
+            case "cervelliere":
+            {
+                // Close-fitting hammered iron skullcap.
+                var c = new Canvas(18, 11);
+                c.Fill((x, y) => InEl(x, y, 9, 8.5f, 7.2f, 6.8f) && y < 9f, (x, y) => new Vector3((x - 9) / 8, (y - 8) / 7, 0.6f), iron);
+                c.Rect(2, 8.2f, 16, 9.4f, steel, -0.1f);
+                return c;
+            }
+            case "wool_coif":
+            {
+                var c = new Canvas(18, 13);
+                c.Ellipse(9, 7.2f, 7.6f, 6.6f, cloth);
+                c.Rect(2, 7.5f, 16, 12, clothDk, -0.05f);
+                if (v == "f") for (int y = 5; y < 13; y++) for (int x = 3; x < 15; x++) if (InEl(x + 0.5f, y + 0.5f, 9, 9.5f, 4.8f, 4.8f)) c.Clear(x, y);
+                if (v == "s") for (int y = 5; y < 13; y++) for (int x = 9; x < 18; x++) if (InEl(x + 0.5f, y + 0.5f, 14.5f, 9.5f, 4.5f, 4.8f)) c.Clear(x, y);
+                return c;
+            }
+            case "felt_bonnet":
+            {
+                var c = new Canvas(18, 11);
+                c.Ellipse(9, 6.2f, 7.8f, 5.2f, cloth);
+                c.Rect(1, 7.5f, 17, 9.8f, clothDk, -0.05f);
+                if (v != "b") c.Rect(13, 3, 15, 7, trim, 0.25f);
+                return c;
+            }
+            case "sea_cap":
+            {
+                var c = new Canvas(18, 11);
+                c.Ellipse(9, 6.8f, 7.6f, 5.4f, leather);
+                c.Rect(1.5f, 7.8f, 16.5f, 9.6f, clothDk, -0.05f);
+                return c;
+            }
             case "cabasset":
             {
                 // Pear-stalk Renaissance steel helm with upturned brim.
@@ -793,6 +833,16 @@ public sealed partial class SpriteSheet
         {
             c.Body(0, 23, span, m);
             if (body == "tunic") c.Body(20.5f, 23, span, clothDk);
+            if (body == "fyrd_smock") { c.Body(0, 23, span, cloth); c.Body(0, 2.5f, span, clothDk); c.Body(19.5f, 23, span, trim, -0.1f); }
+            if (body == "linen_doublet") { c.Body(0, 14, span, cloth); if (v == "f") for (int x = 6; x < 15; x += 4) for (int y = 4; y < 12; y += 3) c.Set(x, y, trim, 0.35f); c.Body(15.5f, 23, span, clothDk); }
+            if (body == "sailor_vest") { c.Body(0, 23, span, cloth); if (v == "f") c.Rect(8, 1, 12, 14, trim); c.Body(13.5f, 16, span, clothDk); }
+            if (body == "marsh_smock") { c.Body(0, 23, span, clothDk); for (int y = 3; y < 22; y += 4) for (int x = 3; x < c.W - 3; x += 3) if (c.Has(x, y)) c.Set(x, y, cloth, 0.15f); }
+            if (body == "novice_habit") { c.Body(0, 23, span, clothDk); if (v != "s") c.Rect(6.5f, 1, 13.5f, 23, cloth); }
+            if (body == "padded_habit") { c.Body(0, 23, span, quilt); if (v != "s") c.Rect(6.5f, 1, 13.5f, 23, clothDk); for (int y = 4; y < 22; y += 4) c.Shade(c.W / 2, y, -0.25f); }
+            if (body == "crag_tunic") { c.Body(0, 4, span, clothDk); c.Body(4, 23, span, leather); for (int y = 5; y < 21; y += 4) for (int x = 3; x < c.W - 3; x += 4) if (c.Has(x, y)) c.Set(x, y, cloth, 0.2f); }
+            if (body == "mariner_jerkin") { c.Body(0, 23, span, leather); c.Body(0, 3.5f, span, clothDk); if (v == "f") for (int y = 4; y < 14; y += 3) c.Set(10, y, brass, 0.35f); }
+            if (body == "wolf_hide") { c.Body(0, 8, span, fur); c.Body(8, 23, span, leather); }
+            if (body == "raider_hide") { c.Body(0, 5, span, fur); c.Body(5, 23, span, leather); }
             if (body == "oilskin_coat") { c.Body(0, 4.5f, span, clothDk); if (v == "f") for (int y = 4; y < 22; y += 3) c.Set(10, y, brass, 0.55f); }
             if (body == "slashed_doublet") { c.Body(0, 14, span, cloth); if (v == "f") for (int x = 5; x < 16; x += 3) for (int y = 3; y < 13; y += 2) c.Set(x, y, trim, 0.5f); c.Body(15.5f, 23, span, clothDk); }
             if (body == "crag_plaid") { c.Body(0, 5, span, fur); for (int y = 5; y < 22; y += 3) for (int x = 2; x < c.W - 2; x += 3) if (c.Has(x, y)) c.Set(x, y, clothDk, 0.2f); }
@@ -1075,7 +1125,12 @@ public sealed partial class SpriteSheet
                 c.Rect(1, 0, 7, 20, quilt); c.Rect(1, 0, 7, 2.5f, body == "gambeson_fur" ? fur : leather);
                 for (int y = 5; y < 20; y += 3) for (int x = 0; x < 8; x++) c.Shade(x, y, -0.3f); // quilted round the arm
                 break;
-            case "fur": case "bear_pelt": c.Rect(1.5f, 0, 6.5f, 20, leather); c.Rect(1, 0, 7, 5, fur); break;
+            case "fur": case "bear_pelt": case "wolf_hide": case "raider_hide": c.Rect(1.5f, 0, 6.5f, 20, leather); c.Rect(1, 0, 7, 5, fur); break;
+            case "padded_habit": c.Rect(1, 0, 7, 20, quilt); c.Rect(1, 0, 7, 2.5f, clothDk); break;
+            case "crag_tunic": case "mariner_jerkin": c.Rect(1.5f, 0, 6.5f, 20, leather); c.Rect(1, 0, 7, 3.5f, clothDk); break;
+            case "linen_doublet": c.Rect(1, 0, 7, 20, cloth); c.Rect(2, 5, 6, 7, trim); break;
+            case "sailor_vest": c.Rect(1.5f, 0, 6.5f, 20, trim); c.Rect(1, 0, 7, 2.5f, cloth); break;
+            case "marsh_smock": case "novice_habit": case "fyrd_smock": c.Rect(1.5f, 0, 6.5f, 20, cloth); c.Rect(1.5f, 0, 6.5f, 2.5f, clothDk); break;
             case "rags": c.Rect(2, 0, 6, 20, gskin); c.Rect(1.5f, 0, 6.5f, 3, rag); break; // a thin bare arm
             case "bones": c.Rect(3, 0, 5, 20, bone); c.Ellipse(4, 10, 1.6f, 1.4f, bone, 0.1f); break; // a bare arm bone and its elbow
             case "shroud": c.Rect(2.2f, 0, 5.8f, 20, pale); c.Rect(1.5f, 0, 6.5f, 5, shroud); break;

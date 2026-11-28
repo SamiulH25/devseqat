@@ -265,7 +265,7 @@
       "name": "Marcher Hobby",
       "hp": 145,
       "trot": 6.2,
-      "gallop": 13.0,
+      "gallop": 13,
       "accel": 5.6,
       "turnRate": 2.4,
       "barding": "saddle"
@@ -276,7 +276,7 @@
       "hp": 240,
       "trot": 5.1,
       "gallop": 11.3,
-      "accel": 4.0,
+      "accel": 4,
       "turnRate": 1.6,
       "barding": "caparison"
     },
@@ -294,7 +294,7 @@
       "id": "fjord_pony",
       "name": "Fjord Pony",
       "hp": 145,
-      "trot": 6.0,
+      "trot": 6,
       "gallop": 12.6,
       "accel": 5.6,
       "turnRate": 2.5,
@@ -306,7 +306,7 @@
       "hp": 240,
       "trot": 5.3,
       "gallop": 11.2,
-      "accel": 4.0,
+      "accel": 4,
       "turnRate": 1.8,
       "barding": "camel"
     },
@@ -326,7 +326,7 @@
       "hp": 270,
       "trot": 5.1,
       "gallop": 11.3,
-      "accel": 4.0,
+      "accel": 4,
       "turnRate": 1.6,
       "barding": "lamellarbarding"
     },
@@ -346,7 +346,7 @@
       "hp": 265,
       "trot": 5.1,
       "gallop": 11.2,
-      "accel": 4.0,
+      "accel": 4,
       "turnRate": 1.6,
       "barding": "mailbarding"
     }
@@ -860,7 +860,7 @@
       "upgradeXp": 150,
       "look": {
         "head": "spangen",
-        "body": "fur",
+        "body": "raider_hide",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -1751,7 +1751,7 @@
       },
       "stock": "noble",
       "skills": {
-        "arms": 54.0
+        "arms": 54
       }
     },
     {
@@ -7037,7 +7037,7 @@
       "recover": 0.5,
       "speed": 8.6,
       "block": 0,
-      "size": 1.0,
+      "size": 1,
       "traits": [
         "flying",
         "prey_bows"
@@ -7179,7 +7179,7 @@
       "recover": 0.6,
       "speed": 3.8,
       "block": 0.15,
-      "size": 1.0,
+      "size": 1,
       "traits": [
         "raised",
         "fearless",
@@ -7281,7 +7281,7 @@
       "hp": 950,
       "damage": 52,
       "armor": 16,
-      "reach": 2.0,
+      "reach": 2,
       "windup": 0.5,
       "recover": 0.6,
       "speed": 4.2,
@@ -7321,7 +7321,7 @@
       "reach": 2.2,
       "windup": 0.55,
       "recover": 0.65,
-      "speed": 6.0,
+      "speed": 6,
       "block": 0,
       "size": 1.75,
       "traits": [
@@ -8053,8 +8053,8 @@
       "cost": 25,
       "upgradeXp": 100,
       "look": {
-        "head": "cap",
-        "body": "tunic",
+        "head": "sea_cap",
+        "body": "sailor_vest",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -8140,7 +8140,7 @@
       "cost": 24,
       "upgradeXp": 100,
       "look": {
-        "head": "kettle",
+        "head": "cervelliere",
         "body": "gambeson",
         "legs": "cloth",
         "feet": "boots",
@@ -8362,8 +8362,8 @@
       "cost": 24,
       "upgradeXp": 100,
       "look": {
-        "head": "cap",
-        "body": "oilskin_coat",
+        "head": "sea_cap",
+        "body": "mariner_jerkin",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -8385,7 +8385,7 @@
       "upgradeXp": 140,
       "look": {
         "head": "kettle",
-        "body": "oilskin_coat",
+        "body": "mariner_jerkin",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -8471,7 +8471,7 @@
       "cost": 24,
       "upgradeXp": 100,
       "look": {
-        "head": "kettle",
+        "head": "cervelliere",
         "body": "gambeson",
         "legs": "cloth",
         "feet": "boots",
@@ -8582,7 +8582,7 @@
       "upgradeXp": 100,
       "look": {
         "head": "hood",
-        "body": "crag_plaid",
+        "body": "crag_tunic",
         "legs": "furlegs",
         "feet": "furboots",
         "hands": "skin",
@@ -8604,7 +8604,7 @@
       "upgradeXp": 140,
       "look": {
         "head": "cap",
-        "body": "crag_plaid",
+        "body": "crag_tunic",
         "legs": "furlegs",
         "feet": "furboots",
         "hands": "skin",
@@ -9149,7 +9149,7 @@
       "upgradeXp": 60,
       "look": {
         "head": "turban",
-        "body": "corsair_vest",
+        "body": "sailor_vest",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -9485,7 +9485,7 @@
       "cost": 24,
       "upgradeXp": 100,
       "look": {
-        "head": "cabasset",
+        "head": "arsenal_pot",
         "body": "gambeson",
         "legs": "cloth",
         "feet": "boots",
@@ -9688,7 +9688,7 @@
         "weapon": "crossbow"
       },
       "skills": {
-        "arms": 54.0
+        "arms": 54
       }
     },
     {
@@ -9708,8 +9708,8 @@
       "cost": 10,
       "upgradeXp": 60,
       "look": {
-        "head": "hood",
-        "body": "gambeson",
+        "head": "wool_coif",
+        "body": "novice_habit",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -9823,8 +9823,8 @@
       "cost": 10,
       "upgradeXp": 60,
       "look": {
-        "head": "kettle",
-        "body": "gambeson",
+        "head": "wool_coif",
+        "body": "fyrd_smock",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -9935,8 +9935,8 @@
       "cost": 10,
       "upgradeXp": 60,
       "look": {
-        "head": "cap",
-        "body": "tunic",
+        "head": "wool_coif",
+        "body": "fyrd_smock",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -9957,7 +9957,7 @@
       "cost": 24,
       "upgradeXp": 150,
       "look": {
-        "head": "kettle",
+        "head": "cervelliere",
         "body": "gambeson",
         "legs": "cloth",
         "feet": "boots",
@@ -10101,8 +10101,8 @@
       "cost": 10,
       "upgradeXp": 60,
       "look": {
-        "head": "cap",
-        "body": "tunic",
+        "head": "wool_coif",
+        "body": "fyrd_smock",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -10238,8 +10238,8 @@
       "cost": 10,
       "upgradeXp": 60,
       "look": {
-        "head": "cap",
-        "body": "tunic",
+        "head": "sea_cap",
+        "body": "fyrd_smock",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -10304,8 +10304,8 @@
       "cost": 10,
       "upgradeXp": 60,
       "look": {
-        "head": "cap",
-        "body": "tunic",
+        "head": "felt_bonnet",
+        "body": "linen_doublet",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -10489,8 +10489,8 @@
       "cost": 10,
       "upgradeXp": 60,
       "look": {
-        "head": "cap",
-        "body": "slashed_doublet",
+        "head": "felt_bonnet",
+        "body": "linen_doublet",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -10706,7 +10706,7 @@
       "upgradeXp": 150,
       "look": {
         "head": "spangen",
-        "body": "fur",
+        "body": "raider_hide",
         "legs": "furlegs",
         "feet": "furboots",
         "hands": "skin",
@@ -10820,7 +10820,7 @@
       "upgradeXp": 140,
       "look": {
         "head": "spangen",
-        "body": "fur",
+        "body": "raider_hide",
         "legs": "furlegs",
         "feet": "furboots",
         "hands": "skin",
@@ -10841,7 +10841,7 @@
       "upgradeXp": 140,
       "look": {
         "head": "spangen",
-        "body": "fur",
+        "body": "raider_hide",
         "legs": "furlegs",
         "feet": "furboots",
         "hands": "skin",
@@ -10904,7 +10904,7 @@
       "upgradeXp": 150,
       "look": {
         "head": "bearhead",
-        "body": "bear_pelt",
+        "body": "wolf_hide",
         "legs": "furlegs",
         "feet": "furboots",
         "hands": "skin",
@@ -11577,8 +11577,8 @@
       "cost": 10,
       "upgradeXp": 60,
       "look": {
-        "head": "cap",
-        "body": "tunic",
+        "head": "felt_bonnet",
+        "body": "linen_doublet",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -11599,7 +11599,7 @@
       "cost": 24,
       "upgradeXp": 150,
       "look": {
-        "head": "cabasset",
+        "head": "arsenal_pot",
         "body": "gambeson",
         "legs": "cloth",
         "feet": "boots",
@@ -11620,7 +11620,7 @@
       "cost": 24,
       "upgradeXp": 150,
       "look": {
-        "head": "cabasset",
+        "head": "arsenal_pot",
         "body": "gambeson",
         "legs": "cloth",
         "feet": "boots",
@@ -11716,8 +11716,8 @@
       "cost": 10,
       "upgradeXp": 60,
       "look": {
-        "head": "brigand_hat",
-        "body": "tunic",
+        "head": "sea_cap",
+        "body": "sailor_vest",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -11758,7 +11758,7 @@
       "cost": 26,
       "upgradeXp": 140,
       "look": {
-        "head": "cabasset",
+        "head": "arsenal_pot",
         "body": "gambeson",
         "legs": "cloth",
         "feet": "boots",
@@ -11784,7 +11784,7 @@
       "upgradeXp": 60,
       "look": {
         "head": "hood",
-        "body": "reed_cloak",
+        "body": "marsh_smock",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -11870,8 +11870,8 @@
       "cost": 10,
       "upgradeXp": 60,
       "look": {
-        "head": "hood",
-        "body": "tunic",
+        "head": "wool_coif",
+        "body": "novice_habit",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -11892,7 +11892,7 @@
       "upgradeXp": 150,
       "look": {
         "head": "hood",
-        "body": "tarn_habit",
+        "body": "padded_habit",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -11912,8 +11912,8 @@
       "cost": 24,
       "upgradeXp": 150,
       "look": {
-        "head": "kettle",
-        "body": "tarn_habit",
+        "head": "cervelliere",
+        "body": "padded_habit",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -12006,7 +12006,7 @@
       "upgradeXp": 150,
       "look": {
         "head": "hood",
-        "body": "tarn_habit",
+        "body": "padded_habit",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -12027,7 +12027,7 @@
       "upgradeXp": 150,
       "look": {
         "head": "hood",
-        "body": "tarn_habit",
+        "body": "padded_habit",
         "legs": "cloth",
         "feet": "boots",
         "hands": "skin",
@@ -12068,7 +12068,7 @@
       "cost": 24,
       "upgradeXp": 140,
       "look": {
-        "head": "kettle",
+        "head": "cervelliere",
         "body": "gambeson",
         "legs": "cloth",
         "feet": "boots",

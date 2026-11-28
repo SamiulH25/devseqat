@@ -2447,6 +2447,19 @@ public static partial class SelfTest
         float nearDmg = nearFoe.Type.MaxHp - nearFoe.Hp;
         float tipDmg = tipFoe.Type.MaxHp - tipFoe.Hp;
         Check(tipDmg > nearDmg * 1.3f, $"polearm thrust tip sweet-spot beats crowded hit ({tipDmg:0.0} vs {nearDmg:0.0})");
+
+        // 4. Hit-interrupt stagger: light chip hits do not interrupt windups; bosses resist stagger; heavy blows still can.
+        var b4 = Battle.Empty(24);
+        var levy = b4.AddSquad(0, Troops.Get("brevon_fyrd"), 1, Vector2.Zero, 1, Vector2.UnitX).Units[0];
+        var chief = b4.AddSquad(1, Troops.Get("goblin_chief"), 1, new Vector2(1.4f, 0), 1, -Vector2.UnitX).Units[0];
+        chief.Action = UnitAction.Windup; chief.WindupDuration = 0.5f; chief.ActionTimer = 0.4f;
+        float chipChance = Battle.HitStaggerChance(levy, chief, 8f, false);
+        Check(chipChance == 0f, $"chip hit under 10% MaxHp does not stagger ({chipChance:0.00})");
+        float bossHeavy = Battle.HitStaggerChance(levy, chief, 60f, false);
+        float levyHeavy = Battle.HitStaggerChance(chief, levy, 22f, false);
+        Check(bossHeavy > 0f && bossHeavy < levyHeavy, $"boss resists stagger more than a levy ({bossHeavy:0.00} < {levyHeavy:0.00})");
+        float rangedChip = Battle.HitStaggerChance(levy, levy, 8f, true);
+        Check(rangedChip == 0f, $"light arrow chip does not stagger ({rangedChip:0.00})");
     }
 
     /// CR5: In a 1v3 duel, enemies space and circle around flanks instead of stacking onto one blob.

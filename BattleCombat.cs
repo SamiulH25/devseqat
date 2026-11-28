@@ -708,7 +708,11 @@ public partial class Battle
         // otherwise kept every swing from landing.
         // CR4: 2H greatsword overhead has brief poise/hyper-armor in late windup & active so light blows don't interrupt it.
         bool poise = IsTwoHandSword(t) && t.Swing == AttackDir.Overhead && (t.Action == UnitAction.Active || (t.Action == UnitAction.Windup && t.ActionTimer < t.WindupDuration * 0.45f));
-        if (!poise && (t.Action == UnitAction.Windup || t.Charging) && !(t.Mounted && !a.Mounted && t.Action == UnitAction.Windup)) Stagger(t, 0.3f);
+        if (!poise && (t.Action == UnitAction.Windup || t.Charging) && !(t.Mounted && !a.Mounted && t.Action == UnitAction.Windup))
+        {
+            float sc = HitStaggerChance(a, t, real, ranged);
+            if (sc > 0f && rng.NextSingle() < sc) Stagger(t, 0.25f);
+        }
         if (t.Hp <= 0) Kill(t, a);
         if (a.IsPlayer || t.IsPlayer) NoteBlow(t, real, !a.IsPlayer);
         return real;
@@ -732,6 +736,24 @@ public partial class Battle
         if (r.IsPlayer) Log("Your horse is slain! Find a loose one to mount.");
         Stagger(r, 1.2f);
         Damage(by, r, 12, 0);
+    }
+
+    /// Probability that a landed blow interrupts a defender's Windup or Charging action.
+    /// Light chip hits never stagger; heavier hits scale with HP share, attenuated by boss size, tier, ranged, and late windup.
+    internal static float HitStaggerChance(Unit a, Unit t, float real, bool ranged)
+    {
+        if (t.Type.Huge) return 0f;
+        float share = real / MathF.Max(1f, t.Type.MaxHp);
+        float minShare = ranged ? 0.16f : 0.10f;
+        if (share < minShare && !a.Type.Huge) return 0f;
+        float chance = Math.Clamp((share - minShare) / 0.30f + 0.15f, 0.15f, 0.85f);
+        if (ranged) chance *= 0.55f;
+        if (a.Type.Huge) chance = MathF.Max(chance, 0.85f);
+        else if (!ranged && IsCrushWeapon(a)) chance *= 1.2f;
+        if (t.Type.Has("boss") || t.Type.Size >= 1.2f) chance *= 0.35f;
+        if (t.Action == UnitAction.Windup && t.ActionTimer < t.WindupDuration * 0.4f) chance *= 0.5f;
+        chance *= 1f - Math.Clamp((t.Type.Tier - 1) * 0.06f, 0f, 0.30f);
+        return Math.Clamp(chance, 0f, 0.85f);
     }
 
     static void Stagger(Unit u, float time, bool guardBreak = false)

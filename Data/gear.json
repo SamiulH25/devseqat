@@ -53,9 +53,9 @@
       "blockPerArms": 0.003,
       "swing": 1.18,
       "swingPerArms": -0.0035,
-      "shot": 0.60,
+      "shot": 0.6,
       "shotPerBowcraft": 0.009,
-      "reload": 1.20,
+      "reload": 1.2,
       "reloadPerBowcraft": -0.004,
       "range": 0.85,
       "rangePerBowcraft": 0.003,
@@ -720,7 +720,7 @@
       "cost": 260,
       "look": "pennonlance",
       "damage": 32,
-      "reach": 3.0,
+      "reach": 3,
       "windup": 0.38,
       "recover": 0.72,
       "parry": 0.7
@@ -734,7 +734,7 @@
       "cost": 190,
       "look": "staff",
       "damage": 30,
-      "reach": 2.0,
+      "reach": 2,
       "windup": 0.5,
       "recover": 0.65,
       "twoHanded": true
@@ -764,7 +764,7 @@
       "cost": 260,
       "look": "falchion",
       "damage": 32,
-      "reach": 2.0,
+      "reach": 2,
       "windup": 0.4,
       "recover": 0.5
     },
@@ -819,7 +819,7 @@
       "cost": 390,
       "look": "morningstar",
       "damage": 32,
-      "reach": 2.0,
+      "reach": 2,
       "windup": 0.42,
       "recover": 0.52,
       "pierce": 0.35
@@ -837,7 +837,7 @@
       "windup": 0.42,
       "recover": 0.65,
       "pierce": 0.25,
-      "vsMounted": 2.0,
+      "vsMounted": 2,
       "twoHanded": true
     },
     {
@@ -1753,7 +1753,7 @@
       "look": "plate_vespran",
       "legs": "plate",
       "feet": "sabatons",
-      "armor": 11.0,
+      "armor": 11,
       "speed": -0.06,
       "text": "Darkened patrician steel with slashed silk sleeves and brass rivets."
     },
@@ -1813,7 +1813,7 @@
       "look": "mirror_qadir",
       "legs": "mail",
       "feet": "ridingboots",
-      "armor": 10.0,
+      "armor": 10,
       "speed": -0.02,
       "text": "Polished Qadiri bronze-and-steel mirror discs laced over dyed silk and mail."
     },
@@ -1843,7 +1843,7 @@
       "look": "plate_lantern",
       "legs": "splint",
       "feet": "boots",
-      "armor": 11.0,
+      "armor": 11,
       "speed": -0.08,
       "text": "Burnished Brinemere three-quarter cuirass over an oiled buff coat."
     },
@@ -1873,7 +1873,7 @@
       "look": "tarn_habit",
       "legs": "mail",
       "feet": "boots",
-      "armor": 7.0,
+      "armor": 7,
       "speed": -0.02,
       "text": "Highland mail worn beneath an austere ash-grey Tarn tabard."
     },
@@ -1911,7 +1911,7 @@
       "needs": 24,
       "rank": 1,
       "look": "rose_sallet",
-      "armor": 5.0,
+      "armor": 5,
       "text": "Swept Vespran gothic sallet with a pierced visor and feather crest."
     },
     {
@@ -1966,7 +1966,7 @@
       "needs": 24,
       "rank": 1,
       "look": "sky_mask",
-      "armor": 5.0,
+      "armor": 5,
       "text": "Domed Naryn steppe helm with hammered steel mask and horsehair plume."
     },
     {
@@ -1977,7 +1977,7 @@
       "needs": 22,
       "rank": 1,
       "look": "lantern_burgonet",
-      "armor": 5.0,
+      "armor": 5,
       "text": "Combed Brinemere burgonet with brass-trimmed cheek-pieces."
     },
     {
@@ -2013,7 +2013,7 @@
       "rank": 0,
       "look": "sun_kalkan",
       "block": 0.68,
-      "speed": 0.0,
+      "speed": 0,
       "text": "Qadiri bronze-ribbed kalkan with a gleaming sun boss."
     },
     {
@@ -2058,7 +2058,7 @@
       "needs": 8,
       "look": "boarding_axe",
       "damage": 34,
-      "reach": 2.0,
+      "reach": 2,
       "windup": 0.41,
       "recover": 0.49,
       "pierce": 0.2,
@@ -2155,7 +2155,7 @@
       "cost": 280,
       "needs": 6,
       "look": "crag_plaid",
-      "armor": 7.0,
+      "armor": 7,
       "speed": -0.1,
       "legs": "furlegs",
       "feet": "furboots",
@@ -2203,7 +2203,7 @@
       "cost": 440,
       "needs": 16,
       "look": "vendel_helm",
-      "armor": 7.0,
+      "armor": 7,
       "speed": -0.04,
       "text": "Crested northern spectacle helm with brass brow-band."
     },
@@ -2215,8 +2215,8 @@
       "cost": 260,
       "needs": 6,
       "look": "bear_pelt",
-      "armor": 6.0,
-      "speed": 0.0,
+      "armor": 6,
+      "speed": 0,
       "legs": "furlegs",
       "feet": "furboots",
       "text": "Thick taiga bearskin strapped over boiled hide."
@@ -2309,7 +2309,7 @@
       "needs": 4,
       "look": "corsair_vest",
       "armor": 5.5,
-      "speed": 0.0,
+      "speed": 0,
       "legs": "cloth",
       "feet": "boots",
       "text": "Embroidered open sea-vest belted with a heavy waist sash."
@@ -2354,7 +2354,7 @@
       "needs": 14,
       "look": "shestoper",
       "damage": 37,
-      "reach": 2.0,
+      "reach": 2,
       "windup": 0.42,
       "recover": 0.5,
       "pierce": 0.35,
@@ -2367,7 +2367,7 @@
       "cost": 420,
       "needs": 14,
       "look": "steppe_plumed_helm",
-      "armor": 7.0,
+      "armor": 7,
       "speed": -0.04,
       "text": "Conical fluted steppe helm crowned with a dyed horsetail plume."
     },
@@ -2379,7 +2379,7 @@
       "cost": 680,
       "needs": 18,
       "look": "lacquered_lamellar",
-      "armor": 10.0,
+      "armor": 10,
       "speed": -0.2,
       "legs": "mail",
       "feet": "ridingboots",
@@ -2439,7 +2439,7 @@
       "cost": 310,
       "needs": 10,
       "look": "cabasset",
-      "armor": 6.0,
+      "armor": 6,
       "speed": -0.03,
       "text": "Pear-stalk steel helm worn by Brinemere arsenal companies."
     },
@@ -2450,8 +2450,8 @@
       "name": "Fen Reed Smock",
       "cost": 140,
       "look": "reed_cloak",
-      "armor": 5.0,
-      "speed": 0.0,
+      "armor": 5,
+      "speed": 0,
       "legs": "cloth",
       "feet": "boots",
       "text": "Woven marsh-reed and oilcloth smock of the Brinemere fens."
@@ -2508,11 +2508,191 @@
       "cost": 940,
       "needs": 24,
       "look": "grey_plate_surcoat",
-      "armor": 13.0,
+      "armor": 13,
       "speed": -0.24,
       "legs": "plate",
       "feet": "sabatons",
       "text": "Austere dark-iron chapter plate under a plain grey scapular."
+    },
+    {
+      "id": "linen_doublet",
+      "slot": "body",
+      "kind": "cloth",
+      "name": "Linen Doublet",
+      "cost": 35,
+      "look": "linen_doublet",
+      "legs": "cloth",
+      "feet": "boots",
+      "armor": 1.5,
+      "speed": 0.18,
+      "text": "Unlined Vespran slashed linen doublet worn by city levies."
+    },
+    {
+      "id": "sailor_vest",
+      "slot": "body",
+      "kind": "cloth",
+      "name": "Sailor Vest",
+      "cost": 35,
+      "look": "sailor_vest",
+      "legs": "cloth",
+      "feet": "boots",
+      "armor": 1.5,
+      "speed": 0.2,
+      "text": "Light open cloth sea-vest of Marenite deckhands."
+    },
+    {
+      "id": "marsh_smock",
+      "slot": "body",
+      "kind": "cloth",
+      "name": "Marsh Smock",
+      "cost": 35,
+      "look": "marsh_smock",
+      "legs": "cloth",
+      "feet": "boots",
+      "armor": 1.5,
+      "speed": 0.18,
+      "text": "Coarse woven fen-cloth smock dyed to blend with reeds."
+    },
+    {
+      "id": "novice_habit",
+      "slot": "body",
+      "kind": "cloth",
+      "name": "Novice Habit",
+      "cost": 35,
+      "look": "novice_habit",
+      "legs": "cloth",
+      "feet": "boots",
+      "armor": 1.5,
+      "speed": 0.18,
+      "text": "Plain ash-grey wool scapular worn by Tarn novices."
+    },
+    {
+      "id": "padded_habit",
+      "slot": "body",
+      "kind": "padded",
+      "name": "Quilted Habit",
+      "cost": 90,
+      "look": "padded_habit",
+      "legs": "cloth",
+      "feet": "boots",
+      "armor": 3.5,
+      "speed": 0.1,
+      "text": "Thickly quilted monastic coat beneath a grey Tarn scapular."
+    },
+    {
+      "id": "crag_tunic",
+      "slot": "body",
+      "kind": "leather",
+      "name": "Cragfolk Tunic",
+      "cost": 80,
+      "look": "crag_tunic",
+      "legs": "furlegs",
+      "feet": "furboots",
+      "armor": 3,
+      "speed": 0.12,
+      "text": "Mountain wool plaid belted over a light leather jerkin."
+    },
+    {
+      "id": "mariner_jerkin",
+      "slot": "body",
+      "kind": "leather",
+      "name": "Mariner Jerkin",
+      "cost": 85,
+      "look": "mariner_jerkin",
+      "legs": "cloth",
+      "feet": "boots",
+      "armor": 3.2,
+      "speed": 0.12,
+      "text": "Tarred coastal leather jerkin built to shed spray and knives."
+    },
+    {
+      "id": "wolf_hide",
+      "slot": "body",
+      "kind": "leather",
+      "name": "Wolfskin Coat",
+      "cost": 80,
+      "look": "wolf_hide",
+      "legs": "furlegs",
+      "feet": "furboots",
+      "armor": 3,
+      "speed": 0.12,
+      "text": "Stitched taiga wolf-pelt strapped over rough hide."
+    },
+    {
+      "id": "fyrd_smock",
+      "slot": "body",
+      "kind": "cloth",
+      "name": "Fyrd Smock",
+      "cost": 25,
+      "look": "fyrd_smock",
+      "legs": "cloth",
+      "feet": "boots",
+      "armor": 1.2,
+      "speed": 0.18,
+      "text": "Heavy homespun Brevon wool smock cinched with a leather belt."
+    },
+    {
+      "id": "raider_hide",
+      "slot": "body",
+      "kind": "leather",
+      "name": "Raider Hide",
+      "cost": 65,
+      "look": "raider_hide",
+      "legs": "cloth",
+      "feet": "boots",
+      "armor": 2.5,
+      "speed": 0.1,
+      "text": "Cured northern hide coat with furred shoulders."
+    },
+    {
+      "id": "arsenal_pot",
+      "slot": "helm",
+      "name": "Arsenal Pot",
+      "cost": 55,
+      "look": "arsenal_pot",
+      "armor": 1.5,
+      "speed": 0,
+      "text": "Light open-faced iron pot helm issued to Brinemere levy companies."
+    },
+    {
+      "id": "wool_coif",
+      "slot": "helm",
+      "name": "Wool Coif",
+      "cost": 15,
+      "look": "wool_coif",
+      "armor": 0.5,
+      "speed": 0,
+      "text": "Tied homespun woollen coif worn under or in place of a cap."
+    },
+    {
+      "id": "felt_bonnet",
+      "slot": "helm",
+      "name": "Felt Bonnet",
+      "cost": 20,
+      "look": "felt_bonnet",
+      "armor": 0.8,
+      "speed": 0,
+      "text": "Thick brim-turned civic felt cap favored by Vespran and League militia."
+    },
+    {
+      "id": "sea_cap",
+      "slot": "helm",
+      "name": "Waxed Sea-Cap",
+      "cost": 20,
+      "look": "sea_cap",
+      "armor": 0.8,
+      "speed": 0,
+      "text": "Oiled cloth mariner cap pulled snug against wind and salt."
+    },
+    {
+      "id": "cervelliere",
+      "slot": "helm",
+      "name": "Cervelliere",
+      "cost": 55,
+      "look": "cervelliere",
+      "armor": 1.5,
+      "speed": 0,
+      "text": "Close-fitting hammered iron skullcap worn by trained foot."
     }
   ]
 }
