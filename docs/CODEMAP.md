@@ -920,8 +920,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Camp.cs (625 lines)
 - **MapScreen** (class, L9): CampLight:32, CampLook:35, CampLayout:47, FireSpot:85, PrepareCamp:97, CampPanel:110, CampScene:144, Tent:204, Surgeon:223, Cold:258, Fire:260, CampGear:294, ManTalk:396, CampRites:418, ManBox:445, CampPlate:500, CampBar:520, ManPage:544, CampBannerModal:603
 
-## MapScreen.Captain.cs (357 lines)
-- **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:34, SkillTree:97, AuraBlock:186, PathBlock:204, OwnFormBlock:227, FlameBlock:254, FormList:278, CaptainRecord:319
+## MapScreen.Captain.cs (359 lines)
+- **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:34, SkillTree:97, AuraBlock:188, PathBlock:206, OwnFormBlock:229, FlameBlock:256, FormList:280, CaptainRecord:321
 
 ## MapScreen.Castle.cs (58 lines)
 - **MapScreen** (class, L6): MusterTab:8
