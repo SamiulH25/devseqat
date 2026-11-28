@@ -60,7 +60,7 @@
     {
       "id": "hedge_knight", "name": "Hedge Knight", "icon": "horse", "age": 9, "perk": "MountedLord",
       "text": "A knight with no land, only a horse, a name and a long road between tourneys.",
-      "effects": ["skill:Riding:15", "renown:25", "gear:warhorse", "wear:warhorse", "gold:-100", "buff:heralds_cry:45"],
+      "effects": ["skill:Riding:15", "renown:25", "gear:courser", "wear:courser", "buff:heralds_cry:45"],
       "line": "Heralds still know your arms from the lists."
     },
     {
@@ -72,7 +72,7 @@
     {
       "id": "deserter", "name": "Deserter", "icon": "flag", "age": 8, "perk": "Ambusher",
       "text": "You walked away from a lord's war when it turned to murder. Nobody pays a deserter, so you are your own master now.",
-      "effects": ["free", "skill:Tactics:10", "skill:Arms:5", "gold:250", "men:shire_billmen:6", "opinion_realm:-10", "buff:run_before:0"],
+      "effects": ["skill:Tactics:10", "skill:Arms:5", "gold:250", "men:shire_billmen:6", "opinion_realm:-10", "buff:run_before:0"],
       "line": "You fly no realm's colours. Some lords have not forgotten whose you once wore."
     },
     {
@@ -114,8 +114,8 @@
     {
       "id": "tourney", "name": "Tourney Champion", "icon": "star", "age": 6, "perk": "Duellist",
       "text": "You won a gold circlet at the great lists and spent it in a month. Crowds know your face. Captains know your price.",
-      "effects": ["skill:Arms:10", "skill:Riding:5", "renown:30", "gold:150", "wear:sallet", "buff:crowd_favour:45"],
-      "line": "Your sallet still has the dent from the final tilt."
+      "effects": ["skill:Arms:10", "skill:Riding:5", "renown:30", "gold:150", "wear:nasal", "buff:crowd_favour:45"],
+      "line": "Your helm still has the dent from the final tilt."
     },
     {
       "id": "steward", "name": "Lord's Steward", "icon": "scroll", "age": 14, "perk": "TaxRoll",
@@ -125,10 +125,10 @@
     }
   ],
   "roads": [
-    { "id": "sword", "name": "Sword and Shield", "icon": "shield", "text": "On foot behind a kite shield, as most good soldiers fight. Slow to fall.",
+    { "id": "sword", "name": "Sword and Shield", "icon": "shield", "text": "On foot behind a round shield, as most good soldiers fight. Slow to fall.",
       "pros": ["Stands up to arrows behind the shield", "Blocks well: hard to bring down in a press", "Good with any company on foot"],
       "cons": ["Slower blows than a two-hander", "No reach against spears and horse"] },
-    { "id": "lance", "name": "Lance and Saddle", "icon": "horse", "text": "A warhorse under you and a boar spear for the charge. Few on foot will stand it.",
+    { "id": "lance", "name": "Lance and Saddle", "icon": "horse", "text": "A boar spear and a horseman's seat. Buy your first mount in town, and few on foot will stand your charge.",
       "pros": ["The couched charge breaks men on foot", "Fast across the field: be where you are needed", "Rides down archers and routers"],
       "cons": ["A stopped horse is a dead horse", "Spears braced in a line are death"] },
     { "id": "bow", "name": "The Bow", "icon": "arrow", "text": "A hunting bow in hand, the sword at your side. You hit what you aim at.",

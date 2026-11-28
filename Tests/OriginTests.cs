@@ -19,8 +19,8 @@ public static partial class SelfTest
         Check(Skills.All.All(s => Skills.Level(c.Captain, s.Id) == Skills.Level(preview, s.Id)), "the campaign's skills are the preview's");
         Check(c.Skill("Riding") == 35 && c.Skill("Stewardship") == 15, "the lance road (Riding 20) and the past (+15) add up");
         Check(c.Has("MountedLord") && c.Captain.BonusPerks.Contains("MountedLord") && Skills.Picks(c.Captain, "Riding") == 1, "the past's perk is free of the branch's marks");
-        Check(c.Captain.Kit.Horse == "warhorse" && c.Owns("warhorse") && c.Captain.Kit.Side == "boar_spear", "the kit is the road's and the past's");
-        Check(c.S.Gold == Balance.Get().StartGold + 450 - 100 && c.Captain.Renown == Balance.Get().StartRenown + 25, "gold and renown are the creator's sums");
+        Check(c.Captain.Kit.Horse == "courser" && c.Owns("courser") && c.Captain.Kit.Side == "boar_spear", "the kit is the road's and the past's");
+        Check(c.S.Gold == Balance.Get().StartGold + 450 && c.Captain.Renown == Balance.Get().StartRenown + 25, "gold and renown are the creator's sums");
         Check(c.Captain.Homeland == 2 && c.Captain.Contract == -1 && c.Captain.Birth == "guild" && c.Captain.Origin == "hedge_knight", "born in your homeland as an independent free company, and the origin is saved");
         float homeOp = c.S.Characters.Where(x => x.Kind == "lord" && !x.Dead && x.Faction == 2).Average(c.OpinionOfYou);
         float foreignOp = c.S.Characters.Where(x => x.Kind == "lord" && !x.Dead && x.Faction != 2).Average(c.OpinionOfYou);
@@ -89,7 +89,14 @@ public static partial class SelfTest
             realmKits.Add($"{k.Body}|{k.Helm}|{k.Shield}|{k.Weapon}|{k.Horse}");
         }
         Check(realmKits.Count == Factions.All.Count, "every realm gives its own distinct starting kit");
-        Check(dc.PlayerPalette == 2 && PortraitPainter.Of(d).Palette == 2, "a free company wears gold");
+        Check(dc.PlayerPalette == Factions.All[1].Palette && PortraitPainter.Of(d).Palette == Factions.All[1].Palette, "a deserter still wears their homeland's colours");
+        // The start is a poor man's: no realm's kit is worth more than a few hundred crowns, and none gives a horse.
+        for (int r = 0; r < Factions.All.Count; r++)
+        {
+            var (body, helm, shield, weapon, horse) = Origins.RealmKit(Factions.CultureOf(r));
+            int worth = new[] { body, helm, shield, weapon }.Sum(id => Gear.Get(id).Cost);
+            Check(horse == "" && worth <= 250, $"realm {r}'s starting kit is plain ({worth} crowns, horse '{horse}')");
+        }
 
         // PF2: Birth, Past and Road act as day-to-day system on-ramps.
         var cloister = Campaign.New(91, 0, new CaptainMaking { Realm = 0, Birth = "cloister", Past = "pilgrim", Road = "pole" });

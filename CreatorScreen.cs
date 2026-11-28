@@ -186,7 +186,6 @@ sealed class CreatorScreen
     void Begin()
     {
         if (M.Name.Trim() == "") { Go(4); typing = 1; return; }
-        if (M.FreeStart) M.Realm = dice.Next(Factions.All.Count); // a free company starts at any capital
         Open = false;
         AudioEngine.Current?.Play(Cue.WaxSeal, 0.85f);
         begin(M);
@@ -471,16 +470,15 @@ sealed class CreatorScreen
     /// Seven realms down the left; the one under the mouse (or chosen) drawn large on the right: shield, people, how they fight.
     void Homeland(Rectangle r)
     {
-        ui.Text("WHERE DOES YOUR COMPANY START?", r.X, r.Y, Style.Dim, 1);
+        ui.Text("WHERE WERE YOU BORN?", r.X, r.Y, Style.Dim, 1);
         int listW = (int)(r.Width * 0.46f), y = r.Y + U(14);
-        int rowH = Math.Min(U(54), (r.Height - U(14)) / Math.Max(1, Factions.All.Count + 1));
+        int rowH = Math.Min(U(54), (r.Height - U(14)) / Math.Max(1, Factions.All.Count));
         int show = M.Realm;
-        bool showFree = M.FreeStart;
         for (int f = 0; f < Factions.All.Count; f++)
         {
             var def = Factions.All[f];
             var row = new Rectangle(r.X, y, listW, rowH - U(4));
-            if (ui.Hover(row)) { show = f; showFree = false; }
+            if (ui.Hover(row)) show = f;
             if (ui.Button(row, "", active: f == M.Realm && !M.FreeStart)) { M.Realm = f; M.FreeStart = false; }
             int sh = Math.Min(row.Height - U(8), U(30));
             ui.Shield(new Rectangle(row.X + U(8), row.Center.Y - sh / 2, sh * 5 / 6, sh), Style.Sides[def.Palette]);
@@ -496,32 +494,10 @@ sealed class CreatorScreen
             else ui.TextFit(def.Name.ToUpperInvariant(), tx, row.Y + (row.Height - U(7)) / 2, row.Right - tx - U(6), on ? new Color(255, 246, 222) : Style.Text, 1);
             y += rowH;
         }
-        // The free company: no realm's colours, a random capital.
-        {
-            var row = new Rectangle(r.X, y, listW, rowH - U(4));
-            if (ui.Hover(row)) showFree = true;
-            if (ui.Button(row, "", active: M.FreeStart)) { M.FreeStart = true; M.Realm = dice.Next(Factions.All.Count); }
-            int sh = Math.Min(row.Height - U(8), U(30));
-            ui.Shield(new Rectangle(row.X + U(8), row.Center.Y - sh / 2, sh * 5 / 6, sh), Style.Sides[2]);
-            int tx = row.X + U(16) + sh;
-            var fc = M.FreeStart ? new Color(255, 246, 222) : Style.Text;
-            ui.TextFit("FREE COMPANY", tx, row.Center.Y - U(7 + 10) / 2 - U(2), row.Right - tx - U(6), fc, 1);
-            ui.TextFit("NO CROWN, RANDOM CAPITAL", tx, row.Center.Y - U(7 + 10) / 2 - U(2) + U(12), row.Right - tx - U(6), M.FreeStart ? Kit.Parchment : Style.Dim, 1);
-        }
         var d = Factions.All[show];
         var pane = new Rectangle(r.X + listW + U(12), r.Y + U(14), r.Width - listW - U(12), r.Height - U(14));
         ui.Rect(pane, Color.Black * 0.25f);
         ui.Frame(pane, Kit.Rivet * 0.5f, U(1));
-        if (showFree)
-        {
-            int fw = Math.Min(U(70), pane.Width / 3);
-            ui.Banner(pane.Center.X, pane.Y + U(10), fw, (int)(fw * 1.9f), Style.Sides[2], time * 1.3f);
-            int fy = pane.Y + U(20) + (int)(fw * 1.9f);
-            ui.TextC("FREE COMPANY", pane.Center.X, fy, Kit.Gilt, 2); fy += U(26);
-            foreach (var line in ui.Wrap("YOU START AT THE CAPITAL OF A REALM CHOSEN BY CHANCE WHEN THE CAMPAIGN BEGINS, BUT SERVE NO CROWN. NO CONTRACT, NO WAGES TO ANYONE, NO UPKEEP PAID BY A LORD. YOUR FIRST MEN ARE THAT REALM'S OWN. TAKE CONTRACTS, SWEAR FEALTY OR FOUND A REALM OF YOUR OWN LATER.", pane.Width - U(24)))
-            { ui.TextC(line, pane.Center.X, fy, Style.Dim, 1); fy += U(11); }
-            return;
-        }
         int bw = Math.Min(U(70), pane.Width / 3);
         ui.Banner(pane.Center.X, pane.Y + U(10), bw, (int)(bw * 1.9f), Style.Sides[d.Palette], time * 1.3f);
         int py = pane.Y + U(20) + (int)(bw * 1.9f);
@@ -537,7 +513,7 @@ sealed class CreatorScreen
             { ui.TextC(line, pane.Center.X, py, Kit.Parchment * 0.8f, 1); py += U(10); }
         }
         py += U(8);
-        foreach (var line in ui.Wrap("YOU START INDEPENDENT AT ITS CAPITAL. ITS LORDS AND VILLAGES FAVOUR YOU.", pane.Width - U(20)))
+        foreach (var line in ui.Wrap("YOUR HOMELAND: YOU START AT ITS CAPITAL, SWORN TO NO ONE. ITS LORDS AND VILLAGES FAVOUR YOU.", pane.Width - U(20)))
         { ui.TextC(line, pane.Center.X, py, Style.Dim, 1); py += U(10); }
         py += U(8);
         // Its soldiers at their prime: foot, bow and horse.

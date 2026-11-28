@@ -201,8 +201,8 @@ public sealed partial class Campaign
     // ---------- relations ----------
 
     public int SideOf(Party p) => p.Kind switch { PartyKind.Player => Captain.Contract, PartyKind.Bandit => -2, PartyKind.Monster => -3, _ => p.Faction };
-    /// The palette the captain and their kit paint with: their realm's colours when serving a faction, else gold (free company).
-    public int PlayerPalette => Captain.Contract >= 0 ? Style.PaletteOf(Captain.Contract) : Captain.Homeland >= 0 && Captain.Origin != "deserter" ? Style.PaletteOf(Captain.Homeland) : 2;
+    /// The palette the captain and their kit paint with: the realm they serve under contract, else their homeland's (gold only for a captain of no realm).
+    public int PlayerPalette => Captain.Contract >= 0 ? Style.PaletteOf(Captain.Contract) : Captain.Homeland >= 0 ? Style.PaletteOf(Captain.Homeland) : 2;
     /// Brigands and monsters: parties outside any realm, with no pay, no drill and no prisoners to ransom.
     public static bool Outlaw(Party p) => p.Kind is PartyKind.Bandit or PartyKind.Monster;
 

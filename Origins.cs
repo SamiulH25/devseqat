@@ -18,7 +18,8 @@ public sealed class CaptainMaking
 {
     public string Name = "", Company = "", Birth = "camp", Past = "sellsword", Road = "sword";
     public int Realm, Skin = 1, Hair = 2;
-    /// A free company: starts at a random realm's capital, in no realm's pay (Realm is rolled when the campaign begins).
+    /// A captain of no realm at all (a quick battle's free side): no homeland kit, the free company's gold. The creator never
+    /// sets it: every captain is born in a realm (which only tells where they come from) and starts sworn to no one.
     public bool FreeStart;
     /// The painted face (CaptainLook numbers) and the charge on your banner (an `Emblem`).
     public int Cut, Beard = 1, Eye, Brow = 1, Nose = 1, Jaw = 1, Scar, Arms = (int)Emblem.Chevron, BannerField = -1, BannerTrim = -1;
@@ -80,22 +81,22 @@ public static class Origins
     /// How long a boon lasts, in the creator's words.
     public static string BoonSpan(float days) => days <= 0 ? "LASTING" : $"{days:0} DAYS";
 
-    public static bool Free(CaptainMaking m) => m.FreeStart || Chosen(m).Any(o => o.Effects.Contains("free"));
+    public static bool Free(CaptainMaking m) => m.FreeStart;
     public static int Age(CaptainMaking m) => BaseAge + Chosen(m).Sum(o => o.Age);
     public static IEnumerable<string> Perks(CaptainMaking m) => Chosen(m).Select(o => o.Perk).Where(p => p != "");
 
-    /// Starting equipment by homeland culture: body, helm, shield, primary hand weapon and horse.
-    /// Free companies keep the plain sellsword kit.
+    /// Starting equipment by homeland culture: body, helm, shield, primary hand weapon and horse ("" = none). A poor man's
+    /// kit in his people's cut, worth some 200 crowns: better gear is bought, won or taken. No horse: the first mount is
+    /// earned in town (or brought by an origin).
     public static (string Body, string Helm, string Shield, string Weapon, string Horse) RealmKit(string culture) => culture switch
     {
-        "azure" => ("gambeson", "kettle_hat", "kite_shield", "arming_sword", "courser"),
-        "crimson" => ("brigandine", "sallet", "heater_shield", "arming_sword", "courser"),
-        "northern" => ("fur_gambeson", "spangenhelm", "iron_round", "war_axe", "courser"),
-        "southern" => ("qadiri_jubbah", "litham", "dhal", "scimitar", "courser"),
-        "steppe" => ("kaftan", "steppe_helm", "kalkan", "scimitar", "steppe_horse"),
-        "league" => ("arsenal_buffcoat", "morion", "pavise", "arming_sword", "courser"),
-        "order" => ("tarn_habit", "bucket", "kite_shield", "mace", "courser"),
-        _ => ("gambeson", "kettle_hat", "round_shield", "arming_sword", "courser"),
+        "northern" => ("furs", "fur_cap", "round_shield", "arming_sword", ""),
+        "southern" => ("burnous", "turban", "round_shield", "arming_sword", ""),
+        "steppe" => ("deel", "fur_cap", "round_shield", "arming_sword", ""),
+        "order" => ("robe", "coif", "round_shield", "arming_sword", ""),
+        "crimson" => ("leather", "coif", "round_shield", "arming_sword", ""),
+        "league" => ("leather", "hood", "round_shield", "arming_sword", ""),
+        _ => ("leather", "cap", "round_shield", "arming_sword", ""),
     };
 
     /// Shape the captain from a making: the face, the homeland kit, the road, skills, free perks and gear. The same call
@@ -116,7 +117,7 @@ public static class Origins
         if (!m.FreeStart)
         {
             var (body, helm, shield, weapon, horse) = RealmKit(Factions.CultureOf(m.Realm));
-            foreach (var id in new[] { body, helm, shield, weapon, horse })
+            foreach (var id in new[] { body, helm, shield, weapon, horse }.Where(i => i != ""))
             {
                 Campaign.Own(c, id);
                 Wear(c.Kit, Gear.Get(id));

@@ -224,8 +224,11 @@ public sealed partial class Campaign
     // ---------- spoils ----------
 
     public const float TournamentPrizeChance = 0.5f;
+    /// The dearest piece a beaten leader may leave you, by who he was.
+    public const int SpoilBrigand = 120, SpoilLord = 450, SpoilGreat = 900;
 
-    /// After a win: a piece of the beaten leader's gear, sure if you cut him down, likelier from a lord than a brigand.
+    /// After a win: a piece of the beaten leader's gear, sure from a lord you cut down, likelier from a lord than a brigand.
+    /// Brigands carry cheap kit (SpoilBrigand); lords better (SpoilLord); a champion or brigand king the best (SpoilGreat).
     /// Monsters and caravans carry nothing you would wear. Its make goes by who wore it (C11): a brigand's is often worn, a
     /// lord's may be fine, an order knight's or a brigand king's is fine or better with a mark.
     (string Id, ItemQuality Make, string Mark) BattleSpoil(IReadOnlyList<Party> losers, BattleResult r)
@@ -233,10 +236,10 @@ public sealed partial class Campaign
         bool lord = losers.Any(p => p.Kind == PartyKind.Lord), brigand = losers.Any(p => p.Kind == PartyKind.Bandit);
         if (!lord && !brigand) return ("", ItemQuality.Plain, "");
         bool downed = r.EnemyLeader != LeaderFate.Unhurt;
-        float chance = lord ? (downed ? 1 : 0.35f) : downed ? 0.6f : 0.15f;
+        float chance = lord ? (downed ? 1 : 0.3f) : downed ? 0.4f : 0.1f;
         if (!rng.Chance(chance)) return ("", ItemQuality.Plain, "");
         bool great = losers.Any(p => ChampionAura(p) > 0 || p.Kind == PartyKind.Bandit && CharacterById(p.CharId) is { Kind: "brigand" });
-        string id = SpoilFrom(lord || great ? 900 : 300);
+        string id = SpoilFrom(great ? SpoilGreat : lord ? SpoilLord : SpoilBrigand);
         if (id == "") return ("", ItemQuality.Plain, "");
         var make = SpoilMake(lord, great, downed);
         return (id, make, make >= ItemQuality.Fine ? MarkFor(Gear.Get(id).Slot) : "");
