@@ -42,14 +42,26 @@ export function buildBodies(root) {
     return g;
   }
 
-  // Heroic squat torso block: narrow waist, broad planar chest, fast slope into the neck.
-  const torsoShell = (rxW, rzW, rxC, rzC, zC = 0.012, yBot = 0.80, yTop = 1.37) => prismColumn([
-    [yBot, rxW, rzW, 0, 0],
-    [yBot + 0.11, rxW * 1.05, rzW * 1.05, 0, zC * 0.35],
-    [yBot + 0.34, rxC, rzC, 0, zC],
-    [yTop - 0.08, rxC * 0.96, rzC * 0.92, 0, zC * 0.45],
-    [yTop, 0.112, 0.102, 0, 0],
-  ]);
+  // A rounded shoulder: rings along a quarter ellipse from the shoulder ring `a` (wide, low) to the neck ring `b`
+  // (narrow, high). It leaves the shoulder going straight up and meets the neck lying flat, so the top of the body
+  // rolls over instead of stepping in as a shelf. Returns the rings after `a`, ending with `b`.
+  const shoulderArc = ([yA, rxA, rzA, oxA = 0, ozA = 0], [yB, rxB, rzB, oxB = 0, ozB = 0], steps = 3) =>
+    Array.from({ length: steps }, (_, i) => {
+      const t = (i + 1) / steps * Math.PI / 2, up = Math.sin(t), out = Math.cos(t);
+      return [yA + (yB - yA) * up, rxB + (rxA - rxB) * out, rzB + (rzA - rzB) * out, oxA + (oxB - oxA) * up, ozA + (ozB - ozA) * up];
+    });
+
+  // Heroic squat torso block: narrow waist, broad planar chest, rounded shoulders into the neck.
+  const torsoShell = (rxW, rzW, rxC, rzC, zC = 0.012, yBot = 0.80, yTop = 1.37) => {
+    const shoulder = [yTop - 0.10, rxC * 0.97, rzC * 0.93, 0, zC * 0.5];
+    return prismColumn([
+      [yBot, rxW, rzW, 0, 0],
+      [yBot + 0.11, rxW * 1.05, rzW * 1.05, 0, zC * 0.35],
+      [yBot + 0.34, rxC, rzC, 0, zC],
+      shoulder,
+      ...shoulderArc(shoulder, [yTop, 0.112, 0.102, 0, 0], 3),
+    ]);
+  };
 
   const trap = (wTop, wBot, h) => [
     [-wBot / 2, -h / 2], [wBot / 2, -h / 2], [wTop / 2, h / 2], [-wTop / 2, h / 2],
@@ -183,11 +195,11 @@ export function buildBodies(root) {
   });
 
   addPart(root, 'shld_collar_cloth', (mesh) => {
+    const edge = [1.225, 0.290, 0.198, 0, -0.005];
     const mantle = prismColumn([
       [1.155, 0.315, 0.214, 0, -0.006],
-      [1.245, 0.282, 0.192, 0, -0.004],
-      [1.345, 0.154, 0.132, 0, -0.002],
-      [1.395, 0.110, 0.102, 0, -0.004],
+      edge,
+      ...shoulderArc(edge, [1.395, 0.110, 0.102, 0, -0.004], 4),
     ], { caps: false });
     mesh(heightShade(mantle, 1.155, 1.395, 0.80, 1.0), M.clothDark);
     // Small front opening shadow keeps the hood/capelet from reading as a solid funnel.
@@ -472,12 +484,10 @@ export function buildBodies(root) {
   addPart(root, 'shld_pauldrons_lance', (mesh) => buildPauldrons(mesh, M.steel, M.brass, { lance: true, yLow: 1.060 }));
   addPart(root, 'shld_pauldrons_hollow', (mesh) => buildPauldrons(mesh, M.mail, M.brass, { hollow: true, yLow: 1.130 }));
 
+  // A shoulder mantle: from its hem it rolls over the shoulder to the neck (shoulderArc), with no step at the top.
   const buildMantle = (mesh, matMain, rxBot, rzBot, yBot, yTop = 1.39) => {
-    const g = prismColumn([
-      [yBot, rxBot, rzBot, 0, -0.004],
-      [(yBot + yTop) * 0.5, rxBot * 0.86, rzBot * 0.86, 0, -0.002],
-      [yTop, 0.142, 0.126, 0, -0.002],
-    ], { caps: false });
+    const hem = [yBot, rxBot, rzBot, 0, -0.004];
+    const g = prismColumn([hem, ...shoulderArc(hem, [yTop, 0.142, 0.126, 0, -0.002], 4)], { caps: false });
     mesh(heightShade(g, yBot, yTop, 0.80, 1.0), matMain);
   };
 
