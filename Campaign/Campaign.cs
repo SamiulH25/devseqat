@@ -128,7 +128,7 @@ public sealed partial class Campaign
         c.SeedBuildings();
         foreach (var v in s.Settlements)
         {
-            v.Recruits = v.Kind == SettlementKind.Village ? c.Scaled(4 + c.rng.Next(5)) : 0;
+            v.Recruits = v.Kind == SettlementKind.Village ? c.Scaled(4 + c.rng.Next(5)) : c.Scaled(6 + c.rng.Next(5));
             v.Horses = v.Kind == SettlementKind.Town ? c.Scaled(10) : v.Kind == SettlementKind.Castle ? c.Scaled(B.CastleHorsesMax / 2) : 0;
             if (v.Kind == SettlementKind.Town) c.RefreshMercenaries(v);
             c.RaiseGarrison(v);

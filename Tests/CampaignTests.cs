@@ -58,6 +58,17 @@ public static partial class SelfTest
         Check(CampaignState.Deserialize(json).Serialize() == json, "save, load, save gives the same file");
     }
 
+    /// The town the player starts beside has levies ready to recruit on day 1 and is not emptied to zero by lords refitting.
+    static void StartingTownHasRecruits()
+    {
+        var c = Campaign.New(seed: 19);
+        var town = c.S.Settlements.Where(s => s.Kind == SettlementKind.Town).OrderBy(s => Vector2.Distance(s.Pos, c.Player.Pos)).First();
+        Check(town.Recruits >= c.Scaled(6), $"starting town {town.Name} opens with recruits ({town.Recruits})");
+        Check(c.RecruitsForYou(town) > 0, $"player can recruit at starting town {town.Name} on day 1 ({c.RecruitsForYou(town)})");
+        for (int d = 0; d < 5; d++) c.Tick(24);
+        Check(town.Recruits > 0 && c.RecruitsForYou(town) > 0, $"starting town still has recruits after 5 days ({town.Recruits})");
+    }
+
     /// Outlaw overhaul: camps spawn across provinces, roaming bands use distinct archetypes & regional names,
     /// and local bandit density near the player stays bounded instead of flooding the starting screen.
     static void BanditOverhaul()

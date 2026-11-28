@@ -229,7 +229,8 @@ public partial class Campaign
         foreach (var v in S.Settlements.Where(v => v.Province == home.Province))
         {
             int affordable = (int)((p.Gold + budget) / Rules.PerMan(10));
-            int n = Math.Min(v.Recruits, Math.Max(0, affordable));
+            int avail = v.Kind == SettlementKind.Town ? Math.Max(0, v.Recruits - Scaled(4)) : v.Recruits;
+            int n = Math.Min(avail, Math.Max(0, affordable));
             if (n <= 0) continue;
             levy = RecruitTroop(v); // each village raises its own culture's men (4.2)
             // Recruits fill the green companies; a lord keeps his veterans' companies for promoted men.
